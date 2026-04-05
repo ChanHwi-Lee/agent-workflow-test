@@ -1,0 +1,26 @@
+import type { FastifyPluginAsync } from "fastify";
+
+import {
+  createObjectStoreClient,
+  createPgClient,
+} from "@tooldi/agent-persistence";
+
+export const dbPlugin: FastifyPluginAsync = async (app) => {
+  const db = createPgClient({
+    connectionString: app.config.postgresUrl,
+    applicationName: "tooldi-agent-api",
+    schema: "agent_runtime",
+  });
+  await db.connect();
+
+  const objectStore = createObjectStoreClient({
+    bucket: app.config.objectStoreBucket,
+  });
+
+  app.decorate("db", db);
+  app.decorate("objectStore", objectStore);
+
+  app.addHook("onClose", async () => {
+    await db.end();
+  });
+};

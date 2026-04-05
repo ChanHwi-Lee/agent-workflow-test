@@ -1,0 +1,22 @@
+{
+  "name": "@tooldi/agent-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/main.js",
+  "types": "./dist/main.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "start": "node --enable-source-maps dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tooldi/agent-config": "workspace:*",
+    "@tooldi/agent-contracts": "workspace:*",
+    "@tooldi/agent-domain": "workspace:*",
+    "@tooldi/agent-observability": "workspace:*",
+    "@tooldi/agent-persistence": "workspace:*",
+    "fastify": "^5.0.0"
+  }
+}
