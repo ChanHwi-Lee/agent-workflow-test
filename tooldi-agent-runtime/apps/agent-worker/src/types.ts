@@ -40,6 +40,8 @@ export interface NormalizedIntent {
 export interface MutationProposalDraft {
   mutationId: string;
   rollbackGroupId: string;
+  stageLabel: string;
+  stageDescription: string;
   mutation: CanvasMutationEnvelope;
 }
 

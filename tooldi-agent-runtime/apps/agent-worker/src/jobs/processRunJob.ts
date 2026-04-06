@@ -139,7 +139,7 @@ export async function processRunJob(
     event: {
       type: "phase",
       phase: "executing",
-      message: "Worker is emitting skeleton mutations",
+      message: "Worker is emitting staged canvas mutations",
     },
   });
   cooperativeStopRequested ||= executingEvent.cancelRequested;
@@ -162,6 +162,25 @@ export async function processRunJob(
     : null;
 
   for (const proposal of skeletonBatch.proposals) {
+    const stageLog = await dependencies.callbackClient.appendEvent(job.runId, {
+      traceId: job.traceId,
+      attempt: job.attemptSeq,
+      queueJobId: job.queueJobId,
+      event: {
+        type: "log",
+        level: "info",
+        message: `Stage ${proposal.mutation.seq}/3 (${proposal.stageLabel}) - ${proposal.stageDescription}`,
+      },
+    });
+    if (stageLog.cancelRequested) {
+      cooperativeStopRequested = true;
+      lastMutationAck = {
+        found: true,
+        status: "cancelled",
+      };
+      break;
+    }
+
     emittedMutationIds.push(proposal.mutationId);
     const mutationResponse = await dependencies.callbackClient.appendEvent(job.runId, {
       traceId: job.traceId,
@@ -193,6 +212,26 @@ export async function processRunJob(
     );
     if (lastMutationAck.status === "cancelled") {
       cooperativeStopRequested = true;
+      break;
+    }
+
+    const ackLog = await dependencies.callbackClient.appendEvent(job.runId, {
+      traceId: job.traceId,
+      attempt: job.attemptSeq,
+      queueJobId: job.queueJobId,
+      event: {
+        type: "log",
+        level: lastMutationAck.status === "acked" ? "info" : "warn",
+        message: `Stage ${proposal.mutation.seq}/3 result: ${lastMutationAck.status}`,
+      },
+    });
+    if (ackLog.cancelRequested) {
+      cooperativeStopRequested = true;
+      lastMutationAck = {
+        found: true,
+        status: "cancelled",
+      };
+      break;
     }
   }
 

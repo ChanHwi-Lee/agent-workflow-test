@@ -109,11 +109,12 @@ class RecordingBackendCallbackClient implements BackendCallbackClient {
     if (this.waitMutationAckResponseFactory) {
       return this.waitMutationAckResponseFactory(mutationId, query);
     }
+    const currentSeq = this.ackWaits.length;
     return {
       found: true,
       status: "acked",
-      seq: 1,
-      resultingRevision: 1,
+      seq: currentSeq,
+      resultingRevision: currentSeq,
     };
   }
 
@@ -218,7 +219,7 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
 
   assert.equal(result.intent.operationFamily, "create_template");
   assert.equal(result.plan.actions.length, 1);
-  assert.equal(result.emittedMutationIds.length, 1);
+  assert.equal(result.emittedMutationIds.length, 3);
   assert.equal(result.finalizeDraft.request.finalStatus, "completed");
 
   assert.equal(callbackClient.heartbeats.length, 4);
@@ -237,9 +238,9 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
       (event) => event.event.type === "mutation.proposed",
     ),
   );
-  assert.equal(callbackClient.ackWaits.length, 1);
+  assert.equal(callbackClient.ackWaits.length, 3);
   assert.equal(callbackClient.finalizations.length, 1);
-  assert.equal(callbackClient.finalizations[0]?.lastAckedSeq, 1);
+  assert.equal(callbackClient.finalizations[0]?.lastAckedSeq, 3);
   assert.equal(
     callbackClient.finalizations[0]?.normalizedIntentRef,
     `runs/${testRun.runId}/attempts/1/normalized-intent.json`,
@@ -253,6 +254,14 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     `save_receipt_${testRun.runId}_1`,
   );
   assert.equal(callbackClient.ackWaits[0]?.query.waitMs, 15000);
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes("Stage 1/3"),
+    ),
+    true,
+  );
 });
 
 test("processRunJob honors cancel fence before starting a new mutation group", async () => {
