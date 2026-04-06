@@ -216,6 +216,7 @@ export const ExecutablePlanSchema = Type.Object(
 
 export type RunJobEnvelope = Static<typeof RunJobEnvelopeSchema>;
 export type IntentEnvelope = Static<typeof IntentEnvelopeSchema>;
+export type PlannerEnabledTool = Static<typeof PlannerEnabledToolSchema>;
 export type PlannerInputEnvelope = Static<typeof PlannerInputEnvelopeSchema>;
 export type PlanValidationIssue = Static<typeof PlanValidationIssueSchema>;
 export type PlannerRepairRequest = Static<typeof PlannerRepairRequestSchema>;

@@ -1,0 +1,25 @@
+{
+  "name": "@tooldi/agent-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/main.js",
+  "types": "./dist/main.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "start": "node --enable-source-maps dist/main.js",
+    "test": "node --test dist/main.test.js dist/worker.test.js dist/jobs/processRunJob.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tooldi/agent-config": "workspace:*",
+    "@tooldi/agent-contracts": "workspace:*",
+    "@tooldi/agent-domain": "workspace:*",
+    "@tooldi/agent-observability": "workspace:*",
+    "@tooldi/agent-persistence": "workspace:*",
+    "@tooldi/agent-testkit": "workspace:*",
+    "@tooldi/tool-adapters": "workspace:*",
+    "@tooldi/tool-registry": "workspace:*"
+  }
+}

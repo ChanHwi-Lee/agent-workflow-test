@@ -4,7 +4,11 @@ import type {
   StartAgentWorkflowRunRequest,
 } from "@tooldi/agent-contracts";
 import type { Logger } from "@tooldi/agent-observability";
-import type { ObjectStoreClient } from "@tooldi/agent-persistence";
+import {
+  getRequestObjectKey,
+  getSnapshotObjectKey,
+  type ObjectStoreClient,
+} from "@tooldi/agent-persistence";
 
 import {
   isTerminalRunStatus,
@@ -210,7 +214,7 @@ export class RunBootstrapService {
   ): Promise<string> {
     const ref = createRequestObjectRef(requestId);
     await this.objectStore.putObject({
-      key: `requests/${requestId}/request.json`,
+      key: getRequestObjectKey(requestId),
       body: JSON.stringify(request),
       contentType: "application/json",
       metadata: {
@@ -227,7 +231,7 @@ export class RunBootstrapService {
   ): Promise<string> {
     const ref = createSnapshotRef(runId);
     await this.objectStore.putObject({
-      key: `runs/${runId}/snapshot.json`,
+      key: getSnapshotObjectKey(runId),
       body: JSON.stringify({
         editorContext: request.editorContext,
         brandContext: request.brandContext,

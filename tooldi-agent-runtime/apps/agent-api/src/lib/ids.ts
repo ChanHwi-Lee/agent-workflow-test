@@ -6,6 +6,10 @@ export {
   createRunId,
   createTraceId,
 } from "@tooldi/agent-domain";
+export {
+  createRequestObjectRef,
+  createSnapshotObjectRef as createSnapshotRef,
+} from "@tooldi/agent-persistence";
 
 export function createPageLockToken(runId: string, pageId: string): string {
   return `page_lock_${pageId}_${runId}`;
@@ -13,12 +17,4 @@ export function createPageLockToken(runId: string, pageId: string): string {
 
 export function createCancelToken(runId: string): string {
   return `cancel_${runId}`;
-}
-
-export function createRequestObjectRef(requestId: string): string {
-  return `request_ref_${requestId}`;
-}
-
-export function createSnapshotRef(runId: string): string {
-  return `snapshot_ref_${runId}`;
 }

@@ -39,6 +39,33 @@ importers:
         specifier: ^5.0.0
         version: 5.8.4
 
+  apps/agent-worker:
+    dependencies:
+      '@tooldi/agent-config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@tooldi/agent-contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@tooldi/agent-domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@tooldi/agent-observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
+      '@tooldi/agent-persistence':
+        specifier: workspace:*
+        version: link:../../packages/persistence
+      '@tooldi/agent-testkit':
+        specifier: workspace:*
+        version: link:../../packages/testkit
+      '@tooldi/tool-adapters':
+        specifier: workspace:*
+        version: link:../../packages/tool-adapters
+      '@tooldi/tool-registry':
+        specifier: workspace:*
+        version: link:../../packages/tool-registry
+
   packages/config: {}
 
   packages/contracts:
@@ -52,6 +79,26 @@ importers:
   packages/observability: {}
 
   packages/persistence: {}
+
+  packages/testkit:
+    dependencies:
+      '@tooldi/agent-contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@tooldi/agent-domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@tooldi/agent-persistence':
+        specifier: workspace:*
+        version: link:../persistence
+
+  packages/tool-adapters: {}
+
+  packages/tool-registry:
+    dependencies:
+      '@tooldi/agent-contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
 packages:
 
