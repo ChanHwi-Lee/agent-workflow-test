@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export NODE_ENV="${NODE_ENV:-test}"
+export LOG_LEVEL="${LOG_LEVEL:-info}"
+
+export AGENT_WORKFLOW_PORT="${AGENT_WORKFLOW_PORT:-3100}"
+export AGENT_WORKFLOW_HOST="${AGENT_WORKFLOW_HOST:-127.0.0.1}"
+export AGENT_WORKFLOW_BASE_URL="${AGENT_WORKFLOW_BASE_URL:-http://${AGENT_WORKFLOW_HOST}:${AGENT_WORKFLOW_PORT}}"
+
+export POSTGRES_URL="${POSTGRES_URL:-postgres://localhost:5432/tooldi_agent_runtime_test}"
+export REDIS_URL="${REDIS_URL:-redis://localhost:6379/9}"
+export BULLMQ_QUEUE_NAME="${BULLMQ_QUEUE_NAME:-agent-workflow-toolditor-local}"
+
+export OBJECT_STORE_MODE="${OBJECT_STORE_MODE:-filesystem}"
+export OBJECT_STORE_ROOT_DIR="${OBJECT_STORE_ROOT_DIR:-/tmp/tooldi-agent-runtime-toolditor-local}"
+export OBJECT_STORE_BUCKET="${OBJECT_STORE_BUCKET:-tooldi-agent-runtime-toolditor-local}"
+export OBJECT_STORE_PREFIX="${OBJECT_STORE_PREFIX:-agent-runtime-toolditor-local}"
+
+export API_HOST="${API_HOST:-${AGENT_WORKFLOW_HOST}}"
+export API_PORT="${API_PORT:-${AGENT_WORKFLOW_PORT}}"
+export PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-${AGENT_WORKFLOW_BASE_URL}}"
+
+export WORKER_QUEUE_TRANSPORT_MODE="${WORKER_QUEUE_TRANSPORT_MODE:-bullmq}"
+export AGENT_INTERNAL_BASE_URL="${AGENT_INTERNAL_BASE_URL:-${AGENT_WORKFLOW_BASE_URL}}"
+export WORKER_CONCURRENCY="${WORKER_CONCURRENCY:-1}"
+export WORKER_HEARTBEAT_INTERVAL_MS="${WORKER_HEARTBEAT_INTERVAL_MS:-5000}"
+export WORKER_LEASE_TTL_MS="${WORKER_LEASE_TTL_MS:-30000}"
