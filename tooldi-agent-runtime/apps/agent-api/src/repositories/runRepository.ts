@@ -9,8 +9,10 @@ export interface RunRecord {
   pageId: string;
   status: RunStatus;
   attemptSeq: number;
+  queueJobId: string | null;
   deadlineAt: string;
   pageLockToken: string;
+  cancelRequestedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +42,47 @@ export class RunRepository {
     const updated: RunRecord = {
       ...current,
       status,
+      updatedAt: new Date().toISOString(),
+    };
+    this.records.set(runId, updated);
+    return updated;
+  }
+
+  async activateAttempt(
+    runId: string,
+    attemptSeq: number,
+    queueJobId: string,
+    status: RunStatus,
+  ): Promise<RunRecord | null> {
+    const current = this.records.get(runId);
+    if (!current) {
+      return null;
+    }
+
+    const updated: RunRecord = {
+      ...current,
+      attemptSeq,
+      queueJobId,
+      status,
+      updatedAt: new Date().toISOString(),
+    };
+    this.records.set(runId, updated);
+    return updated;
+  }
+
+  async markCancelRequested(
+    runId: string,
+    requestedAt: string,
+  ): Promise<RunRecord | null> {
+    const current = this.records.get(runId);
+    if (!current) {
+      return null;
+    }
+
+    const updated: RunRecord = {
+      ...current,
+      status: "cancel_requested",
+      cancelRequestedAt: requestedAt,
       updatedAt: new Date().toISOString(),
     };
     this.records.set(runId, updated);

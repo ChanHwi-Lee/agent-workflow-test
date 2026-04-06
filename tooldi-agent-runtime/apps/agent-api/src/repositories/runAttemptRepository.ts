@@ -26,6 +26,17 @@ export class RunAttemptRepository {
     return record;
   }
 
+  async findByRunIdAndAttemptSeq(
+    runId: string,
+    attemptSeq: number,
+  ): Promise<RunAttemptRecord | null> {
+    return (
+      [...this.records.values()].find(
+        (record) => record.runId === runId && record.attemptSeq === attemptSeq,
+      ) ?? null
+    );
+  }
+
   async findByRunId(runId: string): Promise<RunAttemptRecord[]> {
     return [...this.records.values()].filter((record) => record.runId === runId);
   }
@@ -34,19 +45,41 @@ export class RunAttemptRepository {
     runId: string,
     attemptSeq: number,
     heartbeatAt: string,
+    attemptState: AttemptState,
     workerId?: string,
   ): Promise<RunAttemptRecord | null> {
-    const current = [...this.records.values()].find(
-      (record) => record.runId === runId && record.attemptSeq === attemptSeq,
-    );
+    const current = await this.findByRunIdAndAttemptSeq(runId, attemptSeq);
     if (!current) {
       return null;
     }
 
     const updated: RunAttemptRecord = {
       ...current,
+      attemptState,
       workerId: workerId ?? current.workerId,
       lastHeartbeatAt: heartbeatAt,
+    };
+    this.records.set(updated.attemptId, updated);
+    return updated;
+  }
+
+  async updateAttemptState(
+    runId: string,
+    attemptSeq: number,
+    attemptState: AttemptState,
+    workerId?: string,
+    heartbeatAt?: string,
+  ): Promise<RunAttemptRecord | null> {
+    const current = await this.findByRunIdAndAttemptSeq(runId, attemptSeq);
+    if (!current) {
+      return null;
+    }
+
+    const updated: RunAttemptRecord = {
+      ...current,
+      attemptState,
+      workerId: workerId ?? current.workerId,
+      lastHeartbeatAt: heartbeatAt ?? current.lastHeartbeatAt,
     };
     this.records.set(updated.attemptId, updated);
     return updated;

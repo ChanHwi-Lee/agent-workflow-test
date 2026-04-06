@@ -113,7 +113,7 @@ export class RunBootstrapService {
       createdAt: toIsoDateTime(startedAt),
     });
 
-    const initialStatus: RunStatus = "planning_queued";
+    const initialStatus: RunStatus = "enqueue_pending";
     await this.runRepository.create({
       runId,
       traceId,
@@ -121,24 +121,13 @@ export class RunBootstrapService {
       documentId: command.request.editorContext.documentId,
       pageId: command.request.editorContext.pageId,
       status: initialStatus,
-      attemptSeq,
+      attemptSeq: 0,
+      queueJobId: null,
       deadlineAt: toIsoDateTime(deadlineAt),
       pageLockToken,
+      cancelRequestedAt: null,
       createdAt: toIsoDateTime(startedAt),
       updatedAt: toIsoDateTime(startedAt),
-    });
-
-    await this.runAttemptRepository.create({
-      attemptId,
-      runId,
-      traceId,
-      attemptSeq,
-      queueJobId,
-      acceptedHttpRequestId: httpRequestId,
-      attemptState: "enqueued",
-      workerId: null,
-      lastHeartbeatAt: null,
-      createdAt: toIsoDateTime(startedAt),
     });
 
     const runJob: RunJobEnvelope = {
@@ -155,6 +144,25 @@ export class RunBootstrapService {
       cancelToken,
     };
     await this.runQueue.enqueueRunJob(runJob);
+
+    await this.runAttemptRepository.create({
+      attemptId,
+      runId,
+      traceId,
+      attemptSeq,
+      queueJobId,
+      acceptedHttpRequestId: httpRequestId,
+      attemptState: "enqueued",
+      workerId: null,
+      lastHeartbeatAt: null,
+      createdAt: toIsoDateTime(startedAt),
+    });
+    await this.runRepository.activateAttempt(
+      runId,
+      attemptSeq,
+      queueJobId,
+      "planning_queued",
+    );
 
     await this.runEventService.appendAccepted(runId, traceId, toIsoDateTime(startedAt));
     await this.runEventService.appendPhase(

@@ -24,6 +24,14 @@ import { RunCancelService } from "./services/runCancelService.js";
 import { RunEventService } from "./services/runEventService.js";
 import { RunFinalizeService } from "./services/runFinalizeService.js";
 import { RunRecoveryService } from "./services/runRecoveryService.js";
+import { eventsPostRoute } from "./routes/internal/events.post.js";
+import { finalizePostRoute } from "./routes/internal/finalize.post.js";
+import { heartbeatsPostRoute } from "./routes/internal/heartbeats.post.js";
+import { mutationAcksGetRoute } from "./routes/internal/mutation-acks.get.js";
+import { cancelPostRoute } from "./routes/public/cancel.post.js";
+import { mutationAcksPostRoute } from "./routes/public/mutation-acks.post.js";
+import { runEventsSseRoute } from "./routes/public/run-events.sse.js";
+import { runsPostRoute } from "./routes/public/runs.post.js";
 
 export interface AgentApiServices {
   runBootstrapService: RunBootstrapService;
@@ -46,14 +54,14 @@ export async function buildApp(
   });
 
   if (options.env) {
-    await app.register(configPlugin, { env: options.env });
+    await configPlugin(app, { env: options.env });
   } else {
-    await app.register(configPlugin);
+    await configPlugin(app, {});
   }
-  await app.register(loggerPlugin);
-  await app.register(dbPlugin);
-  await app.register(queuePlugin);
-  await app.register(sseHubPlugin);
+  await loggerPlugin(app, {});
+  await dbPlugin(app, {});
+  await queuePlugin(app, {});
+  await sseHubPlugin(app, {});
 
   const runRequestRepository = new RunRequestRepository(app.db);
   const runRepository = new RunRepository(app.db);
@@ -89,6 +97,7 @@ export async function buildApp(
     ),
     runFinalizeService: new RunFinalizeService(
       runRepository,
+      runAttemptRepository,
       costSummaryRepository,
       draftBundleRepository,
       completionRepository,
@@ -103,12 +112,22 @@ export async function buildApp(
     runRecoveryService: new RunRecoveryService(
       runRepository,
       runAttemptRepository,
+      mutationLedgerRepository,
       runEventService,
       app.appLogger.child({ service: "run-recovery-service" }),
     ),
   };
 
   app.decorate("services", services);
+
+  await app.register(runsPostRoute);
+  await app.register(runEventsSseRoute);
+  await app.register(mutationAcksPostRoute);
+  await app.register(cancelPostRoute);
+  await app.register(eventsPostRoute);
+  await app.register(mutationAcksGetRoute);
+  await app.register(finalizePostRoute);
+  await app.register(heartbeatsPostRoute);
 
   app.addHook("onRequest", async (request, reply) => {
     const headerValue = request.headers["x-request-id"];

@@ -1,5 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import type { Static } from "@sinclair/typebox";
+import { FormatRegistry } from "@sinclair/typebox/type";
+import { Value } from "@sinclair/typebox/value";
 
 import { CanvasMutationEnvelopeSchema } from "../canvas/canvas-mutation.js";
 import {
@@ -22,10 +24,20 @@ const AttemptStateSchema = Type.Union(
   ),
 );
 
+const ISO_DATE_TIME_PATTERN =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+
+if (!FormatRegistry.Has("date-time")) {
+  FormatRegistry.Set(
+    "date-time",
+    (value) => ISO_DATE_TIME_PATTERN.test(value) && !Number.isNaN(Date.parse(value)),
+  );
+}
+
 export const WorkerHeartbeatRequestSchema = Type.Object(
   {
     traceId: IdentifierSchema,
-    attemptSeq: Type.Integer({ minimum: 1 }),
+    attempt: Type.Integer({ minimum: 1 }),
     queueJobId: IdentifierSchema,
     workerId: IdentifierSchema,
     attemptState: AttemptStateSchema,
@@ -50,7 +62,7 @@ export const WorkerHeartbeatResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 
-const WorkerPhaseEventSchema = Type.Union([
+const WorkerAppendEventSchema = Type.Union([
   Type.Object(
     {
       type: Type.Literal("phase"),
@@ -108,61 +120,41 @@ const WorkerPhaseEventSchema = Type.Union([
     },
     { additionalProperties: false },
   ),
+  Type.Object(
+    {
+      type: Type.Literal("mutation.proposed"),
+      mutationId: IdentifierSchema,
+      dependsOnSeq: Type.Optional(Type.Integer({ minimum: 1 })),
+      rollbackGroupId: IdentifierSchema,
+      expectedBaseRevision: Type.Optional(Type.Integer({ minimum: 0 })),
+      mutation: CanvasMutationEnvelopeSchema,
+    },
+    { additionalProperties: false },
+  ),
 ]);
 
-export const WorkerPhaseReportRequestSchema = Type.Object(
+export const WorkerAppendEventRequestSchema = Type.Object(
   {
     traceId: IdentifierSchema,
-    attemptSeq: Type.Integer({ minimum: 1 }),
+    attempt: Type.Integer({ minimum: 1 }),
     queueJobId: IdentifierSchema,
-    event: WorkerPhaseEventSchema,
+    event: WorkerAppendEventSchema,
   },
   { additionalProperties: false },
 );
 
-export const WorkerPhaseReportResponseSchema = Type.Object(
+export const WorkerAppendEventResponseSchema = Type.Object(
   {
     accepted: Type.Boolean(),
     cancelRequested: Type.Boolean(),
-    runStatus: RunStatusSchema,
+    assignedSeq: Type.Optional(Type.Integer({ minimum: 1 })),
   },
   { additionalProperties: false },
 );
 
-const WorkerMutationProposalSchema = Type.Object(
+export const WaitMutationAckQuerySchema = Type.Object(
   {
-    mutationId: IdentifierSchema,
-    dependsOnSeq: Type.Optional(Type.Integer({ minimum: 1 })),
-    rollbackGroupId: IdentifierSchema,
-    expectedBaseRevision: Type.Optional(Type.Integer({ minimum: 0 })),
-    mutation: CanvasMutationEnvelopeSchema,
-  },
-  { additionalProperties: false },
-);
-
-export const WorkerMutationBatchRequestSchema = Type.Object(
-  {
-    traceId: IdentifierSchema,
-    attemptSeq: Type.Integer({ minimum: 1 }),
-    queueJobId: IdentifierSchema,
-    proposals: Type.Array(WorkerMutationProposalSchema, { minItems: 1 }),
-  },
-  { additionalProperties: false },
-);
-
-export const WorkerMutationBatchResponseSchema = Type.Object(
-  {
-    accepted: Type.Boolean(),
-    cancelRequested: Type.Boolean(),
-    assignments: Type.Array(
-      Type.Object(
-        {
-          mutationId: IdentifierSchema,
-          assignedSeq: Type.Integer({ minimum: 1 }),
-        },
-        { additionalProperties: false },
-      ),
-    ),
+    waitMs: Type.Optional(Type.Integer({ minimum: 0, maximum: 15000 })),
   },
   { additionalProperties: false },
 );
@@ -186,7 +178,7 @@ export const WaitMutationAckResponseSchema = Type.Object(
 export const RunFinalizeRequestSchema = Type.Object(
   {
     traceId: IdentifierSchema,
-    attemptSeq: Type.Integer({ minimum: 1 }),
+    attempt: Type.Integer({ minimum: 1 }),
     queueJobId: IdentifierSchema,
     finalStatus: TerminalRunStatusSchema,
     finalRevision: Type.Optional(Type.Union([Type.Integer({ minimum: 0 }), Type.Null()])),
@@ -247,10 +239,27 @@ export const WorkerFinalizeResponseSchema = Type.Object(
 
 export type WorkerHeartbeatRequest = Static<typeof WorkerHeartbeatRequestSchema>;
 export type WorkerHeartbeatResponse = Static<typeof WorkerHeartbeatResponseSchema>;
-export type WorkerPhaseReportRequest = Static<typeof WorkerPhaseReportRequestSchema>;
-export type WorkerPhaseReportResponse = Static<typeof WorkerPhaseReportResponseSchema>;
-export type WorkerMutationBatchRequest = Static<typeof WorkerMutationBatchRequestSchema>;
-export type WorkerMutationBatchResponse = Static<typeof WorkerMutationBatchResponseSchema>;
+export type WorkerAppendEventRequest = Static<typeof WorkerAppendEventRequestSchema>;
+export type WorkerAppendEventResponse = Static<typeof WorkerAppendEventResponseSchema>;
+export type WaitMutationAckQuery = Static<typeof WaitMutationAckQuerySchema>;
 export type WaitMutationAckResponse = Static<typeof WaitMutationAckResponseSchema>;
 export type RunFinalizeRequest = Static<typeof RunFinalizeRequestSchema>;
 export type WorkerFinalizeResponse = Static<typeof WorkerFinalizeResponseSchema>;
+
+export function isWorkerAppendEventRequest(
+  value: unknown,
+): value is WorkerAppendEventRequest {
+  return Value.Check(WorkerAppendEventRequestSchema, value);
+}
+
+export function firstWorkerAppendEventRequestError(
+  value: unknown,
+): string | null {
+  const issue = Value.Errors(WorkerAppendEventRequestSchema, value).First();
+  if (!issue) {
+    return null;
+  }
+
+  const path = issue.path.length > 0 ? issue.path : "$";
+  return `${path}: ${issue.message}`;
+}

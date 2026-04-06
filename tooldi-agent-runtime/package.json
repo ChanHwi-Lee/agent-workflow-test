@@ -13,6 +13,7 @@
     "clean": "pnpm -r --if-present clean",
     "dev": "pnpm -r --parallel --if-present dev",
     "lint": "pnpm -r --if-present lint",
+    "test": "pnpm build && pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "format:check": "prettier --check .",
     "format:write": "prettier --write ."

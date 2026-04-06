@@ -144,10 +144,10 @@
               mutation-acks.post.ts
               cancel.post.ts
             internal/
-              worker-phase.post.ts
-              worker-mutations.post.ts
-              worker-finalize.post.ts
-              worker-heartbeat.post.ts
+              events.post.ts
+              mutation-acks.get.ts
+              finalize.post.ts
+              heartbeats.post.ts
           services/
             runBootstrapService.ts
             runEventService.ts
@@ -338,10 +338,10 @@
 
 다음 internal callback surface도 반드시 코드로 존재해야 한다.
 
-- `POST /internal/agent-workflow/runs/:runId/worker/phase`
-- `POST /internal/agent-workflow/runs/:runId/worker/mutations`
-- `POST /internal/agent-workflow/runs/:runId/worker/finalize`
-- `POST /internal/agent-workflow/runs/:runId/worker/heartbeat`
+- `POST /internal/agent-workflow/runs/:runId/events`
+- `GET /internal/agent-workflow/runs/:runId/mutations/:mutationId/acks`
+- `POST /internal/agent-workflow/runs/:runId/finalize`
+- `POST /internal/agent-workflow/runs/:runId/heartbeats`
 
 ### 6.3 최소 타입/스키마
 

@@ -9,6 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "start": "node --enable-source-maps dist/main.js",
+    "test": "node --test dist/app.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
