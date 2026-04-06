@@ -13,6 +13,12 @@ export interface RunRecord {
   queueJobId: string | null;
   requestRef: string;
   snapshotRef: string;
+  draftId?: string | null;
+  finalArtifactRef?: string | null;
+  completionRecordRef?: string | null;
+  latestSaveReceiptId?: string | null;
+  latestSavedRevision?: number | null;
+  finalRevision?: number | null;
   deadlineAt: string;
   lastAckedSeq: number;
   pageLockToken: string;
@@ -111,6 +117,43 @@ export class RunRepository {
     const updated: RunRecord = {
       ...current,
       lastAckedSeq: Math.max(current.lastAckedSeq, seq),
+      updatedAt: new Date().toISOString(),
+    };
+    this.records.set(runId, updated);
+    return updated;
+  }
+
+  async bindFinalization(
+    runId: string,
+    input: {
+      status: RunStatus;
+      statusReasonCode?: string | null;
+      draftId: string | null;
+      finalArtifactRef: string | null;
+      completionRecordRef: string | null;
+      latestSaveReceiptId: string | null;
+      latestSavedRevision: number | null;
+      finalRevision: number | null;
+    },
+  ): Promise<RunRecord | null> {
+    const current = this.records.get(runId);
+    if (!current) {
+      return null;
+    }
+
+    const updated: RunRecord = {
+      ...current,
+      status: input.status,
+      statusReasonCode:
+        input.statusReasonCode === undefined
+          ? current.statusReasonCode
+          : input.statusReasonCode,
+      draftId: input.draftId,
+      finalArtifactRef: input.finalArtifactRef,
+      completionRecordRef: input.completionRecordRef,
+      latestSaveReceiptId: input.latestSaveReceiptId,
+      latestSavedRevision: input.latestSavedRevision,
+      finalRevision: input.finalRevision,
       updatedAt: new Date().toISOString(),
     };
     this.records.set(runId, updated);

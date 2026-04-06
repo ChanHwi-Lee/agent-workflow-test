@@ -8,6 +8,7 @@ import type { StartAgentWorkflowRunRequest } from "@tooldi/agent-contracts";
 import { RunQueueEnqueueTimeoutError, type EnqueuedRunJob, type QueueTransportObserver, type RunQueueProducer } from "../plugins/queue.js";
 import { RunAttemptRepository } from "../repositories/runAttemptRepository.js";
 import { RunEventRepository } from "../repositories/runEventRepository.js";
+import { RunRecoveryRepository } from "../repositories/runRecoveryRepository.js";
 import { RunRepository } from "../repositories/runRepository.js";
 import { RunRequestRepository } from "../repositories/runRequestRepository.js";
 import { RunBootstrapService } from "./runBootstrapService.js";
@@ -136,6 +137,7 @@ test("RunBootstrapService closes initial queue publish failure without creating 
     const runRequestRepository = new RunRequestRepository(db);
     const runRepository = new RunRepository(db);
     const runAttemptRepository = new RunAttemptRepository(db);
+    const runRecoveryRepository = new RunRecoveryRepository(db);
     const runEventRepository = new RunEventRepository(db);
     const logger = new RecordingLogger();
     const runEventService = new RunEventService(
@@ -147,6 +149,7 @@ test("RunBootstrapService closes initial queue publish failure without creating 
     const watchdog = new RunWatchdogService(
       runRepository,
       runAttemptRepository,
+      runRecoveryRepository,
       runEventService,
       new RecordingFinalizeRecovery(),
       runQueue,

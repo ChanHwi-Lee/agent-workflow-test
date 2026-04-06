@@ -3,6 +3,7 @@ import type {
   AgentRunResultSummary,
   ErrorSummary,
   PublicRunEvent,
+  RunRecoveryProjection,
 } from "@tooldi/agent-contracts";
 
 import type { SseHub } from "../plugins/sseHub.js";
@@ -76,6 +77,21 @@ export class RunEventService {
       traceId,
       level,
       message,
+      at,
+    });
+  }
+
+  async appendRecovery(
+    runId: string,
+    traceId: string,
+    recovery: RunRecoveryProjection,
+    at: string,
+  ): Promise<void> {
+    await this.append({
+      type: "run.recovery",
+      runId,
+      traceId,
+      recovery,
       at,
     });
   }

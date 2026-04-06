@@ -5,11 +5,13 @@ import { Value } from "@sinclair/typebox/value";
 
 import { CanvasMutationEnvelopeSchema } from "../canvas/canvas-mutation.js";
 import {
+  CompletionStateSchema,
   ErrorSummarySchema,
   IdentifierSchema,
   IsoDateTimeSchema,
   RunStatusSchema,
   TerminalRunStatusSchema,
+  WarningItemSchema,
 } from "../common.js";
 
 const WorkerPhaseSchema = Type.Union(
@@ -181,13 +183,31 @@ export const RunFinalizeRequestSchema = Type.Object(
     attempt: Type.Integer({ minimum: 1 }),
     queueJobId: IdentifierSchema,
     finalStatus: TerminalRunStatusSchema,
+    completionState: Type.Optional(CompletionStateSchema),
+    draftId: Type.Optional(IdentifierSchema),
     finalRevision: Type.Optional(Type.Union([Type.Integer({ minimum: 0 }), Type.Null()])),
     lastAckedSeq: Type.Integer({ minimum: 0 }),
     latestSaveReceiptId: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+    outputTemplateCode: Type.Optional(
+      Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
+    ),
+    normalizedIntentRef: Type.Optional(IdentifierSchema),
+    executablePlanRef: Type.Optional(IdentifierSchema),
+    sourceMutationRange: Type.Optional(
+      Type.Object(
+        {
+          firstSeq: Type.Integer({ minimum: 1 }),
+          lastSeq: Type.Integer({ minimum: 1 }),
+          reconciledThroughSeq: Type.Integer({ minimum: 0 }),
+        },
+        { additionalProperties: false },
+      ),
+    ),
     createdLayerIds: Type.Array(IdentifierSchema),
     updatedLayerIds: Type.Array(IdentifierSchema),
     deletedLayerIds: Type.Array(IdentifierSchema),
     fallbackCount: Type.Integer({ minimum: 0 }),
+    warnings: Type.Optional(Type.Array(WarningItemSchema)),
     errorSummary: Type.Optional(ErrorSummarySchema),
     costSummary: Type.Optional(
       Type.Object(

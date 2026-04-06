@@ -2,6 +2,7 @@ import type {
   CanvasMutationEnvelope,
   ExecutablePlan,
   IntentEnvelope,
+  RunRepairContext,
   RunFinalizeRequest,
   RunJobEnvelope,
   StartAgentWorkflowRunRequest,
@@ -21,6 +22,7 @@ export interface HydratedPlanningInput {
   snapshot: StoredRunSnapshot;
   requestRef: string;
   snapshotRef: string;
+  repairContext: RunRepairContext | null;
 }
 
 export interface NormalizedIntent {

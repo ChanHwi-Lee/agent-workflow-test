@@ -16,6 +16,7 @@ import { DraftBundleRepository } from "./repositories/draftBundleRepository.js";
 import { MutationLedgerRepository } from "./repositories/mutationLedgerRepository.js";
 import { RunAttemptRepository } from "./repositories/runAttemptRepository.js";
 import { RunEventRepository } from "./repositories/runEventRepository.js";
+import { RunRecoveryRepository } from "./repositories/runRecoveryRepository.js";
 import { RunRepository } from "./repositories/runRepository.js";
 import { RunRequestRepository } from "./repositories/runRequestRepository.js";
 import { RunAckService } from "./services/runAckService.js";
@@ -69,6 +70,7 @@ export async function buildApp(
   const runRepository = new RunRepository(app.db);
   const runAttemptRepository = new RunAttemptRepository(app.db);
   const runEventRepository = new RunEventRepository(app.db);
+  const runRecoveryRepository = new RunRecoveryRepository(app.db);
   const mutationLedgerRepository = new MutationLedgerRepository(app.db);
   const costSummaryRepository = new CostSummaryRepository(app.db);
   const draftBundleRepository = new DraftBundleRepository(app.db);
@@ -82,15 +84,18 @@ export async function buildApp(
   const runFinalizeService = new RunFinalizeService(
     runRepository,
     runAttemptRepository,
+    mutationLedgerRepository,
     costSummaryRepository,
     draftBundleRepository,
     completionRepository,
+    app.objectStore,
     runEventService,
     app.appLogger.child({ service: "run-finalize-service" }),
   );
   const runWatchdogService = new RunWatchdogService(
     runRepository,
     runAttemptRepository,
+    runRecoveryRepository,
     runEventService,
     runFinalizeService,
     app.runQueue,

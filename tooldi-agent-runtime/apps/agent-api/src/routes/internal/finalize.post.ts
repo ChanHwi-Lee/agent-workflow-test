@@ -37,12 +37,16 @@ export const finalizePostRoute: FastifyPluginAsync = async (app) => {
         attemptSeq: request.body.attempt,
         queueJobId: request.body.queueJobId,
         result: toAgentRunResultSummary(request.body),
+        request: request.body,
         at: new Date().toISOString(),
       });
 
       return reply.code(200).send({
         accepted: finalized.accepted,
         runStatus: finalized.runStatus,
+        ...(finalized.completionRecordRef
+          ? { completionRecordRef: finalized.completionRecordRef }
+          : {}),
       });
     },
   );
@@ -50,7 +54,8 @@ export const finalizePostRoute: FastifyPluginAsync = async (app) => {
 
 function toAgentRunResultSummary(request: RunFinalizeRequest): AgentRunResultSummary {
   const warnings =
-    request.finalStatus === "completed_with_warning"
+    request.warnings ??
+    (request.finalStatus === "completed_with_warning"
       ? [
           {
             code: "completed_with_warning_placeholder",
@@ -58,11 +63,11 @@ function toAgentRunResultSummary(request: RunFinalizeRequest): AgentRunResultSum
               "Worker finalized with warning details that will be expanded in a later step",
           },
         ]
-      : [];
+      : []);
 
   return {
     finalStatus: request.finalStatus,
-    draftId: null,
+    draftId: request.draftId ?? null,
     finalRevision: request.finalRevision ?? null,
     durabilityState: deriveDurabilityState(
       request.finalStatus,

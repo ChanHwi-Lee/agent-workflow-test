@@ -51,6 +51,39 @@ export async function emitSkeletonMutations(
             {
               commandId: createRequestId(),
               op: "createLayer",
+              slotKey: "background",
+              clientLayerKey: `background_${input.job.runId}`,
+              targetRef: {
+                layerId: null,
+                clientLayerKey: `background_${input.job.runId}`,
+                slotKey: "background",
+              },
+              targetLayerVersion: null,
+              parentRef: {
+                position: "append",
+              },
+              expectedLayerType: null,
+              allowNoop: false,
+              metadataTags: {
+                source: "agent-worker-skeleton",
+              },
+              layerBlueprint: {
+                layerType: "shape",
+                bounds: {
+                  x: 0,
+                  y: 0,
+                  width: input.request.editorContext.canvasWidth,
+                  height: input.request.editorContext.canvasHeight,
+                },
+                metadata: {
+                  role: "background",
+                },
+              },
+              editable: true,
+            },
+            {
+              commandId: createRequestId(),
+              op: "createLayer",
               slotKey: "headline",
               clientLayerKey: `headline_${input.job.runId}`,
               targetRef: {
@@ -77,6 +110,105 @@ export async function emitSkeletonMutations(
                 },
                 metadata: {
                   estimatedLineCount: layout.estimatedLineCount,
+                },
+              },
+              editable: true,
+            },
+            {
+              commandId: createRequestId(),
+              op: "createLayer",
+              slotKey: "supporting_copy",
+              clientLayerKey: `supporting_copy_${input.job.runId}`,
+              targetRef: {
+                layerId: null,
+                clientLayerKey: `supporting_copy_${input.job.runId}`,
+                slotKey: "supporting_copy",
+              },
+              targetLayerVersion: null,
+              parentRef: {
+                position: "append",
+              },
+              expectedLayerType: null,
+              allowNoop: false,
+              metadataTags: {
+                source: "agent-worker-skeleton",
+              },
+              layerBlueprint: {
+                layerType: "text",
+                bounds: {
+                  x: 80,
+                  y: 280,
+                  width: Math.max(320, input.request.editorContext.canvasWidth - 160),
+                  height: 80,
+                },
+                metadata: {
+                  textRole: "supporting_copy",
+                },
+              },
+              editable: true,
+            },
+            {
+              commandId: createRequestId(),
+              op: "createLayer",
+              slotKey: "cta",
+              clientLayerKey: `cta_${input.job.runId}`,
+              targetRef: {
+                layerId: null,
+                clientLayerKey: `cta_${input.job.runId}`,
+                slotKey: "cta",
+              },
+              targetLayerVersion: null,
+              parentRef: {
+                position: "append",
+              },
+              expectedLayerType: null,
+              allowNoop: false,
+              metadataTags: {
+                source: "agent-worker-skeleton",
+              },
+              layerBlueprint: {
+                layerType: "group",
+                bounds: {
+                  x: 80,
+                  y: 420,
+                  width: 220,
+                  height: 72,
+                },
+                metadata: {
+                  role: "cta",
+                },
+              },
+              editable: true,
+            },
+            {
+              commandId: createRequestId(),
+              op: "createLayer",
+              slotKey: "decoration",
+              clientLayerKey: `decoration_${input.job.runId}`,
+              targetRef: {
+                layerId: null,
+                clientLayerKey: `decoration_${input.job.runId}`,
+                slotKey: "decoration",
+              },
+              targetLayerVersion: null,
+              parentRef: {
+                position: "append",
+              },
+              expectedLayerType: null,
+              allowNoop: false,
+              metadataTags: {
+                source: "agent-worker-skeleton",
+              },
+              layerBlueprint: {
+                layerType: "shape",
+                bounds: {
+                  x: input.request.editorContext.canvasWidth - 220,
+                  y: 60,
+                  width: 140,
+                  height: 140,
+                },
+                metadata: {
+                  role: "decoration",
                 },
               },
               editable: true,

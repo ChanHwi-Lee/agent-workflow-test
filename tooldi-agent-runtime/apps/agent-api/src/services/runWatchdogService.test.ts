@@ -12,6 +12,7 @@ import {
   type QueueTransportObserver,
 } from "../plugins/queue.js";
 import { RunAttemptRepository } from "../repositories/runAttemptRepository.js";
+import { RunRecoveryRepository } from "../repositories/runRecoveryRepository.js";
 import { RunRepository } from "../repositories/runRepository.js";
 import { RunRequestRepository } from "../repositories/runRequestRepository.js";
 import { RunWatchdogService } from "./runWatchdogService.js";
@@ -118,6 +119,12 @@ class FakeRunQueueProducer implements RunQueueProducer {
 
 class RecordingRunEventService {
   readonly logs: Array<{ level: "info" | "warn" | "error"; message: string }> = [];
+  readonly recoveries: Array<{
+    state: string;
+    retryMode: string;
+    resumeMode: string | null;
+    resumeFromSeq: number | null;
+  }> = [];
   readonly failures: Array<{ code: string; message: string; retryable?: boolean }> = [];
   readonly cancellations: string[] = [];
   readonly completions: Array<{ finalStatus: string }> = [];
@@ -139,6 +146,20 @@ class RecordingRunEventService {
     _at: string,
   ): Promise<void> {
     this.failures.push(error);
+  }
+
+  async appendRecovery(
+    _runId: string,
+    _traceId: string,
+    recovery: {
+      state: string;
+      retryMode: string;
+      resumeMode: string | null;
+      resumeFromSeq: number | null;
+    },
+    _at: string,
+  ): Promise<void> {
+    this.recoveries.push(recovery);
   }
 
   async appendCancelled(_runId: string, _traceId: string, at: string): Promise<void> {
@@ -279,6 +300,7 @@ test("RunWatchdogService keeps active QueueEvents as internal telemetry only", a
     const runRepository = new RunRepository(db);
     const runRequestRepository = new RunRequestRepository(db);
     const runAttemptRepository = new RunAttemptRepository(db);
+    const runRecoveryRepository = new RunRecoveryRepository(db);
     const logger = new RecordingLogger();
     const runEventService = new RecordingRunEventService();
     const finalizeRecovery = new RecordingFinalizeRecovery();
@@ -286,6 +308,7 @@ test("RunWatchdogService keeps active QueueEvents as internal telemetry only", a
     const service = new RunWatchdogService(
       runRepository,
       runAttemptRepository,
+      runRecoveryRepository,
       runEventService,
       finalizeRecovery,
       queue,
@@ -323,6 +346,7 @@ test("RunWatchdogService schedules delayed retry after pickup timeout", async ()
     const runRepository = new RunRepository(db);
     const runRequestRepository = new RunRequestRepository(db);
     const runAttemptRepository = new RunAttemptRepository(db);
+    const runRecoveryRepository = new RunRecoveryRepository(db);
     const logger = new RecordingLogger();
     const runEventService = new RecordingRunEventService();
     const finalizeRecovery = new RecordingFinalizeRecovery();
@@ -330,6 +354,7 @@ test("RunWatchdogService schedules delayed retry after pickup timeout", async ()
     const service = new RunWatchdogService(
       runRepository,
       runAttemptRepository,
+      runRecoveryRepository,
       runEventService,
       finalizeRecovery,
       queue,
@@ -356,6 +381,13 @@ test("RunWatchdogService schedules delayed retry after pickup timeout", async ()
     assert.equal(queue.removedQueueJobIds.includes(seeded.queueJobId), true);
     assert.equal(run?.attemptSeq, 2);
     assert.equal(run?.status, "planning_queued");
+    assert.equal(runEventService.recoveries[0]?.state, "auto_retrying");
+    assert.equal(runEventService.recoveries[0]?.retryMode, "auto_same_run");
+    assert.equal(queue.enqueued[0]?.payload.repairContext?.source, "backend_retry_watchdog");
+    assert.equal(
+      queue.enqueued[0]?.payload.repairContext?.recovery.state,
+      "auto_retrying",
+    );
     assert.equal(retryAttempt?.attemptState, "retry_waiting");
     assert.equal(retryAttempt?.retryOfAttemptSeq, 1);
     assert.equal(
@@ -379,6 +411,7 @@ test("RunWatchdogService retries stalled attempt before first visible ack", asyn
     const runRepository = new RunRepository(db);
     const runRequestRepository = new RunRequestRepository(db);
     const runAttemptRepository = new RunAttemptRepository(db);
+    const runRecoveryRepository = new RunRecoveryRepository(db);
     const logger = new RecordingLogger();
     const runEventService = new RecordingRunEventService();
     const finalizeRecovery = new RecordingFinalizeRecovery();
@@ -386,6 +419,7 @@ test("RunWatchdogService retries stalled attempt before first visible ack", asyn
     const service = new RunWatchdogService(
       runRepository,
       runAttemptRepository,
+      runRecoveryRepository,
       runEventService,
       finalizeRecovery,
       queue,
@@ -413,6 +447,7 @@ test("RunWatchdogService retries stalled attempt before first visible ack", asyn
     const run = await runRepository.findById(seeded.runId);
     const attempts = await runAttemptRepository.findByRunId(seeded.runId);
     assert.equal(run?.attemptSeq, 2);
+    assert.equal(runEventService.recoveries[0]?.state, "auto_retrying");
     assert.equal(
       attempts.some((attempt) => attempt.attemptSeq === 2 && attempt.attemptState === "retry_waiting"),
       true,
@@ -434,6 +469,7 @@ test("RunWatchdogService refuses blind retry after visible ack", async () => {
     const runRepository = new RunRepository(db);
     const runRequestRepository = new RunRequestRepository(db);
     const runAttemptRepository = new RunAttemptRepository(db);
+    const runRecoveryRepository = new RunRecoveryRepository(db);
     const logger = new RecordingLogger();
     const runEventService = new RecordingRunEventService();
     const finalizeRecovery = new RecordingFinalizeRecovery();
@@ -441,6 +477,7 @@ test("RunWatchdogService refuses blind retry after visible ack", async () => {
     const service = new RunWatchdogService(
       runRepository,
       runAttemptRepository,
+      runRecoveryRepository,
       runEventService,
       finalizeRecovery,
       queue,
@@ -465,6 +502,8 @@ test("RunWatchdogService refuses blind retry after visible ack", async () => {
     assert.equal(run?.status, "failed");
     assert.equal(run?.statusReasonCode, "resume_not_supported_after_visible_ack");
     assert.equal(queue.enqueued.length, 0);
+    assert.equal(runEventService.recoveries[0]?.state, "not_retryable");
+    assert.equal(runEventService.recoveries[0]?.resumeFromSeq, 2);
     assert.equal(
       attempts.find((attempt) => attempt.attemptSeq === 1)?.statusReasonCode,
       "resume_not_supported_after_visible_ack",
@@ -487,6 +526,7 @@ test("RunWatchdogService closes queued cancel before worker pickup", async () =>
     const runRepository = new RunRepository(db);
     const runRequestRepository = new RunRequestRepository(db);
     const runAttemptRepository = new RunAttemptRepository(db);
+    const runRecoveryRepository = new RunRecoveryRepository(db);
     const logger = new RecordingLogger();
     const runEventService = new RecordingRunEventService();
     const finalizeRecovery = new RecordingFinalizeRecovery();
@@ -494,6 +534,7 @@ test("RunWatchdogService closes queued cancel before worker pickup", async () =>
     const service = new RunWatchdogService(
       runRepository,
       runAttemptRepository,
+      runRecoveryRepository,
       runEventService,
       finalizeRecovery,
       queue,
@@ -530,6 +571,7 @@ test("RunWatchdogService terminally closes queued cancel even when remove misses
     const runRepository = new RunRepository(db);
     const runRequestRepository = new RunRequestRepository(db);
     const runAttemptRepository = new RunAttemptRepository(db);
+    const runRecoveryRepository = new RunRecoveryRepository(db);
     const logger = new RecordingLogger();
     const runEventService = new RecordingRunEventService();
     const finalizeRecovery = new RecordingFinalizeRecovery();
@@ -538,6 +580,7 @@ test("RunWatchdogService terminally closes queued cancel even when remove misses
     const service = new RunWatchdogService(
       runRepository,
       runAttemptRepository,
+      runRecoveryRepository,
       runEventService,
       finalizeRecovery,
       queue,
@@ -578,6 +621,7 @@ test("RunWatchdogService closes retry enqueue timeout as terminal failure", asyn
     const runRepository = new RunRepository(db);
     const runRequestRepository = new RunRequestRepository(db);
     const runAttemptRepository = new RunAttemptRepository(db);
+    const runRecoveryRepository = new RunRecoveryRepository(db);
     const logger = new RecordingLogger();
     const runEventService = new RecordingRunEventService();
     const finalizeRecovery = new RecordingFinalizeRecovery();
@@ -586,6 +630,7 @@ test("RunWatchdogService closes retry enqueue timeout as terminal failure", asyn
     const service = new RunWatchdogService(
       runRepository,
       runAttemptRepository,
+      runRecoveryRepository,
       runEventService,
       finalizeRecovery,
       queue,
@@ -632,6 +677,7 @@ test("RunWatchdogService synthesizes terminal recovery when finalize callback is
     const runRepository = new RunRepository(db);
     const runRequestRepository = new RunRequestRepository(db);
     const runAttemptRepository = new RunAttemptRepository(db);
+    const runRecoveryRepository = new RunRecoveryRepository(db);
     const logger = new RecordingLogger();
     const runEventService = new RecordingRunEventService();
     const finalizeRecovery = new RecordingFinalizeRecovery();
@@ -639,6 +685,7 @@ test("RunWatchdogService synthesizes terminal recovery when finalize callback is
     const service = new RunWatchdogService(
       runRepository,
       runAttemptRepository,
+      runRecoveryRepository,
       runEventService,
       finalizeRecovery,
       queue,
@@ -667,6 +714,8 @@ test("RunWatchdogService synthesizes terminal recovery when finalize callback is
     await new Promise((resolve) => setTimeout(resolve, 15));
 
     assert.equal(finalizeRecovery.calls.length, 1);
+    assert.equal(runEventService.recoveries[0]?.state, "finalize_only");
+    assert.equal(runEventService.recoveries[0]?.resumeMode, "finalize_only");
     assert.equal(finalizeRecovery.calls[0]?.result.finalStatus, "save_failed_after_apply");
 
     await service.close();

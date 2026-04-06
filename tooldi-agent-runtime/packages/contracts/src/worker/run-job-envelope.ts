@@ -8,6 +8,7 @@ import {
   JsonObjectSchema,
   SlotKeySchema,
 } from "../common.js";
+import { RunRepairContextSchema } from "../public/run-recovery.js";
 
 const OperationFamilySchema = Type.Union(
   ["create_template", "update_layer", "delete_layer", "save_template"].map(
@@ -28,6 +29,7 @@ export const RunJobEnvelopeSchema = Type.Object(
     deadlineAt: IsoDateTimeSchema,
     pageLockToken: IdentifierSchema,
     cancelToken: IdentifierSchema,
+    repairContext: Type.Optional(RunRepairContextSchema),
   },
   { additionalProperties: false },
 );

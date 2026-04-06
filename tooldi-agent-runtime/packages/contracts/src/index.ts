@@ -8,6 +8,7 @@ export * from "./http/route-schemas.js";
 export * from "./public/public-run-event.js";
 export * from "./public/run-accepted.js";
 export * from "./public/run-cancel.js";
+export * from "./public/run-recovery.js";
 export * from "./public/run-request.js";
 export * from "./worker/run-job-envelope.js";
 export * from "./worker/worker-callbacks.js";

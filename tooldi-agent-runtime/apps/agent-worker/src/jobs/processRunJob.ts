@@ -69,6 +69,21 @@ export async function processRunJob(
     objectStore: dependencies.objectStore,
     objectStoreBucket: dependencies.env.objectStoreBucket,
   });
+
+  if (hydrated.repairContext) {
+    const recoveryLog = await dependencies.callbackClient.appendEvent(job.runId, {
+      traceId: job.traceId,
+      attempt: job.attemptSeq,
+      queueJobId: job.queueJobId,
+      event: {
+        type: "log",
+        level: "warn",
+        message: `Recovery handoff received: state=${hydrated.repairContext.recovery.state} reason=${hydrated.repairContext.reasonCode}`,
+      },
+    });
+    cooperativeStopRequested ||= recoveryLog.cancelRequested;
+  }
+
   const intent = await buildNormalizedIntent(hydrated);
 
   const intentEvent = await dependencies.callbackClient.appendEvent(job.runId, {
@@ -86,6 +101,28 @@ export async function processRunJob(
   const plan = await buildExecutablePlan(hydrated, intent, {
     toolRegistry: dependencies.toolRegistry,
   });
+  const normalizedIntentRef = await persistWorkerJsonArtifact(
+    dependencies.objectStore,
+    `runs/${job.runId}/attempts/${job.attemptSeq}/normalized-intent.json`,
+    intent,
+    {
+      artifactKind: "normalized-intent",
+      runId: job.runId,
+      traceId: job.traceId,
+      attemptSeq: String(job.attemptSeq),
+    },
+  );
+  const executablePlanRef = await persistWorkerJsonArtifact(
+    dependencies.objectStore,
+    `runs/${job.runId}/attempts/${job.attemptSeq}/executable-plan.json`,
+    plan,
+    {
+      artifactKind: "executable-plan",
+      runId: job.runId,
+      traceId: job.traceId,
+      attemptSeq: String(job.attemptSeq),
+    },
+  );
 
   const executingHeartbeat = await dependencies.callbackClient.heartbeat(job.runId, {
     ...heartbeatBase,
@@ -116,6 +153,7 @@ export async function processRunJob(
         textLayoutHelper: dependencies.textLayoutHelper,
       });
   const emittedMutationIds: string[] = [];
+  const assignedSeqs: number[] = [];
   let lastMutationAck: WaitMutationAckResponse | null = cooperativeStopRequested
     ? {
         found: true,
@@ -145,6 +183,8 @@ export async function processRunJob(
       };
       break;
     }
+
+    assignedSeqs.push(mutationResponse.assignedSeq ?? proposal.mutation.seq);
 
     lastMutationAck = await dependencies.callbackClient.waitMutationAck(
       job.runId,
@@ -195,6 +235,9 @@ export async function processRunJob(
     refinement.lastMutationAck,
     {
       cooperativeStopRequested,
+      normalizedIntentRef,
+      executablePlanRef,
+      assignedSeqs,
     },
   );
   await dependencies.callbackClient.finalize(job.runId, finalizeDraft.request);
@@ -221,4 +264,19 @@ function shouldStopAfterCurrentAction(response: {
   stopAfterCurrentAction: boolean;
 }): boolean {
   return response.cancelRequested || response.stopAfterCurrentAction;
+}
+
+async function persistWorkerJsonArtifact(
+  objectStore: ObjectStoreClient,
+  key: string,
+  payload: unknown,
+  metadata: Record<string, string>,
+): Promise<string> {
+  await objectStore.putObject({
+    key,
+    body: JSON.stringify(payload),
+    contentType: "application/json",
+    metadata,
+  });
+  return key;
 }

@@ -1,4 +1,9 @@
-import type { AgentRunResultSummary, RunJobEnvelope } from "@tooldi/agent-contracts";
+import type {
+  AgentRunResultSummary,
+  RunJobEnvelope,
+  RunRepairContext,
+  RunRecoveryProjection,
+} from "@tooldi/agent-contracts";
 import type { Logger } from "@tooldi/agent-observability";
 
 import { isTerminalRunStatus } from "@tooldi/agent-domain";
@@ -14,6 +19,7 @@ import {
   type QueueTransportSignal,
 } from "../plugins/queue.js";
 import type { RunAttemptRecord, RunAttemptRepository } from "../repositories/runAttemptRepository.js";
+import type { RunRecoveryRepository } from "../repositories/runRecoveryRepository.js";
 import type { RunRecord, RunRepository } from "../repositories/runRepository.js";
 import type { RunEventService } from "./runEventService.js";
 import type { RunFinalizeService } from "./runFinalizeService.js";
@@ -43,7 +49,7 @@ export interface TrackEnqueuedAttemptCommand {
 
 type WatchdogRunEventSink = Pick<
   RunEventService,
-  "appendLog" | "appendFailed" | "appendCancelled" | "appendCompleted"
+  "appendLog" | "appendFailed" | "appendCancelled" | "appendCompleted" | "appendRecovery"
 >;
 
 type FinalizeRecoverySink = Pick<RunFinalizeService, "finalizeRun">;
@@ -55,6 +61,7 @@ export class RunWatchdogService {
   constructor(
     private readonly runRepository: RunRepository,
     private readonly runAttemptRepository: RunAttemptRepository,
+    private readonly runRecoveryRepository: RunRecoveryRepository,
     private readonly runEventService: WatchdogRunEventSink,
     private readonly finalizeRecovery: FinalizeRecoverySink,
     private readonly runQueue: RunQueueProducer,
@@ -260,7 +267,24 @@ export class RunWatchdogService {
     },
   ): Promise<void> {
     if (this.canRetry(run, attempt, input.reasonCode)) {
-      await this.scheduleRetry(run, attempt, input.reasonCode, input.publicMessage);
+      const recovery = await this.recordRecoveryDecision(
+        run,
+        attempt,
+        input.reasonCode,
+        "backend_retry_watchdog",
+        this.createAutoRetryRecovery(input.publicMessage),
+      );
+      await this.scheduleRetry(
+        run,
+        attempt,
+        input.reasonCode,
+        input.publicMessage,
+        {
+          source: "backend_retry_watchdog",
+          reasonCode: input.reasonCode,
+          recovery: recovery.recovery,
+        },
+      );
       return;
     }
 
@@ -272,6 +296,14 @@ export class RunWatchdogService {
       run.lastAckedSeq > 0
         ? "Visible mutation ack exists, but resume/rollback orchestration is not implemented yet; backend refuses blind retry"
         : input.publicMessage;
+
+    await this.recordRecoveryDecision(
+      run,
+      attempt,
+      terminalReason,
+      "backend_failure_watchdog",
+      this.createTerminalRecovery(run, terminalReason, terminalMessage),
+    );
 
     await this.runAttemptRepository.updateAttemptState(
       run.runId,
@@ -329,6 +361,7 @@ export class RunWatchdogService {
     attempt: RunAttemptRecord,
     reasonCode: string,
     publicMessage: string,
+    repairContext: RunRepairContext,
   ): Promise<void> {
     await this.runAttemptRepository.updateAttemptState(
       run.runId,
@@ -387,6 +420,7 @@ export class RunWatchdogService {
       deadlineAt: run.deadlineAt,
       pageLockToken: run.pageLockToken,
       cancelToken: createCancelToken(run.runId),
+      repairContext,
     };
 
     try {
@@ -492,6 +526,16 @@ export class RunWatchdogService {
       return;
     }
 
+    await this.recordRecoveryDecision(
+      run,
+      {
+        attemptSeq,
+        queueJobId,
+      },
+      "finalize_callback_missing_after_completed_signal",
+      "backend_finalize_watchdog",
+      this.createFinalizeOnlyRecovery(),
+    );
     const result = this.synthesizeMissingFinalizeResult(run);
     await this.finalizeRecovery.finalizeRun({
       runId,
@@ -584,6 +628,97 @@ export class RunWatchdogService {
       reasonCode === "worker_stalled_transport_signal" ||
       reasonCode === "worker_failed_transport_signal"
     );
+  }
+
+  private createAutoRetryRecovery(message: string): RunRecoveryProjection {
+    return {
+      state: "auto_retrying",
+      retryMode: "auto_same_run",
+      resumeMode: "fresh",
+      retryable: true,
+      lastKnownGoodCheckpointId: null,
+      restoreTargetKind: "run_start_snapshot",
+      failedPlanStepId: null,
+      resumeFromSeq: null,
+      userMessage: message,
+    };
+  }
+
+  private createTerminalRecovery(
+    run: RunRecord,
+    reasonCode: string,
+    message: string,
+  ): RunRecoveryProjection {
+    if (run.lastAckedSeq === 0) {
+      return {
+        state: "not_retryable",
+        retryMode: "none",
+        resumeMode: "fresh",
+        retryable: false,
+        lastKnownGoodCheckpointId: null,
+        restoreTargetKind: "run_start_snapshot",
+        failedPlanStepId: null,
+        resumeFromSeq: null,
+        userMessage: message,
+      };
+    }
+
+    return {
+      state: "not_retryable",
+      retryMode: "none",
+      resumeMode: null,
+      retryable: false,
+      lastKnownGoodCheckpointId: null,
+      restoreTargetKind: null,
+      failedPlanStepId: null,
+      resumeFromSeq: run.lastAckedSeq + 1,
+      userMessage:
+        reasonCode === "resume_not_supported_after_visible_ack"
+          ? "Visible mutation exists, but this draft can only be closed conservatively in the current prototype"
+          : message,
+    };
+  }
+
+  private createFinalizeOnlyRecovery(): RunRecoveryProjection {
+    return {
+      state: "finalize_only",
+      retryMode: "none",
+      resumeMode: "finalize_only",
+      retryable: false,
+      lastKnownGoodCheckpointId: null,
+      restoreTargetKind: null,
+      failedPlanStepId: null,
+      resumeFromSeq: null,
+      userMessage:
+        "Visible mutation replay is frozen; backend is attempting a finalize-only recovery closeout",
+    };
+  }
+
+  private async recordRecoveryDecision(
+    run: RunRecord,
+    attempt: Pick<RunAttemptRecord, "attemptSeq" | "queueJobId">,
+    reasonCode: string,
+    source: RunRepairContext["source"],
+    recovery: RunRecoveryProjection,
+  ) {
+    const createdAt = new Date().toISOString();
+    const record = await this.runRecoveryRepository.create({
+      runId: run.runId,
+      traceId: run.traceId,
+      attemptSeq: attempt.attemptSeq,
+      queueJobId: attempt.queueJobId,
+      reasonCode,
+      source,
+      recovery,
+      createdAt,
+    });
+    await this.runEventService.appendRecovery(
+      run.runId,
+      run.traceId,
+      recovery,
+      createdAt,
+    );
+    return record;
   }
 
   private synthesizeMissingFinalizeResult(run: RunRecord): AgentRunResultSummary {

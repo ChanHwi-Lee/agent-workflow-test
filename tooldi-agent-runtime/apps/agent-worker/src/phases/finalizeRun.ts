@@ -8,6 +8,9 @@ export async function finalizeRun(
   lastMutationAck: WaitMutationAckResponse | null,
   options: {
     cooperativeStopRequested?: boolean;
+    normalizedIntentRef?: string;
+    executablePlanRef?: string;
+    assignedSeqs?: number[];
   } = {},
 ): Promise<FinalizeRunDraft> {
   let finalStatus: FinalizeRunDraft["request"]["finalStatus"] =
@@ -52,6 +55,22 @@ export async function finalizeRun(
   }
 
   const lastAckedSeq = lastMutationAck?.status === "acked" ? lastMutationAck.seq ?? 0 : 0;
+  const draftId = `draft_${input.job.runId}`;
+  const assignedSeqs = options.assignedSeqs ?? [];
+  const sourceMutationRange =
+    assignedSeqs.length > 0
+      ? {
+          firstSeq: Math.min(...assignedSeqs),
+          lastSeq: Math.max(...assignedSeqs),
+          reconciledThroughSeq: lastAckedSeq,
+        }
+      : undefined;
+  const latestSaveReceiptId =
+    finalStatus === "completed"
+      ? `save_receipt_${input.job.runId}_${input.job.attemptSeq}`
+      : null;
+  const outputTemplateCode =
+    latestSaveReceiptId !== null ? `template_${draftId}` : null;
 
   return {
     request: {
@@ -59,9 +78,19 @@ export async function finalizeRun(
       attempt: input.job.attemptSeq,
       queueJobId: input.job.queueJobId,
       finalStatus,
+      completionState: deriveCompletionState(finalStatus),
+      draftId,
       finalRevision: lastMutationAck?.resultingRevision ?? null,
       lastAckedSeq,
-      latestSaveReceiptId: null,
+      latestSaveReceiptId,
+      outputTemplateCode,
+      ...(options.normalizedIntentRef
+        ? { normalizedIntentRef: options.normalizedIntentRef }
+        : {}),
+      ...(options.executablePlanRef
+        ? { executablePlanRef: options.executablePlanRef }
+        : {}),
+      ...(sourceMutationRange ? { sourceMutationRange } : {}),
       createdLayerIds:
         finalStatus === "completed"
           ? proposedMutationIds.map((mutationId) => `layer_${mutationId}`)
@@ -77,4 +106,21 @@ export async function finalizeRun(
       lastAckedSeq,
     },
   };
+}
+
+function deriveCompletionState(
+  finalStatus: FinalizeRunDraft["request"]["finalStatus"],
+): NonNullable<FinalizeRunDraft["request"]["completionState"]> {
+  switch (finalStatus) {
+    case "completed":
+      return "editable_draft_ready";
+    case "completed_with_warning":
+      return "editable_draft_ready_with_warning";
+    case "save_failed_after_apply":
+      return "save_failed_after_apply";
+    case "cancelled":
+      return "cancelled";
+    case "failed":
+      return "failed";
+  }
 }

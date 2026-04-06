@@ -44,6 +44,7 @@ export async function hydratePlanningInput(
     snapshot,
     requestRef: job.requestRef,
     snapshotRef: job.snapshotRef,
+    repairContext: job.repairContext ?? null,
   };
 }
 

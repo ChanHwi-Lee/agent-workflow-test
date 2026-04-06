@@ -3,6 +3,7 @@ import test from "node:test";
 
 import type {
   RunFinalizeRequest,
+  RunRepairContext,
   WaitMutationAckQuery,
   WaitMutationAckResponse,
   WorkerAppendEventRequest,
@@ -239,6 +240,18 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   assert.equal(callbackClient.ackWaits.length, 1);
   assert.equal(callbackClient.finalizations.length, 1);
   assert.equal(callbackClient.finalizations[0]?.lastAckedSeq, 1);
+  assert.equal(
+    callbackClient.finalizations[0]?.normalizedIntentRef,
+    `runs/${testRun.runId}/attempts/1/normalized-intent.json`,
+  );
+  assert.equal(
+    callbackClient.finalizations[0]?.executablePlanRef,
+    `runs/${testRun.runId}/attempts/1/executable-plan.json`,
+  );
+  assert.equal(
+    callbackClient.finalizations[0]?.latestSaveReceiptId,
+    `save_receipt_${testRun.runId}_1`,
+  );
   assert.equal(callbackClient.ackWaits[0]?.query.waitMs, 15000);
 });
 
@@ -343,4 +356,72 @@ test("processRunJob does not treat unconfirmed mutation ack as success", async (
   assert.equal(result.finalizeDraft.request.errorSummary?.code, "mutation_ack_timed_out");
   assert.equal(imagePrimitiveClient.generateCalls, 0);
   assert.equal(assetStorageClient.persistCalls, 0);
+});
+
+test("processRunJob emits an observational log when backend passes repairContext", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = createObjectStoreClient({
+    bucket: env.objectStoreBucket,
+  });
+  const callbackClient = new RecordingBackendCallbackClient();
+  const repairContext: RunRepairContext = {
+    source: "backend_retry_watchdog",
+    reasonCode: "worker_pickup_timeout",
+    recovery: {
+      state: "auto_retrying",
+      retryMode: "auto_same_run",
+      resumeMode: "fresh",
+      retryable: true,
+      lastKnownGoodCheckpointId: null,
+      restoreTargetKind: "run_start_snapshot",
+      failedPlanStepId: null,
+      resumeFromSeq: null,
+      userMessage: "Backend scheduled a same-run retry",
+    },
+  };
+  const testRun = createTestRun();
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  await processRunJob(
+    {
+      ...testRun.job,
+      repairContext,
+    },
+    {
+      env,
+      logger,
+      objectStore,
+      callbackClient,
+      toolRegistry: createWorkerToolRegistry(),
+      imagePrimitiveClient: createImagePrimitiveClient(),
+      assetStorageClient: createAssetStorageClient(),
+      textLayoutHelper: createTextLayoutHelper(),
+    },
+  );
+
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes("Recovery handoff received"),
+    ),
+    true,
+  );
 });

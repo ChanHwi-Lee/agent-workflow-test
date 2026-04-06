@@ -27,6 +27,7 @@ export interface MutationAckLedgerRecord {
   status: MutationApplyAckRequest["status"];
   targetPageId: string;
   resultingRevision: number | undefined;
+  resolvedLayerIds: MutationApplyAckRequest["resolvedLayerIds"];
   clientObservedAt: string;
 }
 
@@ -98,6 +99,7 @@ export class MutationLedgerRepository {
       status: request.status,
       targetPageId: request.targetPageId,
       resultingRevision: request.resultingRevision,
+      resolvedLayerIds: request.resolvedLayerIds,
       clientObservedAt: request.clientObservedAt,
     };
 
@@ -121,6 +123,12 @@ export class MutationLedgerRepository {
       return null;
     }
     return record;
+  }
+
+  async listByRunId(runId: string): Promise<MutationLedgerRecord[]> {
+    return [...this.records.values()]
+      .filter((record) => record.runId === runId)
+      .sort((left, right) => left.seq - right.seq);
   }
 
   async waitForAck(
