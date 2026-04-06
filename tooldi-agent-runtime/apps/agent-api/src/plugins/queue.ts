@@ -34,20 +34,40 @@ export type QueueTransportObserver = (
 ) => void | Promise<void>;
 
 export interface RunQueueProducer {
-  enqueueRunJob(payload: RunJobEnvelope): Promise<EnqueuedRunJob>;
+  enqueueRunJob(
+    payload: RunJobEnvelope,
+    options?: {
+      delayMs?: number;
+      timeoutMs?: number;
+    },
+  ): Promise<EnqueuedRunJob>;
   listJobs(): Promise<readonly EnqueuedRunJob[]>;
+  tryRemoveQueuedJob(queueJobId: string): Promise<boolean>;
   observeTransport(observer: QueueTransportObserver): () => void;
   close(): Promise<void>;
+}
+
+export class RunQueueEnqueueTimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RunQueueEnqueueTimeoutError";
+  }
 }
 
 class InMemoryRunQueueProducer implements RunQueueProducer {
   private readonly jobs: EnqueuedRunJob[] = [];
   private readonly observers = new Set<QueueTransportObserver>();
 
-  async enqueueRunJob(payload: RunJobEnvelope): Promise<EnqueuedRunJob> {
+  async enqueueRunJob(
+    payload: RunJobEnvelope,
+    options: {
+      delayMs?: number;
+      timeoutMs?: number;
+    } = {},
+  ): Promise<EnqueuedRunJob> {
     const job: EnqueuedRunJob = {
       jobId: payload.queueJobId,
-      enqueuedAt: new Date().toISOString(),
+      enqueuedAt: new Date(Date.now() + (options.delayMs ?? 0)).toISOString(),
       payload,
     };
     this.jobs.push(job);
@@ -56,6 +76,15 @@ class InMemoryRunQueueProducer implements RunQueueProducer {
 
   async listJobs(): Promise<readonly EnqueuedRunJob[]> {
     return this.jobs;
+  }
+
+  async tryRemoveQueuedJob(queueJobId: string): Promise<boolean> {
+    const index = this.jobs.findIndex((job) => job.jobId === queueJobId);
+    if (index < 0) {
+      return false;
+    }
+    this.jobs.splice(index, 1);
+    return true;
   }
 
   observeTransport(observer: QueueTransportObserver): () => void {
@@ -101,19 +130,49 @@ class BullMqRunQueueProducer implements RunQueueProducer {
     this.bindTransportSignals();
   }
 
-  async enqueueRunJob(payload: RunJobEnvelope): Promise<EnqueuedRunJob> {
-    const job = await this.queue.add("run.execute", payload, {
+  async enqueueRunJob(
+    payload: RunJobEnvelope,
+    options: {
+      delayMs?: number;
+      timeoutMs?: number;
+    } = {},
+  ): Promise<EnqueuedRunJob> {
+    const addPromise = this.queue.add("run.execute", payload, {
       jobId: payload.queueJobId,
       attempts: 1,
+      ...(options.delayMs !== undefined ? { delay: options.delayMs } : {}),
       removeOnComplete: false,
       removeOnFail: false,
     });
+    let timeoutHandle: NodeJS.Timeout | undefined;
+    try {
+      const job =
+        options.timeoutMs === undefined
+          ? await addPromise
+          : await Promise.race([
+              addPromise,
+              new Promise<never>((_, reject) => {
+                timeoutHandle = setTimeout(() => {
+                  reject(
+                    new RunQueueEnqueueTimeoutError(
+                      `Timed out while enqueueing ${payload.queueJobId} after ${options.timeoutMs}ms`,
+                    ),
+                  );
+                }, options.timeoutMs);
+                timeoutHandle.unref?.();
+              }),
+            ]);
 
-    return {
-      jobId: this.asJobId(job),
-      enqueuedAt: new Date(job.timestamp).toISOString(),
-      payload: job.data,
-    };
+      return {
+        jobId: this.asJobId(job),
+        enqueuedAt: new Date(job.timestamp).toISOString(),
+        payload: job.data,
+      };
+    } finally {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
+    }
   }
 
   async listJobs(): Promise<readonly EnqueuedRunJob[]> {
@@ -127,6 +186,21 @@ class BullMqRunQueueProducer implements RunQueueProducer {
     return jobs
       .map((job) => this.toEnqueuedRunJob(job))
       .filter((job): job is EnqueuedRunJob => job !== null);
+  }
+
+  async tryRemoveQueuedJob(queueJobId: string): Promise<boolean> {
+    const job = await this.queue.getJob(queueJobId);
+    if (!job) {
+      return false;
+    }
+
+    const state = await job.getState();
+    if (state !== "waiting" && state !== "delayed") {
+      return false;
+    }
+
+    await job.remove();
+    return true;
   }
 
   observeTransport(observer: QueueTransportObserver): () => void {

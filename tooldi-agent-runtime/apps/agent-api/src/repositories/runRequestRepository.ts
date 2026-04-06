@@ -37,4 +37,8 @@ export class RunRequestRepository {
     }
     return null;
   }
+
+  async findByRequestId(requestId: string): Promise<RunRequestRecord | null> {
+    return this.records.get(requestId) ?? null;
+  }
 }

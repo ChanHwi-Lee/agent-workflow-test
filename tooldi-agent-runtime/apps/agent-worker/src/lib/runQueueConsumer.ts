@@ -47,6 +47,9 @@ class BullMqRunQueueConsumer implements RunQueueConsumer {
       {
         connection: this.connection,
         concurrency: options.env.workerConcurrency,
+        maxStartedAttempts: 1,
+        maxStalledCount: 0,
+        lockDuration: options.env.leaseTtlMs,
       },
     );
 

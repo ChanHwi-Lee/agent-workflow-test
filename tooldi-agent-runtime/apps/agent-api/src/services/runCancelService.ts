@@ -5,6 +5,7 @@ import { isTerminalRunStatus } from "@tooldi/agent-domain";
 import { ConflictError, NotFoundError } from "../lib/errors.js";
 import type { RunRepository } from "../repositories/runRepository.js";
 import type { RunEventService } from "./runEventService.js";
+import type { RunWatchdogService } from "./runWatchdogService.js";
 
 export interface CancelRunResult {
   runId: string;
@@ -16,6 +17,7 @@ export class RunCancelService {
   constructor(
     private readonly runRepository: RunRepository,
     private readonly runEventService: RunEventService,
+    private readonly runWatchdogService: RunWatchdogService,
     private readonly logger: Logger,
   ) {}
 
@@ -50,6 +52,7 @@ export class RunCancelService {
         reason,
         requestedAt,
       );
+      await this.runWatchdogService.handleCancelRequested(runId, traceId);
     }
 
     this.logger.warn("Accepted cancel placeholder", {

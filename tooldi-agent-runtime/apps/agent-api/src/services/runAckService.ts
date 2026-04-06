@@ -40,6 +40,7 @@ export class RunAckService {
     }
 
     await this.mutationLedgerRepository.recordAck(request);
+    await this.runRepository.setLastAckedSeq(request.runId, request.seq);
     await this.runEventService.appendLog(
       request.runId,
       request.traceId,

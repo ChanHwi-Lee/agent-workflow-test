@@ -24,7 +24,7 @@ import { RunCancelService } from "./services/runCancelService.js";
 import { RunEventService } from "./services/runEventService.js";
 import { RunFinalizeService } from "./services/runFinalizeService.js";
 import { RunRecoveryService } from "./services/runRecoveryService.js";
-import { RunTransportService } from "./services/runTransportService.js";
+import { RunWatchdogService } from "./services/runWatchdogService.js";
 import { eventsPostRoute } from "./routes/internal/events.post.js";
 import { finalizePostRoute } from "./routes/internal/finalize.post.js";
 import { heartbeatsPostRoute } from "./routes/internal/heartbeats.post.js";
@@ -41,6 +41,7 @@ export interface AgentApiServices {
   runFinalizeService: RunFinalizeService;
   runCancelService: RunCancelService;
   runRecoveryService: RunRecoveryService;
+  runWatchdogService: RunWatchdogService;
 }
 
 export interface BuildAppOptions {
@@ -78,10 +79,22 @@ export async function buildApp(
     app.sseHub,
     app.appLogger.child({ service: "run-event-service" }),
   );
-  const runTransportService = new RunTransportService(
+  const runFinalizeService = new RunFinalizeService(
     runRepository,
     runAttemptRepository,
-    app.appLogger.child({ service: "run-transport-service" }),
+    costSummaryRepository,
+    draftBundleRepository,
+    completionRepository,
+    runEventService,
+    app.appLogger.child({ service: "run-finalize-service" }),
+  );
+  const runWatchdogService = new RunWatchdogService(
+    runRepository,
+    runAttemptRepository,
+    runEventService,
+    runFinalizeService,
+    app.runQueue,
+    app.appLogger.child({ service: "run-watchdog-service" }),
   );
 
   const services: AgentApiServices = {
@@ -92,6 +105,7 @@ export async function buildApp(
       runEventService,
       app.objectStore,
       app.runQueue,
+      runWatchdogService,
       app.appLogger.child({ service: "run-bootstrap-service" }),
     ),
     runEventService,
@@ -101,18 +115,11 @@ export async function buildApp(
       runEventService,
       app.appLogger.child({ service: "run-ack-service" }),
     ),
-    runFinalizeService: new RunFinalizeService(
-      runRepository,
-      runAttemptRepository,
-      costSummaryRepository,
-      draftBundleRepository,
-      completionRepository,
-      runEventService,
-      app.appLogger.child({ service: "run-finalize-service" }),
-    ),
+    runFinalizeService,
     runCancelService: new RunCancelService(
       runRepository,
       runEventService,
+      runWatchdogService,
       app.appLogger.child({ service: "run-cancel-service" }),
     ),
     runRecoveryService: new RunRecoveryService(
@@ -122,10 +129,14 @@ export async function buildApp(
       runEventService,
       app.appLogger.child({ service: "run-recovery-service" }),
     ),
+    runWatchdogService,
   };
 
   app.decorate("services", services);
-  app.runQueue.observeTransport((signal) => runTransportService.observeSignal(signal));
+  app.runQueue.observeTransport((signal) => runWatchdogService.observeSignal(signal));
+  app.addHook("onClose", async () => {
+    await runWatchdogService.close();
+  });
 
   await app.register(runsPostRoute);
   await app.register(runEventsSseRoute);

@@ -29,11 +29,15 @@ import {
 } from "../lib/ids.js";
 import { ValidationError } from "../lib/errors.js";
 import { addMilliseconds, now, toIsoDateTime } from "../lib/time.js";
-import type { RunQueueProducer } from "../plugins/queue.js";
+import {
+  RunQueueEnqueueTimeoutError,
+  type RunQueueProducer,
+} from "../plugins/queue.js";
 import type { RunAttemptRepository } from "../repositories/runAttemptRepository.js";
 import type { RunRepository } from "../repositories/runRepository.js";
 import type { RunRequestRepository } from "../repositories/runRequestRepository.js";
 import type { RunEventService } from "./runEventService.js";
+import type { RunWatchdogService } from "./runWatchdogService.js";
 
 export interface StartRunCommand {
   httpRequestId?: string;
@@ -49,8 +53,11 @@ export class RunBootstrapService {
     private readonly runEventService: RunEventService,
     private readonly objectStore: ObjectStoreClient,
     private readonly runQueue: RunQueueProducer,
+    private readonly runWatchdogService: RunWatchdogService,
     private readonly logger: Logger,
   ) {}
+
+  private static readonly ENQUEUE_TIMEOUT_MS = 2000;
 
   async startRun(command: StartRunCommand): Promise<RunAccepted> {
     this.assertCreateFromEmptyCanvasPolicy(command.request);
@@ -125,9 +132,13 @@ export class RunBootstrapService {
       documentId: command.request.editorContext.documentId,
       pageId: command.request.editorContext.pageId,
       status: initialStatus,
+      statusReasonCode: null,
       attemptSeq: 0,
       queueJobId: null,
+      requestRef,
+      snapshotRef,
       deadlineAt: toIsoDateTime(deadlineAt),
+      lastAckedSeq: 0,
       pageLockToken,
       cancelRequestedAt: null,
       createdAt: toIsoDateTime(startedAt),
@@ -147,17 +158,51 @@ export class RunBootstrapService {
       pageLockToken,
       cancelToken,
     };
-    await this.runQueue.enqueueRunJob(runJob);
+    try {
+      await this.runQueue.enqueueRunJob(runJob, {
+        timeoutMs: RunBootstrapService.ENQUEUE_TIMEOUT_MS,
+      });
+    } catch (error) {
+      const reasonCode =
+        error instanceof RunQueueEnqueueTimeoutError
+          ? "enqueue_timeout"
+          : "queue_publish_failed";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Queue publish failed before worker handoff";
+      await this.runRepository.updateStatus(runId, "failed", reasonCode);
+      await this.runEventService.appendFailed(
+        runId,
+        traceId,
+        {
+          code: reasonCode,
+          message,
+        },
+        toIsoDateTime(now()),
+      );
+      this.logger.error("Failed to enqueue run before worker handoff", {
+        runId,
+        traceId,
+        reasonCode,
+        error: message,
+      });
+      throw error;
+    }
 
     await this.runAttemptRepository.create({
       attemptId,
       runId,
       traceId,
       attemptSeq,
+      retryOfAttemptSeq: null,
       queueJobId,
       acceptedHttpRequestId: httpRequestId,
       attemptState: "enqueued",
+      statusReasonCode: null,
       workerId: null,
+      startedAt: null,
+      leaseRecognizedAt: null,
       lastHeartbeatAt: null,
       createdAt: toIsoDateTime(startedAt),
     });
@@ -167,6 +212,12 @@ export class RunBootstrapService {
       queueJobId,
       "planning_queued",
     );
+    this.runWatchdogService.trackEnqueuedAttempt({
+      runId,
+      traceId,
+      attemptSeq,
+      queueJobId,
+    });
 
     await this.runEventService.appendAccepted(runId, traceId, toIsoDateTime(startedAt));
     await this.runEventService.appendPhase(

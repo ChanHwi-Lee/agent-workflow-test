@@ -8,9 +8,13 @@ export interface RunRecord {
   documentId: string;
   pageId: string;
   status: RunStatus;
+  statusReasonCode: string | null;
   attemptSeq: number;
   queueJobId: string | null;
+  requestRef: string;
+  snapshotRef: string;
   deadlineAt: string;
+  lastAckedSeq: number;
   pageLockToken: string;
   cancelRequestedAt: string | null;
   createdAt: string;
@@ -33,7 +37,11 @@ export class RunRepository {
     return this.records.get(runId) ?? null;
   }
 
-  async updateStatus(runId: string, status: RunStatus): Promise<RunRecord | null> {
+  async updateStatus(
+    runId: string,
+    status: RunStatus,
+    statusReasonCode?: string | null,
+  ): Promise<RunRecord | null> {
     const current = this.records.get(runId);
     if (!current) {
       return null;
@@ -42,6 +50,8 @@ export class RunRepository {
     const updated: RunRecord = {
       ...current,
       status,
+      statusReasonCode:
+        statusReasonCode === undefined ? current.statusReasonCode : statusReasonCode,
       updatedAt: new Date().toISOString(),
     };
     this.records.set(runId, updated);
@@ -53,6 +63,7 @@ export class RunRepository {
     attemptSeq: number,
     queueJobId: string,
     status: RunStatus,
+    statusReasonCode: string | null = null,
   ): Promise<RunRecord | null> {
     const current = this.records.get(runId);
     if (!current) {
@@ -64,6 +75,7 @@ export class RunRepository {
       attemptSeq,
       queueJobId,
       status,
+      statusReasonCode,
       updatedAt: new Date().toISOString(),
     };
     this.records.set(runId, updated);
@@ -82,7 +94,23 @@ export class RunRepository {
     const updated: RunRecord = {
       ...current,
       status: "cancel_requested",
+      statusReasonCode: "cancel_requested_by_client",
       cancelRequestedAt: requestedAt,
+      updatedAt: new Date().toISOString(),
+    };
+    this.records.set(runId, updated);
+    return updated;
+  }
+
+  async setLastAckedSeq(runId: string, seq: number): Promise<RunRecord | null> {
+    const current = this.records.get(runId);
+    if (!current) {
+      return null;
+    }
+
+    const updated: RunRecord = {
+      ...current,
+      lastAckedSeq: Math.max(current.lastAckedSeq, seq),
       updatedAt: new Date().toISOString(),
     };
     this.records.set(runId, updated);

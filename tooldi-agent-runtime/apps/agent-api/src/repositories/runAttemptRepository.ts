@@ -6,10 +6,14 @@ export interface RunAttemptRecord {
   runId: string;
   traceId: string;
   attemptSeq: number;
+  retryOfAttemptSeq: number | null;
   queueJobId: string;
   acceptedHttpRequestId: string;
   attemptState: AttemptState;
+  statusReasonCode: string | null;
   workerId: string | null;
+  startedAt: string | null;
+  leaseRecognizedAt: string | null;
   lastHeartbeatAt: string | null;
   createdAt: string;
 }
@@ -64,6 +68,8 @@ export class RunAttemptRepository {
       ...current,
       attemptState,
       workerId: workerId ?? current.workerId,
+      startedAt: current.startedAt ?? heartbeatAt,
+      leaseRecognizedAt: current.leaseRecognizedAt ?? heartbeatAt,
       lastHeartbeatAt: heartbeatAt,
     };
     this.records.set(updated.attemptId, updated);
@@ -76,6 +82,7 @@ export class RunAttemptRepository {
     attemptState: AttemptState,
     workerId?: string,
     heartbeatAt?: string,
+    statusReasonCode?: string | null,
   ): Promise<RunAttemptRecord | null> {
     const current = await this.findByRunIdAndAttemptSeq(runId, attemptSeq);
     if (!current) {
@@ -87,6 +94,30 @@ export class RunAttemptRepository {
       attemptState,
       workerId: workerId ?? current.workerId,
       lastHeartbeatAt: heartbeatAt ?? current.lastHeartbeatAt,
+      statusReasonCode:
+        statusReasonCode === undefined ? current.statusReasonCode : statusReasonCode,
+    };
+    this.records.set(updated.attemptId, updated);
+    return updated;
+  }
+
+  async recognizeLease(
+    runId: string,
+    attemptSeq: number,
+    recognizedAt: string,
+    workerId?: string,
+  ): Promise<RunAttemptRecord | null> {
+    const current = await this.findByRunIdAndAttemptSeq(runId, attemptSeq);
+    if (!current) {
+      return null;
+    }
+
+    const updated: RunAttemptRecord = {
+      ...current,
+      workerId: workerId ?? current.workerId,
+      startedAt: current.startedAt ?? recognizedAt,
+      leaseRecognizedAt: current.leaseRecognizedAt ?? recognizedAt,
+      lastHeartbeatAt: current.lastHeartbeatAt,
     };
     this.records.set(updated.attemptId, updated);
     return updated;

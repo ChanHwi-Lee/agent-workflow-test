@@ -67,6 +67,12 @@ export class RunRecoveryService {
       command.queueJobId,
     );
 
+    await this.runAttemptRepository.recognizeLease(
+      command.runId,
+      command.attemptSeq,
+      command.heartbeatAt,
+      command.workerId,
+    );
     const updatedAttempt = await this.runAttemptRepository.touchHeartbeat(
       command.runId,
       command.attemptSeq,
@@ -132,6 +138,12 @@ export class RunRecoveryService {
     const receivedAt = command.receivedAt ?? new Date().toISOString();
     const cancelRequested = run.status === "cancel_requested";
     let assignedSeq: number | undefined;
+
+    await this.runAttemptRepository.recognizeLease(
+      command.runId,
+      command.attemptSeq,
+      receivedAt,
+    );
 
     switch (command.event.type) {
       case "phase":
