@@ -21,6 +21,9 @@ function createEnv(): AgentApiEnv {
     logLevel: "debug",
     postgresUrl: "postgres://localhost:5432/tooldi_agent_runtime_test",
     redisUrl: "redis://localhost:6379/9",
+    bullmqQueueName: "agent-workflow-interactive-test",
+    objectStoreMode: "memory",
+    objectStoreRootDir: "/tmp/tooldi-agent-runtime-object-store-test",
     objectStoreBucket: "tooldi-agent-runtime-test",
     objectStorePrefix: "agent-runtime-test",
     objectStoreEndpoint: null,
@@ -28,6 +31,7 @@ function createEnv(): AgentApiEnv {
     port: 0,
     publicBaseUrl: "http://127.0.0.1:3000",
     sseHeartbeatIntervalMs: 50,
+    queueTransportMode: "memory",
   };
 }
 

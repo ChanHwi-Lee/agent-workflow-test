@@ -24,6 +24,7 @@ import { RunCancelService } from "./services/runCancelService.js";
 import { RunEventService } from "./services/runEventService.js";
 import { RunFinalizeService } from "./services/runFinalizeService.js";
 import { RunRecoveryService } from "./services/runRecoveryService.js";
+import { RunTransportService } from "./services/runTransportService.js";
 import { eventsPostRoute } from "./routes/internal/events.post.js";
 import { finalizePostRoute } from "./routes/internal/finalize.post.js";
 import { heartbeatsPostRoute } from "./routes/internal/heartbeats.post.js";
@@ -77,6 +78,11 @@ export async function buildApp(
     app.sseHub,
     app.appLogger.child({ service: "run-event-service" }),
   );
+  const runTransportService = new RunTransportService(
+    runRepository,
+    runAttemptRepository,
+    app.appLogger.child({ service: "run-transport-service" }),
+  );
 
   const services: AgentApiServices = {
     runBootstrapService: new RunBootstrapService(
@@ -119,6 +125,7 @@ export async function buildApp(
   };
 
   app.decorate("services", services);
+  app.runQueue.observeTransport((signal) => runTransportService.observeSignal(signal));
 
   await app.register(runsPostRoute);
   await app.register(runEventsSseRoute);

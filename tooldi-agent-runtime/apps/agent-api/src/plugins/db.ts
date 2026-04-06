@@ -14,7 +14,10 @@ export const dbPlugin: FastifyPluginAsync = async (app) => {
   await db.connect();
 
   const objectStore = createObjectStoreClient({
+    mode: app.config.objectStoreMode,
+    rootDir: app.config.objectStoreRootDir,
     bucket: app.config.objectStoreBucket,
+    prefix: app.config.objectStorePrefix,
   });
 
   app.decorate("db", db);

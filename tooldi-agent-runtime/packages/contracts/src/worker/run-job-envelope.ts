@@ -1,5 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { Static } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
 
 import {
   IdentifierSchema,
@@ -222,3 +223,17 @@ export type PlanValidationIssue = Static<typeof PlanValidationIssueSchema>;
 export type PlannerRepairRequest = Static<typeof PlannerRepairRequestSchema>;
 export type PersistedPlanAction = Static<typeof PersistedPlanActionSchema>;
 export type ExecutablePlan = Static<typeof ExecutablePlanSchema>;
+
+export function isRunJobEnvelope(value: unknown): value is RunJobEnvelope {
+  return Value.Check(RunJobEnvelopeSchema, value);
+}
+
+export function firstRunJobEnvelopeError(value: unknown): string | null {
+  const issue = Value.Errors(RunJobEnvelopeSchema, value).First();
+  if (!issue) {
+    return null;
+  }
+
+  const path = issue.path.length > 0 ? issue.path : "$";
+  return `${path}: ${issue.message}`;
+}

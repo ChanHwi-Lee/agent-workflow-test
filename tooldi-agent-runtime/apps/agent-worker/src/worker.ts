@@ -12,6 +12,7 @@ import type { ToolRegistry } from "@tooldi/tool-registry";
 
 import { createBackendCallbackClient, type BackendCallbackClient } from "./clients/backendCallbackClient.js";
 import { createWorkerLogger } from "./lib/logger.js";
+import { createRunQueueConsumer, type RunQueueConsumer } from "./lib/runQueueConsumer.js";
 import { processRunJob, type ProcessRunJobDependencies } from "./jobs/processRunJob.js";
 import { createAssetStorageClient } from "./tools/adapters/assetStorageAdapter.js";
 import { createImagePrimitiveClient } from "./tools/adapters/imagePrimitiveAdapter.js";
@@ -25,6 +26,7 @@ export interface BuildWorkerRuntimeOptions {
   objectStore?: ObjectStoreClient;
   pgClient?: PgClient;
   callbackClient?: BackendCallbackClient;
+  queueConsumer?: RunQueueConsumer;
   toolRegistry?: ToolRegistry;
   imagePrimitiveClient?: ImagePrimitiveClient;
   assetStorageClient?: AssetStorageClient;
@@ -49,15 +51,25 @@ export async function buildWorkerRuntime(
     });
   await pgClient.connect();
 
+  let queueConsumer: RunQueueConsumer | null = null;
+
   const runtime: AgentWorkerRuntime = {
     env: options.env,
     logger,
     objectStore:
       options.objectStore ??
       createObjectStoreClient({
+        mode: options.env.objectStoreMode,
+        rootDir: options.env.objectStoreRootDir,
         bucket: options.env.objectStoreBucket,
+        prefix: options.env.objectStorePrefix,
       }),
-    callbackClient: options.callbackClient ?? createBackendCallbackClient(logger),
+    callbackClient:
+      options.callbackClient ??
+      createBackendCallbackClient({
+        logger,
+        baseUrl: options.env.agentInternalBaseUrl,
+      }),
     toolRegistry: options.toolRegistry ?? createWorkerToolRegistry(),
     imagePrimitiveClient: options.imagePrimitiveClient ?? createImagePrimitiveClient(),
     assetStorageClient: options.assetStorageClient ?? createAssetStorageClient(),
@@ -66,15 +78,35 @@ export async function buildWorkerRuntime(
       return processRunJob(job, runtime);
     },
     async close() {
+      if (queueConsumer) {
+        await queueConsumer.close();
+      }
       await pgClient.end();
     },
   };
+
+  try {
+    queueConsumer =
+      options.queueConsumer ??
+      (await createRunQueueConsumer({
+        env: options.env,
+        logger,
+        processRunJob: async (job) => {
+          await runtime.processRunJob(job);
+        },
+      }));
+  } catch (error) {
+    await pgClient.end();
+    throw error;
+  }
 
   logger.info("Agent worker runtime bootstrapped", {
     concurrency: options.env.workerConcurrency,
     heartbeatIntervalMs: options.env.heartbeatIntervalMs,
     leaseTtlMs: options.env.leaseTtlMs,
-    queueConsumer: "not_wired_yet",
+    queueConsumer: queueConsumer.mode,
+    queueName: options.env.bullmqQueueName,
+    agentInternalBaseUrl: options.env.agentInternalBaseUrl,
   });
 
   return runtime;

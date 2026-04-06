@@ -41,6 +41,13 @@ export class RunAttemptRepository {
     return [...this.records.values()].filter((record) => record.runId === runId);
   }
 
+  async findByQueueJobId(queueJobId: string): Promise<RunAttemptRecord | null> {
+    return (
+      [...this.records.values()].find((record) => record.queueJobId === queueJobId) ??
+      null
+    );
+  }
+
   async touchHeartbeat(
     runId: string,
     attemptSeq: number,

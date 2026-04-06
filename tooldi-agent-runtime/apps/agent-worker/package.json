@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "start": "node --enable-source-maps dist/main.js",
-    "test": "node --test dist/main.test.js dist/worker.test.js dist/jobs/processRunJob.test.js",
+    "test": "node --test dist/main.test.js dist/worker.test.js dist/clients/backendCallbackClient.test.js dist/jobs/processRunJob.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -20,6 +20,8 @@
     "@tooldi/agent-persistence": "workspace:*",
     "@tooldi/agent-testkit": "workspace:*",
     "@tooldi/tool-adapters": "workspace:*",
-    "@tooldi/tool-registry": "workspace:*"
+    "@tooldi/tool-registry": "workspace:*",
+    "bullmq": "^5.73.0",
+    "ioredis": "^5.10.1"
   }
 }

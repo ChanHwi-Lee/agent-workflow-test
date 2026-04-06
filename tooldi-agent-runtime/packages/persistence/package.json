@@ -18,6 +18,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "test": "node --test dist/object-store/objectStoreClient.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

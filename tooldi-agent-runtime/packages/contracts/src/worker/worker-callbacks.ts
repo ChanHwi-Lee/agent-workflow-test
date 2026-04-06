@@ -246,6 +246,22 @@ export type WaitMutationAckResponse = Static<typeof WaitMutationAckResponseSchem
 export type RunFinalizeRequest = Static<typeof RunFinalizeRequestSchema>;
 export type WorkerFinalizeResponse = Static<typeof WorkerFinalizeResponseSchema>;
 
+export function isWorkerHeartbeatResponse(
+  value: unknown,
+): value is WorkerHeartbeatResponse {
+  return Value.Check(WorkerHeartbeatResponseSchema, value);
+}
+
+export function firstWorkerHeartbeatResponseError(value: unknown): string | null {
+  const issue = Value.Errors(WorkerHeartbeatResponseSchema, value).First();
+  if (!issue) {
+    return null;
+  }
+
+  const path = issue.path.length > 0 ? issue.path : "$";
+  return `${path}: ${issue.message}`;
+}
+
 export function isWorkerAppendEventRequest(
   value: unknown,
 ): value is WorkerAppendEventRequest {
@@ -256,6 +272,56 @@ export function firstWorkerAppendEventRequestError(
   value: unknown,
 ): string | null {
   const issue = Value.Errors(WorkerAppendEventRequestSchema, value).First();
+  if (!issue) {
+    return null;
+  }
+
+  const path = issue.path.length > 0 ? issue.path : "$";
+  return `${path}: ${issue.message}`;
+}
+
+export function isWorkerAppendEventResponse(
+  value: unknown,
+): value is WorkerAppendEventResponse {
+  return Value.Check(WorkerAppendEventResponseSchema, value);
+}
+
+export function firstWorkerAppendEventResponseError(
+  value: unknown,
+): string | null {
+  const issue = Value.Errors(WorkerAppendEventResponseSchema, value).First();
+  if (!issue) {
+    return null;
+  }
+
+  const path = issue.path.length > 0 ? issue.path : "$";
+  return `${path}: ${issue.message}`;
+}
+
+export function isWaitMutationAckResponse(
+  value: unknown,
+): value is WaitMutationAckResponse {
+  return Value.Check(WaitMutationAckResponseSchema, value);
+}
+
+export function firstWaitMutationAckResponseError(value: unknown): string | null {
+  const issue = Value.Errors(WaitMutationAckResponseSchema, value).First();
+  if (!issue) {
+    return null;
+  }
+
+  const path = issue.path.length > 0 ? issue.path : "$";
+  return `${path}: ${issue.message}`;
+}
+
+export function isWorkerFinalizeResponse(
+  value: unknown,
+): value is WorkerFinalizeResponse {
+  return Value.Check(WorkerFinalizeResponseSchema, value);
+}
+
+export function firstWorkerFinalizeResponseError(value: unknown): string | null {
+  const issue = Value.Errors(WorkerFinalizeResponseSchema, value).First();
   if (!issue) {
     return null;
   }

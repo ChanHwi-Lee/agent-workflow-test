@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "start": "node --enable-source-maps dist/main.js",
-    "test": "node --test dist/app.test.js",
+    "test": "node --test dist/app.test.js dist/services/runTransportService.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -18,6 +18,8 @@
     "@tooldi/agent-domain": "workspace:*",
     "@tooldi/agent-observability": "workspace:*",
     "@tooldi/agent-persistence": "workspace:*",
-    "fastify": "^5.0.0"
+    "bullmq": "^5.73.0",
+    "fastify": "^5.0.0",
+    "ioredis": "^5.10.1"
   }
 }

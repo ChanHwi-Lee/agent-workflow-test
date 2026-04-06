@@ -20,22 +20,38 @@ export interface SharedRuntimeEnv {
   logLevel: LogLevel;
   postgresUrl: string;
   redisUrl: string;
+  bullmqQueueName: string;
+  objectStoreMode: "memory" | "filesystem";
+  objectStoreRootDir: string;
   objectStoreBucket: string;
   objectStorePrefix: string;
   objectStoreEndpoint: string | null;
 }
+
+export const apiQueueTransportModes = ["bullmq", "memory"] as const;
+
+export type ApiQueueTransportMode = (typeof apiQueueTransportModes)[number];
 
 export interface AgentApiEnv extends SharedRuntimeEnv {
   host: string;
   port: number;
   publicBaseUrl: string;
   sseHeartbeatIntervalMs: number;
+  queueTransportMode: ApiQueueTransportMode;
 }
+
+export const workerQueueTransportModes = ["bullmq", "disabled"] as const;
+
+export type WorkerQueueTransportMode =
+  (typeof workerQueueTransportModes)[number];
 
 export interface AgentWorkerEnv extends SharedRuntimeEnv {
   workerConcurrency: number;
   heartbeatIntervalMs: number;
   leaseTtlMs: number;
+  queueTransportMode: WorkerQueueTransportMode;
+  agentInternalBaseUrl: string;
+  exitAfterBoot: boolean;
 }
 
 export type EnvSource = Record<string, string | undefined>;
@@ -80,6 +96,39 @@ function readOptionalString(
   return value;
 }
 
+function readBoolean(
+  source: EnvSource,
+  key: string,
+  fallback: boolean,
+): boolean {
+  const raw = source[key];
+  if (raw === undefined || raw.trim().length === 0) {
+    return fallback;
+  }
+  if (raw === "1" || raw.toLowerCase() === "true") {
+    return true;
+  }
+  if (raw === "0" || raw.toLowerCase() === "false") {
+    return false;
+  }
+  throw new Error(`Environment variable ${key} must be a boolean-like value`);
+}
+
+function readEnumValue<const Values extends readonly string[]>(
+  source: EnvSource,
+  key: string,
+  values: Values,
+  fallback: Values[number],
+): Values[number] {
+  const value = readString(source, key, fallback);
+  if (values.includes(value)) {
+    return value;
+  }
+  throw new Error(
+    `Unsupported ${key}: ${value}. Expected one of: ${values.join(", ")}`,
+  );
+}
+
 function readRuntimeEnvironment(source: EnvSource): RuntimeEnvironment {
   const value = readString(source, "NODE_ENV", "development");
   if (runtimeEnvironments.includes(value as RuntimeEnvironment)) {
@@ -106,6 +155,22 @@ export function loadSharedEnv(source: EnvSource = process.env): SharedRuntimeEnv
       "postgres://localhost:5432/tooldi_agent_runtime",
     ),
     redisUrl: readString(source, "REDIS_URL", "redis://localhost:6379/0"),
+    bullmqQueueName: readString(
+      source,
+      "BULLMQ_QUEUE_NAME",
+      "agent-workflow-interactive",
+    ),
+    objectStoreMode: readEnumValue(
+      source,
+      "OBJECT_STORE_MODE",
+      ["memory", "filesystem"] as const,
+      "filesystem",
+    ),
+    objectStoreRootDir: readString(
+      source,
+      "OBJECT_STORE_ROOT_DIR",
+      "/tmp/tooldi-agent-runtime-object-store",
+    ),
     objectStoreBucket: readString(
       source,
       "OBJECT_STORE_BUCKET",
@@ -135,6 +200,12 @@ export function loadAgentApiEnv(source: EnvSource = process.env): AgentApiEnv {
       `http://${host}:${port}`,
     ),
     sseHeartbeatIntervalMs: readNumber(source, "SSE_HEARTBEAT_INTERVAL_MS", 15000),
+    queueTransportMode: readEnumValue(
+      source,
+      "API_QUEUE_TRANSPORT_MODE",
+      apiQueueTransportModes,
+      "bullmq",
+    ),
   };
 }
 
@@ -146,5 +217,17 @@ export function loadAgentWorkerEnv(
     workerConcurrency: readNumber(source, "WORKER_CONCURRENCY", 4),
     heartbeatIntervalMs: readNumber(source, "WORKER_HEARTBEAT_INTERVAL_MS", 5000),
     leaseTtlMs: readNumber(source, "WORKER_LEASE_TTL_MS", 30000),
+    queueTransportMode: readEnumValue(
+      source,
+      "WORKER_QUEUE_TRANSPORT_MODE",
+      workerQueueTransportModes,
+      "bullmq",
+    ),
+    agentInternalBaseUrl: readString(
+      source,
+      "AGENT_INTERNAL_BASE_URL",
+      "http://127.0.0.1:3000",
+    ),
+    exitAfterBoot: readBoolean(source, "WORKER_EXIT_AFTER_BOOT", false),
   };
 }

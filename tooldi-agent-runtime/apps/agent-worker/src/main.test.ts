@@ -11,6 +11,7 @@ test("worker main entrypoint boots and exits cleanly", async () => {
 
   const result = await new Promise<{
     code: number | null;
+    signal: NodeJS.Signals | null;
     stdout: string;
     stderr: string;
   }>((resolveChild, rejectChild) => {
@@ -21,11 +22,15 @@ test("worker main entrypoint boots and exits cleanly", async () => {
         LOG_LEVEL: "info",
         POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
         REDIS_URL: "redis://localhost:6379/9",
+        BULLMQ_QUEUE_NAME: "agent-workflow-interactive-test",
         OBJECT_STORE_BUCKET: "tooldi-agent-runtime-test",
         OBJECT_STORE_PREFIX: "agent-runtime-test",
         WORKER_CONCURRENCY: "1",
         WORKER_HEARTBEAT_INTERVAL_MS: "5000",
         WORKER_LEASE_TTL_MS: "30000",
+        WORKER_QUEUE_TRANSPORT_MODE: "disabled",
+        AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
+        WORKER_EXIT_AFTER_BOOT: "true",
       },
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -39,9 +44,10 @@ test("worker main entrypoint boots and exits cleanly", async () => {
       stderr += chunk.toString();
     });
     child.on("error", rejectChild);
-    child.on("close", (code) => {
+    child.on("close", (code, signal) => {
       resolveChild({
         code,
+        signal,
         stdout,
         stderr,
       });
@@ -49,6 +55,8 @@ test("worker main entrypoint boots and exits cleanly", async () => {
   });
 
   assert.equal(result.code, 0);
+  assert.equal(result.signal, null);
   assert.match(result.stdout, /Agent worker boot completed/);
-  assert.equal(result.stderr, "");
+  assert.match(result.stdout, /Agent worker exiting after boot smoke/);
+  assert.match(result.stderr, /Worker queue transport is disabled/);
 });
