@@ -246,6 +246,8 @@ function decidePhotoBranch(
   mode: SelectionDecision["photoBranchMode"];
   reason: string;
 } {
+  const photoPromotionTolerance = 0.02;
+
   if (!selectionPolicy.allowPhotoCandidates) {
     return {
       mode: "not_considered",
@@ -296,11 +298,14 @@ function decidePhotoBranch(
     };
   }
 
-  if (topPhotoCandidate.fitScore >= selectedDecoration.fitScore + 0.02) {
+  if (
+    topPhotoCandidate.fitScore + photoPromotionTolerance >=
+    selectedDecoration.fitScore
+  ) {
     return {
       mode: "photo_selected",
       reason:
-        "photo candidate outranked the current graphic path for seasonal focal strength on the wide preset hero-photo slot",
+        "photo candidate stayed within the promotion tolerance window and is preferred for the wide preset hero-photo slot",
     };
   }
 

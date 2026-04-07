@@ -834,6 +834,69 @@ test("processRunJob can activate the photo hero execution path on the wide prese
   );
 });
 
+test("processRunJob can promote a real-like photo candidate when it stays within the wide-preset tolerance window", async () => {
+  const env = createRealSourceEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = createObjectStoreClient({
+    bucket: env.objectStoreBucket,
+  });
+  const callbackClient = new RecordingBackendCallbackClient();
+  const seedRun = createTestRun();
+  const testRun = createTestRun({
+    editorContext: {
+      ...seedRun.request.editorContext,
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      sizeSerial: "1200x628@1",
+    },
+  });
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+    tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
+  });
+
+  assert.equal(result.selectionDecision?.photoBranchMode, "photo_selected");
+  assert.equal(
+    result.selectionDecision?.photoBranchReason,
+    "photo candidate stayed within the promotion tolerance window and is preferred for the wide preset hero-photo slot",
+  );
+  assert.equal(
+    result.selectionDecision?.selectedLayoutCandidateId,
+    "layout_copy_left_with_right_photo",
+  );
+  assert.equal(result.plan?.actions.length, 4);
+  assert.equal(
+    result.plan?.actions.some((action) => action.operation === "place_photo_hero"),
+    true,
+  );
+});
+
 test("processRunJob keeps graphic path when top photo candidate is not executable", async () => {
   const env = createRealSourceEnv();
   const logger = createWorkerLogger(env);
