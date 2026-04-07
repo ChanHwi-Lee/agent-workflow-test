@@ -589,7 +589,8 @@ test("processRunJob can activate real Tooldi background/graphic/font source mode
     callbackClient.appendedEvents.some(
       (event) =>
         event.event.type === "log" &&
-        event.event.message.includes("selected serial=11"),
+        event.event.message.includes("[source/background]") &&
+        event.event.message.includes("selectedSerial=11"),
     ),
     true,
   );
@@ -597,6 +598,7 @@ test("processRunJob can activate real Tooldi background/graphic/font source mode
     callbackClient.appendedEvents.some(
       (event) =>
         event.event.type === "log" &&
+        event.event.message.includes("[source/font]") &&
         event.event.message.includes("display=701_700 body=701_400"),
     ),
     true,

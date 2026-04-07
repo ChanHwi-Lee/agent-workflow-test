@@ -309,7 +309,12 @@ export async function processRunJob(
     event: {
       type: "log",
       level: "info",
-      message: `Selected ${selectionDecision.backgroundMode} background (${selectionDecision.selectedBackgroundSerial ?? "n/a"}), ${selectionDecision.layoutMode} layout, ${selectionDecision.decorationMode} decoration (${selectionDecision.selectedDecorationSerial ?? "n/a"})`,
+      message:
+        `[source/selection] background=${selectionDecision.selectedBackgroundSerial ?? "n/a"} ` +
+        `(${selectionDecision.selectedBackgroundCategory ?? "n/a"}) ` +
+        `layout=${selectionDecision.layoutMode} ` +
+        `decoration=${selectionDecision.selectedDecorationSerial ?? "n/a"} ` +
+        `(${selectionDecision.selectedDecorationCategory ?? "n/a"})`,
     },
   });
     cooperativeStopRequested ||= selectionEvent.cancelRequested;
@@ -630,21 +635,21 @@ function buildSelectionLogMessages(
     {
       level: "info",
       message:
-        `Background query returned ${sourceSearchSummary.background.returnedCount} items, ` +
-        `selected serial=${sourceSearchSummary.background.selectedSerial ?? "n/a"} ` +
+        `[source/background] returned=${sourceSearchSummary.background.returnedCount} ` +
+        `selectedSerial=${sourceSearchSummary.background.selectedSerial ?? "n/a"} ` +
         `kind=${sourceSearchSummary.background.selectedCategory ?? "n/a"}`,
     },
     {
       level: "info",
       message:
-        `Graphic query returned ${sourceSearchSummary.graphic.returnedCount} items, ` +
-        `selected serial=${sourceSearchSummary.graphic.selectedSerial ?? "n/a"} ` +
+        `[source/graphic] returned=${sourceSearchSummary.graphic.returnedCount} ` +
+        `selectedSerial=${sourceSearchSummary.graphic.selectedSerial ?? "n/a"} ` +
         `category=${sourceSearchSummary.graphic.selectedCategory ?? "n/a"}`,
     },
     {
       level: typographyDecision.fallbackUsed ? "warn" : "info",
       message:
-        `Font inventory count=${typographyDecision.inventoryCount}, ` +
+        `[source/font] inventory=${typographyDecision.inventoryCount} ` +
         `display=${typographyDecision.display?.fontToken ?? "fallback"} ` +
         `body=${typographyDecision.body?.fontToken ?? "fallback"}`,
     },
