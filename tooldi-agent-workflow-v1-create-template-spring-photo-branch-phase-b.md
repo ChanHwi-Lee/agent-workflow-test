@@ -97,3 +97,21 @@ Phase B 가 끝났다고 부를 기준은 아래다.
 ## 8. Deferred Checklist
 
 - Toolditor spike 의 `hero_image` 삽입 경로를 canonical serial-backed picture insertion seam 과 정렬할지 별도 턴에서 결정한다.
+
+## 9. Verification Note
+
+- 2026-04-07 localhost manual proof 에서 real-source `wide_1200x628` run 2종을 확인했다.
+- hardening 전 run `run_20260407_052030_280_9f75f208` 은 `graphic_preferred` 로 완료됐고, 선택 evidence 는 아래와 같았다.
+  - background `233`
+  - graphic `1543358`
+  - photo `185590`
+  - reason: `graphic-first path remains safer for readability and execution despite the available photo candidate`
+- hardening 후 run `run_20260407_052404_187_4e08e433` 은 `photo_selected` 로 완료됐고, evidence 는 아래와 같았다.
+  - background `233`
+  - graphic `1543358`
+  - photo `185590`
+  - layout `copy_left_with_right_photo`
+  - `hero_image` stage applied
+- 즉 Phase B 는 localhost real-source mode 에서
+  - `graphic_preferred` fallback reasoning 이 실제로 surface 되고
+  - narrow tolerance hardening 후 `photo_selected` execution path 도 실제로 적용되는 상태까지 확인됐다.

@@ -216,6 +216,9 @@ AGENT_INTERNAL_BASE_URL=http://127.0.0.1:3000 pnpm --filter @tooldi/agent-worker
 - 실제 Tooldi 콘텐츠 source family, PHP API / DB seam, real catalog adapter 기준선은 [tooldi-agent-workflow-v1-tooldi-content-discovery.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-tooldi-content-discovery.md) 에 정리했다.
 - 현재 worker runtime에는 `real Tooldi catalog source adapter` seam 이 추가되어 있고, spring slice는 opt-in real source mode에서 `background/shape/font` 를 실제 Tooldi PHP API로 조회할 수 있다.
 - `photo` 는 현재 `wide_1200x628` representative preset 에 한해 execution-enabled 상태다. 즉 real source mode에서 picture inventory 조회와 `photoBranchMode` / `photoBranchReason` evidence를 남기고, `photo_selected` 인 경우 실제 `hero_image` mutation 까지 내려간다.
+- 2026-04-07 localhost manual proof 에서 photo branch Turn 4 를 확인했다.
+  - hardening 전 real-source run 은 `graphic_preferred` fallback reasoning 을 surface 했다.
+  - hardening 후 real-source run 은 `photo_selected` 와 `hero_image` stage apply, `run.completed` 까지 확인했다.
 - `photo branch` 의 spec lock 과 Phase A 범위는 [tooldi-agent-workflow-v1-create-template-spring-photo-branch-phase-a.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-spring-photo-branch-phase-a.md) 에 정리한다.
 - `photo branch` 의 execution lock 은 [tooldi-agent-workflow-v1-create-template-spring-photo-branch-phase-b.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-spring-photo-branch-phase-b.md) 에 정리한다.
 - 다만 non-wide preset, multi-photo, auth/user-context source, photo background path 는 아직 다음 단계다.
