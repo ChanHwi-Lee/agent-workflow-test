@@ -57,6 +57,7 @@
 - fully autonomous image-heavy composition을 기본 경로로 승격
 - QR / barcode 실제 실행
 - 외부 SaaS publish/export
+- non-wide preset `photo branch` 실제 canvas execution
 
 ## 4. Intent Interpretation Lock
 
@@ -100,6 +101,15 @@
 - v1 immediate execution에서 실제로 기본 사용해야 하는 것은 `background_source` 와 `graphic_source` 다.
 - `photo_source` 는 candidate reasoning에는 포함하지만, 기본 mandatory path는 아니다.
 - `template_source` 는 이번 vertical slice에서 direct execution source가 아니다. style prior/reference seam으로만 둔다.
+
+### 5.4 photo branch phase A / B
+
+- `photo_source` 는 Phase A 기준으로 `selection-enabled / execution-deferred` 상태다.
+- 즉 worker 는 실제 picture inventory 를 조회하고 `photo-right-hero` 구성을 compare 할 수 있지만, 실제 canvas mutation 은 아직 `graphic-first safe path` 를 유지한다.
+- 이 상태는 장난감 placeholder 가 아니라 `real source selection proof` 를 확보하기 위한 중간 단계다.
+- Phase B 에서는 representative `wide_1200x628` preset 에 한해 `photo-right-hero` 실행을 연다.
+- 이때 `photo` 는 `hero visual object` 로만 실행하고, `background replacement` 로 승격하지 않는다.
+- Phase B execution failure 는 same-run graphic fallback 으로 숨기지 않고 fail-fast 로 surface 한다.
 
 ### 5.3 photo vs graphic lock
 
@@ -170,6 +180,13 @@ photo는 아래 조건을 만족할 때만 선택 후보로 승격한다.
 - generic spring mood를 photo 하나가 더 잘 설명함
 - graphic-only composition보다 명확한 이점이 있음
 
+추가 Phase A 제약:
+
+- `wide_1200x628` preset 에서만 hero photo compare 를 기본 허용한다.
+- square/story preset 에서는 현재 `not_considered` 또는 `graphic_preferred` 로 남기는 것이 기본이다.
+- Phase A 에서는 `photo_selected_execution_deferred` 로 남기고 실제 mutation path 는 다음 턴에서 연다.
+- Phase B 에서는 `wide_1200x628` 에 한해 `photo_selected` 로 승격하고 `copy_left_with_right_photo` path 를 실행한다.
+
 이 조건을 만족하지 않으면 `photo`는 candidate set에 있어도 채택하지 않는다.
 
 ## 7. Candidate Schema for This Slice
@@ -181,6 +198,10 @@ photo는 아래 조건을 만족할 때만 선택 후보로 승격한다.
 - `background_candidate_set`
 - `layout_candidate_set`
 - `decoration_candidate_set`
+
+Phase A 이후 실제 worker artifact 관점에서는 아래를 추가로 가진다.
+
+- `photo_candidate_set`
 
 ### 7.2 candidate minimum fields
 
@@ -228,6 +249,8 @@ candidate compare는 아래 criteria를 기준으로 한다.
 - QR insertion
 - barcode insertion
 
+단, `photo insertion` 은 reasoning-only 상태에서 한 단계 올라와 `selection-enabled / execution-deferred` 상태가 된다.
+
 ### 8.3 practical consequence
 
 따라서 이 vertical slice의 첫 번째 실제 구현은 아래처럼 닫는 것이 맞다.
@@ -241,6 +264,8 @@ candidate compare는 아래 criteria를 기준으로 한다.
 - selection evidence는 worker artifact와 `run.log` SSE 양쪽에 남는다.
 - immediate execution은 아직 real background/graphic asset binding까지 내려가지 않고, selected asset metadata를 바탕으로 `shape/text/group` safe surface를 유지한다.
 - typography만은 실제 Tooldi font inventory를 사용해 `display/body` token을 선택하고, toolditor spike path가 이를 소비한다.
+- photo branch Phase A 에서는 `photo` inventory 조회와 selection evidence 까지 추가한다.
+- 하지만 `photo` 는 아직 real mutation execution 으로 이어지지 않고, `graphic-first safe path` 를 유지한다.
 
 ## 9. Mutation Synthesis Lock
 
@@ -285,11 +310,13 @@ candidate compare는 아래 criteria를 기준으로 한다.
 2. `background_candidate_set`, `layout_candidate_set`, `decoration_candidate_set` 생성
 3. `graphic-first / photo-optional` selection policy 구현
 4. `background + shape + text + group` 기반 spring template mutation synthesis
-5. 이후 `photo` 와 `graphic bitmap/vector` 채택 경로를 점진적으로 추가
+5. `photo branch Phase A` selection proof 추가
+6. 이후 `photo` 실제 execution 과 `graphic bitmap/vector` 채택 경로를 점진적으로 추가
 
 ## 12. References
 
 - [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md)
+- [tooldi-agent-workflow-v1-create-template-spring-photo-branch-phase-a.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-spring-photo-branch-phase-a.md)
 - [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md)
 - [tooldi-agent-workflow-v1-scope-operations-decisions.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-scope-operations-decisions.md)
 - [README.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/README.md)

@@ -58,14 +58,34 @@
 - 하지만 immediate v1 implementation / happy-path execution surface는 계속 `background`, `shape`, `text`, `group` 중심으로 유지한다.
 - `photo`, `graphic`, `qr`, `barcode` 는 catalog와 future selection policy에는 포함하지만, 기본 happy-path 실행 요구사항으로는 올리지 않는다.
 
-### 3.3 retrieval은 구조만 열고 실행은 잠근다
+### 3.3 photo branch phase A 잠금
+
+- `photo_source` 는 `spring template` vertical slice에서 더 이상 reasoning-only family가 아니다.
+- Phase A 기준 `photo_source` 는 아래 상태로 고정한다.
+  - candidate assembly: enabled
+  - compare/select: enabled
+  - editor execution: deferred
+- 즉 worker는 실제 Tooldi `picture` inventory를 조회하고, `photo` 를 선택 후보로 평가하며, `photo branch` 가 적합한지 여부를 explicit selection artifact와 log에 남겨야 한다.
+- 하지만 Phase A 에서는 실제 canvas mutation 실행 경로는 여전히 `graphic-first shape/text/group safe path` 를 유지한다.
+- 이유는 `photo` execution path가 `crop`, `focal area`, `copy readability`, `object image insert contract` 를 추가로 요구하기 때문이다.
+- Phase A 는 therefore `photo branch selection proof`, not `photo branch execution`.
+
+### 3.4 photo branch phase B 잠금
+
+- `photo_source` 는 `wide_1200x628` representative preset 에 한해 `execution-enabled` 로 승격할 수 있다.
+- 이때 `photo` 는 `background replacement` 가 아니라 `hero visual object` 로만 실행한다.
+- execution path 는 `foundation -> photo -> copy -> polish` 로 고정한다.
+- photo execution failure 는 same-run graphic fallback 으로 숨기지 않고 fail-fast 로 surface 한다.
+- square/story preset, multi-photo, photo background, auth/user-context source 는 계속 다음 단계다.
+
+### 3.4 retrieval은 구조만 열고 실행은 잠근다
 
 - `embeddings / RAG` 는 여전히 v1 제품 범위 밖이다.
 - 다만 전체 pipeline은 `optional retrieval stage` 를 later-addable seam 으로 가진다.
 - v1 default는 `retrievalMode=none` 이다.
 - 이후 metadata search, semantic search, rerank는 같은 stage contract에 꽂을 수 있어야 한다.
 
-### 3.4 multi-agent는 열지 않는다
+### 3.5 multi-agent는 열지 않는다
 
 - planner, selector, judge, vision evaluator는 logical phase일 뿐 독립 actor 협업 구조가 아니다.
 - v1은 single-run / single-worker mental model을 유지한다.
@@ -122,7 +142,7 @@ v1 capability catalog의 top-level family는 아래로 고정한다.
 | `text` | headline, supporting copy, badge, footer note 등 텍스트 계열 | 포함 | 포함 |
 | `shape` | rect, ellipse, polygon, line 등 도형 계열 | 포함 | 포함 |
 | `group` | CTA, badge block, composite decoration 등 그룹 계열 | 포함 | 포함 |
-| `photo` | 업로드/검색/사진 추가로 들어오는 사진 계열 | 포함 | future-facing |
+| `photo` | 업로드/검색/사진 추가로 들어오는 사진 계열 | 포함 | wide-only execution-enabled |
 | `graphic` | bitmap/vector/illust/icon/calligraphy bitmap 등 요소 계열 | 포함 | future-facing |
 | `qr` | QR code 요소 | 포함 | future-facing |
 | `barcode` | barcode 요소 | 포함 | future-facing |
@@ -198,6 +218,16 @@ v1 capability catalog의 top-level family는 아래로 고정한다.
 
 추가 slot은 선택적으로 존재할 수 있지만, v1 representative happy-path는 위 5개를 기준으로 평가한다.
 
+### 6.4 photo branch phase A intent rule
+
+- `photo` 는 Phase A 에서 `hero visual candidate` 로만 취급한다.
+- `photo` 는 `background replacement` 나 `multi-photo collage` 로 해석하면 안 된다.
+- `create_template` intent 가 `graphic_allowed_photo_optional` 인 경우에도 아래 조건을 만족할 때만 photo branch compare 로 승격한다.
+  - current preset 이 hero visual area 를 분리할 수 있다
+  - copy cluster 와 photo hero 가 충돌하지 않는다
+  - graphic-only path 대비 계절성 또는 focal strength 이점이 있다
+- 위 조건을 만족하지 않으면 `photo_source` 는 candidate set 에 존재해도 최종 path 에서는 `graphic preferred` 로 남겨야 한다.
+
 ## 7. Tool Selection Policy Lock
 
 ### 7.1 원칙
@@ -257,6 +287,17 @@ candidate system은 최소 아래 객체를 가져야 한다.
 retrieval stage가 나중에 추가되더라도 candidate schema는 그대로 재사용되어야 한다.
 
 즉 아래 흐름이 모두 같은 result family를 만들어야 한다.
+
+### 8.4 photo branch compare criteria
+
+`photo_candidate` 를 compare 할 때는 기존 criteria 외에 아래 criteria 를 추가로 본다.
+
+- `focalSafety`
+- `cropSafety`
+- `copySeparationSupport`
+
+Phase A 에서는 위 criteria 가 충분하지 않으면 `photo_selected` 가 아니라 `graphic_preferred` 를 선택해야 한다.
+즉 `photo` 는 “쓸 수 있으면 쓰는” 옵션이 아니라 “guard 를 통과했을 때만 쓸 수 있는” 옵션이다.
 
 - no retrieval
 - metadata search
