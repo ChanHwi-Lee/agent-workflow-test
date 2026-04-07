@@ -49,6 +49,10 @@ function createEnv(): AgentWorkerEnv {
     leaseTtlMs: 30000,
     queueTransportMode: "disabled",
     agentInternalBaseUrl: "http://127.0.0.1:3000",
+    tooldiCatalogSourceMode: "placeholder",
+    tooldiContentApiBaseUrl: null,
+    tooldiContentApiTimeoutMs: 5000,
+    tooldiContentApiCookie: null,
     exitAfterBoot: false,
   };
 }

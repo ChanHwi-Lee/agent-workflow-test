@@ -51,6 +51,10 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
   leaseTtlMs: number;
   queueTransportMode: WorkerQueueTransportMode;
   agentInternalBaseUrl: string;
+  tooldiCatalogSourceMode: "placeholder" | "tooldi_api";
+  tooldiContentApiBaseUrl: string | null;
+  tooldiContentApiTimeoutMs: number;
+  tooldiContentApiCookie: string | null;
   exitAfterBoot: boolean;
 }
 
@@ -212,6 +216,22 @@ export function loadAgentApiEnv(source: EnvSource = process.env): AgentApiEnv {
 export function loadAgentWorkerEnv(
   source: EnvSource = process.env,
 ): AgentWorkerEnv {
+  const tooldiCatalogSourceMode = readEnumValue(
+    source,
+    "TOOLDI_CATALOG_SOURCE_MODE",
+    ["placeholder", "tooldi_api"] as const,
+    "placeholder",
+  );
+  const tooldiContentApiBaseUrl = readOptionalString(
+    source,
+    "TOOLDI_CONTENT_API_BASE_URL",
+  );
+  if (tooldiCatalogSourceMode === "tooldi_api" && !tooldiContentApiBaseUrl) {
+    throw new Error(
+      "Missing required environment variable: TOOLDI_CONTENT_API_BASE_URL",
+    );
+  }
+
   return {
     ...loadSharedEnv(source),
     workerConcurrency: readNumber(source, "WORKER_CONCURRENCY", 4),
@@ -227,6 +247,17 @@ export function loadAgentWorkerEnv(
       source,
       "AGENT_INTERNAL_BASE_URL",
       "http://127.0.0.1:3000",
+    ),
+    tooldiCatalogSourceMode,
+    tooldiContentApiBaseUrl,
+    tooldiContentApiTimeoutMs: readNumber(
+      source,
+      "TOOLDI_CONTENT_API_TIMEOUT_MS",
+      5000,
+    ),
+    tooldiContentApiCookie: readOptionalString(
+      source,
+      "TOOLDI_CONTENT_API_COOKIE",
     ),
     exitAfterBoot: readBoolean(source, "WORKER_EXIT_AFTER_BOOT", false),
   };

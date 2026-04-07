@@ -12,6 +12,7 @@ import type {
   ImagePrimitiveClient,
   TemplateCatalogClient,
   TextLayoutHelper,
+  TooldiCatalogSourceClient,
 } from "@tooldi/tool-adapters";
 import type { ToolRegistry } from "@tooldi/tool-registry";
 
@@ -24,6 +25,7 @@ import { createImagePrimitiveClient } from "./tools/adapters/imagePrimitiveAdapt
 import { createTemplateCatalogClient } from "./tools/adapters/templateCatalogAdapter.js";
 import { createTextLayoutHelper } from "./tools/adapters/textLayoutHelperAdapter.js";
 import { createWorkerToolRegistry } from "./tools/registry.js";
+import { createTooldiCatalogSourceClient } from "./tools/adapters/tooldiCatalogSourceAdapter.js";
 import type { ProcessRunJobResult } from "./types.js";
 
 export interface BuildWorkerRuntimeOptions {
@@ -38,10 +40,12 @@ export interface BuildWorkerRuntimeOptions {
   assetStorageClient?: AssetStorageClient;
   textLayoutHelper?: TextLayoutHelper;
   templateCatalogClient?: TemplateCatalogClient;
+  tooldiCatalogSourceClient?: TooldiCatalogSourceClient;
 }
 
 export interface AgentWorkerRuntime extends ProcessRunJobDependencies {
   env: AgentWorkerEnv;
+  tooldiCatalogSourceClient: TooldiCatalogSourceClient;
   processRunJob(job: RunJobEnvelope): Promise<ProcessRunJobResult>;
   close(): Promise<void>;
 }
@@ -83,6 +87,9 @@ export async function buildWorkerRuntime(
     textLayoutHelper: options.textLayoutHelper ?? createTextLayoutHelper(),
     templateCatalogClient:
       options.templateCatalogClient ?? createTemplateCatalogClient(),
+    tooldiCatalogSourceClient:
+      options.tooldiCatalogSourceClient ??
+      createTooldiCatalogSourceClient(options.env),
     async processRunJob(job: RunJobEnvelope) {
       return processRunJob(job, runtime);
     },
@@ -116,6 +123,7 @@ export async function buildWorkerRuntime(
     queueConsumer: queueConsumer.mode,
     queueName: options.env.bullmqQueueName,
     agentInternalBaseUrl: options.env.agentInternalBaseUrl,
+    tooldiCatalogSourceMode: options.env.tooldiCatalogSourceMode,
   });
 
   return runtime;

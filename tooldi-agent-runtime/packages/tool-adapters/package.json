@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "test": "node --test dist/catalog/*.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }
