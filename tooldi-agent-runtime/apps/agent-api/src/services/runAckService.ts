@@ -41,11 +41,15 @@ export class RunAckService {
 
     await this.mutationLedgerRepository.recordAck(request);
     await this.runRepository.setLastAckedSeq(request.runId, request.seq);
+    const ackDetail =
+      request.status === "rejected" && request.error
+        ? ` code=${request.error.code} message=${request.error.message}`
+        : "";
     await this.runEventService.appendLog(
       request.runId,
       request.traceId,
       request.status === "rejected" ? "warn" : "info",
-      `Observed mutation ack for seq=${request.seq} status=${request.status}`,
+      `Observed mutation ack for seq=${request.seq} status=${request.status}${ackDetail}`,
       request.clientObservedAt,
     );
 
@@ -55,6 +59,7 @@ export class RunAckService {
       mutationId: request.mutationId,
       seq: request.seq,
       status: request.status,
+      ...(request.error ? { error: request.error } : {}),
     });
 
     return {

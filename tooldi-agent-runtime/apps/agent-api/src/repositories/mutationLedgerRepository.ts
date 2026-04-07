@@ -28,6 +28,7 @@ export interface MutationAckLedgerRecord {
   targetPageId: string;
   resultingRevision: number | undefined;
   resolvedLayerIds: MutationApplyAckRequest["resolvedLayerIds"];
+  error: MutationApplyAckRequest["error"];
   clientObservedAt: string;
 }
 
@@ -100,6 +101,7 @@ export class MutationLedgerRepository {
       targetPageId: request.targetPageId,
       resultingRevision: request.resultingRevision,
       resolvedLayerIds: request.resolvedLayerIds,
+      error: request.error,
       clientObservedAt: request.clientObservedAt,
     };
 
@@ -158,10 +160,11 @@ export class MutationLedgerRepository {
             : {}),
           ...(record.ackStatus === "rejected"
             ? {
-                error: {
-                  code: "mutation_rejected",
-                  message: `Mutation ${mutationId} was rejected by the editor`,
-                },
+                error:
+                  record.ackRecord.error ?? {
+                    code: "mutation_rejected",
+                    message: `Mutation ${mutationId} was rejected by the editor`,
+                  },
               }
             : {}),
         };

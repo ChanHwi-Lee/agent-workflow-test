@@ -21,6 +21,7 @@ import type {
   StoredAssetRecord,
   TextLayoutEstimate,
   TextLayoutHelper,
+  TooldiCatalogSourceClient,
 } from "@tooldi/tool-adapters";
 
 import type { BackendCallbackClient } from "../clients/backendCallbackClient.js";
@@ -54,6 +55,14 @@ function createEnv(): AgentWorkerEnv {
     tooldiContentApiTimeoutMs: 5000,
     tooldiContentApiCookie: null,
     exitAfterBoot: false,
+  };
+}
+
+function createRealSourceEnv(): AgentWorkerEnv {
+  return {
+    ...createEnv(),
+    tooldiCatalogSourceMode: "tooldi_api",
+    tooldiContentApiBaseUrl: "http://localhost:8080",
   };
 }
 
@@ -182,6 +191,143 @@ class TrackingTextLayoutHelper implements TextLayoutHelper {
   }
 }
 
+class FakeTooldiCatalogSourceClient implements TooldiCatalogSourceClient {
+  async searchBackgroundAssets() {
+    return {
+      sourceFamily: "background_source" as const,
+      page: 1,
+      hasNextPage: false,
+      traceId: "trace-background",
+      assets: [
+        {
+          assetId: "background:11",
+          sourceFamily: "background_source" as const,
+          contentType: "background" as const,
+          serial: "11",
+          uid: null,
+          title: "봄 패턴 배경",
+          keywordTokens: ["봄", "패턴", "배너"],
+          width: 1080,
+          height: 1080,
+          thumbnailUrl: "https://thumb.test/background-11.png",
+          originUrl: "https://origin.test/background-11.png",
+          priceType: "free" as const,
+          isAi: false,
+          creatorSerial: null,
+          insertMode: "page_background" as const,
+          backgroundKind: "pattern" as const,
+          sourcePayload: {},
+        },
+      ],
+    };
+  }
+
+  async searchGraphicAssets() {
+    return {
+      sourceFamily: "graphic_source" as const,
+      page: 0,
+      hasNextPage: false,
+      traceId: "trace-graphic",
+      assets: [
+        {
+          assetId: "graphic:22",
+          sourceFamily: "graphic_source" as const,
+          contentType: "graphic" as const,
+          serial: "22",
+          uid: null,
+          title: "봄 일러스트",
+          keywordTokens: ["봄", "꽃", "프로모션"],
+          width: null,
+          height: null,
+          thumbnailUrl: "https://thumb.test/graphic-22.png",
+          originUrl: "https://origin.test/graphic-22.png",
+          priceType: "free" as const,
+          isAi: false,
+          creatorSerial: null,
+          insertMode: "object_element" as const,
+          graphicKind: "illust" as const,
+          extension: ".png",
+          sourcePayload: {},
+        },
+      ],
+    };
+  }
+
+  async searchPhotoAssets() {
+    return {
+      sourceFamily: "photo_source" as const,
+      page: 0,
+      hasNextPage: false,
+      traceId: "trace-photo",
+      assets: [],
+    };
+  }
+
+  async listFontAssets() {
+    return {
+      sourceFamily: "font_source" as const,
+      page: 0,
+      hasNextPage: false,
+      traceId: null,
+      assets: [
+        {
+          assetId: "font:701",
+          sourceFamily: "font_source" as const,
+          contentType: "font" as const,
+          serial: "701",
+          uid: null,
+          title: "Spring Gothic",
+          keywordTokens: ["고딕", "KOR"],
+          width: null,
+          height: null,
+          thumbnailUrl: null,
+          originUrl: null,
+          priceType: null,
+          isAi: false,
+          creatorSerial: null,
+          insertMode: "font_face" as const,
+          fontName: "Spring Gothic",
+          fontFace: "SpringGothic",
+          fontLanguage: "KOR" as const,
+          fontCategory: "고딕",
+          supportedLanguages: ["KOR", "ENG"] as Array<
+            "KOR" | "ENG" | "CHN" | "JPN"
+          >,
+          fontWeights: [
+            {
+              serial: "701-400",
+              fontSerial: "701",
+              fontWeight: "400",
+              convertWeight: "400",
+              fontFace: "SpringGothic",
+              fontFamily: "701_400",
+              extension: "ttf",
+              fileType: "font/ttf",
+              orgFilename: "spring-regular.ttf",
+              savedFilename: "spring-regular.ttf",
+              thumbnailUrl: null,
+            },
+            {
+              serial: "701-700",
+              fontSerial: "701",
+              fontWeight: "700",
+              convertWeight: "700",
+              fontFace: "SpringGothic",
+              fontFamily: "701_700",
+              extension: "ttf",
+              fileType: "font/ttf",
+              orgFilename: "spring-bold.ttf",
+              savedFilename: "spring-bold.ttf",
+              thumbnailUrl: null,
+            },
+          ],
+          sourcePayload: {},
+        },
+      ],
+    };
+  }
+}
+
 test("processRunJob orchestrates phases and backend callbacks in order", async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
@@ -276,8 +422,16 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     `runs/${testRun.runId}/attempts/1/template-candidate-set.json`,
   );
   assert.equal(
+    callbackClient.finalizations[0]?.sourceSearchSummaryRef,
+    `runs/${testRun.runId}/attempts/1/source-search-summary.json`,
+  );
+  assert.equal(
     callbackClient.finalizations[0]?.selectionDecisionRef,
     `runs/${testRun.runId}/attempts/1/selection-decision.json`,
+  );
+  assert.equal(
+    callbackClient.finalizations[0]?.typographyDecisionRef,
+    `runs/${testRun.runId}/attempts/1/typography-decision.json`,
   );
   assert.equal(
     callbackClient.finalizations[0]?.latestSaveReceiptId,
@@ -292,8 +446,16 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     `runs/${testRun.runId}/attempts/1/retrieval-stage.json`,
   );
   assert.equal(
+    result.artifactRefs.sourceSearchSummaryRef,
+    `runs/${testRun.runId}/attempts/1/source-search-summary.json`,
+  );
+  assert.equal(
     result.artifactRefs.selectionDecisionRef,
     `runs/${testRun.runId}/attempts/1/selection-decision.json`,
+  );
+  assert.equal(
+    result.artifactRefs.typographyDecisionRef,
+    `runs/${testRun.runId}/attempts/1/typography-decision.json`,
   );
   assert.ok(result.retrievalStage);
   assert.equal(result.retrievalStage.retrievalMode, "none");
@@ -373,6 +535,104 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     ),
     false,
   );
+});
+
+test("processRunJob can activate real Tooldi background/graphic/font source mode", async () => {
+  const env = createRealSourceEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = createObjectStoreClient({
+    bucket: env.objectStoreBucket,
+  });
+  const callbackClient = new RecordingBackendCallbackClient();
+  const testRun = createTestRun();
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+    tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
+  });
+
+  assert.equal(result.selectionDecision?.selectedBackgroundSerial, "11");
+  assert.equal(result.selectionDecision?.selectedDecorationSerial, "22");
+  assert.equal(result.selectionDecision?.selectedBackgroundCategory, "pattern");
+  assert.equal(result.selectionDecision?.selectedDecorationCategory, "illust");
+  assert.equal(result.typographyDecision?.display?.fontToken, "701_700");
+  assert.equal(result.typographyDecision?.body?.fontToken, "701_400");
+  assert.equal(result.sourceSearchSummary?.background.returnedCount, 1);
+  assert.equal(result.sourceSearchSummary?.graphic.returnedCount, 1);
+  assert.equal(result.sourceSearchSummary?.font.returnedCount, 1);
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes("selected serial=11"),
+    ),
+    true,
+  );
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes("display=701_700 body=701_400"),
+    ),
+    true,
+  );
+
+  const selectionArtifact = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: result.artifactRefs.selectionDecisionRef!,
+        })
+      ).body,
+    ),
+  ) as {
+    selectedBackgroundAssetId: string | null;
+    selectedDecorationAssetId: string | null;
+  };
+  assert.equal(selectionArtifact.selectedBackgroundAssetId, "background:11");
+  assert.equal(selectionArtifact.selectedDecorationAssetId, "graphic:22");
+
+  const sourceSummaryArtifact = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: result.artifactRefs.sourceSearchSummaryRef!,
+        })
+      ).body,
+    ),
+  ) as {
+    sourceMode: string;
+    font: { selectedSerial: string | null };
+  };
+  assert.equal(sourceSummaryArtifact.sourceMode, "tooldi_api");
+  assert.equal(sourceSummaryArtifact.font.selectedSerial, "701");
 });
 
 test("processRunJob rejects non-empty canvas runs for the spring vertical slice", async () => {
@@ -674,6 +934,81 @@ test("processRunJob does not treat unconfirmed mutation ack as success", async (
   assert.equal(result.finalizeDraft.request.errorSummary?.code, "mutation_ack_timed_out");
   assert.equal(imagePrimitiveClient.generateCalls, 0);
   assert.equal(assetStorageClient.persistCalls, 0);
+});
+
+test("processRunJob preserves rejected mutation reason in stage log and finalize summary", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = createObjectStoreClient({
+    bucket: env.objectStoreBucket,
+  });
+  const callbackClient = new RecordingBackendCallbackClient();
+  callbackClient.waitMutationAckResponseFactory = (_mutationId, _query) => {
+    const currentSeq = callbackClient.ackWaits.length;
+    if (currentSeq >= 2) {
+      return {
+        found: true,
+        status: "rejected",
+        seq: currentSeq,
+        error: {
+          code: "revision_mismatch",
+          message: "현재 캔버스 리비전이 mutation 기대값과 다릅니다.",
+        },
+      };
+    }
+
+    return {
+      found: true,
+      status: "acked",
+      seq: currentSeq,
+      resultingRevision: currentSeq,
+    };
+  };
+
+  const testRun = createTestRun();
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+  });
+
+  assert.equal(result.finalizeDraft.request.finalStatus, "failed");
+  assert.equal(result.finalizeDraft.request.errorSummary?.code, "revision_mismatch");
+  assert.equal(
+    result.finalizeDraft.request.errorSummary?.message,
+    "현재 캔버스 리비전이 mutation 기대값과 다릅니다.",
+  );
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes("code=revision_mismatch"),
+    ),
+    true,
+  );
 });
 
 test("processRunJob emits an observational log when backend passes repairContext", async () => {

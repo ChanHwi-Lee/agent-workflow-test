@@ -94,6 +94,9 @@
 
 ### 5.2 asset source policy
 
+- 이 vertical slice의 real source-of-truth 는 direct MariaDB 가 아니라 existing Tooldi PHP content API 다.
+- MariaDB 는 source schema 확인, inventory 검증, sampling 용도로만 사용한다.
+- runtime real source activation 은 `localhost` host 기반 PHP API만 지원한다. `127.0.0.1` 은 local host/cookie policy mismatch 때문에 v1에서 지원하지 않는다.
 - v1 immediate execution에서 실제로 기본 사용해야 하는 것은 `background_source` 와 `graphic_source` 다.
 - `photo_source` 는 candidate reasoning에는 포함하지만, 기본 mandatory path는 아니다.
 - `template_source` 는 이번 vertical slice에서 direct execution source가 아니다. style prior/reference seam으로만 둔다.
@@ -231,6 +234,13 @@ candidate compare는 아래 criteria를 기준으로 한다.
 
 - spring template를 만들되, 결과는 우선 `background + text + shape + group` 만으로도 성립해야 한다.
 - 그 이후에 `photo` 나 `graphic` candidate 채택 경로를 점진적으로 연다.
+
+### 8.4 current implementation status
+
+- 현재 worker 구현은 opt-in real source mode에서 `background`, `graphic(shape)`, `font` inventory를 실제 Tooldi PHP API로 조회한다.
+- selection evidence는 worker artifact와 `run.log` SSE 양쪽에 남는다.
+- immediate execution은 아직 real background/graphic asset binding까지 내려가지 않고, selected asset metadata를 바탕으로 `shape/text/group` safe surface를 유지한다.
+- typography만은 실제 Tooldi font inventory를 사용해 `display/body` token을 선택하고, toolditor spike path가 이를 소비한다.
 
 ## 9. Mutation Synthesis Lock
 

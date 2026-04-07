@@ -11,8 +11,10 @@ export async function finalizeRun(
     normalizedIntentRef?: string;
     executablePlanRef?: string;
     candidateSetRef?: string;
+    sourceSearchSummaryRef?: string;
     retrievalStageRef?: string;
     selectionDecisionRef?: string;
+    typographyDecisionRef?: string;
     assignedSeqs?: number[];
     overrideResult?: {
       finalStatus: FinalizeRunDraft["request"]["finalStatus"];
@@ -35,10 +37,11 @@ export async function finalizeRun(
         break;
       case "rejected":
         finalStatus = "failed";
-        errorSummary = {
-          code: "mutation_rejected",
-          message: "Skeleton mutation was rejected by the backend/editor handshake",
-        };
+        errorSummary =
+          lastMutationAck.error ?? {
+            code: "mutation_rejected",
+            message: "Skeleton mutation was rejected by the backend/editor handshake",
+          };
         break;
       case "timed_out":
         finalStatus = "failed";
@@ -105,11 +108,17 @@ export async function finalizeRun(
         ? { executablePlanRef: options.executablePlanRef }
         : {}),
       ...(options.candidateSetRef ? { candidateSetRef: options.candidateSetRef } : {}),
+      ...(options.sourceSearchSummaryRef
+        ? { sourceSearchSummaryRef: options.sourceSearchSummaryRef }
+        : {}),
       ...(options.retrievalStageRef
         ? { retrievalStageRef: options.retrievalStageRef }
         : {}),
       ...(options.selectionDecisionRef
         ? { selectionDecisionRef: options.selectionDecisionRef }
+        : {}),
+      ...(options.typographyDecisionRef
+        ? { typographyDecisionRef: options.typographyDecisionRef }
         : {}),
       ...(sourceMutationRange ? { sourceMutationRange } : {}),
       createdLayerIds:

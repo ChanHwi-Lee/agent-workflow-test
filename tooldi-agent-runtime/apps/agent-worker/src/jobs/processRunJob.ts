@@ -10,11 +10,19 @@ import type {
   ImagePrimitiveClient,
   TemplateCatalogClient,
   TextLayoutHelper,
+  TooldiCatalogSourceClient,
+} from "@tooldi/tool-adapters";
+import {
+  createPlaceholderTooldiCatalogSourceClient,
+  TooldiCatalogSourceError,
 } from "@tooldi/tool-adapters";
 import type { ToolRegistry } from "@tooldi/tool-registry";
 
 import type { BackendCallbackClient } from "../clients/backendCallbackClient.js";
-import { assembleTemplateCandidates } from "../phases/assembleTemplateCandidates.js";
+import {
+  assembleTemplateCandidates,
+  SpringCatalogActivationError,
+} from "../phases/assembleTemplateCandidates.js";
 import { buildExecutablePlan } from "../phases/buildExecutablePlan.js";
 import { buildNormalizedIntent } from "../phases/buildNormalizedIntent.js";
 import { emitRefinementMutations } from "../phases/emitRefinementMutations.js";
@@ -22,8 +30,16 @@ import { emitSkeletonMutations } from "../phases/emitSkeletonMutations.js";
 import { finalizeRun } from "../phases/finalizeRun.js";
 import { hydratePlanningInput } from "../phases/hydratePlanningInput.js";
 import { runRetrievalStage } from "../phases/runRetrievalStage.js";
+import { selectTypography } from "../phases/selectTypography.js";
 import { selectTemplateComposition } from "../phases/selectTemplateComposition.js";
-import type { ProcessRunJobResult } from "../types.js";
+import type {
+  ProcessRunJobResult,
+  RetrievalStageResult,
+  SelectionDecision,
+  SourceSearchSummary,
+  TemplateCandidateBundle,
+  TypographyDecision,
+} from "../types.js";
 
 export interface ProcessRunJobDependencies {
   env: AgentWorkerEnv;
@@ -35,6 +51,7 @@ export interface ProcessRunJobDependencies {
   assetStorageClient: AssetStorageClient;
   textLayoutHelper: TextLayoutHelper;
   templateCatalogClient: TemplateCatalogClient;
+  tooldiCatalogSourceClient?: TooldiCatalogSourceClient;
 }
 
 export async function processRunJob(
@@ -166,70 +183,198 @@ export async function processRunJob(
       },
     };
   }
-  const candidateSets = await assembleTemplateCandidates(hydrated, intent, {
-    backgroundCatalogClient: dependencies.templateCatalogClient,
-    graphicCatalogClient: dependencies.templateCatalogClient,
-    photoCatalogClient: dependencies.templateCatalogClient,
-  });
-  const candidateSetRef = await persistWorkerJsonArtifact(
-    dependencies.objectStore,
-    `runs/${job.runId}/attempts/${job.attemptSeq}/template-candidate-set.json`,
-    candidateSets,
-    {
-      artifactKind: "template-candidate-set",
-      runId: job.runId,
-      traceId: job.traceId,
-      attemptSeq: String(job.attemptSeq),
-    },
-  );
-  const { retrievalStage, selectionPolicy } = await runRetrievalStage(hydrated, intent, {
-    toolRegistry: dependencies.toolRegistry,
-  });
-  const retrievalStageRef = await persistWorkerJsonArtifact(
-    dependencies.objectStore,
-    `runs/${job.runId}/attempts/${job.attemptSeq}/retrieval-stage.json`,
-    retrievalStage,
-    {
-      artifactKind: "retrieval-stage",
-      runId: job.runId,
-      traceId: job.traceId,
-      attemptSeq: String(job.attemptSeq),
-    },
-  );
-  const selectionDecision = await selectTemplateComposition(intent, candidateSets, {
-    retrievalStage,
-    selectionPolicy,
-  });
-  const selectionDecisionRef = await persistWorkerJsonArtifact(
-    dependencies.objectStore,
-    `runs/${job.runId}/attempts/${job.attemptSeq}/selection-decision.json`,
-    selectionDecision,
-    {
-      artifactKind: "selection-decision",
-      runId: job.runId,
-      traceId: job.traceId,
-      attemptSeq: String(job.attemptSeq),
-    },
-  );
-  const selectionEvent = await dependencies.callbackClient.appendEvent(job.runId, {
+  const tooldiCatalogSourceClient =
+    dependencies.tooldiCatalogSourceClient ??
+    createPlaceholderTooldiCatalogSourceClient();
+
+  let candidateSets: TemplateCandidateBundle | undefined;
+  let sourceSearchSummary: SourceSearchSummary | undefined;
+  let retrievalStage: RetrievalStageResult | undefined;
+  let selectionDecision: SelectionDecision | undefined;
+  let typographyDecision: TypographyDecision | undefined;
+  let typographySearchSummary: SourceSearchSummary["font"] | undefined;
+  let plan: ProcessRunJobResult["plan"];
+  let candidateSetRef: string | undefined;
+  let retrievalStageRef: string | undefined;
+  let selectionDecisionRef: string | undefined;
+  let sourceSearchSummaryRef: string | undefined;
+  let typographyDecisionRef: string | undefined;
+
+  try {
+    const candidateAssembly = await assembleTemplateCandidates(hydrated, intent, {
+      templateCatalogClient: dependencies.templateCatalogClient,
+      tooldiCatalogSourceClient,
+      sourceMode: dependencies.env.tooldiCatalogSourceMode,
+    });
+    candidateSets = candidateAssembly.candidates;
+    candidateSetRef = await persistWorkerJsonArtifact(
+      dependencies.objectStore,
+      `runs/${job.runId}/attempts/${job.attemptSeq}/template-candidate-set.json`,
+      candidateSets,
+      {
+        artifactKind: "template-candidate-set",
+        runId: job.runId,
+        traceId: job.traceId,
+        attemptSeq: String(job.attemptSeq),
+      },
+    );
+    const retrievalDecision = await runRetrievalStage(hydrated, intent, {
+      toolRegistry: dependencies.toolRegistry,
+    });
+    retrievalStage = retrievalDecision.retrievalStage;
+    const selectionPolicy = retrievalDecision.selectionPolicy;
+    retrievalStageRef = await persistWorkerJsonArtifact(
+      dependencies.objectStore,
+      `runs/${job.runId}/attempts/${job.attemptSeq}/retrieval-stage.json`,
+      retrievalStage,
+      {
+        artifactKind: "retrieval-stage",
+        runId: job.runId,
+        traceId: job.traceId,
+        attemptSeq: String(job.attemptSeq),
+      },
+    );
+    selectionDecision = await selectTemplateComposition(intent, candidateSets, {
+      retrievalStage,
+      selectionPolicy,
+    });
+    const typographySelection = await selectTypography(hydrated, {
+        sourceClient: tooldiCatalogSourceClient,
+        sourceMode: dependencies.env.tooldiCatalogSourceMode,
+      });
+    typographyDecision = typographySelection.decision;
+    typographySearchSummary = typographySelection.summary;
+    selectionDecisionRef = await persistWorkerJsonArtifact(
+      dependencies.objectStore,
+      `runs/${job.runId}/attempts/${job.attemptSeq}/selection-decision.json`,
+      selectionDecision,
+      {
+        artifactKind: "selection-decision",
+        runId: job.runId,
+        traceId: job.traceId,
+        attemptSeq: String(job.attemptSeq),
+      },
+    );
+    typographyDecisionRef = await persistWorkerJsonArtifact(
+      dependencies.objectStore,
+      `runs/${job.runId}/attempts/${job.attemptSeq}/typography-decision.json`,
+      typographyDecision,
+      {
+        artifactKind: "typography-decision",
+        runId: job.runId,
+        traceId: job.traceId,
+        attemptSeq: String(job.attemptSeq),
+      },
+    );
+    sourceSearchSummary = buildSourceSearchSummary(
+      job.runId,
+      job.traceId,
+      dependencies.env.tooldiCatalogSourceMode,
+      candidateAssembly.sourceSearch.background,
+      candidateAssembly.sourceSearch.graphic,
+      typographySearchSummary,
+      selectionDecision,
+    );
+    sourceSearchSummaryRef = await persistWorkerJsonArtifact(
+      dependencies.objectStore,
+      `runs/${job.runId}/attempts/${job.attemptSeq}/source-search-summary.json`,
+      sourceSearchSummary,
+      {
+        artifactKind: "source-search-summary",
+        runId: job.runId,
+        traceId: job.traceId,
+        attemptSeq: String(job.attemptSeq),
+      },
+    );
+    for (const message of buildSelectionLogMessages(
+      sourceSearchSummary,
+      typographyDecision,
+    )) {
+      const sourceLog = await dependencies.callbackClient.appendEvent(job.runId, {
+        traceId: job.traceId,
+        attempt: job.attemptSeq,
+        queueJobId: job.queueJobId,
+        event: {
+          type: "log",
+          level: message.level,
+          message: message.message,
+        },
+      });
+      cooperativeStopRequested ||= sourceLog.cancelRequested;
+    }
+    const selectionEvent = await dependencies.callbackClient.appendEvent(job.runId, {
     traceId: job.traceId,
     attempt: job.attemptSeq,
     queueJobId: job.queueJobId,
     event: {
       type: "log",
       level: "info",
-      message: `Selected ${selectionDecision.backgroundMode} background, ${selectionDecision.layoutMode} layout, ${selectionDecision.decorationMode} decoration`,
+      message: `Selected ${selectionDecision.backgroundMode} background (${selectionDecision.selectedBackgroundSerial ?? "n/a"}), ${selectionDecision.layoutMode} layout, ${selectionDecision.decorationMode} decoration (${selectionDecision.selectedDecorationSerial ?? "n/a"})`,
     },
   });
-  cooperativeStopRequested ||= selectionEvent.cancelRequested;
+    cooperativeStopRequested ||= selectionEvent.cancelRequested;
 
-  const plan = await buildExecutablePlan(hydrated, intent, selectionDecision, {
-    toolRegistry: dependencies.toolRegistry,
-  });
+    plan = await buildExecutablePlan(
+      hydrated,
+      intent,
+      selectionDecision,
+      typographyDecision,
+      {
+        toolRegistry: dependencies.toolRegistry,
+      },
+    );
+  } catch (error) {
+    if (isSpringActivationFailure(error)) {
+      const failureLog = await dependencies.callbackClient.appendEvent(job.runId, {
+        traceId: job.traceId,
+        attempt: job.attemptSeq,
+        queueJobId: job.queueJobId,
+        event: {
+          type: "log",
+          level: "error",
+          message: `Real Tooldi source activation failed: ${error.message}`,
+        },
+      });
+      cooperativeStopRequested ||= failureLog.cancelRequested;
+
+      const savingHeartbeat = await dependencies.callbackClient.heartbeat(job.runId, {
+        ...heartbeatBase,
+        attemptState: "finalizing",
+        phase: "saving",
+        heartbeatAt: new Date().toISOString(),
+      });
+      cooperativeStopRequested ||= shouldStopAfterCurrentAction(savingHeartbeat);
+
+      const finalizeDraft = await finalizeRun(hydrated, [], null, {
+        cooperativeStopRequested,
+        normalizedIntentRef,
+        overrideResult: {
+          finalStatus: "failed",
+          errorSummary: {
+            code: getSpringActivationErrorCode(error),
+            message: error.message,
+          },
+        },
+      });
+      await dependencies.callbackClient.finalize(job.runId, finalizeDraft.request);
+
+      return {
+        intent,
+        emittedMutationIds: [],
+        finalizeDraft,
+        artifactRefs: {
+          normalizedIntentRef,
+        },
+      };
+    }
+
+    throw error;
+  }
+  const resolvedPlan = plan!;
   const executablePlanRef = await persistWorkerJsonArtifact(
     dependencies.objectStore,
     `runs/${job.runId}/attempts/${job.attemptSeq}/executable-plan.json`,
-    plan,
+    resolvedPlan,
     {
       artifactKind: "executable-plan",
       runId: job.runId,
@@ -260,10 +405,10 @@ export async function processRunJob(
 
   const skeletonBatch = cooperativeStopRequested
     ? {
-        commitGroup: plan.actions[0]?.commitGroup ?? "cancelled_before_mutation",
+        commitGroup: resolvedPlan.actions[0]?.commitGroup ?? "cancelled_before_mutation",
         proposals: [],
       }
-    : await emitSkeletonMutations(hydrated, intent, plan, {
+    : await emitSkeletonMutations(hydrated, intent, resolvedPlan, {
         textLayoutHelper: dependencies.textLayoutHelper,
       });
   const emittedMutationIds: string[] = [];
@@ -336,7 +481,10 @@ export async function processRunJob(
       event: {
         type: "log",
         level: lastMutationAck.status === "acked" ? "info" : "warn",
-        message: `Stage ${proposal.mutation.seq}/3 result: ${lastMutationAck.status}`,
+        message:
+          lastMutationAck.status === "rejected" && lastMutationAck.error
+            ? `Stage ${proposal.mutation.seq}/3 result: rejected code=${lastMutationAck.error.code} message=${lastMutationAck.error.message}`
+            : `Stage ${proposal.mutation.seq}/3 result: ${lastMutationAck.status}`,
       },
     });
     if (ackLog.cancelRequested) {
@@ -391,8 +539,10 @@ export async function processRunJob(
       normalizedIntentRef,
       executablePlanRef,
       candidateSetRef,
+      sourceSearchSummaryRef,
       retrievalStageRef,
       selectionDecisionRef,
+      typographyDecisionRef,
       assignedSeqs,
     },
   );
@@ -410,19 +560,117 @@ export async function processRunJob(
   return {
     intent,
     candidateSets,
+    sourceSearchSummary,
     retrievalStage,
     selectionDecision,
-    plan,
+    typographyDecision,
+    plan: resolvedPlan,
     emittedMutationIds,
     finalizeDraft,
     artifactRefs: {
       normalizedIntentRef,
       executablePlanRef,
       candidateSetRef,
+      sourceSearchSummaryRef,
       retrievalStageRef,
       selectionDecisionRef,
+      typographyDecisionRef,
     },
   };
+}
+
+function buildSourceSearchSummary(
+  runId: string,
+  traceId: string,
+  sourceMode: AgentWorkerEnv["tooldiCatalogSourceMode"],
+  background: SourceSearchSummary["background"],
+  graphic: SourceSearchSummary["graphic"],
+  font: SourceSearchSummary["font"] | undefined,
+  selectionDecision: SelectionDecision,
+): SourceSearchSummary {
+  return {
+    summaryId: createSummaryId(runId),
+    runId,
+    traceId,
+    sourceMode,
+    background: {
+      ...background,
+      selectedAssetId: selectionDecision.selectedBackgroundAssetId,
+      selectedSerial: selectionDecision.selectedBackgroundSerial,
+      selectedCategory: selectionDecision.selectedBackgroundCategory,
+    },
+    graphic: {
+      ...graphic,
+      selectedAssetId: selectionDecision.selectedDecorationAssetId,
+      selectedSerial: selectionDecision.selectedDecorationSerial,
+      selectedCategory: selectionDecision.selectedDecorationCategory,
+    },
+    font: font ?? {
+      family: "font",
+      queryAttempts: [],
+      returnedCount: 0,
+      filteredCount: 0,
+      fallbackUsed: true,
+      selectedAssetId: null,
+      selectedSerial: null,
+      selectedCategory: null,
+    },
+  };
+}
+
+function buildSelectionLogMessages(
+  sourceSearchSummary: SourceSearchSummary,
+  typographyDecision: TypographyDecision,
+): Array<{ level: "info" | "warn"; message: string }> {
+  if (sourceSearchSummary.sourceMode !== "tooldi_api") {
+    return [];
+  }
+
+  return [
+    {
+      level: "info",
+      message:
+        `Background query returned ${sourceSearchSummary.background.returnedCount} items, ` +
+        `selected serial=${sourceSearchSummary.background.selectedSerial ?? "n/a"} ` +
+        `kind=${sourceSearchSummary.background.selectedCategory ?? "n/a"}`,
+    },
+    {
+      level: "info",
+      message:
+        `Graphic query returned ${sourceSearchSummary.graphic.returnedCount} items, ` +
+        `selected serial=${sourceSearchSummary.graphic.selectedSerial ?? "n/a"} ` +
+        `category=${sourceSearchSummary.graphic.selectedCategory ?? "n/a"}`,
+    },
+    {
+      level: typographyDecision.fallbackUsed ? "warn" : "info",
+      message:
+        `Font inventory count=${typographyDecision.inventoryCount}, ` +
+        `display=${typographyDecision.display?.fontToken ?? "fallback"} ` +
+        `body=${typographyDecision.body?.fontToken ?? "fallback"}`,
+    },
+  ];
+}
+
+function createSummaryId(runId: string): string {
+  return `source_search_${runId}`;
+}
+
+function isSpringActivationFailure(
+  error: unknown,
+): error is TooldiCatalogSourceError | SpringCatalogActivationError {
+  return (
+    error instanceof TooldiCatalogSourceError ||
+    error instanceof SpringCatalogActivationError
+  );
+}
+
+function getSpringActivationErrorCode(
+  error: TooldiCatalogSourceError | SpringCatalogActivationError,
+): string {
+  if (error instanceof TooldiCatalogSourceError) {
+    return `catalog_source_${error.code}`;
+  }
+  return error.code;
 }
 
 function shouldStopAfterCurrentAction(response: {

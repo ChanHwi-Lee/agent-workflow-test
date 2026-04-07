@@ -47,6 +47,13 @@ type LayoutGeometry = {
   footerNote: Bounds;
 };
 
+type TypographyMetadata = {
+  displayFontFamily: string | null;
+  displayFontWeight: number | null;
+  bodyFontFamily: string | null;
+  bodyFontWeight: number | null;
+};
+
 export async function emitSkeletonMutations(
   input: HydratedPlanningInput,
   normalizedIntent: NormalizedIntent,
@@ -63,6 +70,12 @@ export async function emitSkeletonMutations(
   const foundationInputs = readFoundationInputs(planActions.foundation.inputs);
   const copyInputs = readCopyInputs(planActions.copy.inputs);
   const polishInputs = readPolishInputs(planActions.polish.inputs);
+  const typography: TypographyMetadata = {
+    displayFontFamily: copyInputs.displayFontFamily,
+    displayFontWeight: copyInputs.displayFontWeight,
+    bodyFontFamily: copyInputs.bodyFontFamily,
+    bodyFontWeight: copyInputs.bodyFontWeight,
+  };
   const geometry = createLayoutGeometry(
     input.request.editorContext.canvasWidth,
     input.request.editorContext.canvasHeight,
@@ -128,6 +141,9 @@ export async function emitSkeletonMutations(
       role: "background",
       variantKey: foundationInputs.backgroundMode,
       candidateId: foundationInputs.selectedBackgroundCandidateId,
+      sourceAssetId: foundationInputs.selectedBackgroundAssetId,
+      sourceSerial: foundationInputs.selectedBackgroundSerial,
+      sourceCategory: foundationInputs.selectedBackgroundCategory,
     }),
   ];
 
@@ -159,6 +175,8 @@ export async function emitSkeletonMutations(
         role: "badge",
         variantKey: copyInputs.layoutMode,
         candidateId: copyInputs.selectedLayoutCandidateId,
+        fontRole: "display",
+        typography,
       }),
     );
   }
@@ -186,6 +204,8 @@ export async function emitSkeletonMutations(
       role: "headline",
       variantKey: copyInputs.layoutMode,
       candidateId: copyInputs.selectedLayoutCandidateId,
+      fontRole: "display",
+      typography,
     }),
     buildCreateLayerCommand(input.job.runId, "copy", {
       slotKey: "supporting_copy",
@@ -195,6 +215,8 @@ export async function emitSkeletonMutations(
       role: "supporting_copy",
       variantKey: copyInputs.layoutMode,
       candidateId: copyInputs.selectedLayoutCandidateId,
+      fontRole: "body",
+      typography,
     }),
     buildCreateLayerCommand(input.job.runId, "copy", {
       slotKey: null,
@@ -204,6 +226,8 @@ export async function emitSkeletonMutations(
       role: "price_callout",
       variantKey: copyInputs.layoutMode,
       candidateId: copyInputs.selectedLayoutCandidateId,
+      fontRole: "display",
+      typography,
     }),
   ];
 
@@ -217,6 +241,8 @@ export async function emitSkeletonMutations(
         role: "hero_caption",
         variantKey: copyInputs.layoutMode,
         candidateId: copyInputs.selectedLayoutCandidateId,
+        fontRole: "body",
+        typography,
       }),
     );
   }
@@ -230,6 +256,11 @@ export async function emitSkeletonMutations(
       role: "cta",
       variantKey: polishInputs.decorationMode,
       candidateId: polishInputs.selectedDecorationCandidateId,
+      sourceAssetId: polishInputs.selectedDecorationAssetId,
+      sourceSerial: polishInputs.selectedDecorationSerial,
+      sourceCategory: polishInputs.selectedDecorationCategory,
+      fontRole: "display",
+      typography,
     }),
     buildCreateLayerCommand(input.job.runId, "polish", {
       slotKey: "decoration",
@@ -242,6 +273,9 @@ export async function emitSkeletonMutations(
           : "decoration",
       variantKey: polishInputs.decorationMode,
       candidateId: polishInputs.selectedDecorationCandidateId,
+      sourceAssetId: polishInputs.selectedDecorationAssetId,
+      sourceSerial: polishInputs.selectedDecorationSerial,
+      sourceCategory: polishInputs.selectedDecorationCategory,
     }),
   ];
 
@@ -282,6 +316,8 @@ export async function emitSkeletonMutations(
       role: "footer_note",
       variantKey: foundationInputs.backgroundMode,
       candidateId: foundationInputs.selectedBackgroundCandidateId,
+      fontRole: "body",
+      typography,
     }),
   );
 
@@ -339,6 +375,9 @@ function readFoundationInputs(inputs: PersistedPlanAction["inputs"]) {
   const record = inputs as {
     backgroundMode?: BackgroundMode;
     selectedBackgroundCandidateId?: string;
+    selectedBackgroundAssetId?: string | null;
+    selectedBackgroundSerial?: string | null;
+    selectedBackgroundCategory?: string | null;
     includeHeroPanel?: boolean;
     includeBadge?: boolean;
     includeRibbon?: boolean;
@@ -348,6 +387,9 @@ function readFoundationInputs(inputs: PersistedPlanAction["inputs"]) {
     backgroundMode: record.backgroundMode ?? "spring_pattern",
     selectedBackgroundCandidateId:
       record.selectedBackgroundCandidateId ?? "background_unknown",
+    selectedBackgroundAssetId: record.selectedBackgroundAssetId ?? null,
+    selectedBackgroundSerial: record.selectedBackgroundSerial ?? null,
+    selectedBackgroundCategory: record.selectedBackgroundCategory ?? null,
     includeHeroPanel: record.includeHeroPanel ?? false,
     includeBadge: record.includeBadge ?? false,
     includeRibbon: record.includeRibbon ?? false,
@@ -358,6 +400,10 @@ function readCopyInputs(inputs: PersistedPlanAction["inputs"]) {
   const record = inputs as {
     layoutMode?: LayoutMode;
     selectedLayoutCandidateId?: string;
+    displayFontFamily?: string | null;
+    displayFontWeight?: number | null;
+    bodyFontFamily?: string | null;
+    bodyFontWeight?: number | null;
     includeHeroCaption?: boolean;
     includeBadge?: boolean;
   };
@@ -366,6 +412,10 @@ function readCopyInputs(inputs: PersistedPlanAction["inputs"]) {
     layoutMode: record.layoutMode ?? "copy_left_with_right_decoration",
     selectedLayoutCandidateId:
       record.selectedLayoutCandidateId ?? "layout_unknown",
+    displayFontFamily: record.displayFontFamily ?? null,
+    displayFontWeight: record.displayFontWeight ?? null,
+    bodyFontFamily: record.bodyFontFamily ?? null,
+    bodyFontWeight: record.bodyFontWeight ?? null,
     includeHeroCaption: record.includeHeroCaption ?? false,
     includeBadge: record.includeBadge ?? false,
   };
@@ -375,6 +425,9 @@ function readPolishInputs(inputs: PersistedPlanAction["inputs"]) {
   const record = inputs as {
     decorationMode?: DecorationMode;
     selectedDecorationCandidateId?: string;
+    selectedDecorationAssetId?: string | null;
+    selectedDecorationSerial?: string | null;
+    selectedDecorationCategory?: string | null;
     includeUnderline?: boolean;
     includeRibbon?: boolean;
   };
@@ -383,6 +436,9 @@ function readPolishInputs(inputs: PersistedPlanAction["inputs"]) {
     decorationMode: record.decorationMode ?? "graphic_cluster",
     selectedDecorationCandidateId:
       record.selectedDecorationCandidateId ?? "decoration_unknown",
+    selectedDecorationAssetId: record.selectedDecorationAssetId ?? null,
+    selectedDecorationSerial: record.selectedDecorationSerial ?? null,
+    selectedDecorationCategory: record.selectedDecorationCategory ?? null,
     includeUnderline: record.includeUnderline ?? false,
     includeRibbon: record.includeRibbon ?? false,
   };
@@ -613,8 +669,30 @@ function buildCreateLayerCommand(
     role: string;
     variantKey: string;
     candidateId: string;
+    sourceAssetId?: string | null;
+    sourceSerial?: string | null;
+    sourceCategory?: string | null;
+    fontRole?: "display" | "body";
+    typography?: TypographyMetadata;
   },
 ): MutationProposalDraft["mutation"]["commands"][number] {
+  const metadata: Record<string, string | number | boolean | null> = {
+    role: options.role,
+    variantKey: options.variantKey,
+    candidateId: options.candidateId,
+    sourceAssetId: options.sourceAssetId ?? null,
+    sourceSerial: options.sourceSerial ?? null,
+    sourceCategory: options.sourceCategory ?? null,
+  };
+
+  if (options.fontRole && options.typography) {
+    metadata.fontRole = options.fontRole;
+    metadata.displayFontFamily = options.typography.displayFontFamily;
+    metadata.displayFontWeight = options.typography.displayFontWeight;
+    metadata.bodyFontFamily = options.typography.bodyFontFamily;
+    metadata.bodyFontWeight = options.typography.bodyFontWeight;
+  }
+
   return {
     commandId: createRequestId(),
     op: "createLayer",
@@ -638,11 +716,7 @@ function buildCreateLayerCommand(
     layerBlueprint: {
       layerType: options.layerType,
       bounds: options.bounds,
-      metadata: {
-        role: options.role,
-        variantKey: options.variantKey,
-        candidateId: options.candidateId,
-      },
+      metadata,
     },
     editable: true,
   };

@@ -50,6 +50,12 @@ export async function selectTemplateComposition(
     selectedBackgroundCandidateId: selectedBackground.candidateId,
     selectedLayoutCandidateId: selectedLayout.candidateId,
     selectedDecorationCandidateId: selectedDecoration.candidateId,
+    selectedBackgroundAssetId: selectedBackground.sourceAssetId ?? null,
+    selectedBackgroundSerial: selectedBackground.sourceSerial ?? null,
+    selectedBackgroundCategory: selectedBackground.sourceCategory ?? null,
+    selectedDecorationAssetId: selectedDecoration.sourceAssetId ?? null,
+    selectedDecorationSerial: selectedDecoration.sourceSerial ?? null,
+    selectedDecorationCategory: selectedDecoration.sourceCategory ?? null,
     backgroundMode: selectedBackground.payload.backgroundMode ?? "spring_pattern",
     layoutMode:
       selectedLayout.payload.layoutMode ?? "copy_left_with_right_decoration",

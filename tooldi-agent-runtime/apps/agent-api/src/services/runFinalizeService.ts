@@ -50,8 +50,10 @@ type MaterializationInput = {
   normalizedIntentRef: string;
   executablePlanRef: string;
   candidateSetRef: string | null;
+  sourceSearchSummaryRef: string | null;
   retrievalStageRef: string | null;
   selectionDecisionRef: string | null;
+  typographyDecisionRef: string | null;
   sourceMutationRange: NonNullable<RunFinalizeRequest["sourceMutationRange"]>;
   outputTemplateCode: string | null;
 };
@@ -289,8 +291,10 @@ export class RunFinalizeService {
         normalizedIntentRef: request.normalizedIntentRef,
         executablePlanRef: request.executablePlanRef,
         candidateSetRef: request.candidateSetRef ?? null,
+        sourceSearchSummaryRef: request.sourceSearchSummaryRef ?? null,
         retrievalStageRef: request.retrievalStageRef ?? null,
         selectionDecisionRef: request.selectionDecisionRef ?? null,
+        typographyDecisionRef: request.typographyDecisionRef ?? null,
         sourceMutationRange: request.sourceMutationRange,
         outputTemplateCode: request.outputTemplateCode ?? null,
       },
@@ -362,8 +366,10 @@ export class RunFinalizeService {
               normalizedIntentRef: input.normalizedIntentRef,
               executablePlanRef: input.executablePlanRef,
               candidateSetRef: input.candidateSetRef,
+              sourceSearchSummaryRef: input.sourceSearchSummaryRef,
               retrievalStageRef: input.retrievalStageRef,
               selectionDecisionRef: input.selectionDecisionRef,
+              typographyDecisionRef: input.typographyDecisionRef,
               latestSaveReceiptId: latestSaveReceipt.saveReceiptId,
               bundleRef,
             },
@@ -540,9 +546,15 @@ export class RunFinalizeService {
         normalizedIntentRef: input.normalizedIntentRef,
         executablePlanRef: input.executablePlanRef,
         ...(input.candidateSetRef ? { candidateSetRef: input.candidateSetRef } : {}),
+        ...(input.sourceSearchSummaryRef
+          ? { sourceSearchSummaryRef: input.sourceSearchSummaryRef }
+          : {}),
         ...(input.retrievalStageRef ? { retrievalStageRef: input.retrievalStageRef } : {}),
         ...(input.selectionDecisionRef
           ? { selectionDecisionRef: input.selectionDecisionRef }
+          : {}),
+        ...(input.typographyDecisionRef
+          ? { typographyDecisionRef: input.typographyDecisionRef }
           : {}),
         bundleRef,
       },

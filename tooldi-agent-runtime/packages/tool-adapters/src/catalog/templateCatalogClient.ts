@@ -14,6 +14,11 @@ export interface TemplateCandidate {
   candidateId: string;
   family: TemplateCandidateFamily;
   sourceFamily: TemplateSourceFamily;
+  sourceAssetId?: string;
+  sourceSerial?: string;
+  sourceCategory?: string | null;
+  thumbnailUrl?: string | null;
+  insertMode?: string | null;
   summary: string;
   fitScore: number;
   selectionReasons: string[];

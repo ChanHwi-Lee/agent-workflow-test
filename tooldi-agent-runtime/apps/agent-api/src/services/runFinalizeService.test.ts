@@ -66,8 +66,10 @@ function createFinalizeRequest(overrides: Partial<RunFinalizeRequest> = {}): Run
     normalizedIntentRef: "runs/run-1/attempts/1/normalized-intent.json",
     executablePlanRef: "runs/run-1/attempts/1/executable-plan.json",
     candidateSetRef: "runs/run-1/attempts/1/template-candidate-set.json",
+    sourceSearchSummaryRef: "runs/run-1/attempts/1/source-search-summary.json",
     retrievalStageRef: "runs/run-1/attempts/1/retrieval-stage.json",
     selectionDecisionRef: "runs/run-1/attempts/1/selection-decision.json",
+    typographyDecisionRef: "runs/run-1/attempts/1/typography-decision.json",
     sourceMutationRange: {
       firstSeq: 1,
       lastSeq: 1,
@@ -374,12 +376,20 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
       "runs/run-1/attempts/1/template-candidate-set.json",
     );
     assert.equal(
+      completion.sourceRefs.sourceSearchSummaryRef,
+      "runs/run-1/attempts/1/source-search-summary.json",
+    );
+    assert.equal(
       completion.sourceRefs.retrievalStageRef,
       "runs/run-1/attempts/1/retrieval-stage.json",
     );
     assert.equal(
       completion.sourceRefs.selectionDecisionRef,
       "runs/run-1/attempts/1/selection-decision.json",
+    );
+    assert.equal(
+      completion.sourceRefs.typographyDecisionRef,
+      "runs/run-1/attempts/1/typography-decision.json",
     );
   } finally {
     await db.end();

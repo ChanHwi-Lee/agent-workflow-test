@@ -194,8 +194,10 @@ export const RunFinalizeRequestSchema = Type.Object(
     normalizedIntentRef: Type.Optional(IdentifierSchema),
     executablePlanRef: Type.Optional(IdentifierSchema),
     candidateSetRef: Type.Optional(IdentifierSchema),
+    sourceSearchSummaryRef: Type.Optional(IdentifierSchema),
     retrievalStageRef: Type.Optional(IdentifierSchema),
     selectionDecisionRef: Type.Optional(IdentifierSchema),
+    typographyDecisionRef: Type.Optional(IdentifierSchema),
     sourceMutationRange: Type.Optional(
       Type.Object(
         {

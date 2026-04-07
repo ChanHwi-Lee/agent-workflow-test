@@ -170,6 +170,12 @@ AGENT_INTERNAL_BASE_URL=http://127.0.0.1:3000 pnpm --filter @tooldi/agent-worker
 - worker 는 `normalizedIntentRef`, `executablePlanRef`, `repairContext` 를 받아 finalize handoff 에 실을 수 있다.
 - backend finalizer 는 mutation ledger + ack evidence + finalize payload 를 읽어 committed bundle/completion row를 materialize 한다.
 - `completed` 는 save evidence 가 있을 때만 허용되고, 없으면 `save_failed_after_apply` 로 downgrade 된다.
+- spring worker path 는 이제 opt-in real Tooldi source mode를 가진다.
+  - `TOOLDI_CATALOG_SOURCE_MODE=tooldi_api`
+  - `TOOLDI_CONTENT_API_BASE_URL=http://localhost:<port>`
+  - active family: `background`, `graphic(shape)`, `font`
+  - worker 는 `run.log` 에 query count / selected serial / selected font token 을 남긴다.
+- real Tooldi source mode는 `localhost` host만 지원한다. `127.0.0.1` 은 PHP local host/cookie policy 때문에 의도적으로 막았다.
 
 ## 아직 안 된 것
 
@@ -207,5 +213,8 @@ AGENT_INTERNAL_BASE_URL=http://127.0.0.1:3000 pnpm --filter @tooldi/agent-worker
 
 - `create_template` intelligence layer의 capability catalog / selection policy / candidate schema / hierarchy 기준선은 [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md) 에 별도로 잠갔다.
 - `봄 템플릿 만들어줘` 한 건에 대한 실제 Tooldi 자산 기반 vertical slice 기준은 [tooldi-agent-workflow-v1-create-template-spring-vertical-slice.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-spring-vertical-slice.md) 에 정리했다.
+- 실제 Tooldi 콘텐츠 source family, PHP API / DB seam, real catalog adapter 기준선은 [tooldi-agent-workflow-v1-tooldi-content-discovery.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-tooldi-content-discovery.md) 에 정리했다.
+- 현재 worker runtime에는 `real Tooldi catalog source adapter` seam 이 추가되어 있고, spring slice는 opt-in real source mode에서 `background/shape/font` 를 실제 Tooldi PHP API로 조회할 수 있다.
+- 다만 immediate execution은 여전히 `shape/text/group` surface 중심이며, real `photo/picture` branch 는 아직 다음 단계다.
 - planner / tool selection / search-compare-select / vision critique / real save evidence 연동 같은 다음 구현 축은 [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md) 에 별도로 정리했다.
 - 이 문서는 normative spec이 아니라 working roadmap이며, sibling authoritative docs를 override하지 않는다.

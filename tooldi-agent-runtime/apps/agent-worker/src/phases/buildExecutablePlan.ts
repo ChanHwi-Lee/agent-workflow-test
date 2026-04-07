@@ -6,6 +6,7 @@ import type {
   HydratedPlanningInput,
   NormalizedIntent,
   SelectionDecision,
+  TypographyDecision,
 } from "../types.js";
 
 export interface BuildExecutablePlanDependencies {
@@ -16,6 +17,7 @@ export async function buildExecutablePlan(
   input: HydratedPlanningInput,
   normalizedIntent: NormalizedIntent,
   selectionDecision: SelectionDecision,
+  typographyDecision: TypographyDecision,
   dependencies: BuildExecutablePlanDependencies,
 ): Promise<ExecutablePlan> {
   const resolveTool = (toolName: string) => {
@@ -77,6 +79,9 @@ export async function buildExecutablePlan(
           tone: normalizedIntent.tone,
           selectedBackgroundCandidateId:
             selectionDecision.selectedBackgroundCandidateId,
+          selectedBackgroundAssetId: selectionDecision.selectedBackgroundAssetId,
+          selectedBackgroundSerial: selectionDecision.selectedBackgroundSerial,
+          selectedBackgroundCategory: selectionDecision.selectedBackgroundCategory,
           backgroundMode: selectionDecision.backgroundMode,
           selectedLayoutCandidateId: selectionDecision.selectedLayoutCandidateId,
           layoutMode: selectionDecision.layoutMode,
@@ -107,6 +112,10 @@ export async function buildExecutablePlan(
         inputs: {
           selectedLayoutCandidateId: selectionDecision.selectedLayoutCandidateId,
           layoutMode: selectionDecision.layoutMode,
+          displayFontFamily: typographyDecision.display?.fontToken ?? null,
+          displayFontWeight: typographyDecision.display?.fontWeight ?? null,
+          bodyFontFamily: typographyDecision.body?.fontToken ?? null,
+          bodyFontWeight: typographyDecision.body?.fontWeight ?? null,
           requiredSlots: normalizedIntent.requiredSlots,
           goalSummary: normalizedIntent.goalSummary,
           includeHeroCaption,
@@ -135,7 +144,14 @@ export async function buildExecutablePlan(
         inputs: {
           selectedDecorationCandidateId:
             selectionDecision.selectedDecorationCandidateId,
+          selectedDecorationAssetId: selectionDecision.selectedDecorationAssetId,
+          selectedDecorationSerial: selectionDecision.selectedDecorationSerial,
+          selectedDecorationCategory: selectionDecision.selectedDecorationCategory,
           decorationMode: selectionDecision.decorationMode,
+          displayFontFamily: typographyDecision.display?.fontToken ?? null,
+          displayFontWeight: typographyDecision.display?.fontWeight ?? null,
+          bodyFontFamily: typographyDecision.body?.fontToken ?? null,
+          bodyFontWeight: typographyDecision.body?.fontWeight ?? null,
           layoutMode: selectionDecision.layoutMode,
           executionStrategy: selectionDecision.executionStrategy,
           fallbackSummary: selectionDecision.fallbackSummary,

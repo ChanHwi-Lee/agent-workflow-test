@@ -8,7 +8,10 @@ import type {
   StartAgentWorkflowRunRequest,
   WaitMutationAckResponse,
 } from "@tooldi/agent-contracts";
-import type { TemplateCandidateSet } from "@tooldi/tool-adapters";
+import type {
+  TemplateCandidateSet,
+  TooldiCatalogSourceMode,
+} from "@tooldi/tool-adapters";
 
 export interface StoredRunSnapshot {
   editorContext: StartAgentWorkflowRunRequest["editorContext"];
@@ -57,6 +60,55 @@ export interface TemplateCandidateBundle {
   decoration: TemplateCandidateSet;
 }
 
+export interface SourceSearchQueryAttempt {
+  label: string;
+  query: Record<string, string | number | boolean | null>;
+  returnedCount: number;
+}
+
+export interface SourceSearchFamilySummary {
+  family: "background" | "graphic" | "font";
+  queryAttempts: SourceSearchQueryAttempt[];
+  returnedCount: number;
+  filteredCount: number;
+  fallbackUsed: boolean;
+  selectedAssetId: string | null;
+  selectedSerial: string | null;
+  selectedCategory: string | null;
+}
+
+export interface SourceSearchSummary {
+  summaryId: string;
+  runId: string;
+  traceId: string;
+  sourceMode: TooldiCatalogSourceMode;
+  background: SourceSearchFamilySummary;
+  graphic: SourceSearchFamilySummary;
+  font: SourceSearchFamilySummary;
+}
+
+export interface TypographyChoice {
+  fontAssetId: string;
+  fontSerial: string;
+  fontName: string;
+  fontCategory: string;
+  fontFace: string;
+  fontToken: string;
+  fontWeight: number;
+}
+
+export interface TypographyDecision {
+  decisionId: string;
+  runId: string;
+  traceId: string;
+  sourceMode: TooldiCatalogSourceMode;
+  inventoryCount: number;
+  fallbackUsed: boolean;
+  display: TypographyChoice | null;
+  body: TypographyChoice | null;
+  summary: string;
+}
+
 export interface RetrievalStageResult {
   retrievalMode: "none";
   status: "disabled";
@@ -90,6 +142,12 @@ export interface SelectionDecision {
   selectedBackgroundCandidateId: string;
   selectedLayoutCandidateId: string;
   selectedDecorationCandidateId: string;
+  selectedBackgroundAssetId: string | null;
+  selectedBackgroundSerial: string | null;
+  selectedBackgroundCategory: string | null;
+  selectedDecorationAssetId: string | null;
+  selectedDecorationSerial: string | null;
+  selectedDecorationCategory: string | null;
   backgroundMode: "spring_pattern" | "pastel_gradient" | "spring_photo";
   layoutMode: "copy_left_with_right_decoration" | "center_stack" | "badge_led";
   decorationMode: "graphic_cluster" | "ribbon_badge" | "photo_support";
@@ -128,8 +186,10 @@ export interface FinalizeRunDraft {
 export interface ProcessRunJobResult {
   intent: NormalizedIntent;
   candidateSets?: TemplateCandidateBundle;
+  sourceSearchSummary?: SourceSearchSummary;
   retrievalStage?: RetrievalStageResult;
   selectionDecision?: SelectionDecision;
+  typographyDecision?: TypographyDecision;
   plan?: ExecutablePlan;
   emittedMutationIds: string[];
   finalizeDraft: FinalizeRunDraft;
@@ -137,7 +197,9 @@ export interface ProcessRunJobResult {
     normalizedIntentRef: string;
     executablePlanRef?: string;
     candidateSetRef?: string;
+    sourceSearchSummaryRef?: string;
     retrievalStageRef?: string;
     selectionDecisionRef?: string;
+    typographyDecisionRef?: string;
   };
 }
