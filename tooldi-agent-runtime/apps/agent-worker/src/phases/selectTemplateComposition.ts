@@ -16,23 +16,43 @@ export async function selectTemplateComposition(
     selectionPolicy: TemplateSelectionPolicy;
   },
 ): Promise<SelectionDecision> {
+  const baseLayout = pickBaseLayout(intent, candidates);
+  const photoLayout = pickPhotoLayout(candidates);
   const selectedBackground = pickByPriority(
     filterCandidatesByPolicy(
       candidates.background.candidates,
       dependencies.selectionPolicy,
       dependencies.retrievalStage,
     ),
-    ["background_source", "graphic_source", "photo_source"],
+    ["background_source", "graphic_source"],
   );
-  const selectedLayout = pickLayout(intent, candidates);
   const selectedDecoration = pickByPriority(
     filterCandidatesByPolicy(
       candidates.decoration.candidates,
       dependencies.selectionPolicy,
       dependencies.retrievalStage,
     ),
-    ["graphic_source", "photo_source"],
+    ["graphic_source"],
   );
+  const topPhotoCandidate = pickOptionalPhotoCandidate(
+    filterCandidatesByPolicy(
+      candidates.photo.candidates,
+      dependencies.selectionPolicy,
+      dependencies.retrievalStage,
+    ),
+  );
+  const photoBranchDecision = decidePhotoBranch(
+    intent,
+    baseLayout,
+    selectedDecoration,
+    topPhotoCandidate,
+    photoLayout,
+    dependencies.selectionPolicy,
+  );
+  const selectedLayout =
+    photoBranchDecision.mode === "photo_selected" && photoLayout
+      ? photoLayout
+      : baseLayout;
 
   return {
     decisionId: createRequestId(),
@@ -46,32 +66,58 @@ export async function selectTemplateComposition(
       "layoutCompatibility",
       "executionSimplicity",
       "fallbackSafety",
+      "focalSafety",
+      "cropSafety",
+      "copySeparationSupport",
     ],
     selectedBackgroundCandidateId: selectedBackground.candidateId,
     selectedLayoutCandidateId: selectedLayout.candidateId,
     selectedDecorationCandidateId: selectedDecoration.candidateId,
+    topPhotoCandidateId: topPhotoCandidate?.candidateId ?? null,
     selectedBackgroundAssetId: selectedBackground.sourceAssetId ?? null,
     selectedBackgroundSerial: selectedBackground.sourceSerial ?? null,
     selectedBackgroundCategory: selectedBackground.sourceCategory ?? null,
     selectedDecorationAssetId: selectedDecoration.sourceAssetId ?? null,
     selectedDecorationSerial: selectedDecoration.sourceSerial ?? null,
     selectedDecorationCategory: selectedDecoration.sourceCategory ?? null,
+    topPhotoAssetId: topPhotoCandidate?.sourceAssetId ?? null,
+    topPhotoSerial: topPhotoCandidate?.sourceSerial ?? null,
+    topPhotoCategory: topPhotoCandidate?.sourceCategory ?? null,
+    topPhotoUid: topPhotoCandidate?.sourceUid ?? null,
+    topPhotoUrl: topPhotoCandidate?.sourceOriginUrl ?? null,
+    topPhotoWidth: topPhotoCandidate?.sourceWidth ?? null,
+    topPhotoHeight: topPhotoCandidate?.sourceHeight ?? null,
+    topPhotoOrientation: topPhotoCandidate?.payload.photoOrientation ?? null,
     backgroundMode: selectedBackground.payload.backgroundMode ?? "spring_pattern",
-    layoutMode:
-      selectedLayout.payload.layoutMode ?? "copy_left_with_right_decoration",
+    layoutMode: selectedLayout.payload.layoutMode ?? "copy_left_with_right_decoration",
     decorationMode:
       selectedDecoration.payload.decorationMode ?? "graphic_cluster",
-    executionStrategy: "graphic_first_shape_text_group",
-    summary: `Selected ${selectedBackground.payload.variantKey}, ${selectedLayout.payload.variantKey}, ${selectedDecoration.payload.variantKey} for a spring banner`,
+    photoBranchMode: photoBranchDecision.mode,
+    photoBranchReason: photoBranchDecision.reason,
+    executionStrategy:
+      photoBranchDecision.mode === "photo_selected"
+        ? "photo_hero_shape_text_group"
+        : "graphic_first_shape_text_group",
+    summary:
+      `Selected ${selectedBackground.payload.variantKey}, ${selectedLayout.payload.variantKey}, ` +
+      `${selectedDecoration.payload.variantKey} for a spring banner` +
+      (topPhotoCandidate
+        ? ` while evaluating photo candidate ${topPhotoCandidate.payload.variantKey}`
+        : ""),
     fallbackSummary:
-      "Fallback to shape/text/group-safe composition if photo or unsupported graphic execution is required",
+      photoBranchDecision.mode === "photo_selected"
+        ? "Selection picked the photo hero branch. If photo execution fails, the run fails fast so the operator can inspect the photo metadata and apply diagnostics."
+        : "Fallback to shape/text/group-safe composition if photo is not selected during comparison.",
   };
 }
 
-function pickLayout(
+function pickBaseLayout(
   intent: NormalizedIntent,
   candidates: TemplateCandidateBundle,
 ) {
+  const baseLayouts = candidates.layout.candidates.filter(
+    (candidate) => candidate.payload.layoutMode !== "copy_left_with_right_photo",
+  );
   const preferredLayoutMode =
     intent.layoutIntent === "badge_led"
       ? "badge_led"
@@ -79,16 +125,44 @@ function pickLayout(
         ? "copy_left_with_right_decoration"
         : "center_stack";
 
-  const preferred = candidates.layout.candidates.find(
+  const preferred = baseLayouts.find(
     (candidate) => candidate.payload.layoutMode === preferredLayoutMode,
   );
 
   return (
     preferred ??
-    candidates.layout.candidates.reduce((best, current) =>
+    baseLayouts.reduce((best, current) =>
       current.fitScore > best.fitScore ? current : best,
     )
   );
+}
+
+function pickPhotoLayout(candidates: TemplateCandidateBundle) {
+  return (
+    candidates.layout.candidates.find(
+      (candidate) => candidate.payload.layoutMode === "copy_left_with_right_photo",
+    ) ?? null
+  );
+}
+
+function pickOptionalPhotoCandidate<
+  T extends {
+    fitScore: number;
+    executionAllowed: boolean;
+  },
+>(candidates: T[]): T | null {
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const ranked = [...candidates].sort((left, right) => {
+    if (left.executionAllowed !== right.executionAllowed) {
+      return left.executionAllowed ? -1 : 1;
+    }
+    return right.fitScore - left.fitScore;
+  });
+
+  return ranked[0] ?? null;
 }
 
 function filterCandidatesByPolicy<
@@ -137,4 +211,102 @@ function pickByPriority<
   });
 
   return ranked[0]!;
+}
+
+function decidePhotoBranch(
+  intent: NormalizedIntent,
+  selectedLayout: {
+    payload: {
+      layoutMode?:
+        | "copy_left_with_right_decoration"
+        | "copy_left_with_right_photo"
+        | "center_stack"
+        | "badge_led";
+    };
+  },
+  selectedDecoration: {
+    fitScore: number;
+  },
+  topPhotoCandidate:
+    | {
+        fitScore: number;
+        executionAllowed: boolean;
+        payload: {
+          photoOrientation?: "portrait" | "landscape" | "square";
+        };
+      }
+    | null,
+  photoLayout:
+    | {
+        executionAllowed: boolean;
+      }
+    | null,
+  selectionPolicy: TemplateSelectionPolicy,
+): {
+  mode: SelectionDecision["photoBranchMode"];
+  reason: string;
+} {
+  if (!selectionPolicy.allowPhotoCandidates) {
+    return {
+      mode: "not_considered",
+      reason: "photo-catalog tool is disabled in the current selection policy",
+    };
+  }
+
+  if (!topPhotoCandidate) {
+    return {
+      mode: "graphic_preferred",
+      reason: "no eligible photo candidate was returned from the current Tooldi source query waterfall",
+    };
+  }
+
+  if (intent.canvasPreset !== "wide_1200x628") {
+    return {
+      mode: "not_considered",
+      reason: "photo branch phase A only compares hero-photo layouts on the representative wide preset",
+    };
+  }
+
+  if (selectedLayout.payload.layoutMode !== "copy_left_with_right_decoration") {
+    return {
+      mode: "not_considered",
+      reason: "selected layout does not expose a dedicated hero-photo field",
+    };
+  }
+
+  if (!photoLayout?.executionAllowed) {
+    return {
+      mode: "graphic_preferred",
+      reason: "photo branch requires an executable wide-preset photo layout candidate",
+    };
+  }
+
+  if (!topPhotoCandidate.executionAllowed) {
+    return {
+      mode: "graphic_preferred",
+      reason:
+        "photo candidate is missing executable metadata required for the hero-photo slot",
+    };
+  }
+
+  if (topPhotoCandidate.payload.photoOrientation === "portrait") {
+    return {
+      mode: "graphic_preferred",
+      reason: "portrait photo candidate raises crop/focal risk for the wide preset hero-photo slot",
+    };
+  }
+
+  if (topPhotoCandidate.fitScore >= selectedDecoration.fitScore + 0.02) {
+    return {
+      mode: "photo_selected",
+      reason:
+        "photo candidate outranked the current graphic path for seasonal focal strength on the wide preset hero-photo slot",
+    };
+  }
+
+  return {
+    mode: "graphic_preferred",
+    reason:
+      "graphic-first path remains safer for readability and execution despite the available photo candidate",
+  };
 }

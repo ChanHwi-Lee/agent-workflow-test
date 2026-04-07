@@ -7,8 +7,10 @@ import type {
   TooldiCatalogSourceClient,
   TooldiCatalogSourceMode,
   TooldiGraphicAsset,
+  TooldiPhotoAsset,
   SearchBackgroundAssetsQuery,
   SearchGraphicAssetsQuery,
+  SearchPhotoAssetsQuery,
 } from "@tooldi/tool-adapters";
 
 import type {
@@ -32,6 +34,7 @@ export interface AssembleTemplateCandidatesDependencies {
   templateCatalogClient: TemplateCatalogClient;
   tooldiCatalogSourceClient: TooldiCatalogSourceClient;
   sourceMode: TooldiCatalogSourceMode;
+  allowPhotoCandidates: boolean;
 }
 
 export interface AssembleTemplateCandidatesResult {
@@ -39,6 +42,7 @@ export interface AssembleTemplateCandidatesResult {
   sourceSearch: {
     background: SourceSearchFamilySummary;
     graphic: SourceSearchFamilySummary;
+    photo: SourceSearchFamilySummary;
   };
 }
 
@@ -54,12 +58,29 @@ export async function assembleTemplateCandidates(
     tone: intent.tone,
     assetPolicy: intent.assetPolicy,
   } as const;
+  const emptyPhotoCandidates: TemplateCandidateSet = {
+    setId: `photo_candidates_${createRequestId()}`,
+    family: "photo",
+    candidates: [],
+  };
+  const emptyPhotoSummary: SourceSearchFamilySummary = {
+    family: "photo",
+    queryAttempts: [],
+    returnedCount: 0,
+    filteredCount: 0,
+    fallbackUsed: false,
+    selectedAssetId: null,
+    selectedSerial: null,
+    selectedCategory: null,
+  };
 
   if (dependencies.sourceMode !== "tooldi_api") {
-    const [background, graphicDecorations, photoDecorations] = await Promise.all([
+    const [background, graphicDecorations, photoCandidates] = await Promise.all([
       dependencies.templateCatalogClient.listBackgroundCandidates(catalogContext),
       dependencies.templateCatalogClient.listGraphicCandidates(catalogContext),
-      dependencies.templateCatalogClient.listPhotoCandidates(catalogContext),
+      dependencies.allowPhotoCandidates
+        ? dependencies.templateCatalogClient.listPhotoCandidates(catalogContext)
+        : Promise.resolve(emptyPhotoCandidates),
     ]);
 
     return {
@@ -69,11 +90,9 @@ export async function assembleTemplateCandidates(
         decoration: {
           setId: `decoration_candidates_${createRequestId()}`,
           family: "decoration",
-          candidates: [
-            ...graphicDecorations.candidates,
-            ...photoDecorations.candidates,
-          ],
+          candidates: [...graphicDecorations.candidates],
         },
+        photo: photoCandidates,
       },
       sourceSearch: {
         background: {
@@ -96,13 +115,28 @@ export async function assembleTemplateCandidates(
           selectedSerial: null,
           selectedCategory: null,
         },
+        photo: {
+          ...emptyPhotoSummary,
+          returnedCount: photoCandidates.candidates.length,
+          filteredCount: photoCandidates.candidates.length,
+        },
       },
     };
   }
 
-  const [backgroundSearch, graphicSearch] = await Promise.all([
+  const [backgroundSearch, graphicSearch, photoSearch] = await Promise.all([
     searchSpringBackgroundCandidates(dependencies.tooldiCatalogSourceClient),
     searchSpringGraphicCandidates(dependencies.tooldiCatalogSourceClient),
+    dependencies.allowPhotoCandidates
+      ? searchSpringPhotoCandidates(
+          dependencies.tooldiCatalogSourceClient,
+          input.request.editorContext.canvasWidth,
+          input.request.editorContext.canvasHeight,
+        )
+      : Promise.resolve({
+          candidates: [] as TemplateCandidate[],
+          summary: emptyPhotoSummary,
+        }),
   ]);
 
   if (backgroundSearch.candidates.length === 0) {
@@ -132,10 +166,15 @@ export async function assembleTemplateCandidates(
         family: "decoration",
         candidates: graphicSearch.candidates,
       },
+      photo: {
+        ...emptyPhotoCandidates,
+        candidates: photoSearch.candidates,
+      },
     },
     sourceSearch: {
       background: backgroundSearch.summary,
       graphic: graphicSearch.summary,
+      photo: photoSearch.summary,
     },
   };
 }
@@ -288,6 +327,92 @@ async function searchSpringGraphicCandidates(
   };
 }
 
+async function searchSpringPhotoCandidates(
+  sourceClient: TooldiCatalogSourceClient,
+  canvasWidth: number,
+  canvasHeight: number,
+): Promise<{
+  candidates: TemplateCandidate[];
+  summary: SourceSearchFamilySummary;
+}> {
+  const attempts: SourceSearchFamilySummary["queryAttempts"] = [];
+  const preferredOrientation = resolvePhotoOrientation(canvasWidth, canvasHeight);
+  const queries: Array<{
+    label: string;
+    query: SearchPhotoAssetsQuery;
+  }> = [
+    {
+      label: "photo_keyword_oriented",
+      query: {
+        page: 0,
+        keyword: "봄",
+        orientation: preferredOrientation,
+        source: "search",
+      },
+    },
+    {
+      label: "photo_keyword",
+      query: {
+        page: 0,
+        keyword: "봄",
+        source: "search",
+      },
+    },
+    {
+      label: "photo_fallback_oriented",
+      query: {
+        page: 0,
+        orientation: preferredOrientation,
+        source: "initial_load",
+      },
+    },
+  ];
+
+  let selectedAssets: TooldiPhotoAsset[] = [];
+  for (const attempt of queries) {
+    const result = await sourceClient.searchPhotoAssets(attempt.query);
+    attempts.push({
+      label: attempt.label,
+      query: {
+        keyword: attempt.query.keyword ?? null,
+        page: attempt.query.page,
+        orientation: attempt.query.orientation ?? null,
+        source: attempt.query.source ?? null,
+      },
+      returnedCount: result.assets.length,
+    });
+    if (result.assets.length > 0) {
+      selectedAssets = result.assets;
+      break;
+    }
+  }
+
+  const ranked = [...selectedAssets]
+    .sort(
+      (left, right) =>
+        scorePhotoAsset(right, preferredOrientation) -
+        scorePhotoAsset(left, preferredOrientation),
+    )
+    .slice(0, 8);
+  const candidates = assignFallbacks(
+    ranked.map((asset) => mapPhotoAssetToCandidate(asset, preferredOrientation)),
+  );
+
+  return {
+    candidates,
+    summary: {
+      family: "photo",
+      queryAttempts: attempts,
+      returnedCount: selectedAssets.length,
+      filteredCount: candidates.length,
+      fallbackUsed: attempts.length > 1 && attempts[0]?.returnedCount === 0,
+      selectedAssetId: null,
+      selectedSerial: null,
+      selectedCategory: null,
+    },
+  };
+}
+
 function mapBackgroundAssetToCandidate(
   asset: TooldiBackgroundAsset,
 ): TemplateCandidate {
@@ -365,6 +490,54 @@ function mapGraphicAssetToCandidate(
   };
 }
 
+function mapPhotoAssetToCandidate(
+  asset: TooldiPhotoAsset,
+  preferredOrientation: TooldiPhotoAsset["orientation"],
+): TemplateCandidate {
+  const orientationMatches = asset.orientation === preferredOrientation;
+
+  return {
+    candidateId: `photo_real_${asset.serial}`,
+    family: "photo",
+    sourceFamily: asset.sourceFamily,
+    sourceAssetId: asset.assetId,
+    sourceSerial: asset.serial,
+    sourceCategory: asset.orientation,
+    sourceUid: asset.uid,
+    sourceOriginUrl: asset.originUrl,
+    sourceWidth: asset.width,
+    sourceHeight: asset.height,
+    thumbnailUrl: asset.thumbnailUrl,
+    insertMode: asset.insertMode,
+    summary: `${asset.title} (${asset.orientation})`,
+    fitScore: scorePhotoAsset(asset, preferredOrientation),
+    selectionReasons: [
+      "real Tooldi photo inventory candidate",
+      asset.keywordTokens.includes("봄")
+        ? "seasonal keyword hit detected"
+        : "kept as generic spring fallback photo",
+      orientationMatches
+        ? "orientation supports hero-photo compare for the current canvas"
+        : "orientation kept for fallback only",
+    ],
+    riskFlags: [
+      ...(orientationMatches ? [] : ["orientation mismatch raises crop risk"]),
+      ...(asset.backgroundRemovalHint
+        ? []
+        : ["subject separation may reduce copy readability"]),
+    ],
+    fallbackIfRejected: "",
+    executionAllowed: orientationMatches && !!asset.originUrl && !!asset.width && !!asset.height,
+    payload: {
+      variantKey: asset.serial,
+      decorationMode: "photo_support",
+      photoBranchMode: "photo_selected",
+      photoOrientation: asset.orientation,
+      themeTokens: ["spring", "photo", asset.orientation],
+    },
+  };
+}
+
 function assignFallbacks(candidates: TemplateCandidate[]): TemplateCandidate[] {
   return candidates.map((candidate, index) => ({
     ...candidate,
@@ -406,6 +579,37 @@ function scoreGraphicAsset(asset: TooldiGraphicAsset): number {
   );
 }
 
+function scorePhotoAsset(
+  asset: TooldiPhotoAsset,
+  preferredOrientation: TooldiPhotoAsset["orientation"],
+): number {
+  const base =
+    asset.orientation === preferredOrientation
+      ? 0.9
+      : asset.orientation === "square"
+        ? 0.84
+        : 0.78;
+
+  return Number(
+    (
+      base +
+      (asset.keywordTokens.includes("봄") ? 0.03 : 0) +
+      (asset.thumbnailUrl ? 0.01 : 0) +
+      (asset.backgroundRemovalHint ? 0.01 : 0)
+    ).toFixed(3),
+  );
+}
+
+function resolvePhotoOrientation(
+  canvasWidth: number,
+  canvasHeight: number,
+): TooldiPhotoAsset["orientation"] {
+  if (canvasWidth === canvasHeight) {
+    return "square";
+  }
+  return canvasWidth > canvasHeight ? "landscape" : "portrait";
+}
+
 function createLayoutCandidateSet(
   input: HydratedPlanningInput,
   intent: NormalizedIntent,
@@ -434,6 +638,25 @@ function createLayoutCandidateSet(
           variantKey: "copy_left_with_right_decoration",
           layoutMode: "copy_left_with_right_decoration",
           themeTokens: ["copy", "wide", "promo"],
+        },
+      },
+      {
+        candidateId: "layout_copy_left_with_right_photo",
+        family: "layout",
+        sourceFamily: "derived_policy",
+        summary: "Copy cluster on the left with a dedicated photo hero field on the right",
+        fitScore: wideCanvas ? 0.91 : 0.68,
+        selectionReasons: [
+          "dedicated wide-only layout for a single hero photo object",
+          "keeps copy and photo fields explicitly separated",
+        ],
+        riskFlags: ["requires executable photo metadata and fail-fast execution path"],
+        fallbackIfRejected: "layout_copy_left_with_right_decoration",
+        executionAllowed: wideCanvas,
+        payload: {
+          variantKey: "copy_left_with_right_photo",
+          layoutMode: "copy_left_with_right_photo",
+          themeTokens: ["copy", "wide", "photo"],
         },
       },
       {

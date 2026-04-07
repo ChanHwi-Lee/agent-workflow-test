@@ -1,7 +1,8 @@
 export type TemplateCandidateFamily =
   | "background"
   | "layout"
-  | "decoration";
+  | "decoration"
+  | "photo";
 
 export type TemplateSourceFamily =
   | "background_source"
@@ -17,6 +18,10 @@ export interface TemplateCandidate {
   sourceAssetId?: string;
   sourceSerial?: string;
   sourceCategory?: string | null;
+  sourceUid?: string | null;
+  sourceOriginUrl?: string | null;
+  sourceWidth?: number | null;
+  sourceHeight?: number | null;
   thumbnailUrl?: string | null;
   insertMode?: string | null;
   summary: string;
@@ -27,9 +32,18 @@ export interface TemplateCandidate {
   executionAllowed: boolean;
   payload: {
     variantKey: string;
-    layoutMode?: "copy_left_with_right_decoration" | "center_stack" | "badge_led";
+    layoutMode?:
+      | "copy_left_with_right_decoration"
+      | "copy_left_with_right_photo"
+      | "center_stack"
+      | "badge_led";
     backgroundMode?: "spring_pattern" | "pastel_gradient" | "spring_photo";
     decorationMode?: "graphic_cluster" | "ribbon_badge" | "photo_support";
+    photoBranchMode?:
+      | "not_considered"
+      | "graphic_preferred"
+      | "photo_selected";
+    photoOrientation?: "portrait" | "landscape" | "square";
     themeTokens?: string[];
   };
 }
@@ -201,11 +215,11 @@ class PlaceholderTemplateCatalogClient implements TemplateCatalogClient {
   ): Promise<TemplateCandidateSet> {
     return {
       setId: "photo_candidates_spring_v1",
-      family: "decoration",
+      family: "photo",
       candidates: [
         {
           candidateId: "photo_spring_hero_support",
-          family: "decoration",
+          family: "photo",
           sourceFamily: "photo_source",
           summary: "Spring mood support photo for hero-side placement",
           fitScore: 0.78,
@@ -222,6 +236,8 @@ class PlaceholderTemplateCatalogClient implements TemplateCatalogClient {
           payload: {
             variantKey: "spring_hero_support",
             decorationMode: "photo_support",
+            photoBranchMode: "photo_selected",
+            photoOrientation: "landscape",
             themeTokens: ["spring", "photo", "hero"],
           },
         },

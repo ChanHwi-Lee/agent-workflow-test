@@ -30,19 +30,174 @@ export async function buildExecutablePlan(
 
   const commitGroup = createRequestId();
   const foundationActionId = createRequestId();
+  const photoActionId = createRequestId();
   const copyActionId = createRequestId();
   const polishActionId = createRequestId();
+  const photoSelected =
+    selectionDecision.executionStrategy === "photo_hero_shape_text_group";
+  if (photoSelected) {
+    assertPhotoSelectionExecutable(selectionDecision);
+  }
   const includeBadge =
     selectionDecision.layoutMode === "badge_led" ||
     selectionDecision.decorationMode === "ribbon_badge";
   const includeHeroCaption =
     selectionDecision.layoutMode === "copy_left_with_right_decoration";
   const includeHeroPanel =
-    selectionDecision.layoutMode !== "center_stack";
+    !photoSelected && selectionDecision.layoutMode !== "center_stack";
   const includeUnderline =
-    selectionDecision.decorationMode !== "ribbon_badge";
-  const includeRibbon =
-    selectionDecision.decorationMode === "ribbon_badge";
+    selectionDecision.decorationMode !== "ribbon_badge" && !photoSelected;
+  const includeRibbon = selectionDecision.decorationMode === "ribbon_badge";
+
+  const actions: ExecutablePlan["actions"] = [
+    {
+      actionId: foundationActionId,
+      kind: "canvas_mutation",
+      operation: "prepare_background_and_foundation",
+      toolName: resolveTool("background-catalog").toolName,
+      toolVersion: resolveTool("background-catalog").toolVersion,
+      commitGroup,
+      liveCommit: true,
+      idempotencyKey: `plan_foundation_${input.job.runId}_${input.job.attemptSeq}`,
+      dependsOn: [],
+      targetRef: {
+        documentId: input.request.editorContext.documentId,
+        pageId: input.request.editorContext.pageId,
+        layerId: null,
+        slotKey: "background",
+      },
+      inputs: {
+        templateKind: normalizedIntent.templateKind,
+        canvasPreset: normalizedIntent.canvasPreset,
+        tone: normalizedIntent.tone,
+        selectedBackgroundCandidateId:
+          selectionDecision.selectedBackgroundCandidateId,
+        selectedBackgroundAssetId: selectionDecision.selectedBackgroundAssetId,
+        selectedBackgroundSerial: selectionDecision.selectedBackgroundSerial,
+        selectedBackgroundCategory: selectionDecision.selectedBackgroundCategory,
+        backgroundMode: selectionDecision.backgroundMode,
+        selectedLayoutCandidateId: selectionDecision.selectedLayoutCandidateId,
+        layoutMode: selectionDecision.layoutMode,
+        includeHeroPanel,
+        includeBadge,
+        includeRibbon,
+      },
+      rollback: {
+        strategy: "delete_created_layers",
+      },
+    },
+  ];
+
+  if (photoSelected) {
+    actions.push({
+      actionId: photoActionId,
+      kind: "canvas_mutation",
+      operation: "place_photo_hero",
+      toolName: resolveTool("photo-catalog").toolName,
+      toolVersion: resolveTool("photo-catalog").toolVersion,
+      commitGroup,
+      liveCommit: true,
+      idempotencyKey: `plan_photo_${input.job.runId}_${input.job.attemptSeq}`,
+      dependsOn: [foundationActionId],
+      targetRef: {
+        documentId: input.request.editorContext.documentId,
+        pageId: input.request.editorContext.pageId,
+        layerId: null,
+        slotKey: "hero_image",
+      },
+      inputs: {
+        selectedLayoutCandidateId: selectionDecision.selectedLayoutCandidateId,
+        layoutMode: selectionDecision.layoutMode,
+        selectedPhotoCandidateId: selectionDecision.topPhotoCandidateId,
+        selectedPhotoAssetId: selectionDecision.topPhotoAssetId,
+        selectedPhotoSerial: selectionDecision.topPhotoSerial,
+        selectedPhotoCategory: selectionDecision.topPhotoCategory,
+        selectedPhotoUid: selectionDecision.topPhotoUid,
+        selectedPhotoUrl: selectionDecision.topPhotoUrl,
+        selectedPhotoWidth: selectionDecision.topPhotoWidth,
+        selectedPhotoHeight: selectionDecision.topPhotoHeight,
+        selectedPhotoOrientation: selectionDecision.topPhotoOrientation,
+        photoFitMode: "cover",
+        photoCropMode: "centered_cover",
+      },
+      rollback: {
+        strategy: "delete_created_layers",
+      },
+    });
+  }
+
+  actions.push(
+    {
+      actionId: copyActionId,
+      kind: "canvas_mutation",
+      operation: "place_copy_cluster",
+      toolName: resolveTool("layout-selector").toolName,
+      toolVersion: resolveTool("layout-selector").toolVersion,
+      commitGroup,
+      liveCommit: true,
+      idempotencyKey: `plan_copy_${input.job.runId}_${input.job.attemptSeq}`,
+      dependsOn: photoSelected ? [photoActionId] : [foundationActionId],
+      targetRef: {
+        documentId: input.request.editorContext.documentId,
+        pageId: input.request.editorContext.pageId,
+        layerId: null,
+        slotKey: "headline",
+      },
+      inputs: {
+        selectedLayoutCandidateId: selectionDecision.selectedLayoutCandidateId,
+        layoutMode: selectionDecision.layoutMode,
+        displayFontFamily: typographyDecision.display?.fontToken ?? null,
+        displayFontWeight: typographyDecision.display?.fontWeight ?? null,
+        bodyFontFamily: typographyDecision.body?.fontToken ?? null,
+        bodyFontWeight: typographyDecision.body?.fontWeight ?? null,
+        requiredSlots: normalizedIntent.requiredSlots,
+        goalSummary: normalizedIntent.goalSummary,
+        includeHeroCaption,
+        includeBadge,
+      },
+      rollback: {
+        strategy: "delete_created_layers",
+      },
+    },
+    {
+      actionId: polishActionId,
+      kind: "canvas_mutation",
+      operation: "place_promo_polish",
+      toolName: resolveTool("style-heuristic").toolName,
+      toolVersion: resolveTool("style-heuristic").toolVersion,
+      commitGroup,
+      liveCommit: true,
+      idempotencyKey: `plan_polish_${input.job.runId}_${input.job.attemptSeq}`,
+      dependsOn: [copyActionId],
+      targetRef: {
+        documentId: input.request.editorContext.documentId,
+        pageId: input.request.editorContext.pageId,
+        layerId: null,
+        slotKey: "decoration",
+      },
+      inputs: {
+        selectedDecorationCandidateId:
+          selectionDecision.selectedDecorationCandidateId,
+        selectedDecorationAssetId: selectionDecision.selectedDecorationAssetId,
+        selectedDecorationSerial: selectionDecision.selectedDecorationSerial,
+        selectedDecorationCategory: selectionDecision.selectedDecorationCategory,
+        decorationMode: selectionDecision.decorationMode,
+        displayFontFamily: typographyDecision.display?.fontToken ?? null,
+        displayFontWeight: typographyDecision.display?.fontWeight ?? null,
+        bodyFontFamily: typographyDecision.body?.fontToken ?? null,
+        bodyFontWeight: typographyDecision.body?.fontWeight ?? null,
+        layoutMode: selectionDecision.layoutMode,
+        executionStrategy: selectionDecision.executionStrategy,
+        fallbackSummary: selectionDecision.fallbackSummary,
+        includeBadge,
+        includeUnderline,
+        includeRibbon,
+      },
+      rollback: {
+        strategy: "delete_created_layers",
+      },
+    },
+  );
 
   return {
     planId: createRequestId(),
@@ -56,113 +211,22 @@ export async function buildExecutablePlan(
       artifactType: normalizedIntent.artifactType,
     },
     constraintsRef: `constraints_ref_${input.job.runId}`,
-    actions: [
-      {
-        actionId: foundationActionId,
-        kind: "canvas_mutation",
-        operation: "prepare_background_and_foundation",
-        toolName: resolveTool("background-catalog").toolName,
-        toolVersion: resolveTool("background-catalog").toolVersion,
-        commitGroup,
-        liveCommit: true,
-        idempotencyKey: `plan_foundation_${input.job.runId}_${input.job.attemptSeq}`,
-        dependsOn: [],
-        targetRef: {
-          documentId: input.request.editorContext.documentId,
-          pageId: input.request.editorContext.pageId,
-          layerId: null,
-          slotKey: "background",
-        },
-        inputs: {
-          templateKind: normalizedIntent.templateKind,
-          canvasPreset: normalizedIntent.canvasPreset,
-          tone: normalizedIntent.tone,
-          selectedBackgroundCandidateId:
-            selectionDecision.selectedBackgroundCandidateId,
-          selectedBackgroundAssetId: selectionDecision.selectedBackgroundAssetId,
-          selectedBackgroundSerial: selectionDecision.selectedBackgroundSerial,
-          selectedBackgroundCategory: selectionDecision.selectedBackgroundCategory,
-          backgroundMode: selectionDecision.backgroundMode,
-          selectedLayoutCandidateId: selectionDecision.selectedLayoutCandidateId,
-          layoutMode: selectionDecision.layoutMode,
-          includeHeroPanel,
-          includeBadge,
-          includeRibbon,
-        },
-        rollback: {
-          strategy: "delete_created_layers",
-        },
-      },
-      {
-        actionId: copyActionId,
-        kind: "canvas_mutation",
-        operation: "place_copy_cluster",
-        toolName: resolveTool("layout-selector").toolName,
-        toolVersion: resolveTool("layout-selector").toolVersion,
-        commitGroup,
-        liveCommit: true,
-        idempotencyKey: `plan_copy_${input.job.runId}_${input.job.attemptSeq}`,
-        dependsOn: [foundationActionId],
-        targetRef: {
-          documentId: input.request.editorContext.documentId,
-          pageId: input.request.editorContext.pageId,
-          layerId: null,
-          slotKey: "headline",
-        },
-        inputs: {
-          selectedLayoutCandidateId: selectionDecision.selectedLayoutCandidateId,
-          layoutMode: selectionDecision.layoutMode,
-          displayFontFamily: typographyDecision.display?.fontToken ?? null,
-          displayFontWeight: typographyDecision.display?.fontWeight ?? null,
-          bodyFontFamily: typographyDecision.body?.fontToken ?? null,
-          bodyFontWeight: typographyDecision.body?.fontWeight ?? null,
-          requiredSlots: normalizedIntent.requiredSlots,
-          goalSummary: normalizedIntent.goalSummary,
-          includeHeroCaption,
-          includeBadge,
-        },
-        rollback: {
-          strategy: "delete_created_layers",
-        },
-      },
-      {
-        actionId: polishActionId,
-        kind: "canvas_mutation",
-        operation: "place_promo_polish",
-        toolName: resolveTool("style-heuristic").toolName,
-        toolVersion: resolveTool("style-heuristic").toolVersion,
-        commitGroup,
-        liveCommit: true,
-        idempotencyKey: `plan_polish_${input.job.runId}_${input.job.attemptSeq}`,
-        dependsOn: [copyActionId],
-        targetRef: {
-          documentId: input.request.editorContext.documentId,
-          pageId: input.request.editorContext.pageId,
-          layerId: null,
-          slotKey: "decoration",
-        },
-        inputs: {
-          selectedDecorationCandidateId:
-            selectionDecision.selectedDecorationCandidateId,
-          selectedDecorationAssetId: selectionDecision.selectedDecorationAssetId,
-          selectedDecorationSerial: selectionDecision.selectedDecorationSerial,
-          selectedDecorationCategory: selectionDecision.selectedDecorationCategory,
-          decorationMode: selectionDecision.decorationMode,
-          displayFontFamily: typographyDecision.display?.fontToken ?? null,
-          displayFontWeight: typographyDecision.display?.fontWeight ?? null,
-          bodyFontFamily: typographyDecision.body?.fontToken ?? null,
-          bodyFontWeight: typographyDecision.body?.fontWeight ?? null,
-          layoutMode: selectionDecision.layoutMode,
-          executionStrategy: selectionDecision.executionStrategy,
-          fallbackSummary: selectionDecision.fallbackSummary,
-          includeBadge,
-          includeUnderline,
-          includeRibbon,
-        },
-        rollback: {
-          strategy: "delete_created_layers",
-        },
-      },
-    ],
+    actions,
   };
+}
+
+function assertPhotoSelectionExecutable(selectionDecision: SelectionDecision): void {
+  if (
+    selectionDecision.layoutMode !== "copy_left_with_right_photo" ||
+    selectionDecision.selectedLayoutCandidateId !==
+      "layout_copy_left_with_right_photo" ||
+    selectionDecision.topPhotoCandidateId === null ||
+    selectionDecision.topPhotoUrl === null ||
+    selectionDecision.topPhotoWidth === null ||
+    selectionDecision.topPhotoHeight === null
+  ) {
+    throw new Error(
+      "Photo execution path requires an executable photo candidate and the dedicated photo layout candidate",
+    );
+  }
 }

@@ -58,6 +58,7 @@ export interface TemplateCandidateBundle {
   background: TemplateCandidateSet;
   layout: TemplateCandidateSet;
   decoration: TemplateCandidateSet;
+  photo: TemplateCandidateSet;
 }
 
 export interface SourceSearchQueryAttempt {
@@ -67,7 +68,7 @@ export interface SourceSearchQueryAttempt {
 }
 
 export interface SourceSearchFamilySummary {
-  family: "background" | "graphic" | "font";
+  family: "background" | "graphic" | "photo" | "font";
   queryAttempts: SourceSearchQueryAttempt[];
   returnedCount: number;
   filteredCount: number;
@@ -84,6 +85,7 @@ export interface SourceSearchSummary {
   sourceMode: TooldiCatalogSourceMode;
   background: SourceSearchFamilySummary;
   graphic: SourceSearchFamilySummary;
+  photo: SourceSearchFamilySummary;
   font: SourceSearchFamilySummary;
 }
 
@@ -138,20 +140,43 @@ export interface SelectionDecision {
     | "layoutCompatibility"
     | "executionSimplicity"
     | "fallbackSafety"
+    | "focalSafety"
+    | "cropSafety"
+    | "copySeparationSupport"
   >;
   selectedBackgroundCandidateId: string;
   selectedLayoutCandidateId: string;
   selectedDecorationCandidateId: string;
+  topPhotoCandidateId: string | null;
   selectedBackgroundAssetId: string | null;
   selectedBackgroundSerial: string | null;
   selectedBackgroundCategory: string | null;
   selectedDecorationAssetId: string | null;
   selectedDecorationSerial: string | null;
   selectedDecorationCategory: string | null;
+  topPhotoAssetId: string | null;
+  topPhotoSerial: string | null;
+  topPhotoCategory: string | null;
+  topPhotoUid: string | null;
+  topPhotoUrl: string | null;
+  topPhotoWidth: number | null;
+  topPhotoHeight: number | null;
+  topPhotoOrientation: "portrait" | "landscape" | "square" | null;
   backgroundMode: "spring_pattern" | "pastel_gradient" | "spring_photo";
-  layoutMode: "copy_left_with_right_decoration" | "center_stack" | "badge_led";
+  layoutMode:
+    | "copy_left_with_right_decoration"
+    | "copy_left_with_right_photo"
+    | "center_stack"
+    | "badge_led";
   decorationMode: "graphic_cluster" | "ribbon_badge" | "photo_support";
-  executionStrategy: "graphic_first_shape_text_group";
+  photoBranchMode:
+    | "not_considered"
+    | "graphic_preferred"
+    | "photo_selected";
+  photoBranchReason: string;
+  executionStrategy:
+    | "graphic_first_shape_text_group"
+    | "photo_hero_shape_text_group";
   summary: string;
   fallbackSummary: string;
 }

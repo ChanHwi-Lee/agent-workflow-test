@@ -259,7 +259,28 @@ class FakeTooldiCatalogSourceClient implements TooldiCatalogSourceClient {
       page: 0,
       hasNextPage: false,
       traceId: "trace-photo",
-      assets: [],
+      assets: [
+        {
+          assetId: "photo:33",
+          sourceFamily: "photo_source" as const,
+          contentType: "photo" as const,
+          serial: "33",
+          uid: null,
+          title: "봄 꽃길 사진",
+          keywordTokens: ["봄", "꽃", "야외"],
+          width: 1600,
+          height: 900,
+          thumbnailUrl: "https://thumb.test/photo-33.png",
+          originUrl: "https://origin.test/photo-33.png",
+          priceType: "free" as const,
+          isAi: false,
+          creatorSerial: null,
+          insertMode: "object_image" as const,
+          orientation: "landscape" as const,
+          backgroundRemovalHint: false,
+          sourcePayload: {},
+        },
+      ],
     };
   }
 
@@ -388,6 +409,7 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   assert.equal(candidateSets.background.family, "background");
   assert.equal(candidateSets.layout.family, "layout");
   assert.equal(candidateSets.decoration.family, "decoration");
+  assert.equal(candidateSets.photo.family, "photo");
   assert.equal(result.finalizeDraft.request.finalStatus, "completed");
 
   assert.equal(callbackClient.heartbeats.length, 4);
@@ -491,9 +513,10 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   ) as {
     background: { candidates: Array<{ sourceFamily: string }> };
     decoration: { candidates: Array<{ sourceFamily: string }> };
+    photo: { candidates: Array<{ sourceFamily: string }> };
   };
   assert.equal(
-    persistedCandidateSet.background.candidates.some(
+    persistedCandidateSet.photo.candidates.some(
       (candidate) => candidate.sourceFamily === "photo_source",
     ),
     true,
@@ -578,12 +601,16 @@ test("processRunJob can activate real Tooldi background/graphic/font source mode
 
   assert.equal(result.selectionDecision?.selectedBackgroundSerial, "11");
   assert.equal(result.selectionDecision?.selectedDecorationSerial, "22");
+  assert.equal(result.selectionDecision?.topPhotoSerial, "33");
   assert.equal(result.selectionDecision?.selectedBackgroundCategory, "pattern");
   assert.equal(result.selectionDecision?.selectedDecorationCategory, "illust");
+  assert.equal(result.selectionDecision?.topPhotoCategory, "landscape");
+  assert.equal(result.selectionDecision?.photoBranchMode, "not_considered");
   assert.equal(result.typographyDecision?.display?.fontToken, "701_700");
   assert.equal(result.typographyDecision?.body?.fontToken, "701_400");
   assert.equal(result.sourceSearchSummary?.background.returnedCount, 1);
   assert.equal(result.sourceSearchSummary?.graphic.returnedCount, 1);
+  assert.equal(result.sourceSearchSummary?.photo.returnedCount, 1);
   assert.equal(result.sourceSearchSummary?.font.returnedCount, 1);
   assert.equal(
     callbackClient.appendedEvents.some(
@@ -591,6 +618,24 @@ test("processRunJob can activate real Tooldi background/graphic/font source mode
         event.event.type === "log" &&
         event.event.message.includes("[source/background]") &&
         event.event.message.includes("selectedSerial=11"),
+    ),
+    true,
+  );
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes("[source/photo]") &&
+        event.event.message.includes("selectedSerial=33"),
+    ),
+    true,
+  );
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes("[source/photo-branch]") &&
+        event.event.message.includes("mode=not_considered"),
     ),
     true,
   );
@@ -635,6 +680,260 @@ test("processRunJob can activate real Tooldi background/graphic/font source mode
   };
   assert.equal(sourceSummaryArtifact.sourceMode, "tooldi_api");
   assert.equal(sourceSummaryArtifact.font.selectedSerial, "701");
+});
+
+test("processRunJob can activate the photo hero execution path on the wide preset", async () => {
+  const env = createRealSourceEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = createObjectStoreClient({
+    bucket: env.objectStoreBucket,
+  });
+  const callbackClient = new RecordingBackendCallbackClient();
+  const seedRun = createTestRun();
+  const testRun = createTestRun({
+    editorContext: {
+      ...seedRun.request.editorContext,
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      sizeSerial: "1200x628@1",
+    },
+  });
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const baseSourceClient = new FakeTooldiCatalogSourceClient();
+  const photoPreferredSourceClient: TooldiCatalogSourceClient = {
+    searchBackgroundAssets: async (_query) =>
+      baseSourceClient.searchBackgroundAssets(),
+    searchPhotoAssets: async (_query) => baseSourceClient.searchPhotoAssets(),
+    listFontAssets: async (_query) => baseSourceClient.listFontAssets(),
+    async searchGraphicAssets() {
+      return {
+        sourceFamily: "graphic_source" as const,
+        page: 0,
+        hasNextPage: false,
+        traceId: "trace-graphic-low",
+        assets: [
+          {
+            assetId: "graphic:44",
+            sourceFamily: "graphic_source" as const,
+            contentType: "graphic" as const,
+            serial: "44",
+            uid: null,
+            title: "장식 아이콘",
+            keywordTokens: ["프로모션"],
+            width: null,
+            height: null,
+            thumbnailUrl: "https://thumb.test/graphic-44.png",
+            originUrl: "https://origin.test/graphic-44.png",
+            priceType: "free" as const,
+            isAi: false,
+            creatorSerial: null,
+            insertMode: "object_element" as const,
+            graphicKind: "icon" as const,
+            extension: ".png",
+            sourcePayload: {},
+          },
+        ],
+      };
+    },
+  };
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+    tooldiCatalogSourceClient: photoPreferredSourceClient,
+  });
+
+  assert.equal(result.selectionDecision?.layoutMode, "copy_left_with_right_photo");
+  assert.equal(
+    result.selectionDecision?.selectedLayoutCandidateId,
+    "layout_copy_left_with_right_photo",
+  );
+  assert.equal(result.selectionDecision?.photoBranchMode, "photo_selected");
+  assert.equal(result.selectionDecision?.topPhotoSerial, "33");
+  assert.equal(result.selectionDecision?.executionStrategy, "photo_hero_shape_text_group");
+  assert.equal(result.selectionDecision?.topPhotoUrl, "https://origin.test/photo-33.png");
+  assert.equal(result.selectionDecision?.topPhotoWidth, 1600);
+  assert.equal(result.selectionDecision?.topPhotoHeight, 900);
+  assert.equal(result.plan?.actions.length, 4);
+  assert.equal(
+    result.plan?.actions.some((action) => action.operation === "place_photo_hero"),
+    true,
+  );
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes("[source/photo-branch]") &&
+        event.event.message.includes("mode=photo_selected"),
+    ),
+    true,
+  );
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes("[source/photo-execution]") &&
+        event.event.message.includes("serial=33"),
+    ),
+    true,
+  );
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes("Stage 2/4 (photo)"),
+    ),
+    true,
+  );
+
+  const photoMutation = callbackClient.appendedEvents.find(
+    (event): event is WorkerAppendEventRequest & {
+      event: Extract<WorkerAppendEventRequest["event"], { type: "mutation.proposed" }>;
+    } =>
+      event.event.type === "mutation.proposed" &&
+      event.event.mutation.commands.some((command) => command.slotKey === "hero_image"),
+  );
+
+  assert.ok(photoMutation);
+  const heroImageCommand = photoMutation.event.mutation.commands.find(
+    (command) => command.slotKey === "hero_image",
+  );
+  assert.ok(heroImageCommand && "layerBlueprint" in heroImageCommand);
+  if (!heroImageCommand || !("layerBlueprint" in heroImageCommand)) {
+    return;
+  }
+  assert.equal(heroImageCommand.layerBlueprint.layerType, "image");
+  assert.equal(heroImageCommand.layerBlueprint.metadata?.sourceSerial, "33");
+  assert.equal(
+    heroImageCommand.layerBlueprint.metadata?.sourceOriginUrl,
+    "https://origin.test/photo-33.png",
+  );
+});
+
+test("processRunJob keeps graphic path when top photo candidate is not executable", async () => {
+  const env = createRealSourceEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = createObjectStoreClient({
+    bucket: env.objectStoreBucket,
+  });
+  const callbackClient = new RecordingBackendCallbackClient();
+  const seedRun = createTestRun();
+  const testRun = createTestRun({
+    editorContext: {
+      ...seedRun.request.editorContext,
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      sizeSerial: "1200x628@1",
+    },
+  });
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const baseSourceClient = new FakeTooldiCatalogSourceClient();
+  const nonExecutablePhotoSourceClient: TooldiCatalogSourceClient = {
+    searchBackgroundAssets: async (_query) =>
+      baseSourceClient.searchBackgroundAssets(),
+    searchGraphicAssets: async (_query) => baseSourceClient.searchGraphicAssets(),
+    listFontAssets: async (_query) => baseSourceClient.listFontAssets(),
+    async searchPhotoAssets(_query) {
+      return {
+        sourceFamily: "photo_source" as const,
+        page: 0,
+        hasNextPage: false,
+        traceId: "trace-photo-non-executable",
+        assets: [
+          {
+            assetId: "photo:91",
+            sourceFamily: "photo_source" as const,
+            contentType: "photo" as const,
+            serial: "91",
+            uid: null,
+            title: "봄 들판 사진",
+            keywordTokens: ["봄", "야외"],
+            width: null,
+            height: 900,
+            thumbnailUrl: "https://thumb.test/photo-91.png",
+            originUrl: null,
+            priceType: "free" as const,
+            isAi: false,
+            creatorSerial: null,
+            insertMode: "object_image" as const,
+            orientation: "landscape" as const,
+            backgroundRemovalHint: true,
+            sourcePayload: {},
+          },
+        ],
+      };
+    },
+  };
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+    tooldiCatalogSourceClient: nonExecutablePhotoSourceClient,
+  });
+
+  assert.equal(result.selectionDecision?.topPhotoSerial, "91");
+  assert.equal(result.selectionDecision?.photoBranchMode, "graphic_preferred");
+  assert.equal(
+    result.selectionDecision?.photoBranchReason,
+    "photo candidate is missing executable metadata required for the hero-photo slot",
+  );
+  assert.equal(
+    result.selectionDecision?.selectedLayoutCandidateId,
+    "layout_copy_left_with_right_decoration",
+  );
+  assert.equal(result.plan?.actions.length, 3);
+  assert.equal(
+    result.plan?.actions.some((action) => action.operation === "place_photo_hero"),
+    false,
+  );
 });
 
 test("processRunJob rejects non-empty canvas runs for the spring vertical slice", async () => {
@@ -785,7 +1084,7 @@ test("processRunJob keeps the representative wide banner geometry inside the can
 });
 
 test("processRunJob retrieval seam disables photo candidates when photo catalog tool is absent", async () => {
-  const env = createEnv();
+  const env = createRealSourceEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
     bucket: env.objectStoreBucket,
@@ -813,6 +1112,19 @@ test("processRunJob retrieval seam disables photo candidates when photo catalog 
   const toolRegistry = createWorkerToolRegistry({
     disabledToolNames: ["photo-catalog"],
   });
+  let photoSearchCalls = 0;
+  const baseSourceClient = new FakeTooldiCatalogSourceClient();
+  const countingSourceClient: TooldiCatalogSourceClient = {
+    searchBackgroundAssets: async (_query) =>
+      baseSourceClient.searchBackgroundAssets(),
+    searchGraphicAssets: async (_query) =>
+      baseSourceClient.searchGraphicAssets(),
+    searchPhotoAssets: async (_query) => {
+      photoSearchCalls += 1;
+      return baseSourceClient.searchPhotoAssets();
+    },
+    listFontAssets: async (_query) => baseSourceClient.listFontAssets(),
+  };
 
   const result = await processRunJob(testRun.job, {
     env,
@@ -824,6 +1136,7 @@ test("processRunJob retrieval seam disables photo candidates when photo catalog 
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    tooldiCatalogSourceClient: countingSourceClient,
   });
 
   assert.ok(result.retrievalStage);
@@ -831,6 +1144,11 @@ test("processRunJob retrieval seam disables photo candidates when photo catalog 
     result.retrievalStage.allowedSourceFamilies.includes("photo_source"),
     false,
   );
+  assert.equal(photoSearchCalls, 0);
+  assert.equal(result.candidateSets?.photo.candidates.length, 0);
+  assert.equal(result.sourceSearchSummary?.photo.returnedCount, 0);
+  assert.equal(result.selectionDecision?.topPhotoSerial, null);
+  assert.equal(result.selectionDecision?.photoBranchMode, "not_considered");
 });
 
 test("processRunJob honors cancel fence before starting a new mutation group", async () => {
@@ -1003,6 +1321,12 @@ test("processRunJob preserves rejected mutation reason in stage log and finalize
     result.finalizeDraft.request.errorSummary?.message,
     "현재 캔버스 리비전이 mutation 기대값과 다릅니다.",
   );
+  assert.equal(callbackClient.ackWaits.length, 2);
+  assert.equal(
+    callbackClient.appendedEvents.filter((event) => event.event.type === "mutation.proposed")
+      .length,
+    2,
+  );
   assert.equal(
     callbackClient.appendedEvents.some(
       (event) =>
@@ -1010,6 +1334,152 @@ test("processRunJob preserves rejected mutation reason in stage log and finalize
         event.event.message.includes("code=revision_mismatch"),
     ),
     true,
+  );
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes(
+          "Stopped remaining stages after copy stage returned rejected",
+        ),
+    ),
+    true,
+  );
+});
+
+test("processRunJob stops immediately after a rejected photo stage under fail-fast policy", async () => {
+  const env = createRealSourceEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = createObjectStoreClient({
+    bucket: env.objectStoreBucket,
+  });
+  const callbackClient = new RecordingBackendCallbackClient();
+  callbackClient.waitMutationAckResponseFactory = (_mutationId, _query) => {
+    const currentSeq = callbackClient.ackWaits.length;
+    if (currentSeq === 1) {
+      return {
+        found: true,
+        status: "acked",
+        seq: 1,
+        resultingRevision: 1,
+      };
+    }
+
+    return {
+      found: true,
+      status: "rejected",
+      seq: 2,
+      error: {
+        code: "photo_apply_failed",
+        message: "사진 hero object 생성에 실패했습니다.",
+      },
+    };
+  };
+
+  const seedRun = createTestRun();
+  const testRun = createTestRun({
+    editorContext: {
+      ...seedRun.request.editorContext,
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      sizeSerial: "1200x628@1",
+    },
+  });
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const baseSourceClient = new FakeTooldiCatalogSourceClient();
+  const photoPreferredSourceClient: TooldiCatalogSourceClient = {
+    searchBackgroundAssets: async (_query) =>
+      baseSourceClient.searchBackgroundAssets(),
+    searchPhotoAssets: async (_query) => baseSourceClient.searchPhotoAssets(),
+    listFontAssets: async (_query) => baseSourceClient.listFontAssets(),
+    async searchGraphicAssets() {
+      return {
+        sourceFamily: "graphic_source" as const,
+        page: 0,
+        hasNextPage: false,
+        traceId: "trace-graphic-low-fail-fast",
+        assets: [
+          {
+            assetId: "graphic:55",
+            sourceFamily: "graphic_source" as const,
+            contentType: "graphic" as const,
+            serial: "55",
+            uid: null,
+            title: "보조 아이콘",
+            keywordTokens: ["프로모션"],
+            width: null,
+            height: null,
+            thumbnailUrl: "https://thumb.test/graphic-55.png",
+            originUrl: "https://origin.test/graphic-55.png",
+            priceType: "free" as const,
+            isAi: false,
+            creatorSerial: null,
+            insertMode: "object_element" as const,
+            graphicKind: "icon" as const,
+            extension: ".png",
+            sourcePayload: {},
+          },
+        ],
+      };
+    },
+  };
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+    tooldiCatalogSourceClient: photoPreferredSourceClient,
+  });
+
+  assert.equal(result.selectionDecision?.photoBranchMode, "photo_selected");
+  assert.equal(result.finalizeDraft.request.finalStatus, "failed");
+  assert.equal(result.finalizeDraft.request.errorSummary?.code, "photo_apply_failed");
+  assert.equal(callbackClient.ackWaits.length, 2);
+  assert.equal(
+    callbackClient.appendedEvents.filter((event) => event.event.type === "mutation.proposed")
+      .length,
+    2,
+  );
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes(
+          "Fail-fast policy stopped remaining stages after the photo stage was not acknowledged",
+        ),
+    ),
+    true,
+  );
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes("Refinement placeholder completed"),
+    ),
+    false,
   );
 });
 

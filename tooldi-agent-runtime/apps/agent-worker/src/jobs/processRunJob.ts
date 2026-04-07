@@ -201,23 +201,6 @@ export async function processRunJob(
   let typographyDecisionRef: string | undefined;
 
   try {
-    const candidateAssembly = await assembleTemplateCandidates(hydrated, intent, {
-      templateCatalogClient: dependencies.templateCatalogClient,
-      tooldiCatalogSourceClient,
-      sourceMode: dependencies.env.tooldiCatalogSourceMode,
-    });
-    candidateSets = candidateAssembly.candidates;
-    candidateSetRef = await persistWorkerJsonArtifact(
-      dependencies.objectStore,
-      `runs/${job.runId}/attempts/${job.attemptSeq}/template-candidate-set.json`,
-      candidateSets,
-      {
-        artifactKind: "template-candidate-set",
-        runId: job.runId,
-        traceId: job.traceId,
-        attemptSeq: String(job.attemptSeq),
-      },
-    );
     const retrievalDecision = await runRetrievalStage(hydrated, intent, {
       toolRegistry: dependencies.toolRegistry,
     });
@@ -229,6 +212,24 @@ export async function processRunJob(
       retrievalStage,
       {
         artifactKind: "retrieval-stage",
+        runId: job.runId,
+        traceId: job.traceId,
+        attemptSeq: String(job.attemptSeq),
+      },
+    );
+    const candidateAssembly = await assembleTemplateCandidates(hydrated, intent, {
+      templateCatalogClient: dependencies.templateCatalogClient,
+      tooldiCatalogSourceClient,
+      sourceMode: dependencies.env.tooldiCatalogSourceMode,
+      allowPhotoCandidates: selectionPolicy.allowPhotoCandidates,
+    });
+    candidateSets = candidateAssembly.candidates;
+    candidateSetRef = await persistWorkerJsonArtifact(
+      dependencies.objectStore,
+      `runs/${job.runId}/attempts/${job.attemptSeq}/template-candidate-set.json`,
+      candidateSets,
+      {
+        artifactKind: "template-candidate-set",
         runId: job.runId,
         traceId: job.traceId,
         attemptSeq: String(job.attemptSeq),
@@ -272,6 +273,7 @@ export async function processRunJob(
       dependencies.env.tooldiCatalogSourceMode,
       candidateAssembly.sourceSearch.background,
       candidateAssembly.sourceSearch.graphic,
+      candidateAssembly.sourceSearch.photo,
       typographySearchSummary,
       selectionDecision,
     );
@@ -289,6 +291,7 @@ export async function processRunJob(
     for (const message of buildSelectionLogMessages(
       sourceSearchSummary,
       typographyDecision,
+      selectionDecision,
     )) {
       const sourceLog = await dependencies.callbackClient.appendEvent(job.runId, {
         traceId: job.traceId,
@@ -314,7 +317,10 @@ export async function processRunJob(
         `(${selectionDecision.selectedBackgroundCategory ?? "n/a"}) ` +
         `layout=${selectionDecision.layoutMode} ` +
         `decoration=${selectionDecision.selectedDecorationSerial ?? "n/a"} ` +
-        `(${selectionDecision.selectedDecorationCategory ?? "n/a"})`,
+        `(${selectionDecision.selectedDecorationCategory ?? "n/a"}) ` +
+        `photoBranch=${selectionDecision.photoBranchMode} ` +
+        `photo=${selectionDecision.topPhotoSerial ?? "n/a"} ` +
+        `(${selectionDecision.topPhotoCategory ?? "n/a"})`,
     },
   });
     cooperativeStopRequested ||= selectionEvent.cancelRequested;
@@ -426,6 +432,7 @@ export async function processRunJob(
     : null;
 
   for (const proposal of skeletonBatch.proposals) {
+    const totalStages = skeletonBatch.proposals.length;
     const stageLog = await dependencies.callbackClient.appendEvent(job.runId, {
       traceId: job.traceId,
       attempt: job.attemptSeq,
@@ -433,7 +440,7 @@ export async function processRunJob(
       event: {
         type: "log",
         level: "info",
-        message: `Stage ${proposal.mutation.seq}/3 (${proposal.stageLabel}) - ${proposal.stageDescription}`,
+        message: `Stage ${proposal.mutation.seq}/${totalStages} (${proposal.stageLabel}) - ${proposal.stageDescription}`,
       },
     });
     if (stageLog.cancelRequested) {
@@ -443,6 +450,40 @@ export async function processRunJob(
         status: "cancelled",
       };
       break;
+    }
+
+    if (proposal.stageLabel === "photo") {
+      const heroCommand = proposal.mutation.commands.find(
+        (command) =>
+          command.op === "createLayer" && command.slotKey === "hero_image",
+      );
+      const bounds =
+        heroCommand && "layerBlueprint" in heroCommand
+          ? heroCommand.layerBlueprint.bounds
+          : null;
+      const photoStageLog = await dependencies.callbackClient.appendEvent(
+        job.runId,
+        {
+          traceId: job.traceId,
+          attempt: job.attemptSeq,
+          queueJobId: job.queueJobId,
+          event: {
+            type: "log",
+            level: "info",
+            message:
+              `[source/photo-stage] seq=${proposal.mutation.seq} ` +
+              `heroBounds=${bounds ? `${bounds.x},${bounds.y},${bounds.width},${bounds.height}` : "n/a"}`,
+          },
+        },
+      );
+      if (photoStageLog.cancelRequested) {
+        cooperativeStopRequested = true;
+        lastMutationAck = {
+          found: true,
+          status: "cancelled",
+        };
+        break;
+      }
     }
 
     emittedMutationIds.push(proposal.mutationId);
@@ -488,8 +529,8 @@ export async function processRunJob(
         level: lastMutationAck.status === "acked" ? "info" : "warn",
         message:
           lastMutationAck.status === "rejected" && lastMutationAck.error
-            ? `Stage ${proposal.mutation.seq}/3 result: rejected code=${lastMutationAck.error.code} message=${lastMutationAck.error.message}`
-            : `Stage ${proposal.mutation.seq}/3 result: ${lastMutationAck.status}`,
+            ? `Stage ${proposal.mutation.seq}/${totalStages} result: rejected code=${lastMutationAck.error.code} message=${lastMutationAck.error.message}`
+            : `Stage ${proposal.mutation.seq}/${totalStages} result: ${lastMutationAck.status}`,
       },
     });
     if (ackLog.cancelRequested) {
@@ -500,32 +541,75 @@ export async function processRunJob(
       };
       break;
     }
+
+    if (lastMutationAck.status !== "acked") {
+      const failFastLog = await dependencies.callbackClient.appendEvent(job.runId, {
+        traceId: job.traceId,
+        attempt: job.attemptSeq,
+        queueJobId: job.queueJobId,
+        event: {
+          type: "log",
+          level: "warn",
+          message:
+            proposal.stageLabel === "photo"
+              ? "Fail-fast policy stopped remaining stages after the photo stage was not acknowledged"
+              : `Stopped remaining stages after ${proposal.stageLabel} stage returned ${lastMutationAck.status}`,
+        },
+      });
+      if (failFastLog.cancelRequested) {
+        cooperativeStopRequested = true;
+        lastMutationAck = {
+          found: true,
+          status: "cancelled",
+        };
+      }
+      break;
+    }
   }
 
-  const applyingHeartbeat = await dependencies.callbackClient.heartbeat(job.runId, {
-    ...heartbeatBase,
-    attemptState: "awaiting_ack",
-    phase: "applying",
-    heartbeatAt: new Date().toISOString(),
-  });
-  cooperativeStopRequested ||= shouldStopAfterCurrentAction(applyingHeartbeat);
+  const shouldAttemptRefinement =
+    !cooperativeStopRequested &&
+    (lastMutationAck === null || lastMutationAck.status === "acked");
+  const refinement = shouldAttemptRefinement
+    ? await (async () => {
+        const applyingHeartbeat = await dependencies.callbackClient.heartbeat(
+          job.runId,
+          {
+            ...heartbeatBase,
+            attemptState: "awaiting_ack",
+            phase: "applying",
+            heartbeatAt: new Date().toISOString(),
+          },
+        );
+        cooperativeStopRequested ||= shouldStopAfterCurrentAction(applyingHeartbeat);
 
-  const refinement = await emitRefinementMutations(hydrated, intent, lastMutationAck, {
-    imagePrimitiveClient: dependencies.imagePrimitiveClient,
-    assetStorageClient: dependencies.assetStorageClient,
-  });
+        const nextRefinement = await emitRefinementMutations(
+          hydrated,
+          intent,
+          lastMutationAck,
+          {
+            imagePrimitiveClient: dependencies.imagePrimitiveClient,
+            assetStorageClient: dependencies.assetStorageClient,
+          },
+        );
 
-  const refinementLog = await dependencies.callbackClient.appendEvent(job.runId, {
-    traceId: job.traceId,
-    attempt: job.attemptSeq,
-    queueJobId: job.queueJobId,
-    event: {
-      type: "log",
-      level: "info",
-      message: `Refinement placeholder completed after ${refinement.proposedMutationIds.length} additional mutations`,
-    },
-  });
-  cooperativeStopRequested ||= refinementLog.cancelRequested;
+        const refinementLog = await dependencies.callbackClient.appendEvent(job.runId, {
+          traceId: job.traceId,
+          attempt: job.attemptSeq,
+          queueJobId: job.queueJobId,
+          event: {
+            type: "log",
+            level: "info",
+            message: `Refinement placeholder completed after ${nextRefinement.proposedMutationIds.length} additional mutations`,
+          },
+        });
+        cooperativeStopRequested ||= refinementLog.cancelRequested;
+        return nextRefinement;
+      })()
+    : {
+        proposedMutationIds: [],
+        lastMutationAck,
+      };
 
   const savingHeartbeat = await dependencies.callbackClient.heartbeat(job.runId, {
     ...heartbeatBase,
@@ -590,6 +674,7 @@ function buildSourceSearchSummary(
   sourceMode: AgentWorkerEnv["tooldiCatalogSourceMode"],
   background: SourceSearchSummary["background"],
   graphic: SourceSearchSummary["graphic"],
+  photo: SourceSearchSummary["photo"],
   font: SourceSearchSummary["font"] | undefined,
   selectionDecision: SelectionDecision,
 ): SourceSearchSummary {
@@ -610,6 +695,12 @@ function buildSourceSearchSummary(
       selectedSerial: selectionDecision.selectedDecorationSerial,
       selectedCategory: selectionDecision.selectedDecorationCategory,
     },
+    photo: {
+      ...photo,
+      selectedAssetId: selectionDecision.topPhotoAssetId,
+      selectedSerial: selectionDecision.topPhotoSerial,
+      selectedCategory: selectionDecision.topPhotoCategory,
+    },
     font: font ?? {
       family: "font",
       queryAttempts: [],
@@ -626,6 +717,7 @@ function buildSourceSearchSummary(
 function buildSelectionLogMessages(
   sourceSearchSummary: SourceSearchSummary,
   typographyDecision: TypographyDecision,
+  selectionDecision: SelectionDecision,
 ): Array<{ level: "info" | "warn"; message: string }> {
   if (sourceSearchSummary.sourceMode !== "tooldi_api") {
     return [];
@@ -647,12 +739,41 @@ function buildSelectionLogMessages(
         `category=${sourceSearchSummary.graphic.selectedCategory ?? "n/a"}`,
     },
     {
+      level:
+        sourceSearchSummary.photo.selectedSerial && sourceSearchSummary.photo.selectedCategory
+          ? "info"
+          : "warn",
+      message:
+        `[source/photo] returned=${sourceSearchSummary.photo.returnedCount} ` +
+        `selectedSerial=${sourceSearchSummary.photo.selectedSerial ?? "n/a"} ` +
+        `orientation=${sourceSearchSummary.photo.selectedCategory ?? "n/a"}`,
+    },
+    {
       level: typographyDecision.fallbackUsed ? "warn" : "info",
       message:
         `[source/font] inventory=${typographyDecision.inventoryCount} ` +
         `display=${typographyDecision.display?.fontToken ?? "fallback"} ` +
         `body=${typographyDecision.body?.fontToken ?? "fallback"}`,
     },
+    {
+      level:
+        selectionDecision.photoBranchMode === "photo_selected"
+          ? "info"
+          : "warn",
+      message:
+        `[source/photo-branch] mode=${selectionDecision.photoBranchMode} ` +
+        `reason=${selectionDecision.photoBranchReason}`,
+    },
+    ...(selectionDecision.photoBranchMode === "photo_selected"
+      ? [
+          {
+            level: "info" as const,
+            message:
+              `[source/photo-execution] serial=${selectionDecision.topPhotoSerial ?? "n/a"} ` +
+              `url=${selectionDecision.topPhotoUrl ?? "n/a"} fit=cover crop=centered_cover`,
+          },
+        ]
+      : []),
   ];
 }
 

@@ -15,6 +15,7 @@ export interface EmitSkeletonMutationsDependencies {
 
 type LayoutMode =
   | "copy_left_with_right_decoration"
+  | "copy_left_with_right_photo"
   | "center_stack"
   | "badge_led";
 
@@ -54,6 +55,20 @@ type TypographyMetadata = {
   bodyFontWeight: number | null;
 };
 
+type PhotoMetadata = {
+  selectedPhotoCandidateId: string | null;
+  selectedPhotoAssetId: string | null;
+  selectedPhotoSerial: string | null;
+  selectedPhotoCategory: string | null;
+  selectedPhotoUid: string | null;
+  selectedPhotoUrl: string | null;
+  selectedPhotoWidth: number | null;
+  selectedPhotoHeight: number | null;
+  selectedPhotoOrientation: "portrait" | "landscape" | "square" | null;
+  photoFitMode: "cover";
+  photoCropMode: "centered_cover";
+};
+
 export async function emitSkeletonMutations(
   input: HydratedPlanningInput,
   normalizedIntent: NormalizedIntent,
@@ -68,8 +83,10 @@ export async function emitSkeletonMutations(
 
   const planActions = validatePlanActions(plan);
   const foundationInputs = readFoundationInputs(planActions.foundation.inputs);
+  const photoInputs = readPhotoInputs(planActions.photo?.inputs);
   const copyInputs = readCopyInputs(planActions.copy.inputs);
   const polishInputs = readPolishInputs(planActions.polish.inputs);
+  const photoSelected = planActions.photo !== null;
   const typography: TypographyMetadata = {
     displayFontFamily: copyInputs.displayFontFamily,
     displayFontWeight: copyInputs.displayFontWeight,
@@ -194,6 +211,32 @@ export async function emitSkeletonMutations(
       }),
     );
   }
+
+  const photoCommands: MutationProposalDraft["mutation"]["commands"] =
+    photoSelected
+      ? [
+          buildCreateLayerCommand(input.job.runId, "photo", {
+            slotKey: "hero_image",
+            clientLayerKey: `hero_image_${input.job.runId}`,
+            layerType: "image",
+            bounds: geometry.heroPanel,
+            role: "hero_image",
+            variantKey: copyInputs.layoutMode,
+            candidateId:
+              photoInputs.selectedPhotoCandidateId ?? "photo_unknown",
+            sourceAssetId: photoInputs.selectedPhotoAssetId,
+            sourceSerial: photoInputs.selectedPhotoSerial,
+            sourceCategory: photoInputs.selectedPhotoCategory,
+            sourceUid: photoInputs.selectedPhotoUid,
+            sourceOriginUrl: photoInputs.selectedPhotoUrl,
+            sourceWidth: photoInputs.selectedPhotoWidth,
+            sourceHeight: photoInputs.selectedPhotoHeight,
+            photoOrientation: photoInputs.selectedPhotoOrientation,
+            fitMode: photoInputs.photoFitMode,
+            cropMode: photoInputs.photoCropMode,
+          }),
+        ]
+      : [];
 
   const copyCommands: MutationProposalDraft["mutation"]["commands"] = [
     buildCreateLayerCommand(input.job.runId, "copy", {
@@ -323,7 +366,11 @@ export async function emitSkeletonMutations(
 
   return {
     commitGroup,
-    proposals: [
+    proposals: buildProposals(),
+  };
+
+  function buildProposals(): MutationProposalDraft[] {
+    const proposals: MutationProposalDraft[] = [
       createProposal({
         seq: 1,
         stageLabel: "foundation",
@@ -331,34 +378,59 @@ export async function emitSkeletonMutations(
         expectedBaseRevision: 0,
         commands: foundationCommands,
       }),
+    ];
+
+    if (photoSelected) {
+      proposals.push(
+        createProposal({
+          seq: 2,
+          stageLabel: "photo",
+          stageDescription: `Place ${photoInputs.photoFitMode} hero photo ${photoInputs.selectedPhotoSerial ?? "unknown"}`,
+          expectedBaseRevision: 1,
+          dependsOnSeq: 1,
+          commands: photoCommands,
+        }),
+      );
+    }
+
+    const copySeq = photoSelected ? 3 : 2;
+    const polishSeq = photoSelected ? 4 : 3;
+
+    proposals.push(
       createProposal({
-        seq: 2,
+        seq: copySeq,
         stageLabel: "copy",
         stageDescription: `Place ${copyInputs.layoutMode} copy cluster`,
-        expectedBaseRevision: 1,
-        dependsOnSeq: 1,
+        expectedBaseRevision: copySeq - 1,
+        dependsOnSeq: copySeq - 1,
         commands: copyCommands,
       }),
       createProposal({
-        seq: 3,
+        seq: polishSeq,
         stageLabel: "polish",
         stageDescription: `Apply ${polishInputs.decorationMode} decorative polish`,
-        expectedBaseRevision: 2,
-        dependsOnSeq: 2,
+        expectedBaseRevision: polishSeq - 1,
+        dependsOnSeq: polishSeq - 1,
         commands: polishCommands,
       }),
-    ],
-  };
+    );
+
+    return proposals;
+  }
 }
 
 function validatePlanActions(plan: ExecutablePlan): {
   foundation: PersistedPlanAction;
+  photo: PersistedPlanAction | null;
   copy: PersistedPlanAction;
   polish: PersistedPlanAction;
 } {
   const foundation = plan.actions.find(
     (action) => action.operation === "prepare_background_and_foundation",
   );
+  const photo =
+    plan.actions.find((action) => action.operation === "place_photo_hero") ??
+    null;
   const copy = plan.actions.find((action) => action.operation === "place_copy_cluster");
   const polish = plan.actions.find(
     (action) => action.operation === "place_promo_polish",
@@ -368,7 +440,7 @@ function validatePlanActions(plan: ExecutablePlan): {
     throw new Error("Executable plan is missing one or more required spring actions");
   }
 
-  return { foundation, copy, polish };
+  return { foundation, photo, copy, polish };
 }
 
 function readFoundationInputs(inputs: PersistedPlanAction["inputs"]) {
@@ -421,6 +493,36 @@ function readCopyInputs(inputs: PersistedPlanAction["inputs"]) {
   };
 }
 
+function readPhotoInputs(inputs: PersistedPlanAction["inputs"] | undefined) {
+  const record = (inputs ?? {}) as {
+    selectedPhotoCandidateId?: string | null;
+    selectedPhotoAssetId?: string | null;
+    selectedPhotoSerial?: string | null;
+    selectedPhotoCategory?: string | null;
+    selectedPhotoUid?: string | null;
+    selectedPhotoUrl?: string | null;
+    selectedPhotoWidth?: number | null;
+    selectedPhotoHeight?: number | null;
+    selectedPhotoOrientation?: "portrait" | "landscape" | "square" | null;
+    photoFitMode?: "cover";
+    photoCropMode?: "centered_cover";
+  };
+
+  return {
+    selectedPhotoCandidateId: record.selectedPhotoCandidateId ?? null,
+    selectedPhotoAssetId: record.selectedPhotoAssetId ?? null,
+    selectedPhotoSerial: record.selectedPhotoSerial ?? null,
+    selectedPhotoCategory: record.selectedPhotoCategory ?? null,
+    selectedPhotoUid: record.selectedPhotoUid ?? null,
+    selectedPhotoUrl: record.selectedPhotoUrl ?? null,
+    selectedPhotoWidth: record.selectedPhotoWidth ?? null,
+    selectedPhotoHeight: record.selectedPhotoHeight ?? null,
+    selectedPhotoOrientation: record.selectedPhotoOrientation ?? null,
+    photoFitMode: record.photoFitMode ?? "cover",
+    photoCropMode: record.photoCropMode ?? "centered_cover",
+  };
+}
+
 function readPolishInputs(inputs: PersistedPlanAction["inputs"]) {
   const record = inputs as {
     decorationMode?: DecorationMode;
@@ -453,6 +555,7 @@ function createLayoutGeometry(
 ): LayoutGeometry {
   const centered = layoutMode === "center_stack";
   const badgeLed = layoutMode === "badge_led";
+  const photoLayout = layoutMode === "copy_left_with_right_photo";
   const marginX = Math.max(48, Math.round(canvasWidth * 0.07));
   const topY = Math.max(40, Math.round(canvasHeight * 0.12));
   const footerY = canvasHeight - 44;
@@ -556,8 +659,12 @@ function createLayoutGeometry(
         heroPanel: fitBounds(canvasWidth, canvasHeight, {
           x: rightColumnX,
           y: topY,
-          width: rightColumnWidth,
-          height: Math.min(264, Math.round(canvasHeight * 0.42)),
+          width: photoLayout
+            ? Math.min(Math.max(280, Math.round(canvasWidth * 0.3)), rightColumnWidth + 40)
+            : rightColumnWidth,
+          height: photoLayout
+            ? Math.min(324, Math.round(canvasHeight * 0.62))
+            : Math.min(264, Math.round(canvasHeight * 0.42)),
         }),
         badge: fitBounds(canvasWidth, canvasHeight, {
           x: badgeX,
@@ -591,7 +698,7 @@ function createLayoutGeometry(
         }),
         heroCaption: fitBounds(canvasWidth, canvasHeight, {
           x: rightColumnX + 20,
-          y: topY + Math.min(284, Math.round(canvasHeight * 0.46)),
+          y: topY + Math.min(photoLayout ? 348 : 284, Math.round(canvasHeight * (photoLayout ? 0.58 : 0.46))),
           width: Math.max(160, rightColumnWidth - 40),
           height: 30,
         }),
@@ -602,16 +709,20 @@ function createLayoutGeometry(
           height: 64,
         }),
         decoration: fitBounds(canvasWidth, canvasHeight, {
-          x: rightColumnX + Math.max(12, Math.round(rightColumnWidth * 0.16)),
-          y: topY + Math.min(312, Math.round(canvasHeight * 0.5)),
+          x: photoLayout
+            ? rightColumnX + 12
+            : rightColumnX + Math.max(12, Math.round(rightColumnWidth * 0.16)),
+          y: photoLayout
+            ? topY + Math.min(356, Math.round(canvasHeight * 0.58))
+            : topY + Math.min(312, Math.round(canvasHeight * 0.5)),
           width:
             decorationMode === "ribbon_badge"
               ? Math.min(150, rightColumnWidth - 24)
-              : Math.min(180, rightColumnWidth - 24),
+              : Math.min(photoLayout ? 120 : 180, rightColumnWidth - 24),
           height:
             decorationMode === "ribbon_badge"
               ? Math.min(90, canvasHeight - topY - 120)
-              : Math.min(140, canvasHeight - topY - 120),
+              : Math.min(photoLayout ? 92 : 140, canvasHeight - topY - 120),
         }),
         underlineBar: fitBounds(canvasWidth, canvasHeight, {
           x: marginX,
@@ -664,7 +775,7 @@ function buildCreateLayerCommand(
   options: {
     slotKey: MutationProposalDraft["mutation"]["commands"][number]["slotKey"];
     clientLayerKey: string;
-    layerType: "shape" | "text" | "group";
+    layerType: "shape" | "text" | "group" | "image";
     bounds: Bounds;
     role: string;
     variantKey: string;
@@ -672,6 +783,13 @@ function buildCreateLayerCommand(
     sourceAssetId?: string | null;
     sourceSerial?: string | null;
     sourceCategory?: string | null;
+    sourceUid?: string | null;
+    sourceOriginUrl?: string | null;
+    sourceWidth?: number | null;
+    sourceHeight?: number | null;
+    photoOrientation?: "portrait" | "landscape" | "square" | null;
+    fitMode?: "cover";
+    cropMode?: "centered_cover";
     fontRole?: "display" | "body";
     typography?: TypographyMetadata;
   },
@@ -683,6 +801,13 @@ function buildCreateLayerCommand(
     sourceAssetId: options.sourceAssetId ?? null,
     sourceSerial: options.sourceSerial ?? null,
     sourceCategory: options.sourceCategory ?? null,
+    sourceUid: options.sourceUid ?? null,
+    sourceOriginUrl: options.sourceOriginUrl ?? null,
+    sourceWidth: options.sourceWidth ?? null,
+    sourceHeight: options.sourceHeight ?? null,
+    photoOrientation: options.photoOrientation ?? null,
+    fitMode: options.fitMode ?? null,
+    cropMode: options.cropMode ?? null,
   };
 
   if (options.fontRole && options.typography) {
