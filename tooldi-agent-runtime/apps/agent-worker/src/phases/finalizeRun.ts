@@ -10,7 +10,15 @@ export async function finalizeRun(
     cooperativeStopRequested?: boolean;
     normalizedIntentRef?: string;
     executablePlanRef?: string;
+    candidateSetRef?: string;
+    retrievalStageRef?: string;
+    selectionDecisionRef?: string;
     assignedSeqs?: number[];
+    overrideResult?: {
+      finalStatus: FinalizeRunDraft["request"]["finalStatus"];
+      errorSummary?: FinalizeRunDraft["request"]["errorSummary"];
+      fallbackCount?: number;
+    };
   } = {},
 ): Promise<FinalizeRunDraft> {
   let finalStatus: FinalizeRunDraft["request"]["finalStatus"] =
@@ -54,6 +62,12 @@ export async function finalizeRun(
     }
   }
 
+  if (options.overrideResult) {
+    finalStatus = options.overrideResult.finalStatus;
+    errorSummary = options.overrideResult.errorSummary;
+    fallbackCount = options.overrideResult.fallbackCount ?? fallbackCount;
+  }
+
   const lastAckedSeq = lastMutationAck?.status === "acked" ? lastMutationAck.seq ?? 0 : 0;
   const draftId = `draft_${input.job.runId}`;
   const assignedSeqs = options.assignedSeqs ?? [];
@@ -89,6 +103,13 @@ export async function finalizeRun(
         : {}),
       ...(options.executablePlanRef
         ? { executablePlanRef: options.executablePlanRef }
+        : {}),
+      ...(options.candidateSetRef ? { candidateSetRef: options.candidateSetRef } : {}),
+      ...(options.retrievalStageRef
+        ? { retrievalStageRef: options.retrievalStageRef }
+        : {}),
+      ...(options.selectionDecisionRef
+        ? { selectionDecisionRef: options.selectionDecisionRef }
         : {}),
       ...(sourceMutationRange ? { sourceMutationRange } : {}),
       createdLayerIds:

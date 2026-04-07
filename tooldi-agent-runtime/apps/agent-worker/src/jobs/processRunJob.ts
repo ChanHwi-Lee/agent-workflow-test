@@ -8,17 +8,21 @@ import type { ObjectStoreClient } from "@tooldi/agent-persistence";
 import type {
   AssetStorageClient,
   ImagePrimitiveClient,
+  TemplateCatalogClient,
   TextLayoutHelper,
 } from "@tooldi/tool-adapters";
 import type { ToolRegistry } from "@tooldi/tool-registry";
 
 import type { BackendCallbackClient } from "../clients/backendCallbackClient.js";
+import { assembleTemplateCandidates } from "../phases/assembleTemplateCandidates.js";
 import { buildExecutablePlan } from "../phases/buildExecutablePlan.js";
 import { buildNormalizedIntent } from "../phases/buildNormalizedIntent.js";
 import { emitRefinementMutations } from "../phases/emitRefinementMutations.js";
 import { emitSkeletonMutations } from "../phases/emitSkeletonMutations.js";
 import { finalizeRun } from "../phases/finalizeRun.js";
 import { hydratePlanningInput } from "../phases/hydratePlanningInput.js";
+import { runRetrievalStage } from "../phases/runRetrievalStage.js";
+import { selectTemplateComposition } from "../phases/selectTemplateComposition.js";
 import type { ProcessRunJobResult } from "../types.js";
 
 export interface ProcessRunJobDependencies {
@@ -30,6 +34,7 @@ export interface ProcessRunJobDependencies {
   imagePrimitiveClient: ImagePrimitiveClient;
   assetStorageClient: AssetStorageClient;
   textLayoutHelper: TextLayoutHelper;
+  templateCatalogClient: TemplateCatalogClient;
 }
 
 export async function processRunJob(
@@ -98,9 +103,6 @@ export async function processRunJob(
   });
   cooperativeStopRequested ||= intentEvent.cancelRequested;
 
-  const plan = await buildExecutablePlan(hydrated, intent, {
-    toolRegistry: dependencies.toolRegistry,
-  });
   const normalizedIntentRef = await persistWorkerJsonArtifact(
     dependencies.objectStore,
     `runs/${job.runId}/attempts/${job.attemptSeq}/normalized-intent.json`,
@@ -112,6 +114,118 @@ export async function processRunJob(
       attemptSeq: String(job.attemptSeq),
     },
   );
+  if (intent.operationFamily !== "create_template" || !intent.supportedInV1) {
+    const unsupportedLog = await dependencies.callbackClient.appendEvent(job.runId, {
+      traceId: job.traceId,
+      attempt: job.attemptSeq,
+      queueJobId: job.queueJobId,
+      event: {
+        type: "log",
+        level: "warn",
+        message:
+          "Spring vertical slice currently supports empty canvas create_template only",
+      },
+    });
+    cooperativeStopRequested ||= unsupportedLog.cancelRequested;
+
+    const savingHeartbeat = await dependencies.callbackClient.heartbeat(job.runId, {
+      ...heartbeatBase,
+      attemptState: "finalizing",
+      phase: "saving",
+      heartbeatAt: new Date().toISOString(),
+    });
+    cooperativeStopRequested ||= shouldStopAfterCurrentAction(savingHeartbeat);
+
+    const finalizeDraft = await finalizeRun(hydrated, [], null, {
+      cooperativeStopRequested,
+      normalizedIntentRef,
+      overrideResult: {
+        finalStatus: "failed",
+        errorSummary: {
+          code: "unsupported_v1_vertical_slice",
+          message:
+            "Spring vertical slice only supports empty-canvas create_template runs",
+        },
+      },
+    });
+    await dependencies.callbackClient.finalize(job.runId, finalizeDraft.request);
+
+    dependencies.logger.info("Skipped unsupported spring vertical slice run", {
+      runId: job.runId,
+      traceId: job.traceId,
+      attemptSeq: job.attemptSeq,
+      queueJobId: job.queueJobId,
+    });
+
+    return {
+      intent,
+      emittedMutationIds: [],
+      finalizeDraft,
+      artifactRefs: {
+        normalizedIntentRef,
+      },
+    };
+  }
+  const candidateSets = await assembleTemplateCandidates(hydrated, intent, {
+    backgroundCatalogClient: dependencies.templateCatalogClient,
+    graphicCatalogClient: dependencies.templateCatalogClient,
+    photoCatalogClient: dependencies.templateCatalogClient,
+  });
+  const candidateSetRef = await persistWorkerJsonArtifact(
+    dependencies.objectStore,
+    `runs/${job.runId}/attempts/${job.attemptSeq}/template-candidate-set.json`,
+    candidateSets,
+    {
+      artifactKind: "template-candidate-set",
+      runId: job.runId,
+      traceId: job.traceId,
+      attemptSeq: String(job.attemptSeq),
+    },
+  );
+  const { retrievalStage, selectionPolicy } = await runRetrievalStage(hydrated, intent, {
+    toolRegistry: dependencies.toolRegistry,
+  });
+  const retrievalStageRef = await persistWorkerJsonArtifact(
+    dependencies.objectStore,
+    `runs/${job.runId}/attempts/${job.attemptSeq}/retrieval-stage.json`,
+    retrievalStage,
+    {
+      artifactKind: "retrieval-stage",
+      runId: job.runId,
+      traceId: job.traceId,
+      attemptSeq: String(job.attemptSeq),
+    },
+  );
+  const selectionDecision = await selectTemplateComposition(intent, candidateSets, {
+    retrievalStage,
+    selectionPolicy,
+  });
+  const selectionDecisionRef = await persistWorkerJsonArtifact(
+    dependencies.objectStore,
+    `runs/${job.runId}/attempts/${job.attemptSeq}/selection-decision.json`,
+    selectionDecision,
+    {
+      artifactKind: "selection-decision",
+      runId: job.runId,
+      traceId: job.traceId,
+      attemptSeq: String(job.attemptSeq),
+    },
+  );
+  const selectionEvent = await dependencies.callbackClient.appendEvent(job.runId, {
+    traceId: job.traceId,
+    attempt: job.attemptSeq,
+    queueJobId: job.queueJobId,
+    event: {
+      type: "log",
+      level: "info",
+      message: `Selected ${selectionDecision.backgroundMode} background, ${selectionDecision.layoutMode} layout, ${selectionDecision.decorationMode} decoration`,
+    },
+  });
+  cooperativeStopRequested ||= selectionEvent.cancelRequested;
+
+  const plan = await buildExecutablePlan(hydrated, intent, selectionDecision, {
+    toolRegistry: dependencies.toolRegistry,
+  });
   const executablePlanRef = await persistWorkerJsonArtifact(
     dependencies.objectStore,
     `runs/${job.runId}/attempts/${job.attemptSeq}/executable-plan.json`,
@@ -276,6 +390,9 @@ export async function processRunJob(
       cooperativeStopRequested,
       normalizedIntentRef,
       executablePlanRef,
+      candidateSetRef,
+      retrievalStageRef,
+      selectionDecisionRef,
       assignedSeqs,
     },
   );
@@ -292,9 +409,19 @@ export async function processRunJob(
 
   return {
     intent,
+    candidateSets,
+    retrievalStage,
+    selectionDecision,
     plan,
     emittedMutationIds,
     finalizeDraft,
+    artifactRefs: {
+      normalizedIntentRef,
+      executablePlanRef,
+      candidateSetRef,
+      retrievalStageRef,
+      selectionDecisionRef,
+    },
   };
 }
 

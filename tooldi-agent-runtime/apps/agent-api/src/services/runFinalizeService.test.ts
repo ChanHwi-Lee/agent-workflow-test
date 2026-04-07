@@ -65,6 +65,9 @@ function createFinalizeRequest(overrides: Partial<RunFinalizeRequest> = {}): Run
     outputTemplateCode: "template_draft_run-1",
     normalizedIntentRef: "runs/run-1/attempts/1/normalized-intent.json",
     executablePlanRef: "runs/run-1/attempts/1/executable-plan.json",
+    candidateSetRef: "runs/run-1/attempts/1/template-candidate-set.json",
+    retrievalStageRef: "runs/run-1/attempts/1/retrieval-stage.json",
+    selectionDecisionRef: "runs/run-1/attempts/1/selection-decision.json",
     sourceMutationRange: {
       firstSeq: 1,
       lastSeq: 1,
@@ -365,6 +368,18 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
     assert.equal(
       completion.sourceRefs.executablePlanRef,
       "runs/run-1/attempts/1/executable-plan.json",
+    );
+    assert.equal(
+      completion.sourceRefs.candidateSetRef,
+      "runs/run-1/attempts/1/template-candidate-set.json",
+    );
+    assert.equal(
+      completion.sourceRefs.retrievalStageRef,
+      "runs/run-1/attempts/1/retrieval-stage.json",
+    );
+    assert.equal(
+      completion.sourceRefs.selectionDecisionRef,
+      "runs/run-1/attempts/1/selection-decision.json",
     );
   } finally {
     await db.end();

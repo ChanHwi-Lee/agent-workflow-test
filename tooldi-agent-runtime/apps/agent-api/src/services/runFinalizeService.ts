@@ -49,6 +49,9 @@ type MaterializationInput = {
   draftId: string;
   normalizedIntentRef: string;
   executablePlanRef: string;
+  candidateSetRef: string | null;
+  retrievalStageRef: string | null;
+  selectionDecisionRef: string | null;
   sourceMutationRange: NonNullable<RunFinalizeRequest["sourceMutationRange"]>;
   outputTemplateCode: string | null;
 };
@@ -285,6 +288,9 @@ export class RunFinalizeService {
         draftId: request.draftId,
         normalizedIntentRef: request.normalizedIntentRef,
         executablePlanRef: request.executablePlanRef,
+        candidateSetRef: request.candidateSetRef ?? null,
+        retrievalStageRef: request.retrievalStageRef ?? null,
+        selectionDecisionRef: request.selectionDecisionRef ?? null,
         sourceMutationRange: request.sourceMutationRange,
         outputTemplateCode: request.outputTemplateCode ?? null,
       },
@@ -355,6 +361,9 @@ export class RunFinalizeService {
               snapshotRef: run.snapshotRef,
               normalizedIntentRef: input.normalizedIntentRef,
               executablePlanRef: input.executablePlanRef,
+              candidateSetRef: input.candidateSetRef,
+              retrievalStageRef: input.retrievalStageRef,
+              selectionDecisionRef: input.selectionDecisionRef,
               latestSaveReceiptId: latestSaveReceipt.saveReceiptId,
               bundleRef,
             },
@@ -530,6 +539,11 @@ export class RunFinalizeService {
         snapshotRef: run.snapshotRef,
         normalizedIntentRef: input.normalizedIntentRef,
         executablePlanRef: input.executablePlanRef,
+        ...(input.candidateSetRef ? { candidateSetRef: input.candidateSetRef } : {}),
+        ...(input.retrievalStageRef ? { retrievalStageRef: input.retrievalStageRef } : {}),
+        ...(input.selectionDecisionRef
+          ? { selectionDecisionRef: input.selectionDecisionRef }
+          : {}),
         bundleRef,
       },
     };

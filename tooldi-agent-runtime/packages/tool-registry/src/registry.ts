@@ -1,8 +1,13 @@
 import type { PlannerEnabledTool } from "@tooldi/agent-contracts";
 
 import { assetStoreToolDefinition } from "./definitions/asset-store.js";
+import { backgroundCatalogToolDefinition } from "./definitions/background-catalog.js";
+import { graphicCatalogToolDefinition } from "./definitions/graphic-catalog.js";
 import { imageEditToolDefinition } from "./definitions/image-edit.js";
 import { imageGenerateToolDefinition } from "./definitions/image-generate.js";
+import { layoutSelectorToolDefinition } from "./definitions/layout-selector.js";
+import { photoCatalogToolDefinition } from "./definitions/photo-catalog.js";
+import { styleHeuristicToolDefinition } from "./definitions/style-heuristic.js";
 import { textLayoutToolDefinition } from "./definitions/text-layout.js";
 
 export interface ToolDefinition extends PlannerEnabledTool {
@@ -19,6 +24,11 @@ export interface CreateToolRegistryOptions {
 }
 
 export const defaultToolDefinitions = [
+  backgroundCatalogToolDefinition,
+  graphicCatalogToolDefinition,
+  photoCatalogToolDefinition,
+  layoutSelectorToolDefinition,
+  styleHeuristicToolDefinition,
   imageGenerateToolDefinition,
   imageEditToolDefinition,
   assetStoreToolDefinition,

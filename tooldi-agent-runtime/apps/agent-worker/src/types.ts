@@ -8,6 +8,7 @@ import type {
   StartAgentWorkflowRunRequest,
   WaitMutationAckResponse,
 } from "@tooldi/agent-contracts";
+import type { TemplateCandidateSet } from "@tooldi/tool-adapters";
 
 export interface StoredRunSnapshot {
   editorContext: StartAgentWorkflowRunRequest["editorContext"];
@@ -33,8 +34,68 @@ export interface NormalizedIntent {
   artifactType: string;
   goalSummary: string;
   requestedOutputCount: number;
+  templateKind: "seasonal_sale_banner";
+  canvasPreset: "wide_1200x628" | "square_1080" | "story_1080x1920" | string;
+  layoutIntent: "copy_focused" | "hero_focused" | "badge_led";
+  tone: "bright_playful";
+  requiredSlots: Array<
+    "background" | "headline" | "supporting_copy" | "cta" | "decoration"
+  >;
+  assetPolicy: "graphic_allowed_photo_optional";
+  brandConstraints: {
+    palette: string[];
+    typographyHint: string | null;
+    forbiddenStyles: string[];
+  };
   supportedInV1: boolean;
   futureCapableOperations: IntentEnvelope["futureCapableOperations"];
+}
+
+export interface TemplateCandidateBundle {
+  background: TemplateCandidateSet;
+  layout: TemplateCandidateSet;
+  decoration: TemplateCandidateSet;
+}
+
+export interface RetrievalStageResult {
+  retrievalMode: "none";
+  status: "disabled";
+  allowedSourceFamilies: Array<
+    "background_source" | "graphic_source" | "photo_source" | "template_source"
+  >;
+  augmentationCount: number;
+  reason: string;
+}
+
+export interface TemplateSelectionPolicy {
+  allowedToolNames: string[];
+  allowPhotoCandidates: boolean;
+  allowTemplateSource: boolean;
+  retrievalMode: RetrievalStageResult["retrievalMode"];
+}
+
+export interface SelectionDecision {
+  decisionId: string;
+  runId: string;
+  traceId: string;
+  retrievalMode: "none";
+  compareCriteria: Array<
+    | "seasonalFit"
+    | "readabilitySupport"
+    | "ctaVisibilitySupport"
+    | "layoutCompatibility"
+    | "executionSimplicity"
+    | "fallbackSafety"
+  >;
+  selectedBackgroundCandidateId: string;
+  selectedLayoutCandidateId: string;
+  selectedDecorationCandidateId: string;
+  backgroundMode: "spring_pattern" | "pastel_gradient" | "spring_photo";
+  layoutMode: "copy_left_with_right_decoration" | "center_stack" | "badge_led";
+  decorationMode: "graphic_cluster" | "ribbon_badge" | "photo_support";
+  executionStrategy: "graphic_first_shape_text_group";
+  summary: string;
+  fallbackSummary: string;
 }
 
 export interface MutationProposalDraft {
@@ -66,7 +127,17 @@ export interface FinalizeRunDraft {
 
 export interface ProcessRunJobResult {
   intent: NormalizedIntent;
-  plan: ExecutablePlan;
+  candidateSets?: TemplateCandidateBundle;
+  retrievalStage?: RetrievalStageResult;
+  selectionDecision?: SelectionDecision;
+  plan?: ExecutablePlan;
   emittedMutationIds: string[];
   finalizeDraft: FinalizeRunDraft;
+  artifactRefs: {
+    normalizedIntentRef: string;
+    executablePlanRef?: string;
+    candidateSetRef?: string;
+    retrievalStageRef?: string;
+    selectionDecisionRef?: string;
+  };
 }

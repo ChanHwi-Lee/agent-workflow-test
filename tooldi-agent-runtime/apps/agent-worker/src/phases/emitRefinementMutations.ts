@@ -16,10 +16,10 @@ export interface EmitRefinementMutationsDependencies {
 }
 
 export async function emitRefinementMutations(
-  input: HydratedPlanningInput,
-  normalizedIntent: NormalizedIntent,
+  _input: HydratedPlanningInput,
+  _normalizedIntent: NormalizedIntent,
   lastMutationAck: WaitMutationAckResponse | null,
-  dependencies: EmitRefinementMutationsDependencies,
+  _dependencies: EmitRefinementMutationsDependencies,
 ): Promise<RefinementMutationBatch> {
   if (lastMutationAck?.status !== "acked") {
     return {
@@ -27,14 +27,6 @@ export async function emitRefinementMutations(
       lastMutationAck,
     };
   }
-
-  const candidate = await dependencies.imagePrimitiveClient.generate(
-    normalizedIntent.goalSummary,
-  );
-  await dependencies.assetStorageClient.persistDraftAsset({
-    assetId: candidate.assetId,
-    source: input.job.runId,
-  });
 
   return {
     proposedMutationIds: [],

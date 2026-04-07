@@ -29,6 +29,7 @@ import { processRunJob } from "./processRunJob.js";
 import { createWorkerToolRegistry } from "../tools/registry.js";
 import { createAssetStorageClient } from "../tools/adapters/assetStorageAdapter.js";
 import { createImagePrimitiveClient } from "../tools/adapters/imagePrimitiveAdapter.js";
+import { createTemplateCatalogClient } from "../tools/adapters/templateCatalogAdapter.js";
 import { createTextLayoutHelper } from "../tools/adapters/textLayoutHelperAdapter.js";
 
 function createEnv(): AgentWorkerEnv {
@@ -215,11 +216,28 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     imagePrimitiveClient,
     assetStorageClient,
     textLayoutHelper,
+    templateCatalogClient: createTemplateCatalogClient(),
   });
+  const plan = result.plan;
+  const selectionDecision = result.selectionDecision;
+  const candidateSets = result.candidateSets;
 
   assert.equal(result.intent.operationFamily, "create_template");
-  assert.equal(result.plan.actions.length, 1);
+  assert.equal(result.intent.templateKind, "seasonal_sale_banner");
+  assert.equal(result.intent.layoutIntent, "copy_focused");
+  assert.equal(result.intent.assetPolicy, "graphic_allowed_photo_optional");
+  assert.ok(plan);
+  assert.equal(plan.actions.length, 3);
   assert.equal(result.emittedMutationIds.length, 3);
+  assert.ok(selectionDecision);
+  assert.equal(selectionDecision.retrievalMode, "none");
+  assert.equal(selectionDecision.backgroundMode, "spring_pattern");
+  assert.equal(selectionDecision.layoutMode, "center_stack");
+  assert.equal(selectionDecision.decorationMode, "graphic_cluster");
+  assert.ok(candidateSets);
+  assert.equal(candidateSets.background.family, "background");
+  assert.equal(candidateSets.layout.family, "layout");
+  assert.equal(candidateSets.decoration.family, "decoration");
   assert.equal(result.finalizeDraft.request.finalStatus, "completed");
 
   assert.equal(callbackClient.heartbeats.length, 4);
@@ -250,9 +268,41 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     `runs/${testRun.runId}/attempts/1/executable-plan.json`,
   );
   assert.equal(
+    callbackClient.finalizations[0]?.candidateSetRef,
+    `runs/${testRun.runId}/attempts/1/template-candidate-set.json`,
+  );
+  assert.equal(
+    callbackClient.finalizations[0]?.selectionDecisionRef,
+    `runs/${testRun.runId}/attempts/1/selection-decision.json`,
+  );
+  assert.equal(
     callbackClient.finalizations[0]?.latestSaveReceiptId,
     `save_receipt_${testRun.runId}_1`,
   );
+  assert.equal(
+    result.artifactRefs.candidateSetRef,
+    `runs/${testRun.runId}/attempts/1/template-candidate-set.json`,
+  );
+  assert.equal(
+    result.artifactRefs.retrievalStageRef,
+    `runs/${testRun.runId}/attempts/1/retrieval-stage.json`,
+  );
+  assert.equal(
+    result.artifactRefs.selectionDecisionRef,
+    `runs/${testRun.runId}/attempts/1/selection-decision.json`,
+  );
+  assert.ok(result.retrievalStage);
+  assert.equal(result.retrievalStage.retrievalMode, "none");
+  assert.equal(result.retrievalStage.status, "disabled");
+  assert.equal(
+    result.retrievalStage.allowedSourceFamilies.includes("photo_source"),
+    true,
+  );
+  assert.deepEqual(plan.actions.map((action) => action.dependsOn), [
+    [],
+    [plan.actions[0]!.actionId],
+    [plan.actions[1]!.actionId],
+  ]);
   assert.equal(callbackClient.ackWaits[0]?.query.waitMs, 15000);
   assert.equal(
     callbackClient.appendedEvents.some(
@@ -261,6 +311,259 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
         event.event.message.includes("Stage 1/3"),
     ),
     true,
+  );
+
+  const persistedCandidateSet = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: result.artifactRefs.candidateSetRef!,
+        })
+      ).body,
+    ),
+  ) as {
+    background: { candidates: Array<{ sourceFamily: string }> };
+    decoration: { candidates: Array<{ sourceFamily: string }> };
+  };
+  assert.equal(
+    persistedCandidateSet.background.candidates.some(
+      (candidate) => candidate.sourceFamily === "photo_source",
+    ),
+    true,
+  );
+  assert.equal(
+    persistedCandidateSet.decoration.candidates.some(
+      (candidate) => candidate.sourceFamily === "graphic_source",
+    ),
+    true,
+  );
+
+  const proposedMutations = callbackClient.appendedEvents
+    .filter(
+      (event): event is WorkerAppendEventRequest & {
+        event: Extract<WorkerAppendEventRequest["event"], { type: "mutation.proposed" }>;
+      } => event.event.type === "mutation.proposed",
+    )
+    .map((event) => event.event.mutation);
+
+  for (const mutation of proposedMutations) {
+    for (const command of mutation.commands) {
+      if (!("layerBlueprint" in command)) {
+        continue;
+      }
+      const bounds = (command as { layerBlueprint: { bounds: { x: number; y: number; width: number; height: number } } }).layerBlueprint.bounds;
+      assert.ok(bounds.x >= 0);
+      assert.ok(bounds.y >= 0);
+      assert.ok(bounds.x + bounds.width <= testRun.request.editorContext.canvasWidth);
+      assert.ok(bounds.y + bounds.height <= testRun.request.editorContext.canvasHeight);
+    }
+  }
+  assert.equal(
+    proposedMutations.some((mutation) =>
+      mutation.commands.some(
+        (command) =>
+          "layerBlueprint" in command &&
+          command.layerBlueprint.metadata?.role === "hero_caption",
+      ),
+    ),
+    false,
+  );
+});
+
+test("processRunJob rejects non-empty canvas runs for the spring vertical slice", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = createObjectStoreClient({
+    bucket: env.objectStoreBucket,
+  });
+  const callbackClient = new RecordingBackendCallbackClient();
+  const seedRun = createTestRun();
+  const testRun = createTestRun({
+    editorContext: seedRun.request.editorContext,
+  });
+  testRun.request.editorContext = {
+    ...testRun.request.editorContext,
+    canvasState: "filled" as never,
+  };
+  testRun.snapshot.editorContext = testRun.request.editorContext;
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+  });
+
+  assert.equal(result.intent.operationFamily, "update_layer");
+  assert.equal(result.finalizeDraft.request.finalStatus, "failed");
+  assert.equal(
+    result.finalizeDraft.request.errorSummary?.code,
+    "unsupported_v1_vertical_slice",
+  );
+  assert.equal(result.emittedMutationIds.length, 0);
+  assert.equal(result.plan, undefined);
+  assert.equal(result.candidateSets, undefined);
+  assert.equal(
+    callbackClient.appendedEvents.some((event) => event.event.type === "mutation.proposed"),
+    false,
+  );
+});
+
+test("processRunJob keeps the representative wide banner geometry inside the canvas", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = createObjectStoreClient({
+    bucket: env.objectStoreBucket,
+  });
+  const callbackClient = new RecordingBackendCallbackClient();
+  const seedRun = createTestRun();
+  const testRun = createTestRun({
+    editorContext: {
+      ...seedRun.request.editorContext,
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      sizeSerial: "1200x628@1",
+    },
+  });
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+  });
+
+  assert.equal(result.selectionDecision?.layoutMode, "copy_left_with_right_decoration");
+
+  const proposedMutations = callbackClient.appendedEvents
+    .filter(
+      (event): event is WorkerAppendEventRequest & {
+        event: Extract<WorkerAppendEventRequest["event"], { type: "mutation.proposed" }>;
+      } => event.event.type === "mutation.proposed",
+    )
+    .map((event) => event.event.mutation);
+
+  for (const mutation of proposedMutations) {
+    for (const command of mutation.commands) {
+      if (!("layerBlueprint" in command)) {
+        continue;
+      }
+      const bounds = (command as { layerBlueprint: { bounds: { x: number; y: number; width: number; height: number } } }).layerBlueprint.bounds;
+      assert.ok(bounds.x >= 0);
+      assert.ok(bounds.y >= 0);
+      assert.ok(bounds.x + bounds.width <= 1200);
+      assert.ok(bounds.y + bounds.height <= 628);
+    }
+  }
+  assert.equal(
+    proposedMutations.some((mutation) =>
+      mutation.commands.some(
+        (command) =>
+          "layerBlueprint" in command &&
+          command.layerBlueprint.metadata?.role === "hero_caption",
+      ),
+    ),
+    true,
+  );
+  assert.equal(
+    proposedMutations.some((mutation) =>
+      mutation.commands.some((command) => command.slotKey === "badge"),
+    ),
+    false,
+  );
+});
+
+test("processRunJob retrieval seam disables photo candidates when photo catalog tool is absent", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = createObjectStoreClient({
+    bucket: env.objectStoreBucket,
+  });
+  const callbackClient = new RecordingBackendCallbackClient();
+  const testRun = createTestRun();
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const toolRegistry = createWorkerToolRegistry({
+    disabledToolNames: ["photo-catalog"],
+  });
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry,
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+  });
+
+  assert.ok(result.retrievalStage);
+  assert.equal(
+    result.retrievalStage.allowedSourceFamilies.includes("photo_source"),
+    false,
   );
 });
 
@@ -306,6 +609,7 @@ test("processRunJob honors cancel fence before starting a new mutation group", a
     imagePrimitiveClient: createImagePrimitiveClient(),
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
   });
 
   assert.equal(result.emittedMutationIds.length, 0);
@@ -359,6 +663,7 @@ test("processRunJob does not treat unconfirmed mutation ack as success", async (
     imagePrimitiveClient,
     assetStorageClient,
     textLayoutHelper,
+    templateCatalogClient: createTemplateCatalogClient(),
   });
 
   assert.equal(result.finalizeDraft.request.finalStatus, "failed");
@@ -422,6 +727,7 @@ test("processRunJob emits an observational log when backend passes repairContext
       imagePrimitiveClient: createImagePrimitiveClient(),
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
+      templateCatalogClient: createTemplateCatalogClient(),
     },
   );
 

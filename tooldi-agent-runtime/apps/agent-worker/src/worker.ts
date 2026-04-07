@@ -7,7 +7,12 @@ import {
   type ObjectStoreClient,
   type PgClient,
 } from "@tooldi/agent-persistence";
-import type { AssetStorageClient, ImagePrimitiveClient, TextLayoutHelper } from "@tooldi/tool-adapters";
+import type {
+  AssetStorageClient,
+  ImagePrimitiveClient,
+  TemplateCatalogClient,
+  TextLayoutHelper,
+} from "@tooldi/tool-adapters";
 import type { ToolRegistry } from "@tooldi/tool-registry";
 
 import { createBackendCallbackClient, type BackendCallbackClient } from "./clients/backendCallbackClient.js";
@@ -16,6 +21,7 @@ import { createRunQueueConsumer, type RunQueueConsumer } from "./lib/runQueueCon
 import { processRunJob, type ProcessRunJobDependencies } from "./jobs/processRunJob.js";
 import { createAssetStorageClient } from "./tools/adapters/assetStorageAdapter.js";
 import { createImagePrimitiveClient } from "./tools/adapters/imagePrimitiveAdapter.js";
+import { createTemplateCatalogClient } from "./tools/adapters/templateCatalogAdapter.js";
 import { createTextLayoutHelper } from "./tools/adapters/textLayoutHelperAdapter.js";
 import { createWorkerToolRegistry } from "./tools/registry.js";
 import type { ProcessRunJobResult } from "./types.js";
@@ -31,6 +37,7 @@ export interface BuildWorkerRuntimeOptions {
   imagePrimitiveClient?: ImagePrimitiveClient;
   assetStorageClient?: AssetStorageClient;
   textLayoutHelper?: TextLayoutHelper;
+  templateCatalogClient?: TemplateCatalogClient;
 }
 
 export interface AgentWorkerRuntime extends ProcessRunJobDependencies {
@@ -74,6 +81,8 @@ export async function buildWorkerRuntime(
     imagePrimitiveClient: options.imagePrimitiveClient ?? createImagePrimitiveClient(),
     assetStorageClient: options.assetStorageClient ?? createAssetStorageClient(),
     textLayoutHelper: options.textLayoutHelper ?? createTextLayoutHelper(),
+    templateCatalogClient:
+      options.templateCatalogClient ?? createTemplateCatalogClient(),
     async processRunJob(job: RunJobEnvelope) {
       return processRunJob(job, runtime);
     },
