@@ -18,6 +18,8 @@
 - live DB 쓰기
 - 실제 에이전트 로직 구현
 
+future semantic retrieval / embedding / hybrid retrieval 확장 checklist 는 [tooldi-agent-workflow-v1-semantic-retrieval-checklist.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-semantic-retrieval-checklist.md) 에 분리해 둔다.
+
 ## 조사 소스
 
 - `toolditor`
