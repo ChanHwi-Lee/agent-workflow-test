@@ -17,6 +17,7 @@
 ## 1. 문서 성격
 
 - 이 문서는 normative spec이 아니라 `다음 구현 우선순위` 를 정리하는 working roadmap이다.
+- `create_template` intelligence layer의 capability catalog / selection policy / candidate schema / hierarchy authority는 [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md) 가 맡고, 이 문서는 sequencing과 implementation track만 다룬다.
 - authority ownership, artifact identity, completion semantics, FE/BE boundary는 sibling 문서를 override하지 않는다.
 - sibling 문서와 충돌이 나면 아래 순서를 따른다.
   1. `tooldi-natural-language-agent-v1-architecture.md`
@@ -24,6 +25,7 @@
   3. `tooldi-agent-workflow-v1-backend-boundary.md`
   4. `toolditor-agent-workflow-v1-client-boundary.md`
   5. `tooldi-agent-workflow-v1-scope-operations-decisions.md`
+  6. `tooldi-agent-workflow-v1-template-intelligence-design-lock.md`
 
 ## 2. 현재 기준선
 
