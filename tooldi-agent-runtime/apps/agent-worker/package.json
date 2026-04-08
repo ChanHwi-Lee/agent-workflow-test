@@ -13,6 +13,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@tooldi/agent-llm": "workspace:*",
     "@tooldi/agent-graph": "workspace:*",
     "@tooldi/agent-config": "workspace:*",
     "@tooldi/agent-contracts": "workspace:*",

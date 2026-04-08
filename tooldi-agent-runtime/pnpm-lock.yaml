@@ -8,15 +8,27 @@ importers:
 
   .:
     dependencies:
+      '@langchain/anthropic':
+        specifier: ^1.3.26
+        version: 1.3.26(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))
       '@langchain/core':
         specifier: ^1.1.39
-        version: 1.1.39
+        version: 1.1.39(openai@6.33.0(zod@4.3.6))
+      '@langchain/google-genai':
+        specifier: ^2.1.26
+        version: 2.1.26(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))
       '@langchain/langgraph':
         specifier: ^1.2.8
-        version: 1.2.8(@langchain/core@1.1.39)(zod@4.3.6)
+        version: 1.2.8(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))(zod@4.3.6)
       '@langchain/langgraph-checkpoint-postgres':
         specifier: ^1.0.1
-        version: 1.0.1(@langchain/core@1.1.39)(@langchain/langgraph-checkpoint@1.0.1(@langchain/core@1.1.39))
+        version: 1.0.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))(@langchain/langgraph-checkpoint@1.0.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6))))
+      '@langchain/openai':
+        specifier: ^1.4.3
+        version: 1.4.3(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))
+      langchain:
+        specifier: ^1.3.1
+        version: 1.3.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))(openai@6.33.0(zod@4.3.6))
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -72,6 +84,9 @@ importers:
       '@tooldi/agent-graph':
         specifier: workspace:*
         version: link:../../packages/agent-graph
+      '@tooldi/agent-llm':
+        specifier: workspace:*
+        version: link:../../packages/agent-llm
       '@tooldi/agent-observability':
         specifier: workspace:*
         version: link:../../packages/observability
@@ -98,16 +113,40 @@ importers:
     dependencies:
       '@langchain/langgraph':
         specifier: ^1.2.8
-        version: 1.2.8(@langchain/core@1.1.39)(zod@4.3.6)
+        version: 1.2.8(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))(zod@4.3.6)
       '@langchain/langgraph-checkpoint-postgres':
         specifier: ^1.0.1
-        version: 1.0.1(@langchain/core@1.1.39)(@langchain/langgraph-checkpoint@1.0.1(@langchain/core@1.1.39))
+        version: 1.0.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))(@langchain/langgraph-checkpoint@1.0.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6))))
       '@tooldi/agent-config':
         specifier: workspace:*
         version: link:../config
       '@tooldi/agent-observability':
         specifier: workspace:*
         version: link:../observability
+
+  packages/agent-llm:
+    dependencies:
+      '@langchain/anthropic':
+        specifier: ^1.3.26
+        version: 1.3.26(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))
+      '@langchain/google-genai':
+        specifier: ^2.1.26
+        version: 2.1.26(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))
+      '@langchain/openai':
+        specifier: ^1.4.3
+        version: 1.4.3(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))
+      '@tooldi/agent-config':
+        specifier: workspace:*
+        version: link:../config
+      '@tooldi/agent-observability':
+        specifier: workspace:*
+        version: link:../observability
+      langchain:
+        specifier: ^1.3.1
+        version: 1.3.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))(openai@6.33.0(zod@4.3.6))
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
 
   packages/config: {}
 
@@ -145,6 +184,19 @@ importers:
 
 packages:
 
+  '@anthropic-ai/sdk@0.74.0':
+    resolution: {integrity: sha512-srbJV7JKsc5cQ6eVuFzjZO7UR3xEPJqPamHFIe29bs38Ij2IripoAhC0S5NslNbaFUYqBKypmmpzMTpqfHEUDw==}
+    hasBin: true
+    peerDependencies:
+      zod: ^3.25.0 || ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
+  '@babel/runtime@7.29.2':
+    resolution: {integrity: sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==}
+    engines: {node: '>=6.9.0'}
+
   '@cfworker/json-schema@4.1.1':
     resolution: {integrity: sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==}
 
@@ -166,12 +218,28 @@ packages:
   '@fastify/proxy-addr@5.1.0':
     resolution: {integrity: sha512-INS+6gh91cLUjB+PVHfu1UqcB76Sqtpyp7bnL+FYojhjygvOPA9ctiD/JDKsyD9Xgu4hUhCSJBPig/w7duNajw==}
 
+  '@google/generative-ai@0.24.1':
+    resolution: {integrity: sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==}
+    engines: {node: '>=18.0.0'}
+
   '@ioredis/commands@1.5.1':
     resolution: {integrity: sha512-JH8ZL/ywcJyR9MmJ5BNqZllXNZQqQbnVZOqpPQqE1vHiFgAw4NHbvE0FOduNU8IX9babitBT46571OnPTT0Zcw==}
+
+  '@langchain/anthropic@1.3.26':
+    resolution: {integrity: sha512-8gfnM1MzZkb3HVD0WjWeb/HFdP4cNGWSokhBtrwW0qSJN+b1j9oBMwWZaVdd+VBKsx4hqzv0bdrMzWje0TMw+g==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@langchain/core': ^1.1.38
 
   '@langchain/core@1.1.39':
     resolution: {integrity: sha512-DP9c7TREy6iA7HnywstmUAsNyJNYTFpRg2yBfQ+6H0l1HnvQzei9GsQ36GeOLxgRaD3vm9K8urCcawSC7yQpCw==}
     engines: {node: '>=20'}
+
+  '@langchain/google-genai@2.1.26':
+    resolution: {integrity: sha512-202ZBVEIXxKhNbDzktLKSffb9pNfrYBGPV7j54nvAR0uqfoh5reRlX8wmOZEDflojvX/GHc69jTOsc0eZKgRsA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@langchain/core': ^1.1.33
 
   '@langchain/langgraph-checkpoint-postgres@1.0.1':
     resolution: {integrity: sha512-cRXOLYZc0egMjyAQfBblWXdoBS+WKwEbCEuE+/f88XHJ1bq5jVz7aycbpjF/7F5EykG7xmybQOz5eUdg3neRzg==}
@@ -216,6 +284,12 @@ packages:
     peerDependenciesMeta:
       zod-to-json-schema:
         optional: true
+
+  '@langchain/openai@1.4.3':
+    resolution: {integrity: sha512-psf/e06nJ9YFXG67VVaKw6dAEeHLSc6wSbB3+sXpe6zEdpvC7+fyiEIxY6HntBkBU/uyqdeSt8Uu5WL+pQD+vg==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@langchain/core': ^1.1.39
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     resolution: {integrity: sha512-QZHtlVgbAdy2zAqNA9Gu1UpIuI8Xvsd1v8ic6B2pZmeFnFcMWiPLfWXh7TVw4eGEZ/C9TH281KwhVoeQUKbyjw==}
@@ -390,8 +464,18 @@ packages:
   json-schema-ref-resolver@3.0.0:
     resolution: {integrity: sha512-hOrZIVL5jyYFjzk7+y7n5JDzGlU8rfWDuYyHwGa2WA8/pcmMHezp2xsVwxrebD/Q9t8Nc5DboieySDpCp4WG4A==}
 
+  json-schema-to-ts@3.1.1:
+    resolution: {integrity: sha512-+DWg8jCJG2TEnpy7kOm/7/AxaYoaRbjVB4LFZLySZlWn8exGs3A4OLJR966cVvU26N7X9TWxl+Jsw7dzAqKT6g==}
+    engines: {node: '>=16'}
+
   json-schema-traverse@1.0.0:
     resolution: {integrity: sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==}
+
+  langchain@1.3.1:
+    resolution: {integrity: sha512-tJu8Ibf3NAuDW8pMT7VIBCc96m8TymjSMqRBpQawlG8zeTGPZK5TKA5gBYRNZvrz0YkJA57O2rcjP+mIxrS0+g==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@langchain/core': ^1.1.39
 
   langsmith@0.5.16:
     resolution: {integrity: sha512-nSsSnTo3gjg1dnb48vb8i582zyjvtPbn+EpR6P1pNELb+4Hb4R3nt7LDy+Tl1ltw73vPGfJQtUWOl28irI1b5w==}
@@ -450,6 +534,18 @@ packages:
   on-exit-leak-free@2.1.2:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
     engines: {node: '>=14.0.0'}
+
+  openai@6.33.0:
+    resolution: {integrity: sha512-xAYN1W3YsDXJWA5F277135YfkEk6H7D3D6vWwRhJ3OEkzRgcyK8z/P5P9Gyi/wB4N8kK9kM5ZjprfvyHagKmpw==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
 
   p-finally@1.0.0:
     resolution: {integrity: sha512-LICb2p9CB7FS+0eR1oqWnHhp0FljGLZCWBE9aix0Uye9W8LTQPwMTYVGWQWIw9RdQiDg4+epXQODwIYJtSJaow==}
@@ -616,6 +712,9 @@ packages:
     resolution: {integrity: sha512-/m8M+2BJUpoJdgAHoG+baCwBT+tf2VraSfkBgl0Y00qIWt41DJ8R5B8nsEw0I58YwF5IZH6z24/2TobDKnqSWw==}
     engines: {node: '>=12'}
 
+  ts-algebra@2.0.0:
+    resolution: {integrity: sha512-FPAhNPFMrkwz76P7cdjdmiShwMynZYN6SgOujD1urY4oNm80Ou9oMdmbR45LotcKOXoy7wSmHkRFE6Mxbrhefw==}
+
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
@@ -648,6 +747,14 @@ packages:
 
 snapshots:
 
+  '@anthropic-ai/sdk@0.74.0(zod@4.3.6)':
+    dependencies:
+      json-schema-to-ts: 3.1.1
+    optionalDependencies:
+      zod: 4.3.6
+
+  '@babel/runtime@7.29.2': {}
+
   '@cfworker/json-schema@4.1.1': {}
 
   '@fastify/ajv-compiler@4.0.5':
@@ -673,9 +780,17 @@ snapshots:
       '@fastify/forwarded': 3.0.1
       ipaddr.js: 2.3.0
 
+  '@google/generative-ai@0.24.1': {}
+
   '@ioredis/commands@1.5.1': {}
 
-  '@langchain/core@1.1.39':
+  '@langchain/anthropic@1.3.26(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))':
+    dependencies:
+      '@anthropic-ai/sdk': 0.74.0(zod@4.3.6)
+      '@langchain/core': 1.1.39(openai@6.33.0(zod@4.3.6))
+      zod: 4.3.6
+
+  '@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       '@standard-schema/spec': 1.1.0
@@ -683,7 +798,7 @@ snapshots:
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.21
-      langsmith: 0.5.16
+      langsmith: 0.5.16(openai@6.33.0(zod@4.3.6))
       mustache: 4.2.0
       p-queue: 6.6.2
       uuid: 11.1.0
@@ -695,33 +810,39 @@ snapshots:
       - openai
       - ws
 
-  '@langchain/langgraph-checkpoint-postgres@1.0.1(@langchain/core@1.1.39)(@langchain/langgraph-checkpoint@1.0.1(@langchain/core@1.1.39))':
+  '@langchain/google-genai@2.1.26(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))':
     dependencies:
-      '@langchain/core': 1.1.39
-      '@langchain/langgraph-checkpoint': 1.0.1(@langchain/core@1.1.39)
+      '@google/generative-ai': 0.24.1
+      '@langchain/core': 1.1.39(openai@6.33.0(zod@4.3.6))
+      uuid: 11.1.0
+
+  '@langchain/langgraph-checkpoint-postgres@1.0.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))(@langchain/langgraph-checkpoint@1.0.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6))))':
+    dependencies:
+      '@langchain/core': 1.1.39(openai@6.33.0(zod@4.3.6))
+      '@langchain/langgraph-checkpoint': 1.0.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))
       pg: 8.20.0
     transitivePeerDependencies:
       - pg-native
 
-  '@langchain/langgraph-checkpoint@1.0.1(@langchain/core@1.1.39)':
+  '@langchain/langgraph-checkpoint@1.0.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))':
     dependencies:
-      '@langchain/core': 1.1.39
+      '@langchain/core': 1.1.39(openai@6.33.0(zod@4.3.6))
       uuid: 10.0.0
 
-  '@langchain/langgraph-sdk@1.8.8(@langchain/core@1.1.39)':
+  '@langchain/langgraph-sdk@1.8.8(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))':
     dependencies:
       '@types/json-schema': 7.0.15
       p-queue: 9.1.2
       p-retry: 7.1.1
       uuid: 13.0.0
     optionalDependencies:
-      '@langchain/core': 1.1.39
+      '@langchain/core': 1.1.39(openai@6.33.0(zod@4.3.6))
 
-  '@langchain/langgraph@1.2.8(@langchain/core@1.1.39)(zod@4.3.6)':
+  '@langchain/langgraph@1.2.8(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))(zod@4.3.6)':
     dependencies:
-      '@langchain/core': 1.1.39
-      '@langchain/langgraph-checkpoint': 1.0.1(@langchain/core@1.1.39)
-      '@langchain/langgraph-sdk': 1.8.8(@langchain/core@1.1.39)
+      '@langchain/core': 1.1.39(openai@6.33.0(zod@4.3.6))
+      '@langchain/langgraph-checkpoint': 1.0.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))
+      '@langchain/langgraph-sdk': 1.8.8(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))
       '@standard-schema/spec': 1.1.0
       uuid: 10.0.0
       zod: 4.3.6
@@ -730,6 +851,15 @@ snapshots:
       - react-dom
       - svelte
       - vue
+
+  '@langchain/openai@1.4.3(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))':
+    dependencies:
+      '@langchain/core': 1.1.39(openai@6.33.0(zod@4.3.6))
+      js-tiktoken: 1.0.21
+      openai: 6.33.0(zod@4.3.6)
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - ws
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     optional: true
@@ -903,15 +1033,42 @@ snapshots:
     dependencies:
       dequal: 2.0.3
 
+  json-schema-to-ts@3.1.1:
+    dependencies:
+      '@babel/runtime': 7.29.2
+      ts-algebra: 2.0.0
+
   json-schema-traverse@1.0.0: {}
 
-  langsmith@0.5.16:
+  langchain@1.3.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))(openai@6.33.0(zod@4.3.6)):
+    dependencies:
+      '@langchain/core': 1.1.39(openai@6.33.0(zod@4.3.6))
+      '@langchain/langgraph': 1.2.8(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))(zod@4.3.6)
+      '@langchain/langgraph-checkpoint': 1.0.1(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))
+      langsmith: 0.5.16(openai@6.33.0(zod@4.3.6))
+      uuid: 11.1.0
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - '@opentelemetry/exporter-trace-otlp-proto'
+      - '@opentelemetry/sdk-trace-base'
+      - openai
+      - react
+      - react-dom
+      - svelte
+      - vue
+      - ws
+      - zod-to-json-schema
+
+  langsmith@0.5.16(openai@6.33.0(zod@4.3.6)):
     dependencies:
       chalk: 5.6.2
       console-table-printer: 2.15.0
       p-queue: 6.6.2
       semver: 7.7.4
       uuid: 10.0.0
+    optionalDependencies:
+      openai: 6.33.0(zod@4.3.6)
 
   light-my-request@6.6.0:
     dependencies:
@@ -953,6 +1110,10 @@ snapshots:
     optional: true
 
   on-exit-leak-free@2.1.2: {}
+
+  openai@6.33.0(zod@4.3.6):
+    optionalDependencies:
+      zod: 4.3.6
 
   p-finally@1.0.0: {}
 
@@ -1092,6 +1253,8 @@ snapshots:
       real-require: 0.2.0
 
   toad-cache@3.7.0: {}
+
+  ts-algebra@2.0.0: {}
 
   tslib@2.8.1: {}
 

@@ -1,9 +1,13 @@
 import { createRequestId } from "@tooldi/agent-domain";
+import type { TemplatePlanner } from "@tooldi/agent-llm";
 
 import type { HydratedPlanningInput, NormalizedIntent } from "../types.js";
 
 export async function buildNormalizedIntent(
   input: HydratedPlanningInput,
+  dependencies?: {
+    templatePlanner?: TemplatePlanner;
+  },
 ): Promise<NormalizedIntent> {
   const operationFamily =
     input.request.editorContext.canvasState === "empty"
@@ -14,19 +18,28 @@ export async function buildNormalizedIntent(
     input.request.editorContext.canvasWidth,
     input.request.editorContext.canvasHeight,
   );
+  const plannerDraft =
+    operationFamily === "create_template"
+      ? await dependencies?.templatePlanner?.plan({
+          prompt: input.request.userInput.prompt,
+          canvasPreset,
+          palette: input.snapshot.brandContext.palette,
+        })
+      : null;
 
   return {
     intentId: createRequestId(),
     runId: input.job.runId,
     traceId: input.job.traceId,
+    plannerMode: dependencies?.templatePlanner?.mode ?? "heuristic",
     operationFamily,
     artifactType: "LiveDraftArtifactBundle",
-    goalSummary: input.request.userInput.prompt,
+    goalSummary: plannerDraft?.goalSummary ?? input.request.userInput.prompt,
     requestedOutputCount: input.request.runPolicy.requestedOutputCount,
     templateKind: "seasonal_sale_banner",
     canvasPreset,
-    layoutIntent: "copy_focused",
-    tone: "bright_playful",
+    layoutIntent: plannerDraft?.layoutIntent ?? "copy_focused",
+    tone: plannerDraft?.tone ?? "bright_playful",
     requiredSlots: [
       "background",
       "headline",
@@ -35,9 +48,10 @@ export async function buildNormalizedIntent(
       "decoration",
     ],
     assetPolicy: "graphic_allowed_photo_optional",
+    searchKeywords: plannerDraft?.searchKeywords ?? ["봄"],
     brandConstraints: {
       palette: input.snapshot.brandContext.palette,
-      typographyHint: null,
+      typographyHint: plannerDraft?.typographyHint ?? null,
       forbiddenStyles: [],
     },
     supportedInV1: operationFamily === "create_template",

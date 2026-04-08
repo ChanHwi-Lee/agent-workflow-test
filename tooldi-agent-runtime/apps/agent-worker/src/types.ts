@@ -33,6 +33,7 @@ export interface NormalizedIntent {
   intentId: string;
   runId: string;
   traceId: string;
+  plannerMode: "heuristic" | "langchain";
   operationFamily: IntentEnvelope["operationFamily"];
   artifactType: string;
   goalSummary: string;
@@ -45,6 +46,7 @@ export interface NormalizedIntent {
     "background" | "headline" | "supporting_copy" | "cta" | "decoration"
   >;
   assetPolicy: "graphic_allowed_photo_optional";
+  searchKeywords: string[];
   brandConstraints: {
     palette: string[];
     typographyHint: string | null;

@@ -3,6 +3,7 @@ import type {
 } from "@tooldi/agent-contracts";
 import { buildLangGraphThreadId } from "@tooldi/agent-graph";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
+import type { TemplatePlanner } from "@tooldi/agent-llm";
 import type { Logger } from "@tooldi/agent-observability";
 import type { ObjectStoreClient } from "@tooldi/agent-persistence";
 import type {
@@ -29,6 +30,7 @@ export interface ProcessRunJobDependencies extends RunJobGraphDependencies {
   textLayoutHelper: TextLayoutHelper;
   templateCatalogClient: TemplateCatalogClient;
   tooldiCatalogSourceClient?: TooldiCatalogSourceClient;
+  templatePlanner?: TemplatePlanner;
 }
 
 export async function processRunJob(
@@ -44,6 +46,7 @@ export async function processRunJob(
       configurable: {
         thread_id: buildLangGraphThreadId(job.runId, job.attemptSeq),
       },
+      recursionLimit: 128,
     },
   );
 

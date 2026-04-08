@@ -1,5 +1,6 @@
 import type { RunJobEnvelope } from "@tooldi/agent-contracts";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
+import { createTemplatePlanner } from "@tooldi/agent-llm";
 import {
   createWorkerGraphCheckpointer,
   type WorkerGraphCheckpointerHandle,
@@ -45,6 +46,7 @@ export interface BuildWorkerRuntimeOptions {
   textLayoutHelper?: TextLayoutHelper;
   templateCatalogClient?: TemplateCatalogClient;
   tooldiCatalogSourceClient?: TooldiCatalogSourceClient;
+  templatePlanner?: ProcessRunJobDependencies["templatePlanner"];
 }
 
 export interface AgentWorkerRuntime extends ProcessRunJobDependencies {
@@ -95,6 +97,8 @@ export async function buildWorkerRuntime(
     templateCatalogClient:
       options.templateCatalogClient ?? createTemplateCatalogClient(),
     langGraphCheckpointer: graphCheckpointerHandle.checkpointer,
+    templatePlanner:
+      options.templatePlanner ?? createTemplatePlanner(options.env, logger),
     tooldiCatalogSourceClient:
       options.tooldiCatalogSourceClient ??
       createTooldiCatalogSourceClient(options.env),
