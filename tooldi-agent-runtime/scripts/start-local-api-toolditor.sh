@@ -9,6 +9,8 @@ source "${SCRIPT_DIR}/local-toolditor-env.sh"
 
 mkdir -p "${OBJECT_STORE_ROOT_DIR}"
 
+"${SCRIPT_DIR}/ensure-local-langgraph-postgres.sh"
+
 cd "${WORKSPACE_ROOT}"
 
 if [[ "${AGENT_RUNTIME_SKIP_BUILD:-0}" != "1" ]]; then

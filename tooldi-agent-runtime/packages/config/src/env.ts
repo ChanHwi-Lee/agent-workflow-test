@@ -51,6 +51,10 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
   leaseTtlMs: number;
   queueTransportMode: WorkerQueueTransportMode;
   agentInternalBaseUrl: string;
+  templatePlannerMode: "heuristic" | "langchain";
+  templatePlannerProvider: "openai" | "anthropic" | "google" | null;
+  templatePlannerModel: string | null;
+  templatePlannerTemperature: number;
   langGraphCheckpointerMode: "memory" | "postgres";
   langGraphCheckpointerPostgresUrl: string | null;
   langGraphCheckpointerSchema: string;
@@ -251,11 +255,27 @@ export function loadAgentWorkerEnv(
       "AGENT_INTERNAL_BASE_URL",
       "http://127.0.0.1:3000",
     ),
+    templatePlannerMode: readEnumValue(
+      source,
+      "TEMPLATE_PLANNER_MODE",
+      ["heuristic", "langchain"] as const,
+      "heuristic",
+    ),
+    templatePlannerProvider: readOptionalString(
+      source,
+      "TEMPLATE_PLANNER_PROVIDER",
+    ) as AgentWorkerEnv["templatePlannerProvider"],
+    templatePlannerModel: readOptionalString(source, "TEMPLATE_PLANNER_MODEL"),
+    templatePlannerTemperature: readNumber(
+      source,
+      "TEMPLATE_PLANNER_TEMPERATURE",
+      0,
+    ),
     langGraphCheckpointerMode: readEnumValue(
       source,
       "LANGGRAPH_CHECKPOINTER_MODE",
       ["memory", "postgres"] as const,
-      "memory",
+      "postgres",
     ),
     langGraphCheckpointerPostgresUrl: readOptionalString(
       source,

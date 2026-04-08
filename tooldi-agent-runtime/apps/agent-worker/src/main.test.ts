@@ -30,6 +30,7 @@ test("worker main entrypoint boots and exits cleanly", async () => {
         WORKER_LEASE_TTL_MS: "30000",
         WORKER_QUEUE_TRANSPORT_MODE: "disabled",
         AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
+        TEMPLATE_PLANNER_MODE: "heuristic",
         LANGGRAPH_CHECKPOINTER_MODE: "memory",
         TOOLDI_CATALOG_SOURCE_MODE: "placeholder",
         WORKER_EXIT_AFTER_BOOT: "true",
