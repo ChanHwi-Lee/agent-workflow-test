@@ -6,12 +6,7 @@ export const runtimeEnvironments = [
 
 export type RuntimeEnvironment = (typeof runtimeEnvironments)[number];
 
-export const logLevels = [
-  "debug",
-  "info",
-  "warn",
-  "error",
-] as const;
+export const logLevels = ["debug", "info", "warn", "error"] as const;
 
 export type LogLevel = (typeof logLevels)[number];
 
@@ -45,6 +40,12 @@ export const workerQueueTransportModes = ["bullmq", "disabled"] as const;
 export type WorkerQueueTransportMode =
   (typeof workerQueueTransportModes)[number];
 
+export const templatePlannerProviders = [
+  "openai",
+  "anthropic",
+  "google",
+] as const;
+
 export interface AgentWorkerEnv extends SharedRuntimeEnv {
   workerConcurrency: number;
   heartbeatIntervalMs: number;
@@ -52,7 +53,7 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
   queueTransportMode: WorkerQueueTransportMode;
   agentInternalBaseUrl: string;
   templatePlannerMode: "heuristic" | "langchain";
-  templatePlannerProvider: "openai" | "anthropic" | "google" | null;
+  templatePlannerProvider: (typeof templatePlannerProviders)[number] | null;
   templatePlannerModel: string | null;
   templatePlannerTemperature: number;
   langGraphCheckpointerMode: "memory" | "postgres";
@@ -67,11 +68,7 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
 
 export type EnvSource = Record<string, string | undefined>;
 
-function readString(
-  source: EnvSource,
-  key: string,
-  fallback?: string,
-): string {
+function readString(source: EnvSource, key: string, fallback?: string): string {
   const value = source[key] ?? fallback;
   if (value === undefined || value.trim().length === 0) {
     throw new Error(`Missing required environment variable: ${key}`);
@@ -79,11 +76,7 @@ function readString(
   return value;
 }
 
-function readNumber(
-  source: EnvSource,
-  key: string,
-  fallback: number,
-): number {
+function readNumber(source: EnvSource, key: string, fallback: number): number {
   const raw = source[key];
   if (raw === undefined || raw.trim().length === 0) {
     return fallback;
@@ -96,15 +89,29 @@ function readNumber(
   return parsed;
 }
 
-function readOptionalString(
-  source: EnvSource,
-  key: string,
-): string | null {
+function readOptionalString(source: EnvSource, key: string): string | null {
   const value = source[key];
   if (value === undefined || value.trim().length === 0) {
     return null;
   }
   return value;
+}
+
+function readOptionalEnumValue<const Values extends readonly string[]>(
+  source: EnvSource,
+  key: string,
+  values: Values,
+): Values[number] | null {
+  const value = readOptionalString(source, key);
+  if (value === null) {
+    return null;
+  }
+  if (values.includes(value)) {
+    return value;
+  }
+  throw new Error(
+    `Unsupported ${key}: ${value}. Expected one of: ${values.join(", ")}`,
+  );
 }
 
 function readBoolean(
@@ -156,7 +163,9 @@ function readLogLevel(source: EnvSource): LogLevel {
   throw new Error(`Unsupported LOG_LEVEL: ${value}`);
 }
 
-export function loadSharedEnv(source: EnvSource = process.env): SharedRuntimeEnv {
+export function loadSharedEnv(
+  source: EnvSource = process.env,
+): SharedRuntimeEnv {
   return {
     nodeEnv: readRuntimeEnvironment(source),
     logLevel: readLogLevel(source),
@@ -210,7 +219,11 @@ export function loadAgentApiEnv(source: EnvSource = process.env): AgentApiEnv {
       "PUBLIC_BASE_URL",
       `http://${host}:${port}`,
     ),
-    sseHeartbeatIntervalMs: readNumber(source, "SSE_HEARTBEAT_INTERVAL_MS", 15000),
+    sseHeartbeatIntervalMs: readNumber(
+      source,
+      "SSE_HEARTBEAT_INTERVAL_MS",
+      15000,
+    ),
     queueTransportMode: readEnumValue(
       source,
       "API_QUEUE_TRANSPORT_MODE",
@@ -242,7 +255,11 @@ export function loadAgentWorkerEnv(
   return {
     ...loadSharedEnv(source),
     workerConcurrency: readNumber(source, "WORKER_CONCURRENCY", 4),
-    heartbeatIntervalMs: readNumber(source, "WORKER_HEARTBEAT_INTERVAL_MS", 5000),
+    heartbeatIntervalMs: readNumber(
+      source,
+      "WORKER_HEARTBEAT_INTERVAL_MS",
+      5000,
+    ),
     leaseTtlMs: readNumber(source, "WORKER_LEASE_TTL_MS", 30000),
     queueTransportMode: readEnumValue(
       source,
@@ -261,10 +278,11 @@ export function loadAgentWorkerEnv(
       ["heuristic", "langchain"] as const,
       "heuristic",
     ),
-    templatePlannerProvider: readOptionalString(
+    templatePlannerProvider: readOptionalEnumValue(
       source,
       "TEMPLATE_PLANNER_PROVIDER",
-    ) as AgentWorkerEnv["templatePlannerProvider"],
+      templatePlannerProviders,
+    ),
     templatePlannerModel: readOptionalString(source, "TEMPLATE_PLANNER_MODEL"),
     templatePlannerTemperature: readNumber(
       source,

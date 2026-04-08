@@ -92,6 +92,52 @@ test("loadAgentWorkerEnv requires Tooldi content API base URL in tooldi_api mode
   );
 });
 
+test("loadAgentWorkerEnv는 google planner provider와 모델 값을 읽는다", () => {
+  const env = loadAgentWorkerEnv({
+    NODE_ENV: "test",
+    LOG_LEVEL: "info",
+    POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
+    REDIS_URL: "redis://localhost:6379/9",
+    BULLMQ_QUEUE_NAME: "agent-workflow-interactive-test",
+    OBJECT_STORE_MODE: "memory",
+    OBJECT_STORE_ROOT_DIR: "/tmp/tooldi-agent-runtime-object-store-test",
+    OBJECT_STORE_BUCKET: "tooldi-agent-runtime-test",
+    OBJECT_STORE_PREFIX: "agent-runtime-test",
+    WORKER_QUEUE_TRANSPORT_MODE: "disabled",
+    AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
+    TEMPLATE_PLANNER_MODE: "langchain",
+    TEMPLATE_PLANNER_PROVIDER: "google",
+    TEMPLATE_PLANNER_MODEL: "gemini-2.5-flash",
+  });
+
+  assert.equal(env.templatePlannerMode, "langchain");
+  assert.equal(env.templatePlannerProvider, "google");
+  assert.equal(env.templatePlannerModel, "gemini-2.5-flash");
+});
+
+test("loadAgentWorkerEnv는 지원하지 않는 planner provider를 거부한다", () => {
+  assert.throws(
+    () =>
+      loadAgentWorkerEnv({
+        NODE_ENV: "test",
+        LOG_LEVEL: "info",
+        POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
+        REDIS_URL: "redis://localhost:6379/9",
+        BULLMQ_QUEUE_NAME: "agent-workflow-interactive-test",
+        OBJECT_STORE_MODE: "memory",
+        OBJECT_STORE_ROOT_DIR: "/tmp/tooldi-agent-runtime-object-store-test",
+        OBJECT_STORE_BUCKET: "tooldi-agent-runtime-test",
+        OBJECT_STORE_PREFIX: "agent-runtime-test",
+        WORKER_QUEUE_TRANSPORT_MODE: "disabled",
+        AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
+        TEMPLATE_PLANNER_MODE: "langchain",
+        TEMPLATE_PLANNER_PROVIDER: "not-supported",
+        TEMPLATE_PLANNER_MODEL: "google/gemma-4-31b-it:free",
+      }),
+    /TEMPLATE_PLANNER_PROVIDER/,
+  );
+});
+
 test("tooldi_api catalog source mode creates an HTTP-backed source client", async () => {
   const client = createTooldiCatalogSourceClientForMode("tooldi_api", {
     tooldiContentApiBaseUrl: "http://localhost:8080",

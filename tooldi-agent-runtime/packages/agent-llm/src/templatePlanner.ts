@@ -139,10 +139,9 @@ export function createLangChainTemplatePlanner(config: {
 
       return {
         ...result,
-        searchKeywords:
-          result.searchKeywords.includes("봄")
-            ? result.searchKeywords
-            : ["봄", ...result.searchKeywords].slice(0, 5),
+        searchKeywords: result.searchKeywords.includes("봄")
+          ? result.searchKeywords
+          : ["봄", ...result.searchKeywords].slice(0, 5),
       };
     },
   };
