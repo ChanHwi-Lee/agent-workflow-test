@@ -100,7 +100,7 @@ export async function selectTemplateComposition(
         : "graphic_first_shape_text_group",
     summary:
       `Selected ${selectedBackground.payload.variantKey}, ${selectedLayout.payload.variantKey}, ` +
-      `${selectedDecoration.payload.variantKey} for a spring banner` +
+      `${selectedDecoration.payload.variantKey} for ${intent.domain} ${intent.campaignGoal}` +
       (topPhotoCandidate
         ? ` while evaluating photo candidate ${topPhotoCandidate.payload.variantKey}`
         : ""),
@@ -246,7 +246,8 @@ function decidePhotoBranch(
   mode: SelectionDecision["photoBranchMode"];
   reason: string;
 } {
-  const photoPromotionTolerance = 0.02;
+  const photoPromotionTolerance =
+    intent.assetPolicy === "photo_preferred_graphic_allowed" ? 0.08 : 0.02;
 
   if (!selectionPolicy.allowPhotoCandidates) {
     return {
@@ -312,6 +313,8 @@ function decidePhotoBranch(
   return {
     mode: "graphic_preferred",
     reason:
-      "graphic-first path remains safer for readability and execution despite the available photo candidate",
+      intent.assetPolicy === "photo_preferred_graphic_allowed"
+        ? "graphic-first path still remained safer than the preferred photo path after comparison"
+        : "graphic-first path remains safer for readability and execution despite the available photo candidate",
   };
 }

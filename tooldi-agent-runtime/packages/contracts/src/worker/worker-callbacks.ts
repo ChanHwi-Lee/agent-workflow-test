@@ -192,12 +192,14 @@ export const RunFinalizeRequestSchema = Type.Object(
       Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
     ),
     normalizedIntentRef: Type.Optional(IdentifierSchema),
+    searchProfileRef: Type.Optional(IdentifierSchema),
     executablePlanRef: Type.Optional(IdentifierSchema),
     candidateSetRef: Type.Optional(IdentifierSchema),
     sourceSearchSummaryRef: Type.Optional(IdentifierSchema),
     retrievalStageRef: Type.Optional(IdentifierSchema),
     selectionDecisionRef: Type.Optional(IdentifierSchema),
     typographyDecisionRef: Type.Optional(IdentifierSchema),
+    ruleJudgeVerdictRef: Type.Optional(IdentifierSchema),
     sourceMutationRange: Type.Optional(
       Type.Object(
         {

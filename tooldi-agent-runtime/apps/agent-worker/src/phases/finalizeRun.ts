@@ -9,12 +9,18 @@ export async function finalizeRun(
   options: {
     cooperativeStopRequested?: boolean;
     normalizedIntentRef?: string;
+    searchProfileRef?: string;
     executablePlanRef?: string;
     candidateSetRef?: string;
     sourceSearchSummaryRef?: string;
     retrievalStageRef?: string;
     selectionDecisionRef?: string;
     typographyDecisionRef?: string;
+    ruleJudgeVerdictRef?: string;
+    warningSummary?: Array<{
+      code: string;
+      message: string;
+    }>;
     assignedSeqs?: number[];
     overrideResult?: {
       finalStatus: FinalizeRunDraft["request"]["finalStatus"];
@@ -26,6 +32,7 @@ export async function finalizeRun(
   let finalStatus: FinalizeRunDraft["request"]["finalStatus"] =
     options.cooperativeStopRequested === true ? "cancelled" : "completed";
   let fallbackCount = 0;
+  let warnings = options.warningSummary ?? [];
   let errorSummary:
     | FinalizeRunDraft["request"]["errorSummary"]
     | undefined;
@@ -71,6 +78,10 @@ export async function finalizeRun(
     fallbackCount = options.overrideResult.fallbackCount ?? fallbackCount;
   }
 
+  if (finalStatus === "completed" && warnings.length > 0) {
+    finalStatus = "completed_with_warning";
+  }
+
   const lastAckedSeq = lastMutationAck?.status === "acked" ? lastMutationAck.seq ?? 0 : 0;
   const draftId = `draft_${input.job.runId}`;
   const assignedSeqs = options.assignedSeqs ?? [];
@@ -83,7 +94,7 @@ export async function finalizeRun(
         }
       : undefined;
   const latestSaveReceiptId =
-    finalStatus === "completed"
+    finalStatus === "completed" || finalStatus === "completed_with_warning"
       ? `save_receipt_${input.job.runId}_${input.job.attemptSeq}`
       : null;
   const outputTemplateCode =
@@ -104,6 +115,9 @@ export async function finalizeRun(
       ...(options.normalizedIntentRef
         ? { normalizedIntentRef: options.normalizedIntentRef }
         : {}),
+      ...(options.searchProfileRef
+        ? { searchProfileRef: options.searchProfileRef }
+        : {}),
       ...(options.executablePlanRef
         ? { executablePlanRef: options.executablePlanRef }
         : {}),
@@ -120,14 +134,18 @@ export async function finalizeRun(
       ...(options.typographyDecisionRef
         ? { typographyDecisionRef: options.typographyDecisionRef }
         : {}),
+      ...(options.ruleJudgeVerdictRef
+        ? { ruleJudgeVerdictRef: options.ruleJudgeVerdictRef }
+        : {}),
       ...(sourceMutationRange ? { sourceMutationRange } : {}),
       createdLayerIds:
-        finalStatus === "completed"
+        finalStatus === "completed" || finalStatus === "completed_with_warning"
           ? proposedMutationIds.map((mutationId) => `layer_${mutationId}`)
           : [],
       updatedLayerIds: [],
       deletedLayerIds: [],
       fallbackCount,
+      ...(warnings.length > 0 ? { warnings } : {}),
       ...(errorSummary ? { errorSummary } : {}),
     },
     summary: {

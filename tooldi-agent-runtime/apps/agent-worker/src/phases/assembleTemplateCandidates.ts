@@ -16,6 +16,7 @@ import type {
 import type {
   HydratedPlanningInput,
   NormalizedIntent,
+  SearchProfileArtifact,
   SourceSearchFamilySummary,
   TemplateCandidateBundle,
 } from "../types.js";
@@ -49,6 +50,7 @@ export interface AssembleTemplateCandidatesResult {
 export async function assembleTemplateCandidates(
   input: HydratedPlanningInput,
   intent: NormalizedIntent,
+  searchProfile: SearchProfileArtifact,
   dependencies: AssembleTemplateCandidatesDependencies,
 ): Promise<AssembleTemplateCandidatesResult> {
   const catalogContext = {
@@ -125,13 +127,15 @@ export async function assembleTemplateCandidates(
   }
 
   const [backgroundSearch, graphicSearch, photoSearch] = await Promise.all([
-    searchSpringBackgroundCandidates(dependencies.tooldiCatalogSourceClient),
-    searchSpringGraphicCandidates(dependencies.tooldiCatalogSourceClient),
+    searchBackgroundCandidates(
+      dependencies.tooldiCatalogSourceClient,
+      searchProfile,
+    ),
+    searchGraphicCandidates(dependencies.tooldiCatalogSourceClient, searchProfile),
     dependencies.allowPhotoCandidates
-      ? searchSpringPhotoCandidates(
+      ? searchPhotoCandidates(
           dependencies.tooldiCatalogSourceClient,
-          input.request.editorContext.canvasWidth,
-          input.request.editorContext.canvasHeight,
+          searchProfile,
         )
       : Promise.resolve({
           candidates: [] as TemplateCandidate[],
@@ -179,44 +183,25 @@ export async function assembleTemplateCandidates(
   };
 }
 
-async function searchSpringBackgroundCandidates(
+async function searchBackgroundCandidates(
   sourceClient: TooldiCatalogSourceClient,
+  searchProfile: SearchProfileArtifact,
 ): Promise<{
   candidates: TemplateCandidate[];
   summary: SourceSearchFamilySummary;
 }> {
   const attempts: SourceSearchFamilySummary["queryAttempts"] = [];
-  const queries: Array<{
-    label: string;
-    query: SearchBackgroundAssetsQuery;
-  }> = [
-    {
-      label: "pattern_keyword",
-      query: {
-        type: "pattern",
-        keyword: "봄",
-        page: 1,
-        source: "search",
-      },
-    },
-    {
-      label: "image_keyword",
-      query: {
-        type: "image",
-        keyword: "봄",
-        page: 1,
-        source: "search",
-      },
-    },
-    {
-      label: "pattern_fallback",
-      query: {
-        type: "pattern",
-        page: 1,
-        source: "initial_load",
-      },
-    },
-  ];
+  const queries = searchProfile.background.queries.map((plannedQuery) => ({
+    label: plannedQuery.label,
+    query: {
+      type: plannedQuery.type,
+      page: 1,
+      source: plannedQuery.source,
+      ...(plannedQuery.keyword !== null
+        ? { keyword: plannedQuery.keyword }
+        : {}),
+    } satisfies SearchBackgroundAssetsQuery,
+  }));
 
   let selectedAssets: TooldiBackgroundAsset[] = [];
   for (const attempt of queries) {
@@ -259,33 +244,31 @@ async function searchSpringBackgroundCandidates(
   };
 }
 
-async function searchSpringGraphicCandidates(
+async function searchGraphicCandidates(
   sourceClient: TooldiCatalogSourceClient,
+  searchProfile: SearchProfileArtifact,
 ): Promise<{
   candidates: TemplateCandidate[];
   summary: SourceSearchFamilySummary;
 }> {
   const attempts: SourceSearchFamilySummary["queryAttempts"] = [];
-  const queries: Array<{
-    label: string;
-    query: SearchGraphicAssetsQuery;
-  }> = [
-    {
-      label: "graphics_keyword",
-      query: {
-        page: 0,
-        keyword: "봄",
-        shapeType: "graphics",
-      },
-    },
-    {
-      label: "graphics_fallback",
-      query: {
-        page: 0,
-        shapeType: "graphics",
-      },
-    },
-  ];
+  const queries = searchProfile.graphic.queries.map((plannedQuery) => ({
+    label: plannedQuery.label,
+    query: {
+      page: 0,
+      ...(plannedQuery.keyword !== null
+        ? { keyword: plannedQuery.keyword }
+        : {}),
+      ...(plannedQuery.categoryName !== null
+        ? { categoryName: plannedQuery.categoryName }
+        : {}),
+      ...(plannedQuery.shapeType !== null
+        ? { shapeType: plannedQuery.shapeType }
+        : {}),
+      ...(plannedQuery.price !== null ? { price: plannedQuery.price } : {}),
+      ...(plannedQuery.format !== null ? { format: plannedQuery.format } : {}),
+    } satisfies SearchGraphicAssetsQuery,
+  }));
 
   let selectedAssets: TooldiGraphicAsset[] = [];
   for (const attempt of queries) {
@@ -327,46 +310,31 @@ async function searchSpringGraphicCandidates(
   };
 }
 
-async function searchSpringPhotoCandidates(
+async function searchPhotoCandidates(
   sourceClient: TooldiCatalogSourceClient,
-  canvasWidth: number,
-  canvasHeight: number,
+  searchProfile: SearchProfileArtifact,
 ): Promise<{
   candidates: TemplateCandidate[];
   summary: SourceSearchFamilySummary;
 }> {
   const attempts: SourceSearchFamilySummary["queryAttempts"] = [];
-  const preferredOrientation = resolvePhotoOrientation(canvasWidth, canvasHeight);
-  const queries: Array<{
-    label: string;
-    query: SearchPhotoAssetsQuery;
-  }> = [
-    {
-      label: "photo_keyword_oriented",
-      query: {
-        page: 0,
-        keyword: "봄",
-        orientation: preferredOrientation,
-        source: "search",
-      },
-    },
-    {
-      label: "photo_keyword",
-      query: {
-        page: 0,
-        keyword: "봄",
-        source: "search",
-      },
-    },
-    {
-      label: "photo_fallback_oriented",
-      query: {
-        page: 0,
-        orientation: preferredOrientation,
-        source: "initial_load",
-      },
-    },
-  ];
+  const preferredOrientation = searchProfile.photo.orientationHint ?? "landscape";
+  const queries = searchProfile.photo.queries.map((plannedQuery) => ({
+    label: plannedQuery.label,
+    query: {
+      page: 0,
+      source: plannedQuery.source,
+      ...(plannedQuery.keyword !== null
+        ? { keyword: plannedQuery.keyword }
+        : {}),
+      ...(plannedQuery.orientation !== null
+        ? { orientation: plannedQuery.orientation }
+        : {}),
+      ...(plannedQuery.backgroundRemoval !== null
+        ? { backgroundRemoval: plannedQuery.backgroundRemoval }
+        : {}),
+    } satisfies SearchPhotoAssetsQuery,
+  }));
 
   let selectedAssets: TooldiPhotoAsset[] = [];
   for (const attempt of queries) {
@@ -598,16 +566,6 @@ function scorePhotoAsset(
       (asset.backgroundRemovalHint ? 0.01 : 0)
     ).toFixed(3),
   );
-}
-
-function resolvePhotoOrientation(
-  canvasWidth: number,
-  canvasHeight: number,
-): TooldiPhotoAsset["orientation"] {
-  if (canvasWidth === canvasHeight) {
-    return "square";
-  }
-  return canvasWidth > canvasHeight ? "landscape" : "portrait";
 }
 
 function createLayoutCandidateSet(

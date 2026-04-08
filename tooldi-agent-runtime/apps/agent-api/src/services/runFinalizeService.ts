@@ -48,12 +48,14 @@ type MaterializedArtifacts = {
 type MaterializationInput = {
   draftId: string;
   normalizedIntentRef: string;
+  searchProfileRef: string | null;
   executablePlanRef: string;
   candidateSetRef: string | null;
   sourceSearchSummaryRef: string | null;
   retrievalStageRef: string | null;
   selectionDecisionRef: string | null;
   typographyDecisionRef: string | null;
+  ruleJudgeVerdictRef: string | null;
   sourceMutationRange: NonNullable<RunFinalizeRequest["sourceMutationRange"]>;
   outputTemplateCode: string | null;
 };
@@ -289,12 +291,14 @@ export class RunFinalizeService {
       materialization: {
         draftId: request.draftId,
         normalizedIntentRef: request.normalizedIntentRef,
+        searchProfileRef: request.searchProfileRef ?? null,
         executablePlanRef: request.executablePlanRef,
         candidateSetRef: request.candidateSetRef ?? null,
         sourceSearchSummaryRef: request.sourceSearchSummaryRef ?? null,
         retrievalStageRef: request.retrievalStageRef ?? null,
         selectionDecisionRef: request.selectionDecisionRef ?? null,
         typographyDecisionRef: request.typographyDecisionRef ?? null,
+        ruleJudgeVerdictRef: request.ruleJudgeVerdictRef ?? null,
         sourceMutationRange: request.sourceMutationRange,
         outputTemplateCode: request.outputTemplateCode ?? null,
       },
@@ -544,6 +548,7 @@ export class RunFinalizeService {
         requestRef: run.requestRef,
         snapshotRef: run.snapshotRef,
         normalizedIntentRef: input.normalizedIntentRef,
+        ...(input.searchProfileRef ? { searchProfileRef: input.searchProfileRef } : {}),
         executablePlanRef: input.executablePlanRef,
         ...(input.candidateSetRef ? { candidateSetRef: input.candidateSetRef } : {}),
         ...(input.sourceSearchSummaryRef
@@ -555,6 +560,9 @@ export class RunFinalizeService {
           : {}),
         ...(input.typographyDecisionRef
           ? { typographyDecisionRef: input.typographyDecisionRef }
+          : {}),
+        ...(input.ruleJudgeVerdictRef
+          ? { ruleJudgeVerdictRef: input.ruleJudgeVerdictRef }
           : {}),
         bundleRef,
       },

@@ -1,5 +1,8 @@
 import { createRequestId } from "@tooldi/agent-domain";
-import type { TemplatePlanner } from "@tooldi/agent-llm";
+import {
+  createHeuristicTemplatePlanner,
+  type TemplatePlanner,
+} from "@tooldi/agent-llm";
 
 import type { HydratedPlanningInput, NormalizedIntent } from "../types.js";
 
@@ -18,9 +21,13 @@ export async function buildNormalizedIntent(
     input.request.editorContext.canvasWidth,
     input.request.editorContext.canvasHeight,
   );
+  const planner =
+    operationFamily === "create_template"
+      ? (dependencies?.templatePlanner ?? createHeuristicTemplatePlanner())
+      : null;
   const plannerDraft =
     operationFamily === "create_template"
-      ? await dependencies?.templatePlanner?.plan({
+      ? await planner?.plan({
           prompt: input.request.userInput.prompt,
           canvasPreset,
           palette: input.snapshot.brandContext.palette,
@@ -31,12 +38,15 @@ export async function buildNormalizedIntent(
     intentId: createRequestId(),
     runId: input.job.runId,
     traceId: input.job.traceId,
-    plannerMode: dependencies?.templatePlanner?.mode ?? "heuristic",
+    plannerMode: planner?.mode ?? "heuristic",
     operationFamily,
     artifactType: "LiveDraftArtifactBundle",
     goalSummary: plannerDraft?.goalSummary ?? input.request.userInput.prompt,
     requestedOutputCount: input.request.runPolicy.requestedOutputCount,
-    templateKind: "seasonal_sale_banner",
+    templateKind: plannerDraft?.templateKind ?? "promo_banner",
+    domain: plannerDraft?.domain ?? "general_marketing",
+    audience: plannerDraft?.audience ?? "general_consumers",
+    campaignGoal: plannerDraft?.campaignGoal ?? "promotion_awareness",
     canvasPreset,
     layoutIntent: plannerDraft?.layoutIntent ?? "copy_focused",
     tone: plannerDraft?.tone ?? "bright_playful",
@@ -47,8 +57,15 @@ export async function buildNormalizedIntent(
       "cta",
       "decoration",
     ],
-    assetPolicy: "graphic_allowed_photo_optional",
+    assetPolicy:
+      plannerDraft?.assetPolicy ?? "graphic_allowed_photo_optional",
     searchKeywords: plannerDraft?.searchKeywords ?? ["봄"],
+    facets: plannerDraft?.facets ?? {
+      seasonality: input.request.userInput.prompt.includes("봄") ? "spring" : null,
+      menuType: null,
+      promotionStyle: "general_campaign",
+      offerSpecificity: "multi_item",
+    },
     brandConstraints: {
       palette: input.snapshot.brandContext.palette,
       typographyHint: plannerDraft?.typographyHint ?? null,

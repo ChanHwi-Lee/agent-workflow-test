@@ -33,6 +33,7 @@ import {
   assembleTemplateCandidates,
   SpringCatalogActivationError,
 } from "../phases/assembleTemplateCandidates.js";
+import { buildSearchProfile } from "../phases/buildSearchProfile.js";
 import { buildExecutablePlan } from "../phases/buildExecutablePlan.js";
 import { buildNormalizedIntent } from "../phases/buildNormalizedIntent.js";
 import { emitRefinementMutations } from "../phases/emitRefinementMutations.js";
@@ -40,6 +41,7 @@ import { emitSkeletonMutations } from "../phases/emitSkeletonMutations.js";
 import { finalizeRun } from "../phases/finalizeRun.js";
 import { hydratePlanningInput } from "../phases/hydratePlanningInput.js";
 import { runRetrievalStage } from "../phases/runRetrievalStage.js";
+import { ruleJudgeCreateTemplate } from "../phases/ruleJudge.js";
 import { selectTypography } from "../phases/selectTypography.js";
 import { selectTemplateComposition } from "../phases/selectTemplateComposition.js";
 import type {
@@ -49,6 +51,8 @@ import type {
   NormalizedIntent,
   ProcessRunJobResult,
   RetrievalStageResult,
+  RuleJudgeVerdict,
+  SearchProfileArtifact,
   SelectionDecision,
   SkeletonMutationBatch,
   SourceSearchSummary,
@@ -89,6 +93,8 @@ const RunJobGraphState = Annotation.Root({
   hydrated: replaceValue<HydratedPlanningInput | null>(() => null),
   intent: replaceValue<NormalizedIntent | null>(() => null),
   normalizedIntentRef: replaceValue<string | null>(() => null),
+  searchProfile: replaceValue<SearchProfileArtifact | null>(() => null),
+  searchProfileRef: replaceValue<string | null>(() => null),
   retrievalStage: replaceValue<RetrievalStageResult | null>(() => null),
   retrievalStageRef: replaceValue<string | null>(() => null),
   selectionPolicy: replaceValue<TemplateSelectionPolicy | null>(() => null),
@@ -106,6 +112,8 @@ const RunJobGraphState = Annotation.Root({
   sourceSearchSummaryRef: replaceValue<string | null>(() => null),
   plan: replaceValue<ProcessRunJobResult["plan"] | null>(() => null),
   executablePlanRef: replaceValue<string | null>(() => null),
+  ruleJudgeVerdict: replaceValue<RuleJudgeVerdict | null>(() => null),
+  ruleJudgeVerdictRef: replaceValue<string | null>(() => null),
   skeletonBatch: replaceValue<SkeletonMutationBatch | null>(() => null),
   currentStageIndex: replaceValue(() => 0),
   currentProposal: replaceValue<WorkerMutationProposalDraft | null>(() => null),
@@ -307,6 +315,47 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         finalizeDraft,
       };
     })
+    .addNode("build_search_profile", async (state) => {
+      if (!state.intent) {
+        throw new Error("build_search_profile requires normalized intent state");
+      }
+
+      let cooperativeStopRequested = state.cooperativeStopRequested;
+      const searchProfile = await buildSearchProfile(state.intent);
+      const searchProfileRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/search-profile.json`,
+        searchProfile,
+        {
+          artifactKind: "search-profile",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      const searchProfileLog = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: "info",
+          message:
+            `[planner/search-profile] domain=${searchProfile.domain} ` +
+            `goal=${searchProfile.campaignGoal} ` +
+            `background=${searchProfile.background.queries[0]?.keyword ?? "n/a"} ` +
+            `graphic=${searchProfile.graphic.queries[0]?.keyword ?? "n/a"} ` +
+            `photo=${searchProfile.photo.queries[0]?.keyword ?? "n/a"}`,
+        },
+      });
+      cooperativeStopRequested ||= searchProfileLog.cancelRequested;
+
+      return {
+        searchProfile,
+        searchProfileRef,
+        cooperativeStopRequested,
+      };
+    })
     .addNode("compute_retrieval_policy", async (state) => {
       if (!state.hydrated || !state.intent) {
         throw new Error("compute_retrieval_policy requires hydrated intent state");
@@ -333,7 +382,7 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       };
     })
     .addNode("assemble_candidates", async (state) => {
-      if (!state.hydrated || !state.intent || !state.selectionPolicy) {
+      if (!state.hydrated || !state.intent || !state.selectionPolicy || !state.searchProfile) {
         throw new Error("assemble_candidates requires retrieval policy state");
       }
 
@@ -341,6 +390,7 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         const candidateAssembly = await assembleTemplateCandidates(
           state.hydrated,
           state.intent,
+          state.searchProfile,
           {
             templateCatalogClient: dependencies.templateCatalogClient,
             tooldiCatalogSourceClient,
@@ -573,6 +623,58 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       return {
         plan,
         executablePlanRef,
+      };
+    })
+    .addNode("rule_judge", async (state) => {
+      if (
+        !state.intent ||
+        !state.searchProfile ||
+        !state.selectionDecision ||
+        !state.typographyDecision ||
+        !state.sourceSearchSummary ||
+        !state.plan
+      ) {
+        throw new Error("rule_judge requires intent/search/selection/typography/source/plan state");
+      }
+
+      let cooperativeStopRequested = state.cooperativeStopRequested;
+      const ruleJudgeVerdict = await ruleJudgeCreateTemplate(
+        state.intent,
+        state.searchProfile,
+        state.selectionDecision,
+        state.typographyDecision,
+        state.sourceSearchSummary,
+        state.plan,
+      );
+      const ruleJudgeVerdictRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/rule-judge-verdict.json`,
+        ruleJudgeVerdict,
+        {
+          artifactKind: "rule-judge-verdict",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      const judgeLog = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: ruleJudgeVerdict.recommendation === "refuse" ? "error" : "info",
+          message:
+            `[judge/verdict] recommendation=${ruleJudgeVerdict.recommendation} ` +
+            `confidence=${ruleJudgeVerdict.confidence} issues=${ruleJudgeVerdict.issues.length}`,
+        },
+      });
+      cooperativeStopRequested ||= judgeLog.cancelRequested;
+
+      return {
+        cooperativeStopRequested,
+        ruleJudgeVerdict,
+        ruleJudgeVerdictRef,
       };
     })
     .addNode("prepare_execution", async (state) => {
@@ -877,7 +979,20 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         state.hydrated,
         state.emittedMutationIds,
         state.lastMutationAck,
-        buildFinalizeOptions(state, cooperativeStopRequested, state.assignedSeqs),
+        buildFinalizeOptions(
+          state,
+          cooperativeStopRequested,
+          state.assignedSeqs,
+          state.ruleJudgeVerdict?.recommendation === "refuse"
+            ? {
+                finalStatus: "failed",
+                errorSummary: {
+                  code: "rule_judge_refused",
+                  message: state.ruleJudgeVerdict.summary,
+                },
+              }
+            : undefined,
+        ),
       );
 
       return {
@@ -903,6 +1018,7 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       return {
         result: {
           intent: state.intent,
+          ...(state.searchProfile ? { searchProfile: state.searchProfile } : {}),
           ...(state.candidateSets ? { candidateSets: state.candidateSets } : {}),
           ...(state.sourceSearchSummary
             ? { sourceSearchSummary: state.sourceSearchSummary }
@@ -913,6 +1029,9 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
             : {}),
           ...(state.typographyDecision
             ? { typographyDecision: state.typographyDecision }
+            : {}),
+          ...(state.ruleJudgeVerdict
+            ? { ruleJudgeVerdict: state.ruleJudgeVerdict }
             : {}),
           ...(state.plan ? { plan: state.plan } : {}),
           emittedMutationIds: state.emittedMutationIds,
@@ -925,8 +1044,9 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
     .addEdge("hydrate_input", "normalize_intent")
     .addEdge("normalize_intent", "gate_scope")
     .addConditionalEdges("gate_scope", (state) =>
-      state.finalizeDraft ? "send_finalize" : "compute_retrieval_policy",
+      state.finalizeDraft ? "send_finalize" : "build_search_profile",
     )
+    .addEdge("build_search_profile", "compute_retrieval_policy")
     .addEdge("compute_retrieval_policy", "assemble_candidates")
     .addConditionalEdges("assemble_candidates", (state) =>
       state.finalizeDraft ? "send_finalize" : "select_composition",
@@ -934,7 +1054,12 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
     .addEdge("select_composition", "select_typography")
     .addEdge("select_typography", "persist_selection_artifacts")
     .addEdge("persist_selection_artifacts", "build_plan")
-    .addEdge("build_plan", "prepare_execution")
+    .addEdge("build_plan", "rule_judge")
+    .addConditionalEdges("rule_judge", (state) =>
+      state.ruleJudgeVerdict?.recommendation === "refuse"
+        ? "prepare_finalize"
+        : "prepare_execution",
+    )
     .addConditionalEdges("prepare_execution", (state) =>
       state.currentProposal ? "emit_stage" : "run_refinement",
     )
@@ -1102,12 +1227,17 @@ function buildFinalizeOptions(
   state: RunJobGraphStateType,
   cooperativeStopRequested: boolean,
   assignedSeqs: number[],
+  overrideResult?: {
+    finalStatus: FinalizeRunDraft["request"]["finalStatus"];
+    errorSummary?: FinalizeRunDraft["request"]["errorSummary"];
+  },
 ) {
   return {
     cooperativeStopRequested,
     ...(state.normalizedIntentRef
       ? { normalizedIntentRef: state.normalizedIntentRef }
       : {}),
+    ...(state.searchProfileRef ? { searchProfileRef: state.searchProfileRef } : {}),
     ...(state.executablePlanRef ? { executablePlanRef: state.executablePlanRef } : {}),
     ...(state.candidateSetRef ? { candidateSetRef: state.candidateSetRef } : {}),
     ...(state.sourceSearchSummaryRef
@@ -1120,7 +1250,19 @@ function buildFinalizeOptions(
     ...(state.typographyDecisionRef
       ? { typographyDecisionRef: state.typographyDecisionRef }
       : {}),
+    ...(state.ruleJudgeVerdictRef
+      ? { ruleJudgeVerdictRef: state.ruleJudgeVerdictRef }
+      : {}),
+    ...(state.ruleJudgeVerdict?.recommendation === "refine"
+      ? {
+          warningSummary: state.ruleJudgeVerdict.issues.map((issue) => ({
+            code: issue.code,
+            message: issue.message,
+          })),
+        }
+      : {}),
     assignedSeqs,
+    ...(overrideResult ? { overrideResult } : {}),
   };
 }
 
@@ -1133,6 +1275,7 @@ function buildArtifactRefs(
 
   return {
     normalizedIntentRef: state.normalizedIntentRef,
+    ...(state.searchProfileRef ? { searchProfileRef: state.searchProfileRef } : {}),
     ...(state.executablePlanRef ? { executablePlanRef: state.executablePlanRef } : {}),
     ...(state.candidateSetRef ? { candidateSetRef: state.candidateSetRef } : {}),
     ...(state.sourceSearchSummaryRef
@@ -1144,6 +1287,9 @@ function buildArtifactRefs(
       : {}),
     ...(state.typographyDecisionRef
       ? { typographyDecisionRef: state.typographyDecisionRef }
+      : {}),
+    ...(state.ruleJudgeVerdictRef
+      ? { ruleJudgeVerdictRef: state.ruleJudgeVerdictRef }
       : {}),
   };
 }
