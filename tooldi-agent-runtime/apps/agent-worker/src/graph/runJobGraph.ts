@@ -12,6 +12,7 @@ import type {
   WaitMutationAckResponse,
 } from "@tooldi/agent-contracts";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
+import type { TemplatePlanner } from "@tooldi/agent-llm";
 import type { Logger } from "@tooldi/agent-observability";
 import type { ObjectStoreClient } from "@tooldi/agent-persistence";
 import type {
@@ -44,14 +45,22 @@ import { selectTemplateComposition } from "../phases/selectTemplateComposition.j
 import type {
   FinalizeRunDraft,
   HydratedPlanningInput,
+  MutationProposalDraft as WorkerMutationProposalDraft,
   NormalizedIntent,
   ProcessRunJobResult,
   RetrievalStageResult,
   SelectionDecision,
+  SkeletonMutationBatch,
   SourceSearchSummary,
   TemplateCandidateBundle,
+  TemplateSelectionPolicy,
   TypographyDecision,
 } from "../types.js";
+
+type SourceSearchBackground = SourceSearchSummary["background"];
+type SourceSearchGraphic = SourceSearchSummary["graphic"];
+type SourceSearchPhoto = SourceSearchSummary["photo"];
+type SourceSearchFont = SourceSearchSummary["font"];
 
 export interface RunJobGraphDependencies {
   env: AgentWorkerEnv;
@@ -65,6 +74,7 @@ export interface RunJobGraphDependencies {
   templateCatalogClient: TemplateCatalogClient;
   tooldiCatalogSourceClient?: TooldiCatalogSourceClient;
   langGraphCheckpointer?: BaseCheckpointSaver;
+  templatePlanner?: TemplatePlanner;
 }
 
 const replaceValue = <T>(defaultFactory: () => T) =>
@@ -78,25 +88,36 @@ const RunJobGraphState = Annotation.Root({
   cooperativeStopRequested: replaceValue(() => false),
   hydrated: replaceValue<HydratedPlanningInput | null>(() => null),
   intent: replaceValue<NormalizedIntent | null>(() => null),
-  candidateSets: replaceValue<TemplateCandidateBundle | null>(() => null),
-  sourceSearchSummary: replaceValue<SourceSearchSummary | null>(() => null),
+  normalizedIntentRef: replaceValue<string | null>(() => null),
   retrievalStage: replaceValue<RetrievalStageResult | null>(() => null),
+  retrievalStageRef: replaceValue<string | null>(() => null),
+  selectionPolicy: replaceValue<TemplateSelectionPolicy | null>(() => null),
+  candidateSets: replaceValue<TemplateCandidateBundle | null>(() => null),
+  candidateSetRef: replaceValue<string | null>(() => null),
+  sourceSearchBackground: replaceValue<SourceSearchBackground | null>(() => null),
+  sourceSearchGraphic: replaceValue<SourceSearchGraphic | null>(() => null),
+  sourceSearchPhoto: replaceValue<SourceSearchPhoto | null>(() => null),
   selectionDecision: replaceValue<SelectionDecision | null>(() => null),
+  selectionDecisionRef: replaceValue<string | null>(() => null),
   typographyDecision: replaceValue<TypographyDecision | null>(() => null),
+  typographyDecisionRef: replaceValue<string | null>(() => null),
+  typographySearchSummary: replaceValue<SourceSearchFont | null>(() => null),
+  sourceSearchSummary: replaceValue<SourceSearchSummary | null>(() => null),
+  sourceSearchSummaryRef: replaceValue<string | null>(() => null),
   plan: replaceValue<ProcessRunJobResult["plan"] | null>(() => null),
+  executablePlanRef: replaceValue<string | null>(() => null),
+  skeletonBatch: replaceValue<SkeletonMutationBatch | null>(() => null),
+  currentStageIndex: replaceValue(() => 0),
+  currentProposal: replaceValue<WorkerMutationProposalDraft | null>(() => null),
+  currentMutationId: replaceValue<string | null>(() => null),
   emittedMutationIds: replaceValue<string[]>(() => []),
   assignedSeqs: replaceValue<number[]>(() => []),
   lastMutationAck: replaceValue<WaitMutationAckResponse | null>(() => null),
   finalizeDraft: replaceValue<FinalizeRunDraft | null>(() => null),
-  normalizedIntentRef: replaceValue<string | null>(() => null),
-  executablePlanRef: replaceValue<string | null>(() => null),
-  candidateSetRef: replaceValue<string | null>(() => null),
-  sourceSearchSummaryRef: replaceValue<string | null>(() => null),
-  retrievalStageRef: replaceValue<string | null>(() => null),
-  selectionDecisionRef: replaceValue<string | null>(() => null),
-  typographyDecisionRef: replaceValue<string | null>(() => null),
   result: replaceValue<ProcessRunJobResult | null>(() => null),
 });
+
+type RunJobGraphStateType = typeof RunJobGraphState.State;
 
 export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
   const tooldiCatalogSourceClient =
@@ -142,7 +163,7 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
   );
 
   const graph = new StateGraph(RunJobGraphState)
-    .addNode("hydrate", async (state) => {
+    .addNode("hydrate_input", async (state) => {
       const heartbeatBase = buildHeartbeatBase(state.job);
       let cooperativeStopRequested = state.cooperativeStopRequested;
 
@@ -190,14 +211,18 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         cooperativeStopRequested,
       };
     })
-    .addNode("planning", async (state) => {
+    .addNode("normalize_intent", async (state) => {
       if (!state.hydrated) {
-        throw new Error("Run graph planning started without hydrated input");
+        throw new Error("normalize_intent requires hydrated input");
       }
 
-      const heartbeatBase = buildHeartbeatBase(state.job);
       let cooperativeStopRequested = state.cooperativeStopRequested;
-      const intent = await buildNormalizedIntent(state.hydrated);
+      const intent = await buildNormalizedIntent(
+        state.hydrated,
+        dependencies.templatePlanner
+          ? { templatePlanner: dependencies.templatePlanner }
+          : undefined,
+      );
 
       const intentEvent = await appendEventTask(state.job.runId, {
         traceId: state.job.traceId,
@@ -222,78 +247,111 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         },
       );
 
-      if (intent.operationFamily !== "create_template" || !intent.supportedInV1) {
-        const unsupportedLog = await appendEventTask(state.job.runId, {
-          traceId: state.job.traceId,
-          attempt: state.job.attemptSeq,
-          queueJobId: state.job.queueJobId,
-          event: {
-            type: "log",
-            level: "warn",
+      return {
+        intent,
+        normalizedIntentRef,
+        cooperativeStopRequested,
+      };
+    })
+    .addNode("gate_scope", async (state) => {
+      if (!state.hydrated || !state.intent || !state.normalizedIntentRef) {
+        throw new Error("gate_scope requires normalized intent state");
+      }
+
+      if (
+        state.intent.operationFamily === "create_template" &&
+        state.intent.supportedInV1
+      ) {
+        return {};
+      }
+
+      let cooperativeStopRequested = state.cooperativeStopRequested;
+      const heartbeatBase = buildHeartbeatBase(state.job);
+
+      const unsupportedLog = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: "warn",
+          message:
+            "Spring vertical slice currently supports empty canvas create_template only",
+        },
+      });
+      cooperativeStopRequested ||= unsupportedLog.cancelRequested;
+
+      const savingHeartbeat = await heartbeatTask(state.job.runId, {
+        ...heartbeatBase,
+        attemptState: "finalizing",
+        phase: "saving",
+        heartbeatAt: new Date().toISOString(),
+      });
+      cooperativeStopRequested ||= shouldStopAfterCurrentAction(savingHeartbeat);
+
+      const finalizeDraft = await finalizeRun(state.hydrated, [], null, {
+        cooperativeStopRequested,
+        normalizedIntentRef: state.normalizedIntentRef,
+        overrideResult: {
+          finalStatus: "failed",
+          errorSummary: {
+            code: "unsupported_v1_vertical_slice",
             message:
-              "Spring vertical slice currently supports empty canvas create_template only",
+              "Spring vertical slice only supports empty-canvas create_template runs",
           },
-        });
-        cooperativeStopRequested ||= unsupportedLog.cancelRequested;
+        },
+      });
 
-        const savingHeartbeat = await heartbeatTask(state.job.runId, {
-          ...heartbeatBase,
-          attemptState: "finalizing",
-          phase: "saving",
-          heartbeatAt: new Date().toISOString(),
-        });
-        cooperativeStopRequested ||= shouldStopAfterCurrentAction(savingHeartbeat);
+      return {
+        cooperativeStopRequested,
+        finalizeDraft,
+      };
+    })
+    .addNode("compute_retrieval_policy", async (state) => {
+      if (!state.hydrated || !state.intent) {
+        throw new Error("compute_retrieval_policy requires hydrated intent state");
+      }
 
-        return {
-          intent,
-          normalizedIntentRef,
-          cooperativeStopRequested,
-          finalizeDraft: await finalizeRun(state.hydrated, [], null, {
-            cooperativeStopRequested,
-            normalizedIntentRef,
-            overrideResult: {
-              finalStatus: "failed",
-              errorSummary: {
-                code: "unsupported_v1_vertical_slice",
-                message:
-                  "Spring vertical slice only supports empty-canvas create_template runs",
-              },
-            },
-          }),
-        };
+      const retrievalDecision = await runRetrievalStage(state.hydrated, state.intent, {
+        toolRegistry: dependencies.toolRegistry,
+      });
+      const retrievalStageRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/retrieval-stage.json`,
+        retrievalDecision.retrievalStage,
+        {
+          artifactKind: "retrieval-stage",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      return {
+        retrievalStage: retrievalDecision.retrievalStage,
+        selectionPolicy: retrievalDecision.selectionPolicy,
+        retrievalStageRef,
+      };
+    })
+    .addNode("assemble_candidates", async (state) => {
+      if (!state.hydrated || !state.intent || !state.selectionPolicy) {
+        throw new Error("assemble_candidates requires retrieval policy state");
       }
 
       try {
-        const retrievalDecision = await runRetrievalStage(state.hydrated, intent, {
-          toolRegistry: dependencies.toolRegistry,
-        });
-        const retrievalStage = retrievalDecision.retrievalStage;
-        const selectionPolicy = retrievalDecision.selectionPolicy;
-        const retrievalStageRef = await persistArtifactTask(
-          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/retrieval-stage.json`,
-          retrievalStage,
-          {
-            artifactKind: "retrieval-stage",
-            runId: state.job.runId,
-            traceId: state.job.traceId,
-            attemptSeq: String(state.job.attemptSeq),
-          },
-        );
-
         const candidateAssembly = await assembleTemplateCandidates(
           state.hydrated,
-          intent,
+          state.intent,
           {
             templateCatalogClient: dependencies.templateCatalogClient,
             tooldiCatalogSourceClient,
             sourceMode: dependencies.env.tooldiCatalogSourceMode,
-            allowPhotoCandidates: selectionPolicy.allowPhotoCandidates,
+            allowPhotoCandidates: state.selectionPolicy.allowPhotoCandidates,
           },
         );
-        const candidateSets = candidateAssembly.candidates;
+
         const candidateSetRef = await persistArtifactTask(
           `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/template-candidate-set.json`,
-          candidateSets,
+          candidateAssembly.candidates,
           {
             artifactKind: "template-candidate-set",
             runId: state.job.runId,
@@ -302,137 +360,20 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
           },
         );
 
-        const selectionDecision = await selectTemplateComposition(intent, candidateSets, {
-          retrievalStage,
-          selectionPolicy,
-        });
-        const typographySelection = await selectTypography(state.hydrated, {
-          sourceClient: tooldiCatalogSourceClient,
-          sourceMode: dependencies.env.tooldiCatalogSourceMode,
-        });
-        const typographyDecision = typographySelection.decision;
-        const typographySearchSummary = typographySelection.summary;
-        const selectionDecisionRef = await persistArtifactTask(
-          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/selection-decision.json`,
-          selectionDecision,
-          {
-            artifactKind: "selection-decision",
-            runId: state.job.runId,
-            traceId: state.job.traceId,
-            attemptSeq: String(state.job.attemptSeq),
-          },
-        );
-        const typographyDecisionRef = await persistArtifactTask(
-          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/typography-decision.json`,
-          typographyDecision,
-          {
-            artifactKind: "typography-decision",
-            runId: state.job.runId,
-            traceId: state.job.traceId,
-            attemptSeq: String(state.job.attemptSeq),
-          },
-        );
-
-        const sourceSearchSummary = buildSourceSearchSummary(
-          state.job.runId,
-          state.job.traceId,
-          dependencies.env.tooldiCatalogSourceMode,
-          candidateAssembly.sourceSearch.background,
-          candidateAssembly.sourceSearch.graphic,
-          candidateAssembly.sourceSearch.photo,
-          typographySearchSummary,
-          selectionDecision,
-        );
-        const sourceSearchSummaryRef = await persistArtifactTask(
-          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/source-search-summary.json`,
-          sourceSearchSummary,
-          {
-            artifactKind: "source-search-summary",
-            runId: state.job.runId,
-            traceId: state.job.traceId,
-            attemptSeq: String(state.job.attemptSeq),
-          },
-        );
-
-        for (const message of buildSelectionLogMessages(
-          sourceSearchSummary,
-          typographyDecision,
-          selectionDecision,
-        )) {
-          const sourceLog = await appendEventTask(state.job.runId, {
-            traceId: state.job.traceId,
-            attempt: state.job.attemptSeq,
-            queueJobId: state.job.queueJobId,
-            event: {
-              type: "log",
-              level: message.level,
-              message: message.message,
-            },
-          });
-          cooperativeStopRequested ||= sourceLog.cancelRequested;
-        }
-
-        const selectionEvent = await appendEventTask(state.job.runId, {
-          traceId: state.job.traceId,
-          attempt: state.job.attemptSeq,
-          queueJobId: state.job.queueJobId,
-          event: {
-            type: "log",
-            level: "info",
-            message:
-              `[source/selection] background=${selectionDecision.selectedBackgroundSerial ?? "n/a"} ` +
-              `(${selectionDecision.selectedBackgroundCategory ?? "n/a"}) ` +
-              `layout=${selectionDecision.layoutMode} ` +
-              `decoration=${selectionDecision.selectedDecorationSerial ?? "n/a"} ` +
-              `(${selectionDecision.selectedDecorationCategory ?? "n/a"}) ` +
-              `photoBranch=${selectionDecision.photoBranchMode} ` +
-              `photo=${selectionDecision.topPhotoSerial ?? "n/a"} ` +
-              `(${selectionDecision.topPhotoCategory ?? "n/a"})`,
-          },
-        });
-        cooperativeStopRequested ||= selectionEvent.cancelRequested;
-
-        const plan = await buildExecutablePlan(
-          state.hydrated,
-          intent,
-          selectionDecision,
-          typographyDecision,
-          {
-            toolRegistry: dependencies.toolRegistry,
-          },
-        );
-        const executablePlanRef = await persistArtifactTask(
-          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/executable-plan.json`,
-          plan,
-          {
-            artifactKind: "executable-plan",
-            runId: state.job.runId,
-            traceId: state.job.traceId,
-            attemptSeq: String(state.job.attemptSeq),
-          },
-        );
-
         return {
-          intent,
-          candidateSets,
-          retrievalStage,
-          selectionDecision,
-          typographyDecision,
-          sourceSearchSummary,
-          plan,
-          cooperativeStopRequested,
-          normalizedIntentRef,
-          executablePlanRef,
+          candidateSets: candidateAssembly.candidates,
           candidateSetRef,
-          sourceSearchSummaryRef,
-          retrievalStageRef,
-          selectionDecisionRef,
-          typographyDecisionRef,
+          sourceSearchBackground: candidateAssembly.sourceSearch.background,
+          sourceSearchGraphic: candidateAssembly.sourceSearch.graphic,
+          sourceSearchPhoto: candidateAssembly.sourceSearch.photo,
         };
       } catch (error) {
-        if (!isSpringActivationFailure(error)) {
+        if (!isSpringActivationFailure(error) || !state.hydrated || !state.normalizedIntentRef) {
           throw error;
         }
+
+        let cooperativeStopRequested = state.cooperativeStopRequested;
+        const heartbeatBase = buildHeartbeatBase(state.job);
 
         const failureLog = await appendEventTask(state.job.runId, {
           traceId: state.job.traceId,
@@ -454,31 +395,191 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         });
         cooperativeStopRequested ||= shouldStopAfterCurrentAction(savingHeartbeat);
 
-        return {
-          intent,
-          normalizedIntentRef,
+        const finalizeDraft = await finalizeRun(state.hydrated, [], null, {
           cooperativeStopRequested,
-          finalizeDraft: await finalizeRun(state.hydrated, [], null, {
-            cooperativeStopRequested,
-            normalizedIntentRef,
-            overrideResult: {
-              finalStatus: "failed",
-              errorSummary: {
-                code: getSpringActivationErrorCode(error),
-                message: error.message,
-              },
+          normalizedIntentRef: state.normalizedIntentRef,
+          overrideResult: {
+            finalStatus: "failed",
+            errorSummary: {
+              code: getSpringActivationErrorCode(error),
+              message: error.message,
             },
-          }),
+          },
+        });
+
+        return {
+          cooperativeStopRequested,
+          finalizeDraft,
         };
       }
     })
-    .addNode("execute", async (state) => {
-      if (!state.hydrated || !state.intent || !state.plan) {
-        throw new Error("Run graph execution started without a resolved plan");
+    .addNode("select_composition", async (state) => {
+      if (!state.intent || !state.candidateSets || !state.retrievalStage || !state.selectionPolicy) {
+        throw new Error("select_composition requires candidate and retrieval state");
       }
 
-      const hydrated = state.hydrated;
-      const intent = state.intent;
+      const selectionDecision = await selectTemplateComposition(
+        state.intent,
+        state.candidateSets,
+        {
+          retrievalStage: state.retrievalStage,
+          selectionPolicy: state.selectionPolicy,
+        },
+      );
+      const selectionDecisionRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/selection-decision.json`,
+        selectionDecision,
+        {
+          artifactKind: "selection-decision",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      return {
+        selectionDecision,
+        selectionDecisionRef,
+      };
+    })
+    .addNode("select_typography", async (state) => {
+      if (!state.hydrated) {
+        throw new Error("select_typography requires hydrated state");
+      }
+
+      const typographySelection = await selectTypography(state.hydrated, {
+        sourceClient: tooldiCatalogSourceClient,
+        sourceMode: dependencies.env.tooldiCatalogSourceMode,
+      });
+      const typographyDecisionRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/typography-decision.json`,
+        typographySelection.decision,
+        {
+          artifactKind: "typography-decision",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      return {
+        typographyDecision: typographySelection.decision,
+        typographyDecisionRef,
+        typographySearchSummary: typographySelection.summary,
+      };
+    })
+    .addNode("persist_selection_artifacts", async (state) => {
+      if (
+        !state.selectionDecision ||
+        !state.typographyDecision ||
+        !state.sourceSearchBackground ||
+        !state.sourceSearchGraphic ||
+        !state.sourceSearchPhoto
+      ) {
+        throw new Error("persist_selection_artifacts requires selection and search state");
+      }
+
+      let cooperativeStopRequested = state.cooperativeStopRequested;
+      const sourceSearchSummary = buildSourceSearchSummary(
+        state.job.runId,
+        state.job.traceId,
+        dependencies.env.tooldiCatalogSourceMode,
+        state.sourceSearchBackground,
+        state.sourceSearchGraphic,
+        state.sourceSearchPhoto,
+        state.typographySearchSummary ?? undefined,
+        state.selectionDecision,
+      );
+      const sourceSearchSummaryRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/source-search-summary.json`,
+        sourceSearchSummary,
+        {
+          artifactKind: "source-search-summary",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      for (const message of buildSelectionLogMessages(
+        sourceSearchSummary,
+        state.typographyDecision,
+        state.selectionDecision,
+      )) {
+        const sourceLog = await appendEventTask(state.job.runId, {
+          traceId: state.job.traceId,
+          attempt: state.job.attemptSeq,
+          queueJobId: state.job.queueJobId,
+          event: {
+            type: "log",
+            level: message.level,
+            message: message.message,
+          },
+        });
+        cooperativeStopRequested ||= sourceLog.cancelRequested;
+      }
+
+      const selectionEvent = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: "info",
+          message:
+            `[source/selection] background=${state.selectionDecision.selectedBackgroundSerial ?? "n/a"} ` +
+            `(${state.selectionDecision.selectedBackgroundCategory ?? "n/a"}) ` +
+            `layout=${state.selectionDecision.layoutMode} ` +
+            `decoration=${state.selectionDecision.selectedDecorationSerial ?? "n/a"} ` +
+            `(${state.selectionDecision.selectedDecorationCategory ?? "n/a"}) ` +
+            `photoBranch=${state.selectionDecision.photoBranchMode} ` +
+            `photo=${state.selectionDecision.topPhotoSerial ?? "n/a"} ` +
+            `(${state.selectionDecision.topPhotoCategory ?? "n/a"})`,
+        },
+      });
+      cooperativeStopRequested ||= selectionEvent.cancelRequested;
+
+      return {
+        sourceSearchSummary,
+        sourceSearchSummaryRef,
+        cooperativeStopRequested,
+      };
+    })
+    .addNode("build_plan", async (state) => {
+      if (!state.hydrated || !state.intent || !state.selectionDecision || !state.typographyDecision) {
+        throw new Error("build_plan requires intent/selection/typography state");
+      }
+
+      const plan = await buildExecutablePlan(
+        state.hydrated,
+        state.intent,
+        state.selectionDecision,
+        state.typographyDecision,
+        {
+          toolRegistry: dependencies.toolRegistry,
+        },
+      );
+      const executablePlanRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/executable-plan.json`,
+        plan,
+        {
+          artifactKind: "executable-plan",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      return {
+        plan,
+        executablePlanRef,
+      };
+    })
+    .addNode("prepare_execution", async (state) => {
+      if (!state.hydrated || !state.intent || !state.plan) {
+        throw new Error("prepare_execution requires resolved plan state");
+      }
+
       let cooperativeStopRequested = state.cooperativeStopRequested;
       const heartbeatBase = buildHeartbeatBase(state.job);
 
@@ -508,193 +609,262 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
               state.plan.actions[0]?.commitGroup ?? "cancelled_before_mutation",
             proposals: [],
           }
-        : await emitSkeletonMutations(hydrated, intent, state.plan, {
+        : await emitSkeletonMutations(state.hydrated, state.intent, state.plan, {
             textLayoutHelper: dependencies.textLayoutHelper,
           });
 
-      const emittedMutationIds: string[] = [];
-      const assignedSeqs: number[] = [];
-      let lastMutationAck: WaitMutationAckResponse | null = cooperativeStopRequested
-        ? {
+      return {
+        cooperativeStopRequested,
+        skeletonBatch,
+        currentStageIndex: 0,
+        currentProposal: skeletonBatch.proposals[0] ?? null,
+        currentMutationId: null,
+        lastMutationAck: cooperativeStopRequested
+          ? ({
+              found: true,
+              status: "cancelled",
+            } satisfies WaitMutationAckResponse)
+          : null,
+        emittedMutationIds: [],
+        assignedSeqs: [],
+      };
+    })
+    .addNode("emit_stage", async (state) => {
+      if (!state.currentProposal || !state.skeletonBatch) {
+        throw new Error("emit_stage requires an active mutation proposal");
+      }
+
+      let cooperativeStopRequested = state.cooperativeStopRequested;
+      const proposal = state.currentProposal;
+      const totalStages = state.skeletonBatch.proposals.length;
+
+      const stageLog = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: "info",
+          message: `Stage ${proposal.mutation.seq}/${totalStages} (${proposal.stageLabel}) - ${proposal.stageDescription}`,
+        },
+      });
+      if (stageLog.cancelRequested) {
+        return {
+          cooperativeStopRequested: true,
+          currentMutationId: null,
+          lastMutationAck: {
             found: true,
             status: "cancelled",
-          }
-        : null;
+          } satisfies WaitMutationAckResponse,
+        };
+      }
 
-      for (const proposal of skeletonBatch.proposals) {
-        const totalStages = skeletonBatch.proposals.length;
-        const stageLog = await appendEventTask(state.job.runId, {
+      if (proposal.stageLabel === "photo") {
+        const heroCommand = proposal.mutation.commands.find(
+          (command) =>
+            command.op === "createLayer" && command.slotKey === "hero_image",
+        );
+        const bounds =
+          heroCommand && "layerBlueprint" in heroCommand
+            ? heroCommand.layerBlueprint.bounds
+            : null;
+        const photoStageLog = await appendEventTask(state.job.runId, {
           traceId: state.job.traceId,
           attempt: state.job.attemptSeq,
           queueJobId: state.job.queueJobId,
           event: {
             type: "log",
             level: "info",
-            message: `Stage ${proposal.mutation.seq}/${totalStages} (${proposal.stageLabel}) - ${proposal.stageDescription}`,
+            message:
+              `[source/photo-stage] seq=${proposal.mutation.seq} ` +
+              `heroBounds=${bounds ? `${bounds.x},${bounds.y},${bounds.width},${bounds.height}` : "n/a"}`,
           },
         });
-        if (stageLog.cancelRequested) {
-          cooperativeStopRequested = true;
-          lastMutationAck = {
-            found: true,
-            status: "cancelled",
-          };
-          break;
-        }
-
-        if (proposal.stageLabel === "photo") {
-          const heroCommand = proposal.mutation.commands.find(
-            (command) =>
-              command.op === "createLayer" && command.slotKey === "hero_image",
-          );
-          const bounds =
-            heroCommand && "layerBlueprint" in heroCommand
-              ? heroCommand.layerBlueprint.bounds
-              : null;
-          const photoStageLog = await appendEventTask(state.job.runId, {
-            traceId: state.job.traceId,
-            attempt: state.job.attemptSeq,
-            queueJobId: state.job.queueJobId,
-            event: {
-              type: "log",
-              level: "info",
-              message:
-                `[source/photo-stage] seq=${proposal.mutation.seq} ` +
-                `heroBounds=${bounds ? `${bounds.x},${bounds.y},${bounds.width},${bounds.height}` : "n/a"}`,
-            },
-          });
-          if (photoStageLog.cancelRequested) {
-            cooperativeStopRequested = true;
-            lastMutationAck = {
+        if (photoStageLog.cancelRequested) {
+          return {
+            cooperativeStopRequested: true,
+            currentMutationId: null,
+            lastMutationAck: {
               found: true,
               status: "cancelled",
-            };
-            break;
-          }
+            } satisfies WaitMutationAckResponse,
+          };
         }
+      }
 
-        emittedMutationIds.push(proposal.mutationId);
-        const mutationResponse = await appendEventTask(state.job.runId, {
-          traceId: state.job.traceId,
-          attempt: state.job.attemptSeq,
-          queueJobId: state.job.queueJobId,
-          event: {
-            type: "mutation.proposed",
-            mutationId: proposal.mutationId,
-            rollbackGroupId: proposal.rollbackGroupId,
-            mutation: proposal.mutation,
-          },
-        });
+      const emittedMutationIds = [...state.emittedMutationIds, proposal.mutationId];
+      const mutationResponse = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "mutation.proposed",
+          mutationId: proposal.mutationId,
+          rollbackGroupId: proposal.rollbackGroupId,
+          mutation: proposal.mutation,
+        },
+      });
 
-        if (mutationResponse.cancelRequested) {
-          cooperativeStopRequested = true;
-          lastMutationAck = {
+      if (mutationResponse.cancelRequested) {
+        return {
+          emittedMutationIds,
+          cooperativeStopRequested: true,
+          currentMutationId: null,
+          lastMutationAck: {
             found: true,
             status: "cancelled",
-          };
-          break;
-        }
+          } satisfies WaitMutationAckResponse,
+        };
+      }
 
-        assignedSeqs.push(mutationResponse.assignedSeq ?? proposal.mutation.seq);
+      return {
+        emittedMutationIds,
+        assignedSeqs: [
+          ...state.assignedSeqs,
+          mutationResponse.assignedSeq ?? proposal.mutation.seq,
+        ],
+        currentMutationId: proposal.mutationId,
+      };
+    })
+    .addNode("await_stage_ack", async (state) => {
+      if (!state.currentProposal || !state.currentMutationId || !state.skeletonBatch) {
+        throw new Error("await_stage_ack requires an emitted mutation");
+      }
 
-        lastMutationAck = await waitMutationAckTask(
-          state.job.runId,
-          proposal.mutationId,
-          { waitMs: 15000 },
-        );
-        if (lastMutationAck.status === "cancelled") {
-          cooperativeStopRequested = true;
-          break;
-        }
+      let cooperativeStopRequested = state.cooperativeStopRequested;
+      const proposal = state.currentProposal;
+      const totalStages = state.skeletonBatch.proposals.length;
+      let lastMutationAck = await waitMutationAckTask(
+        state.job.runId,
+        state.currentMutationId,
+        { waitMs: 15000 },
+      );
 
-        const ackLog = await appendEventTask(state.job.runId, {
+      if (lastMutationAck.status === "cancelled") {
+        cooperativeStopRequested = true;
+      }
+
+      const ackLog = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: lastMutationAck.status === "acked" ? "info" : "warn",
+          message:
+            lastMutationAck.status === "rejected" && lastMutationAck.error
+              ? `Stage ${proposal.mutation.seq}/${totalStages} result: rejected code=${lastMutationAck.error.code} message=${lastMutationAck.error.message}`
+              : `Stage ${proposal.mutation.seq}/${totalStages} result: ${lastMutationAck.status}`,
+        },
+      });
+      if (ackLog.cancelRequested) {
+        cooperativeStopRequested = true;
+        lastMutationAck = {
+          found: true,
+          status: "cancelled",
+        } satisfies WaitMutationAckResponse;
+      }
+
+      if (lastMutationAck.status !== "acked") {
+        const failFastLog = await appendEventTask(state.job.runId, {
           traceId: state.job.traceId,
           attempt: state.job.attemptSeq,
           queueJobId: state.job.queueJobId,
           event: {
             type: "log",
-            level: lastMutationAck.status === "acked" ? "info" : "warn",
+            level: "warn",
             message:
-              lastMutationAck.status === "rejected" && lastMutationAck.error
-                ? `Stage ${proposal.mutation.seq}/${totalStages} result: rejected code=${lastMutationAck.error.code} message=${lastMutationAck.error.message}`
-                : `Stage ${proposal.mutation.seq}/${totalStages} result: ${lastMutationAck.status}`,
+              proposal.stageLabel === "photo"
+                ? "Fail-fast policy stopped remaining stages after the photo stage was not acknowledged"
+                : `Stopped remaining stages after ${proposal.stageLabel} stage returned ${lastMutationAck.status}`,
           },
         });
-        if (ackLog.cancelRequested) {
-          cooperativeStopRequested = true;
-          lastMutationAck = {
-            found: true,
-            status: "cancelled",
-          };
-          break;
-        }
-
-        if (lastMutationAck.status !== "acked") {
-          const failFastLog = await appendEventTask(state.job.runId, {
-            traceId: state.job.traceId,
-            attempt: state.job.attemptSeq,
-            queueJobId: state.job.queueJobId,
-            event: {
-              type: "log",
-              level: "warn",
-              message:
-                proposal.stageLabel === "photo"
-                  ? "Fail-fast policy stopped remaining stages after the photo stage was not acknowledged"
-                  : `Stopped remaining stages after ${proposal.stageLabel} stage returned ${lastMutationAck.status}`,
-            },
-          });
-          if (failFastLog.cancelRequested) {
-            cooperativeStopRequested = true;
-            lastMutationAck = {
-              found: true,
-              status: "cancelled",
-            };
-          }
-          break;
-        }
+        cooperativeStopRequested ||= failFastLog.cancelRequested;
       }
 
+      return {
+        cooperativeStopRequested,
+        lastMutationAck,
+      };
+    })
+    .addNode("advance_after_ack", async (state) => {
+      if (!state.skeletonBatch) {
+        throw new Error("advance_after_ack requires skeleton batch state");
+      }
+
+      if (state.lastMutationAck?.status !== "acked") {
+        return {
+          currentMutationId: null,
+          currentProposal: null,
+        };
+      }
+
+      const nextStageIndex = state.currentStageIndex + 1;
+      return {
+        currentStageIndex: nextStageIndex,
+        currentMutationId: null,
+        currentProposal: state.skeletonBatch.proposals[nextStageIndex] ?? null,
+      };
+    })
+    .addNode("run_refinement", async (state) => {
+      if (!state.hydrated || !state.intent) {
+        throw new Error("run_refinement requires hydrated intent state");
+      }
+
+      let cooperativeStopRequested = state.cooperativeStopRequested;
       const shouldAttemptRefinement =
         !cooperativeStopRequested &&
-        (lastMutationAck === null || lastMutationAck.status === "acked");
-      const refinement = shouldAttemptRefinement
-        ? await (async () => {
-            const applyingHeartbeat = await heartbeatTask(state.job.runId, {
-              ...heartbeatBase,
-              attemptState: "awaiting_ack",
-              phase: "applying",
-              heartbeatAt: new Date().toISOString(),
-            });
-            cooperativeStopRequested ||= shouldStopAfterCurrentAction(applyingHeartbeat);
+        (state.lastMutationAck === null || state.lastMutationAck.status === "acked");
 
-            const nextRefinement = await emitRefinementMutations(
-              hydrated,
-              intent,
-              lastMutationAck,
-              {
-                imagePrimitiveClient: dependencies.imagePrimitiveClient,
-                assetStorageClient: dependencies.assetStorageClient,
-              },
-            );
+      if (!shouldAttemptRefinement) {
+        return {
+          cooperativeStopRequested,
+        };
+      }
 
-            const refinementLog = await appendEventTask(state.job.runId, {
-              traceId: state.job.traceId,
-              attempt: state.job.attemptSeq,
-              queueJobId: state.job.queueJobId,
-              event: {
-                type: "log",
-                level: "info",
-                message: `Refinement placeholder completed after ${nextRefinement.proposedMutationIds.length} additional mutations`,
-              },
-            });
-            cooperativeStopRequested ||= refinementLog.cancelRequested;
-            return nextRefinement;
-          })()
-        : {
-            proposedMutationIds: [],
-            lastMutationAck,
-          };
+      const heartbeatBase = buildHeartbeatBase(state.job);
+      const applyingHeartbeat = await heartbeatTask(state.job.runId, {
+        ...heartbeatBase,
+        attemptState: "awaiting_ack",
+        phase: "applying",
+        heartbeatAt: new Date().toISOString(),
+      });
+      cooperativeStopRequested ||= shouldStopAfterCurrentAction(applyingHeartbeat);
 
+      const nextRefinement = await emitRefinementMutations(
+        state.hydrated,
+        state.intent,
+        state.lastMutationAck,
+        {
+          imagePrimitiveClient: dependencies.imagePrimitiveClient,
+          assetStorageClient: dependencies.assetStorageClient,
+        },
+      );
+
+      const refinementLog = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: "info",
+          message: `Refinement placeholder completed after ${nextRefinement.proposedMutationIds.length} additional mutations`,
+        },
+      });
+      cooperativeStopRequested ||= refinementLog.cancelRequested;
+
+      return {
+        cooperativeStopRequested,
+        lastMutationAck: nextRefinement.lastMutationAck,
+      };
+    })
+    .addNode("prepare_finalize", async (state) => {
+      if (!state.hydrated) {
+        throw new Error("prepare_finalize requires hydrated state");
+      }
+
+      const heartbeatBase = buildHeartbeatBase(state.job);
+      let cooperativeStopRequested = state.cooperativeStopRequested;
       const savingHeartbeat = await heartbeatTask(state.job.runId, {
         ...heartbeatBase,
         attemptState: "finalizing",
@@ -704,23 +874,20 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       cooperativeStopRequested ||= shouldStopAfterCurrentAction(savingHeartbeat);
 
       const finalizeDraft = await finalizeRun(
-        hydrated,
-        emittedMutationIds,
-        refinement.lastMutationAck,
-        buildFinalizeOptions(state, cooperativeStopRequested, assignedSeqs),
+        state.hydrated,
+        state.emittedMutationIds,
+        state.lastMutationAck,
+        buildFinalizeOptions(state, cooperativeStopRequested, state.assignedSeqs),
       );
 
       return {
         cooperativeStopRequested,
-        emittedMutationIds,
-        assignedSeqs,
-        lastMutationAck: refinement.lastMutationAck,
         finalizeDraft,
       };
     })
-    .addNode("finalize", async (state) => {
+    .addNode("send_finalize", async (state) => {
       if (!state.intent || !state.finalizeDraft) {
-        throw new Error("Run graph finalize started without finalization draft");
+        throw new Error("send_finalize requires finalization draft state");
       }
 
       await finalizeTask(state.job.runId, state.finalizeDraft.request);
@@ -754,13 +921,36 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         } satisfies ProcessRunJobResult,
       };
     })
-    .addEdge(START, "hydrate")
-    .addEdge("hydrate", "planning")
-    .addConditionalEdges("planning", (state) =>
-      state.finalizeDraft ? "finalize" : "execute",
+    .addEdge(START, "hydrate_input")
+    .addEdge("hydrate_input", "normalize_intent")
+    .addEdge("normalize_intent", "gate_scope")
+    .addConditionalEdges("gate_scope", (state) =>
+      state.finalizeDraft ? "send_finalize" : "compute_retrieval_policy",
     )
-    .addEdge("execute", "finalize")
-    .addEdge("finalize", END);
+    .addEdge("compute_retrieval_policy", "assemble_candidates")
+    .addConditionalEdges("assemble_candidates", (state) =>
+      state.finalizeDraft ? "send_finalize" : "select_composition",
+    )
+    .addEdge("select_composition", "select_typography")
+    .addEdge("select_typography", "persist_selection_artifacts")
+    .addEdge("persist_selection_artifacts", "build_plan")
+    .addEdge("build_plan", "prepare_execution")
+    .addConditionalEdges("prepare_execution", (state) =>
+      state.currentProposal ? "emit_stage" : "run_refinement",
+    )
+    .addConditionalEdges("emit_stage", (state) =>
+      state.currentMutationId ? "await_stage_ack" : "run_refinement",
+    )
+    .addEdge("await_stage_ack", "advance_after_ack")
+    .addConditionalEdges("advance_after_ack", (state) => {
+      if (state.lastMutationAck?.status !== "acked" || state.cooperativeStopRequested) {
+        return "run_refinement";
+      }
+      return state.currentProposal ? "emit_stage" : "run_refinement";
+    })
+    .addEdge("run_refinement", "prepare_finalize")
+    .addEdge("prepare_finalize", "send_finalize")
+    .addEdge("send_finalize", END);
 
   return graph.compile({
     checkpointer: dependencies.langGraphCheckpointer ?? new MemorySaver(),
@@ -909,7 +1099,7 @@ function shouldStopAfterCurrentAction(response: {
 }
 
 function buildFinalizeOptions(
-  state: typeof RunJobGraphState.State,
+  state: RunJobGraphStateType,
   cooperativeStopRequested: boolean,
   assignedSeqs: number[],
 ) {
@@ -935,7 +1125,7 @@ function buildFinalizeOptions(
 }
 
 function buildArtifactRefs(
-  state: typeof RunJobGraphState.State,
+  state: RunJobGraphStateType,
 ): ProcessRunJobResult["artifactRefs"] {
   if (!state.normalizedIntentRef) {
     throw new Error("LangGraph run completed without normalized intent artifact");

@@ -166,12 +166,18 @@ AGENT_INTERNAL_BASE_URL=http://127.0.0.1:3000 pnpm --filter @tooldi/agent-worker
 - `agent-worker` 는 separate process boundary를 유지한 채 phase stub를 순서대로 연결한다.
 - `agent-worker` 는 BullMQ `Worker` consumer를 가지고 `RunJobEnvelope` 기반 LangGraph run graph 를 실행한다.
 - 현재 Phase 0 parity migration 에서 `processRunJob` 는 compatibility facade 로 남아 있고, 내부 orchestration 은 LangGraph `StateGraph` 로 교체됐다.
+- 현재 top-level run graph 는 `hydrate_input -> normalize_intent -> gate_scope -> compute_retrieval_policy -> assemble_candidates -> select_composition -> select_typography -> persist_selection_artifacts -> build_plan -> staged execution -> finalize` 형태의 더 작은 node/edge 구조로 재구성돼 있다.
 - `agent-worker` 는 backend callback을 canonical internal HTTP routes로 호출하고, durable close는 backend에 남긴다.
 - API와 worker는 같은 filesystem object-store root를 공유해 `requestRef` / `snapshotRef` hydrate가 실제 분리 프로세스에서 가능하다.
 - worker 는 `normalizedIntentRef`, `executablePlanRef`, `repairContext` 를 받아 finalize handoff 에 실을 수 있다.
 - worker runtime 은 현재 `LANGGRAPH_CHECKPOINTER_MODE=memory|postgres` 를 지원한다.
-  - 기본값은 `memory`
+  - env loader 기본값은 `postgres`
+  - local `toolditor` wrapper script 는 docker 기반 local Postgres bootstrap 후 `postgres` mode 를 기본 사용한다
   - Postgres mode 는 `LANGGRAPH_CHECKPOINTER_POSTGRES_URL` optional, `LANGGRAPH_CHECKPOINTER_SCHEMA` optional(default `agent_langgraph`) 를 사용한다.
+- worker planner 는 현재 `TEMPLATE_PLANNER_MODE=heuristic|langchain` 를 지원한다.
+  - 기본값은 `heuristic`
+  - `langchain` mode 는 `TEMPLATE_PLANNER_PROVIDER=openai|anthropic|google`, `TEMPLATE_PLANNER_MODEL`, provider API key env 를 필요로 한다.
+  - 현재 LangChain planner 는 `buildNormalizedIntent` 단계에서 structured output 으로 `goalSummary`, `layoutIntent`, `searchKeywords`, `typographyHint` 를 생성하고, 실패 시 heuristic fallback 으로 내려간다.
 - backend finalizer 는 mutation ledger + ack evidence + finalize payload 를 읽어 committed bundle/completion row를 materialize 한다.
 - `completed` 는 save evidence 가 있을 때만 허용되고, 없으면 `save_failed_after_apply` 로 downgrade 된다.
 - spring worker path 는 이제 opt-in real Tooldi source mode를 가진다.
@@ -228,4 +234,5 @@ AGENT_INTERNAL_BASE_URL=http://127.0.0.1:3000 pnpm --filter @tooldi/agent-worker
 - 다만 non-wide preset, multi-photo, auth/user-context source, photo background path 는 아직 다음 단계다.
 - planner / tool selection / search-compare-select / vision critique / real save evidence 연동 같은 다음 구현 축은 [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md) 에 별도로 정리했다.
 - 2026-04-08 기준 큰 방향은 custom worker orchestration 을 더 손으로 키우는 것이 아니라, TS LangGraph 기반 runtime 으로 단계 교체하는 것이다.
+- 2026-04-08 기준 LangChain JS 와 provider adapter(OpenAI/Anthropic/Gemini)는 workspace 에 실제로 추가됐고, worker 는 optional LangChain structured-output planner path 를 가질 수 있다.
 - 이 문서는 normative spec이 아니라 working roadmap이며, sibling authoritative docs를 override하지 않는다.
