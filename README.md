@@ -8,6 +8,38 @@
 
 2026-04-08 기준 진행 상태 메모.
 
+## 먼저 읽을 문서
+
+- 문서 인덱스: [tooldi-agent-workflow-v1-doc-index.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-doc-index.md)
+- 현재 구현 상태: [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
+- 다음 작업 우선순위: [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
+
+## 2026-04-08 현재 구현 스냅샷
+
+- worker orchestration 은 `BullMQ Worker + LangGraph` 로 동작한다.
+- planner/model abstraction 은 `LangChain JS` 로 정리했고, 현재 local 기본 planner provider 는 `Google Gemini` 다.
+- public 제품 표면은 여전히 `empty_canvas -> create_template` 1종이다.
+- 현재 worker 는 generic `create_template` skeleton 을 가진다.
+  - `normalized-intent`
+  - `search-profile`
+  - `candidate-set`
+  - `selection-decision`
+  - `typography-decision`
+  - `rule-judge-verdict`
+  - `executable-plan`
+- terminal outcome 은 `completed`, `completed_with_warning`, `failed` 를 실제로 구분한다.
+- real Tooldi source representative slice 는 계속 동작한다.
+  - `background`
+  - `graphic`
+  - `font`
+  - `photo` 는 `wide_1200x628` 에서만 execution-enabled
+- black-box acceptance prompt 3종이 worker integration test에 고정됐다.
+  - `식당에서 신규 봄 계절메뉴를 만들어줘`
+  - `카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘`
+  - `패션 리테일 봄 세일 배너 만들어줘`
+- 현재 가장 큰 남은 품질 이슈는 planner/judge 정합성이다.
+  - 실제 manual run에서 `domain=fashion_retail` 인데 `facets.menuType=food_menu` 가 섞였고, judge 가 이를 `keep` 으로 통과시킨 사례가 있다.
+
 ## 범위
 
 - 이 저장소에는 Tooldi agent workflow v1 문서들과 `tooldi-agent-runtime/` backend workspace만 포함했다.
@@ -167,6 +199,7 @@ AGENT_INTERNAL_BASE_URL=http://127.0.0.1:3000 pnpm --filter @tooldi/agent-worker
 - `agent-worker` 는 BullMQ `Worker` consumer를 가지고 `RunJobEnvelope` 기반 LangGraph run graph 를 실행한다.
 - 현재 Phase 0 parity migration 에서 `processRunJob` 는 compatibility facade 로 남아 있고, 내부 orchestration 은 LangGraph `StateGraph` 로 교체됐다.
 - 현재 top-level run graph 는 `hydrate_input -> normalize_intent -> gate_scope -> compute_retrieval_policy -> assemble_candidates -> select_composition -> select_typography -> persist_selection_artifacts -> build_plan -> staged execution -> finalize` 형태의 더 작은 node/edge 구조로 재구성돼 있다.
+- 현재 generic create-template skeleton 에서는 `build_search_profile`, `rule_judge`, `completed_with_warning` semantics 가 추가되어 artifact 기반 decision chain을 남긴다.
 - `agent-worker` 는 backend callback을 canonical internal HTTP routes로 호출하고, durable close는 backend에 남긴다.
 - API와 worker는 같은 filesystem object-store root를 공유해 `requestRef` / `snapshotRef` hydrate가 실제 분리 프로세스에서 가능하다.
 - worker 는 `normalizedIntentRef`, `executablePlanRef`, `repairContext` 를 받아 finalize handoff 에 실을 수 있다.
@@ -175,9 +208,18 @@ AGENT_INTERNAL_BASE_URL=http://127.0.0.1:3000 pnpm --filter @tooldi/agent-worker
   - local `toolditor` wrapper script 는 docker 기반 local Postgres bootstrap 후 `postgres` mode 를 기본 사용한다
   - Postgres mode 는 `LANGGRAPH_CHECKPOINTER_POSTGRES_URL` optional, `LANGGRAPH_CHECKPOINTER_SCHEMA` optional(default `agent_langgraph`) 를 사용한다.
 - worker planner 는 현재 `TEMPLATE_PLANNER_MODE=heuristic|langchain` 를 지원한다.
-  - 기본값은 `heuristic`
+  - 코드 기본값은 `heuristic`
+  - local `.env.local` 기준 현재 주력 provider 는 `google` 이다
   - `langchain` mode 는 `TEMPLATE_PLANNER_PROVIDER=openai|anthropic|google`, `TEMPLATE_PLANNER_MODEL`, provider API key env 를 필요로 한다.
-  - 현재 LangChain planner 는 `buildNormalizedIntent` 단계에서 structured output 으로 `goalSummary`, `layoutIntent`, `searchKeywords`, `typographyHint` 를 생성하고, 실패 시 heuristic fallback 으로 내려간다.
+  - 현재 LangChain planner 는 `buildNormalizedIntent` 단계에서 structured output 으로 generic `NormalizedIntent` 초안과 `searchKeywords`, `typographyHint` 를 생성하고, 실패 시 heuristic fallback 으로 내려간다.
+- worker 는 현재 최소 아래 artifact chain 을 남긴다.
+  - `normalized-intent.json`
+  - `search-profile.json`
+  - `template-candidate-set.json`
+  - `selection-decision.json`
+  - `typography-decision.json`
+  - `rule-judge-verdict.json`
+  - `executable-plan.json`
 - backend finalizer 는 mutation ledger + ack evidence + finalize payload 를 읽어 committed bundle/completion row를 materialize 한다.
 - `completed` 는 save evidence 가 있을 때만 허용되고, 없으면 `save_failed_after_apply` 로 downgrade 된다.
 - spring worker path 는 이제 opt-in real Tooldi source mode를 가진다.
@@ -233,6 +275,9 @@ AGENT_INTERNAL_BASE_URL=http://127.0.0.1:3000 pnpm --filter @tooldi/agent-worker
 - `photo branch` 의 execution lock 은 [tooldi-agent-workflow-v1-create-template-spring-photo-branch-phase-b.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-spring-photo-branch-phase-b.md) 에 정리한다.
 - 다만 non-wide preset, multi-photo, auth/user-context source, photo background path 는 아직 다음 단계다.
 - planner / tool selection / search-compare-select / vision critique / real save evidence 연동 같은 다음 구현 축은 [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md) 에 별도로 정리했다.
-- 2026-04-08 기준 큰 방향은 custom worker orchestration 을 더 손으로 키우는 것이 아니라, TS LangGraph 기반 runtime 으로 단계 교체하는 것이다.
-- 2026-04-08 기준 LangChain JS 와 provider adapter(OpenAI/Anthropic/Gemini)는 workspace 에 실제로 추가됐고, worker 는 optional LangChain structured-output planner path 를 가질 수 있다.
+- 2026-04-08 기준 큰 방향은 custom worker orchestration 을 더 손으로 키우는 것이 아니라, TS LangGraph 기반 runtime 위에 LangChain JS planner/model layer 를 얹는 것이다.
+- 2026-04-08 기준 LangChain JS 와 provider adapter(OpenAI/Anthropic/Gemini)는 workspace 에 실제로 추가됐고, 현재 local 기본 planner provider 는 Gemini 다.
+- 현재 구현 상태와 문서 읽기 순서는 아래 두 문서를 기준으로 본다.
+  - [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
+  - [tooldi-agent-workflow-v1-doc-index.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-doc-index.md)
 - 이 문서는 normative spec이 아니라 working roadmap이며, sibling authoritative docs를 override하지 않는다.

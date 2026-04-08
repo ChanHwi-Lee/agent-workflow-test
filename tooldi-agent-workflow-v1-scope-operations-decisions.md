@@ -9,7 +9,7 @@
 | 상태 | Draft |
 | 문서 유형 | Decision Record |
 | 작성일 | 2026-04-03 |
-| 기준 시스템 | `toolditor FE`, 신규 `Fastify` Agent API, 신규 `BullMQ Worker + LangGraph Runtime`, `Redis` 기반 `BullMQ` queue, 기존 AI primitive adapters |
+| 기준 시스템 | `toolditor FE`, 신규 `Fastify` Agent API, 신규 `BullMQ Worker + LangGraph Runtime`, `LangChain JS planner/model layer`, `Redis` 기반 `BullMQ` queue, 기존 AI primitive adapters |
 | 기준 데이터 | `docs/tooldi-agent-workflow-v1/tooldi-natural-language-agent-v1-architecture.md`, `docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-functional-spec-to-be.md`, `docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md`, Fastify/BullMQ 공식 문서 |
 | 대상 독자 | PM, FE, Agent Backend, Worker, QA, 인프라/운영 |
 | Owner | Ouroboros workflow |
@@ -121,10 +121,20 @@ v1 control plane backend는 TypeScript/Node 기반 `Fastify` 서비스로 고정
 v1 execution plane은 별도 TypeScript/Node 기반 `BullMQ Worker` 프로세스로 고정하고, worker 내부 orchestration runtime 은 `LangGraph` 로 관리한다.
 
 - worker는 queue consumer이며, 내부 `LangGraph` graph 를 통해 request/snapshot hydrate, plan 생성, tool execution, mutation proposal, compensation 계산, finalize payload 생성을 담당한다.
+- worker 내부 planner/model abstraction 은 `LangChain JS` 로 정리한다.
+- provider SDK 차이는 `LangChain` 뒤로 숨기고, graph node 가 provider-specific request shape를 직접 알지 않게 한다.
+- 현재 local 기본 planner provider 는 `Google Gemini` 지만, 이 값은 stack lock이 아니라 운영 기본값이다.
 - worker는 FE canvas를 직접 mutate하지 않는다.
 - worker는 retry budget의 canonical owner가 아니다. queue retry는 backend가 새 attempt를 enqueue할 때만 열린다.
 
-### 3.4 Queue 선택
+### 3.4 Worker persistence / memory 결정
+
+- worker progress persistence 는 `LangGraph` checkpointer 를 사용한다.
+- local/운영 기본값은 `Postgres` checkpointer 다.
+- 이 checkpoint 는 worker-internal progress/resume 용도이며, canonical run audit/completion source of truth를 대체하지 않는다.
+- public multi-turn memory, chat thread memory, user preference memory 는 아직 v1 범위가 아니다.
+
+### 3.5 Queue 선택
 
 v1 durable orchestration handoff는 `Redis` 기반 `BullMQ` queue로 고정한다.
 

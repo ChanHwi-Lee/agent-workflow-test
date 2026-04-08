@@ -8,8 +8,8 @@
 | 문서 목적 | 현재 bootstrap/happy-path prototype 이후 어떤 구현 축을 우선순위로 열어야 하는지 정리한다. |
 | 상태 | Working Draft |
 | 문서 유형 | Implementation Roadmap |
-| 작성일 | 2026-04-06 |
-| 기준 시스템 | `toolditor FE`, `Fastify Agent API`, `BullMQ Worker + LangGraph Runtime`, `Redis`, `existing internal tool adapters` |
+| 작성일 | 2026-04-08 |
+| 기준 시스템 | `toolditor FE`, `Fastify Agent API`, `BullMQ Worker + LangGraph Runtime`, `LangChain JS planner`, `Google Gemini`, `Redis`, existing internal tool adapters |
 | 기준 데이터 | `README.md`, `tooldi-natural-language-agent-v1-architecture.md`, `tooldi-agent-workflow-v1-functional-spec-to-be.md`, `tooldi-agent-workflow-v1-backend-boundary.md`, `toolditor-agent-workflow-v1-client-boundary.md`, `tooldi-agent-workflow-v1-scope-operations-decisions.md` |
 | 대상 독자 | PM, FE, Agent Backend, Worker, QA |
 | Owner | Ouroboros workflow |
@@ -33,12 +33,23 @@
 
 - separate control-plane / execution-plane skeleton 존재
 - `POST /runs -> SSE -> mutation ack -> finalize -> completed` happy-path prototype 존재
-- 2026-04-08 기준 worker 내부 orchestration 은 LangGraph `StateGraph` parity migration 이 시작됐고, current spring/photo flow 는 LangGraph 경로로 실행된다.
+- 2026-04-08 기준 worker 내부 orchestration 은 LangGraph `StateGraph` 로 실제 실행된다.
+- current worker 는 generic `create_template` skeleton 을 가진다.
+  - `normalized-intent`
+  - `search-profile`
+  - `candidate-set`
+  - `selection-decision`
+  - `typography-decision`
+  - `rule-judge-verdict`
+  - `executable-plan`
+- planner/model abstraction 은 LangChain JS 뒤로 정리됐고, local 기본 provider 는 Gemini 다.
+- terminal semantics 에 `completed_with_warning` 가 실제로 연결돼 있다.
+- black-box acceptance prompt 3종(`restaurant`, `cafe`, `fashion_retail`)이 integration test 에 고정돼 있다.
 - backend는 `LiveDraftArtifactBundle -> RunCompletionRecord` happy-path chain을 prototype 수준으로 materialize 한다
 - `run.recovery` 는 projection skeleton 수준으로만 존재한다
 - 실제 editor save evidence, resume engine, rollback engine, production durability는 아직 아니다
 
-즉 현재 상태는 `작동하는 얇은 prototype` 이며, 다음 단계의 핵심은 recovery 고도화보다 `더 나은 draft를 더 그럴듯하게 만드는 intelligence layer` 를 붙이는 것이다.
+즉 현재 상태는 `작동하는 generic create_template skeleton v1` 이며, 다음 단계의 핵심은 새 runtime 도입이 아니라 `planner/judge 품질` 과 `retrieval / refine / save evidence` 를 고도화하는 것이다.
 
 ## 3. 현재 단계에서 고정할 전제
 
@@ -247,58 +258,66 @@ intelligence layer를 붙이면 결과 품질과 비용을 같이 봐야 한다.
 
 현재 단계에서 가장 현실적인 순서는 아래와 같다.
 
-### 5.1 Phase 1: Happy-Path Intelligence Skeleton
+### 5.1 완료된 단계: Generic Create-Template Skeleton v1
+
+- LangGraph worker runtime
+- LangChain JS planner/model abstraction
+- Gemini planner 연결
+- `NormalizedIntent`, `SearchProfile`, candidate-set, selection, judge artifact chain
+- `completed_with_warning` terminal semantics
+- 3-domain acceptance suite
+
+즉 이 단계는 더 이상 계획이 아니라 현재 baseline 이다.
+
+### 5.2 다음 1순위: Planner / Judge Consistency Hardening
 
 목표:
 
-- fixed mutation prototype을 planner-driven mutation prototype으로 올린다
+- domain, facet, search-profile, selected asset 사이의 semantic contradiction 을 줄인다
 
 범위:
 
-- grounding/context pack
-- planner LLM 연결
-- structured plan 생성
-- tool registry metadata 정리
-- 여전히 `shape/text/group only`
+- planner prompt/schema normalization 보강
+- heuristic fallback 정합성 보강
+- judge rule에 `domain/facet contradiction`, `search-profile mismatch`, `photo subject mismatch` 추가
 
 완료 기준:
 
-- fixed prompt가 아니어도 structured plan이 생성된다
-- mutation stage가 planner output과 연결된다
+- `fashion_retail` 인데 `food_menu` 와 음식 photo가 섞이는 대표 mismatch 를 judge가 `keep` 으로 통과시키지 않는다
 
-### 5.2 Phase 2: Search / Compare / Select
+### 5.3 다음 2순위: Semantic Retrieval 준비와 metadata search 고도화
 
 목표:
 
-- asset/layout/copy 후보를 검색하고 비교한 뒤 선택하는 구조를 만든다
+- 현재 query-profile 기반 metadata search 를 semantic-ready 구조로 올린다
 
 범위:
 
-- candidate schema
-- compare/rank pipeline
-- chosen candidate trace 저장
+- retrieval artifact 보강
+- metadata search fallback 정리
+- semantic/hybrid seam 연결 준비
 
 완료 기준:
 
-- 왜 이 요소를 골랐는지 설명 가능한 selection trace가 남는다
+- retrieval mode 추가가 현재 selection artifact chain을 깨지 않고 들어갈 수 있다
 
-### 5.3 Phase 3: Vision Critique Loop
+### 5.4 다음 3순위: Bounded Critique / Refine Loop
 
 목표:
 
-- 결과물을 보고 한 번 더 손보는 agent loop를 만든다
+- 현재 `refine -> completed_with_warning` placeholder를 실제 1회 bounded refine 루프로 승격한다
 
 범위:
 
-- snapshot capture
-- vision/judge evaluation
-- issue list 기반 refinement 1회
+- issue list 기반 1회 mutation regenerate
+- budget/time threshold
+- degraded success 와 true keep path 구분
 
 완료 기준:
 
-- `foundation -> copy -> polish -> critique -> refine` 같은 순차 동작이 보인다
+- `refine` recommendation 이 실제 second-pass mutation 또는 explicit skip reason 으로 이어진다
 
-### 5.4 Phase 4: Real Save Evidence Integration
+### 5.5 다음 4순위: Real Save Evidence Integration
 
 목표:
 
@@ -315,7 +334,7 @@ intelligence layer를 붙이면 결과 품질과 비용을 같이 봐야 한다.
 
 - backend completed path가 synthetic evidence 없이 닫힌다
 
-### 5.5 Phase 5: Recovery / Resume Revisit
+### 5.6 다음 5순위: Recovery / Resume Revisit
 
 목표:
 
@@ -336,7 +355,7 @@ intelligence layer를 붙이면 결과 품질과 비용을 같이 봐야 한다.
 다음 항목은 당분간 열지 않는 것이 맞다.
 
 - multi-agent collaboration
-- embeddings / RAG / long-term memory
+- embeddings / RAG / long-term memory public feature
 - image/sticker heavy generation
 - external SaaS integration
 - auto publish / export
@@ -373,4 +392,4 @@ intelligence layer를 붙이면 결과 품질과 비용을 같이 봐야 한다.
 
 ## 8. 한 줄 결론
 
-현재 이후의 가장 중요한 방향은 `recovery를 더 깊게 파는 것` 이 아니라, `grounding -> planning -> tool selection -> search/compare/select -> vision critique -> real save evidence` 순으로 happy-path intelligence를 올리는 것이다.
+현재 이후의 가장 중요한 방향은 `새 runtime을 다시 바꾸는 것` 이 아니라, `planner/judge 정합성 -> retrieval 고도화 -> bounded refine -> real save evidence` 순으로 current skeleton 의 품질을 올리는 것이다.
