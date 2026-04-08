@@ -9,7 +9,7 @@
 | 상태 | Draft |
 | 문서 유형 | Decision Record |
 | 작성일 | 2026-04-03 |
-| 기준 시스템 | `toolditor FE`, 신규 `Fastify` Agent API, 신규 `BullMQ Worker Runtime`, `Redis` 기반 `BullMQ` queue, 기존 AI primitive adapters |
+| 기준 시스템 | `toolditor FE`, 신규 `Fastify` Agent API, 신규 `BullMQ Worker + LangGraph Runtime`, `Redis` 기반 `BullMQ` queue, 기존 AI primitive adapters |
 | 기준 데이터 | `docs/tooldi-agent-workflow-v1/tooldi-natural-language-agent-v1-architecture.md`, `docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-functional-spec-to-be.md`, `docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md`, Fastify/BullMQ 공식 문서 |
 | 대상 독자 | PM, FE, Agent Backend, Worker, QA, 인프라/운영 |
 | Owner | Ouroboros workflow |
@@ -118,9 +118,9 @@ v1 control plane backend는 TypeScript/Node 기반 `Fastify` 서비스로 고정
 
 ### 3.3 Worker 선택
 
-v1 execution plane은 별도 TypeScript/Node 기반 `BullMQ Worker` 프로세스로 고정한다.
+v1 execution plane은 별도 TypeScript/Node 기반 `BullMQ Worker` 프로세스로 고정하고, worker 내부 orchestration runtime 은 `LangGraph` 로 관리한다.
 
-- worker는 queue consumer이며, request/snapshot hydrate, plan 생성, tool execution, mutation proposal, compensation 계산, finalize payload 생성을 담당한다.
+- worker는 queue consumer이며, 내부 `LangGraph` graph 를 통해 request/snapshot hydrate, plan 생성, tool execution, mutation proposal, compensation 계산, finalize payload 생성을 담당한다.
 - worker는 FE canvas를 직접 mutate하지 않는다.
 - worker는 retry budget의 canonical owner가 아니다. queue retry는 backend가 새 attempt를 enqueue할 때만 열린다.
 

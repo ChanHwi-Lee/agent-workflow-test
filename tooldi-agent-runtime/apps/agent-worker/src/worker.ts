@@ -1,5 +1,9 @@
 import type { RunJobEnvelope } from "@tooldi/agent-contracts";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
+import {
+  createWorkerGraphCheckpointer,
+  type WorkerGraphCheckpointerHandle,
+} from "@tooldi/agent-graph";
 import type { Logger } from "@tooldi/agent-observability";
 import {
   createObjectStoreClient,
@@ -63,6 +67,9 @@ export async function buildWorkerRuntime(
   await pgClient.connect();
 
   let queueConsumer: RunQueueConsumer | null = null;
+  let graphCheckpointerHandle: WorkerGraphCheckpointerHandle | null = null;
+
+  graphCheckpointerHandle = await createWorkerGraphCheckpointer(options.env, logger);
 
   const runtime: AgentWorkerRuntime = {
     env: options.env,
@@ -87,6 +94,7 @@ export async function buildWorkerRuntime(
     textLayoutHelper: options.textLayoutHelper ?? createTextLayoutHelper(),
     templateCatalogClient:
       options.templateCatalogClient ?? createTemplateCatalogClient(),
+    langGraphCheckpointer: graphCheckpointerHandle.checkpointer,
     tooldiCatalogSourceClient:
       options.tooldiCatalogSourceClient ??
       createTooldiCatalogSourceClient(options.env),
@@ -96,6 +104,9 @@ export async function buildWorkerRuntime(
     async close() {
       if (queueConsumer) {
         await queueConsumer.close();
+      }
+      if (graphCheckpointerHandle) {
+        await graphCheckpointerHandle.close();
       }
       await pgClient.end();
     },
@@ -112,6 +123,9 @@ export async function buildWorkerRuntime(
         },
       }));
   } catch (error) {
+    if (graphCheckpointerHandle) {
+      await graphCheckpointerHandle.close();
+    }
     await pgClient.end();
     throw error;
   }
@@ -120,6 +134,7 @@ export async function buildWorkerRuntime(
     concurrency: options.env.workerConcurrency,
     heartbeatIntervalMs: options.env.heartbeatIntervalMs,
     leaseTtlMs: options.env.leaseTtlMs,
+    langGraphCheckpointerMode: options.env.langGraphCheckpointerMode,
     queueConsumer: queueConsumer.mode,
     queueName: options.env.bullmqQueueName,
     agentInternalBaseUrl: options.env.agentInternalBaseUrl,

@@ -24,6 +24,9 @@ function createEnv(): AgentWorkerEnv {
     leaseTtlMs: 30000,
     queueTransportMode: "disabled",
     agentInternalBaseUrl: "http://127.0.0.1:3000",
+    langGraphCheckpointerMode: "memory",
+    langGraphCheckpointerPostgresUrl: null,
+    langGraphCheckpointerSchema: "agent_langgraph_test",
     tooldiCatalogSourceMode: "placeholder",
     tooldiContentApiBaseUrl: null,
     tooldiContentApiTimeoutMs: 5000,
@@ -60,6 +63,7 @@ test("loadAgentWorkerEnv defaults Tooldi catalog source to placeholder mode", ()
 
   assert.equal(env.tooldiCatalogSourceMode, "placeholder");
   assert.equal(env.tooldiContentApiBaseUrl, null);
+  assert.equal(env.langGraphCheckpointerMode, "memory");
 });
 
 test("loadAgentWorkerEnv requires Tooldi content API base URL in tooldi_api mode", () => {

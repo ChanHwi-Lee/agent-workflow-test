@@ -51,6 +51,9 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
   leaseTtlMs: number;
   queueTransportMode: WorkerQueueTransportMode;
   agentInternalBaseUrl: string;
+  langGraphCheckpointerMode: "memory" | "postgres";
+  langGraphCheckpointerPostgresUrl: string | null;
+  langGraphCheckpointerSchema: string;
   tooldiCatalogSourceMode: "placeholder" | "tooldi_api";
   tooldiContentApiBaseUrl: string | null;
   tooldiContentApiTimeoutMs: number;
@@ -247,6 +250,21 @@ export function loadAgentWorkerEnv(
       source,
       "AGENT_INTERNAL_BASE_URL",
       "http://127.0.0.1:3000",
+    ),
+    langGraphCheckpointerMode: readEnumValue(
+      source,
+      "LANGGRAPH_CHECKPOINTER_MODE",
+      ["memory", "postgres"] as const,
+      "memory",
+    ),
+    langGraphCheckpointerPostgresUrl: readOptionalString(
+      source,
+      "LANGGRAPH_CHECKPOINTER_POSTGRES_URL",
+    ),
+    langGraphCheckpointerSchema: readString(
+      source,
+      "LANGGRAPH_CHECKPOINTER_SCHEMA",
+      "agent_langgraph",
     ),
     tooldiCatalogSourceMode,
     tooldiContentApiBaseUrl,

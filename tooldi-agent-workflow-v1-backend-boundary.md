@@ -7,7 +7,7 @@
 | 상태 | `Draft` |
 | 문서 유형 | `TO-BE` |
 | 작성일 | `2026-04-02` |
-| 기준 시스템 | `toolditor FE`, `Fastify-based non-PHP agent backend`, `BullMQ worker runtime`, `Redis-backed BullMQ queue`, `existing AI primitives` |
+| 기준 시스템 | `toolditor FE`, `Fastify-based non-PHP agent backend`, `BullMQ worker + LangGraph runtime`, `Redis-backed BullMQ queue`, `existing AI primitives` |
 | 기준 데이터 | `docs/tooldi-agent-workflow-v1/tooldi-natural-language-agent-v1-architecture.md`, `docs/tooldi-agent-workflow-v1/toolditor-agent-workflow-v1-client-boundary.md` |
 | 대상 독자 | `PM, FE, Agent Backend, Worker, QA` |
 | Owner | `Ouroboros workflow` |
@@ -62,14 +62,15 @@ v1은 구현 자유도를 열어 두지 않고 아래 플랫폼 조합을 표준
 | 축 | v1 고정 선택 | 설명 |
 | --- | --- | --- |
 | backend service | 별도 TypeScript/Node `Fastify` 서비스 | public run API, worker internal API, SSE stream, auth/session 검증, run state/event/cost persistence, retry/cancel watchdog를 담당하는 control plane |
-| worker runtime | 별도 TypeScript/Node `BullMQ Worker` 프로세스 | planning, tool execution, mutation proposal, compensation, finalize payload 생성을 담당하는 execution plane |
+| worker runtime | 별도 TypeScript/Node `BullMQ Worker` 프로세스 + 내부 `LangGraph` runtime | planning, tool execution, mutation proposal, compensation, finalize payload 생성을 담당하는 execution plane |
 | queue mechanism | `Redis` 기반 `BullMQ` queue + `QueueEvents` | durable dispatch, delayed re-enqueue, lease, stalled/completed/failed transport event를 제공하는 transport plane |
 
 이 선택을 고정하는 이유는 아래와 같다.
 
 - Tooldi/toolditor가 이미 JS/TS 운영 문맥과 `ioredis`, `pino`, `zod` 계열 도구를 사용하고 있어 새 orchestration layer도 TypeScript로 맞추는 편이 가장 가볍다.
 - Fastify는 JSON Schema 기반 request validation, plugin registration, logger 통합이 강해 strict northbound/southbound 계약을 control plane에 구현하기 좋다.
-- BullMQ는 Queue, Worker, QueueEvents, delayed job, stalled job signal을 제공하므로 v1의 separated worker + delayed retry + watchdog 요구사항을 별도 workflow engine 없이 충족한다.
+- BullMQ는 Queue, Worker, QueueEvents, delayed job, stalled job signal을 제공하므로 v1의 separated worker + delayed retry + watchdog 요구사항을 transport plane 에서 충족한다.
+- worker 내부 orchestration 은 TS `LangGraph` 로 관리하고, BullMQ 는 outer dispatch/lease 역할만 맡긴다.
 - v1은 lightweight가 목표이므로 Temporal 같은 더 무거운 workflow engine이나 multi-broker 구성을 도입하지 않는다.
 
 ### 2.4 플랫폼별 책임 경계
@@ -78,7 +79,8 @@ v1은 구현 자유도를 열어 두지 않고 아래 플랫폼 조합을 표준
 | --- | --- | --- |
 | `Fastify Agent Backend` | `POST /runs`, SSE, mutation ack, cancel, page lock, run creation, policy enforcement, run/attempt/event/cost persistence, BullMQ enqueue, QueueEvents 감시, retry/cancel/terminal 판정 | executable planning, planner/model/tool 호출, canvas mutation application, queue auto-retry에 대한 최종 판정 |
 | `BullMQ Queue + Redis` | durable job handoff, delayed retry scheduling, worker lease/transport state, stalled/completed/failed transport event 발행 | canonical run status 저장, cost log, rollback ledger, FE stream fan-out |
-| `BullMQ Worker Runtime` | request/snapshot hydrate, plan 생성/실행, tool adapter 호출, mutation proposal, compensation 계산, finalize 요청 생성 | page lock 관리, queue attempt budget 결정, accepted 응답, SSE 직접 송신 |
+| `BullMQ Worker Runtime` | queue consume, outer process lifecycle, LangGraph graph invoke, finalize handoff | page lock 관리, queue attempt budget 결정, accepted 응답, SSE 직접 송신 |
+| `LangGraph Run Graph` | request/snapshot hydrate, plan 생성/실행, tool adapter 호출, mutation proposal, compensation 계산, fail-fast branch, finalize draft 생성 | northbound API, queue publish, canonical run status 저장 |
 
 ## 3. 책임 분리
 

@@ -9,7 +9,7 @@
 | 상태 | Working Draft |
 | 문서 유형 | Implementation Roadmap |
 | 작성일 | 2026-04-06 |
-| 기준 시스템 | `toolditor FE`, `Fastify Agent API`, `BullMQ Worker Runtime`, `Redis`, `existing internal tool adapters` |
+| 기준 시스템 | `toolditor FE`, `Fastify Agent API`, `BullMQ Worker + LangGraph Runtime`, `Redis`, `existing internal tool adapters` |
 | 기준 데이터 | `README.md`, `tooldi-natural-language-agent-v1-architecture.md`, `tooldi-agent-workflow-v1-functional-spec-to-be.md`, `tooldi-agent-workflow-v1-backend-boundary.md`, `toolditor-agent-workflow-v1-client-boundary.md`, `tooldi-agent-workflow-v1-scope-operations-decisions.md` |
 | 대상 독자 | PM, FE, Agent Backend, Worker, QA |
 | Owner | Ouroboros workflow |
@@ -33,6 +33,7 @@
 
 - separate control-plane / execution-plane skeleton 존재
 - `POST /runs -> SSE -> mutation ack -> finalize -> completed` happy-path prototype 존재
+- 2026-04-08 기준 worker 내부 orchestration 은 LangGraph `StateGraph` parity migration 이 시작됐고, current spring/photo flow 는 LangGraph 경로로 실행된다.
 - backend는 `LiveDraftArtifactBundle -> RunCompletionRecord` happy-path chain을 prototype 수준으로 materialize 한다
 - `run.recovery` 는 projection skeleton 수준으로만 존재한다
 - 실제 editor save evidence, resume engine, rollback engine, production durability는 아직 아니다
