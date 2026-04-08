@@ -64,12 +64,14 @@ function createFinalizeRequest(overrides: Partial<RunFinalizeRequest> = {}): Run
     latestSaveReceiptId: "save-receipt-1",
     outputTemplateCode: "template_draft_run-1",
     normalizedIntentRef: "runs/run-1/attempts/1/normalized-intent.json",
+    searchProfileRef: "runs/run-1/attempts/1/search-profile.json",
     executablePlanRef: "runs/run-1/attempts/1/executable-plan.json",
     candidateSetRef: "runs/run-1/attempts/1/template-candidate-set.json",
     sourceSearchSummaryRef: "runs/run-1/attempts/1/source-search-summary.json",
     retrievalStageRef: "runs/run-1/attempts/1/retrieval-stage.json",
     selectionDecisionRef: "runs/run-1/attempts/1/selection-decision.json",
     typographyDecisionRef: "runs/run-1/attempts/1/typography-decision.json",
+    ruleJudgeVerdictRef: "runs/run-1/attempts/1/rule-judge-verdict.json",
     sourceMutationRange: {
       firstSeq: 1,
       lastSeq: 1,
@@ -368,6 +370,10 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
       "runs/run-1/attempts/1/normalized-intent.json",
     );
     assert.equal(
+      completion.sourceRefs.searchProfileRef,
+      "runs/run-1/attempts/1/search-profile.json",
+    );
+    assert.equal(
       completion.sourceRefs.executablePlanRef,
       "runs/run-1/attempts/1/executable-plan.json",
     );
@@ -390,6 +396,10 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
     assert.equal(
       completion.sourceRefs.typographyDecisionRef,
       "runs/run-1/attempts/1/typography-decision.json",
+    );
+    assert.equal(
+      completion.sourceRefs.ruleJudgeVerdictRef,
+      "runs/run-1/attempts/1/rule-judge-verdict.json",
     );
   } finally {
     await db.end();

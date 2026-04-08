@@ -412,12 +412,16 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   assert.equal(selectionDecision.backgroundMode, "spring_pattern");
   assert.equal(selectionDecision.layoutMode, "center_stack");
   assert.equal(selectionDecision.decorationMode, "graphic_cluster");
+  assert.equal(result.intent.domain, "general_marketing");
+  assert.equal(result.intent.campaignGoal, "sale_conversion");
+  assert.equal(result.searchProfile?.graphic.queries[0]?.keyword, "세일");
+  assert.equal(result.ruleJudgeVerdict?.recommendation, "refine");
   assert.ok(candidateSets);
   assert.equal(candidateSets.background.family, "background");
   assert.equal(candidateSets.layout.family, "layout");
   assert.equal(candidateSets.decoration.family, "decoration");
   assert.equal(candidateSets.photo.family, "photo");
-  assert.equal(result.finalizeDraft.request.finalStatus, "completed");
+  assert.equal(result.finalizeDraft.request.finalStatus, "completed_with_warning");
 
   assert.equal(callbackClient.heartbeats.length, 4);
   assert.deepEqual(
@@ -443,6 +447,10 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     `runs/${testRun.runId}/attempts/1/normalized-intent.json`,
   );
   assert.equal(
+    callbackClient.finalizations[0]?.searchProfileRef,
+    `runs/${testRun.runId}/attempts/1/search-profile.json`,
+  );
+  assert.equal(
     callbackClient.finalizations[0]?.executablePlanRef,
     `runs/${testRun.runId}/attempts/1/executable-plan.json`,
   );
@@ -463,8 +471,17 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     `runs/${testRun.runId}/attempts/1/typography-decision.json`,
   );
   assert.equal(
+    callbackClient.finalizations[0]?.ruleJudgeVerdictRef,
+    `runs/${testRun.runId}/attempts/1/rule-judge-verdict.json`,
+  );
+  assert.equal(
     callbackClient.finalizations[0]?.latestSaveReceiptId,
     `save_receipt_${testRun.runId}_1`,
+  );
+  assert.ok((callbackClient.finalizations[0]?.warnings?.length ?? 0) > 0);
+  assert.equal(
+    result.artifactRefs.searchProfileRef,
+    `runs/${testRun.runId}/attempts/1/search-profile.json`,
   );
   assert.equal(
     result.artifactRefs.candidateSetRef,
@@ -485,6 +502,10 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   assert.equal(
     result.artifactRefs.typographyDecisionRef,
     `runs/${testRun.runId}/attempts/1/typography-decision.json`,
+  );
+  assert.equal(
+    result.artifactRefs.ruleJudgeVerdictRef,
+    `runs/${testRun.runId}/attempts/1/rule-judge-verdict.json`,
   );
   assert.ok(result.retrievalStage);
   assert.equal(result.retrievalStage.retrievalMode, "none");
@@ -535,6 +556,41 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     true,
   );
 
+  const persistedSearchProfile = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: result.artifactRefs.searchProfileRef!,
+        })
+      ).body,
+    ),
+  ) as {
+    domain: string;
+    graphic: { queries: Array<{ keyword: string | null }> };
+  };
+  assert.equal(persistedSearchProfile.domain, "general_marketing");
+  assert.equal(persistedSearchProfile.graphic.queries[0]?.keyword, "세일");
+
+  const persistedJudgeVerdict = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: result.artifactRefs.ruleJudgeVerdictRef!,
+        })
+      ).body,
+    ),
+  ) as {
+    recommendation: string;
+    issues: Array<{ code: string }>;
+  };
+  assert.equal(persistedJudgeVerdict.recommendation, "refine");
+  assert.equal(
+    persistedJudgeVerdict.issues.some((issue) => issue.code === "brand_context_missing"),
+    true,
+  );
+
   const proposedMutations = callbackClient.appendedEvents
     .filter(
       (event): event is WorkerAppendEventRequest & {
@@ -565,6 +621,117 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     ),
     false,
   );
+});
+
+test("processRunJob covers the 3-domain create-template acceptance suite with explainable artifacts", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const scenarios = [
+    {
+      prompt: "식당에서 신규 봄 계절메뉴를 만들어줘",
+      expectedDomain: "restaurant",
+      expectedGoal: "menu_discovery",
+    },
+    {
+      prompt: "카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘",
+      expectedDomain: "cafe",
+      expectedGoal: "menu_discovery",
+    },
+    {
+      prompt: "패션 리테일 봄 세일 배너 만들어줘",
+      expectedDomain: "fashion_retail",
+      expectedGoal: "sale_conversion",
+    },
+  ] as const;
+
+  for (const scenario of scenarios) {
+    const objectStore = createObjectStoreClient({
+      bucket: `${env.objectStoreBucket}-${scenario.expectedDomain}`,
+    });
+    const callbackClient = new RecordingBackendCallbackClient();
+    const baseRun = createTestRun();
+    const testRun = createTestRun({
+      userInput: {
+        ...baseRun.request.userInput,
+        prompt: scenario.prompt,
+      },
+    });
+
+    await objectStore.putObject({
+      key: testRun.requestObjectKey,
+      body: JSON.stringify(testRun.request),
+      contentType: "application/json",
+      metadata: {
+        ref: testRun.requestRef,
+      },
+    });
+    await objectStore.putObject({
+      key: testRun.snapshotObjectKey,
+      body: JSON.stringify(testRun.snapshot),
+      contentType: "application/json",
+      metadata: {
+        ref: testRun.snapshotRef,
+      },
+    });
+
+    const result = await processRunJob(testRun.job, {
+      env,
+      logger,
+      objectStore,
+      callbackClient,
+      toolRegistry: createWorkerToolRegistry(),
+      imagePrimitiveClient: createImagePrimitiveClient(),
+      assetStorageClient: createAssetStorageClient(),
+      textLayoutHelper: createTextLayoutHelper(),
+      templateCatalogClient: createTemplateCatalogClient(),
+    });
+
+    assert.equal(result.intent.domain, scenario.expectedDomain);
+    assert.equal(result.intent.campaignGoal, scenario.expectedGoal);
+    assert.ok(result.searchProfile);
+    assert.ok(result.selectionDecision);
+    assert.ok(result.ruleJudgeVerdict);
+    assert.ok(result.plan);
+    assert.equal(result.finalizeDraft.request.finalStatus, "completed_with_warning");
+
+    assert.ok(result.artifactRefs.normalizedIntentRef);
+    assert.ok(result.artifactRefs.searchProfileRef);
+    assert.ok(result.artifactRefs.selectionDecisionRef);
+    assert.ok(result.artifactRefs.ruleJudgeVerdictRef);
+    assert.ok(result.artifactRefs.executablePlanRef);
+
+    const searchProfileArtifact = JSON.parse(
+      new TextDecoder().decode(
+        (
+          await objectStore.getObject({
+            bucket: `${env.objectStoreBucket}-${scenario.expectedDomain}`,
+            key: result.artifactRefs.searchProfileRef!,
+          })
+        ).body,
+      ),
+    ) as {
+      domain: string;
+      campaignGoal: string;
+    };
+    assert.equal(searchProfileArtifact.domain, scenario.expectedDomain);
+    assert.equal(searchProfileArtifact.campaignGoal, scenario.expectedGoal);
+
+    const judgeArtifact = JSON.parse(
+      new TextDecoder().decode(
+        (
+          await objectStore.getObject({
+            bucket: `${env.objectStoreBucket}-${scenario.expectedDomain}`,
+            key: result.artifactRefs.ruleJudgeVerdictRef!,
+          })
+        ).body,
+      ),
+    ) as {
+      recommendation: string;
+      issues: Array<{ code: string }>;
+    };
+    assert.equal(judgeArtifact.recommendation, "refine");
+    assert.ok(judgeArtifact.issues.length > 0);
+  }
 });
 
 test("processRunJob can activate real Tooldi background/graphic/font source mode", async () => {
