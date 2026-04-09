@@ -61,7 +61,7 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
   langGraphCheckpointerSchema: string;
   tooldiCatalogSourceMode: "placeholder" | "tooldi_api" | "tooldi_api_direct";
   tooldiContentApiBaseUrl: string | null;
-  tooldiContentApiTimeoutMs: number;
+  tooldiContentApiTimeoutMs: number | null;
   tooldiContentApiCookie: string | null;
   exitAfterBoot: boolean;
 }
@@ -87,6 +87,22 @@ function readNumber(source: EnvSource, key: string, fallback: number): number {
     throw new Error(`Environment variable ${key} must be a finite number`);
   }
   return parsed;
+}
+
+function readOptionalNumber(
+  source: EnvSource,
+  key: string,
+): number | null {
+  const raw = source[key];
+  if (raw === undefined || raw.trim().length === 0) {
+    return null;
+  }
+
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Environment variable ${key} must be a finite number`);
+  }
+  return parsed <= 0 ? null : parsed;
 }
 
 function readOptionalString(source: EnvSource, key: string): string | null {
@@ -310,10 +326,9 @@ export function loadAgentWorkerEnv(
     ),
     tooldiCatalogSourceMode,
     tooldiContentApiBaseUrl,
-    tooldiContentApiTimeoutMs: readNumber(
+    tooldiContentApiTimeoutMs: readOptionalNumber(
       source,
       "TOOLDI_CONTENT_API_TIMEOUT_MS",
-      5000,
     ),
     tooldiContentApiCookie: readOptionalString(
       source,

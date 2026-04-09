@@ -67,6 +67,7 @@ test("loadAgentWorkerEnv defaults Tooldi catalog source to placeholder mode", ()
 
   assert.equal(env.tooldiCatalogSourceMode, "placeholder");
   assert.equal(env.tooldiContentApiBaseUrl, null);
+  assert.equal(env.tooldiContentApiTimeoutMs, null);
   assert.equal(env.langGraphCheckpointerMode, "postgres");
   assert.equal(env.templatePlannerMode, "heuristic");
 });
@@ -141,7 +142,7 @@ test("loadAgentWorkerEnv는 지원하지 않는 planner provider를 거부한다
 test("tooldi_api_direct catalog source mode creates an HTTP-backed source client", async () => {
   const client = createTooldiCatalogSourceClientForMode("tooldi_api_direct", {
     tooldiContentApiBaseUrl: "http://localhost:8080",
-    tooldiContentApiTimeoutMs: 5000,
+    tooldiContentApiTimeoutMs: null,
     tooldiContentApiCookie: null,
   });
 

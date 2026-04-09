@@ -186,7 +186,7 @@ export class TooldiCatalogSourceError extends Error {
 
 export interface CreateTooldiApiCatalogSourceClientOptions {
   baseUrl: string;
-  timeoutMs?: number;
+  timeoutMs?: number | null;
   cookieHeader?: string | null;
   fetchImpl?: typeof fetch;
 }
@@ -327,13 +327,16 @@ class PlaceholderTooldiCatalogSourceClient
 
 class TooldiApiCatalogSourceClient implements TooldiCatalogSourceClient {
   private readonly baseUrl: string;
-  private readonly timeoutMs: number;
+  private readonly timeoutMs: number | null;
   private readonly cookieHeader: string | null;
   private readonly fetchImpl: typeof fetch;
 
   constructor(options: CreateTooldiApiCatalogSourceClientOptions) {
     this.baseUrl = trimTrailingSlash(options.baseUrl);
-    this.timeoutMs = options.timeoutMs ?? 5000;
+    this.timeoutMs =
+      options.timeoutMs != null && options.timeoutMs > 0
+        ? options.timeoutMs
+        : null;
     this.cookieHeader = options.cookieHeader ?? null;
     this.fetchImpl = options.fetchImpl ?? fetch;
   }
@@ -480,8 +483,10 @@ class TooldiApiCatalogSourceClient implements TooldiCatalogSourceClient {
       const init: RequestInit = {
         method: request.method,
         headers,
-        signal: AbortSignal.timeout(this.timeoutMs),
       };
+      if (this.timeoutMs !== null) {
+        init.signal = AbortSignal.timeout(this.timeoutMs);
+      }
       if (body !== undefined) {
         init.body = body;
       }
@@ -515,7 +520,7 @@ class TooldiApiCatalogSourceClient implements TooldiCatalogSourceClient {
       if (isTimeoutError(error)) {
         throw new TooldiCatalogSourceError({
           code: "timeout",
-          message: `Tooldi catalog request timed out after ${this.timeoutMs}ms`,
+          message: `Tooldi catalog request timed out after ${this.timeoutMs ?? 0}ms`,
           url,
           cause: error,
         });
