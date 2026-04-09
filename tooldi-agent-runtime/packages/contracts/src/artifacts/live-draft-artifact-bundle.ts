@@ -183,6 +183,19 @@ const LastKnownGoodCheckpointSchema = Type.Object(
         intentNormalizationReportRef: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),
         ),
+        copyPlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+        copyPlanNormalizationReportRef: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
+        abstractLayoutPlanRef: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
+        abstractLayoutPlanNormalizationReportRef: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
+        concreteLayoutPlanRef: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
         normalizedIntentRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         templatePriorSummaryRef: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),

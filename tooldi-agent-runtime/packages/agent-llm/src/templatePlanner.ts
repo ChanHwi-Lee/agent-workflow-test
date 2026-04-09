@@ -80,6 +80,93 @@ export type TemplateAssetPolicyInput = z.input<
   typeof TemplateAssetPolicyBoundarySchema
 >;
 
+export const templateCopyPriorities = [
+  "primary",
+  "secondary",
+  "supporting",
+  "utility",
+] as const;
+export type TemplateCopyPriority = (typeof templateCopyPriorities)[number];
+
+export const templateCopyToneHints = [
+  "promotional",
+  "informational",
+  "urgent",
+] as const;
+export type TemplateCopyToneHint = (typeof templateCopyToneHints)[number];
+
+export const templateAbstractLayoutFamilies = [
+  "promo_split",
+  "promo_center",
+  "promo_badge",
+  "promo_frame",
+  "subject_hero",
+] as const;
+export type TemplateAbstractLayoutFamily =
+  (typeof templateAbstractLayoutFamilies)[number];
+
+export const templateCopyAnchors = ["left", "center"] as const;
+export type TemplateCopyAnchor = (typeof templateCopyAnchors)[number];
+
+export const templateVisualAnchors = [
+  "right",
+  "center",
+  "background",
+] as const;
+export type TemplateVisualAnchor = (typeof templateVisualAnchors)[number];
+
+export const templateCtaAnchors = [
+  "below_copy",
+  "inline_offer",
+  "bottom_center",
+] as const;
+export type TemplateCtaAnchor = (typeof templateCtaAnchors)[number];
+
+export const templateLayoutDensities = ["airy", "balanced", "dense"] as const;
+export type TemplateLayoutDensity = (typeof templateLayoutDensities)[number];
+
+export const templateSlotTopologies = [
+  "headline_supporting_offer_cta_footer",
+  "headline_supporting_cta_footer",
+  "badge_headline_offer_cta_footer",
+  "hero_headline_supporting_cta_footer",
+] as const;
+export type TemplateSlotTopology = (typeof templateSlotTopologies)[number];
+
+export const TemplateCopyPlanSlotDraftSchema = z.object({
+  text: z.string().min(1).max(80),
+  priority: z.enum(templateCopyPriorities),
+  required: z.boolean(),
+  maxLength: z.number().int().min(4).max(80),
+  toneHint: z.enum(templateCopyToneHints).nullable(),
+});
+
+export const TemplateCopyPlanDraftSchema = z.object({
+  headline: TemplateCopyPlanSlotDraftSchema,
+  subheadline: TemplateCopyPlanSlotDraftSchema.nullable(),
+  offerLine: TemplateCopyPlanSlotDraftSchema.nullable(),
+  cta: TemplateCopyPlanSlotDraftSchema,
+  footerNote: TemplateCopyPlanSlotDraftSchema.nullable(),
+  badgeText: TemplateCopyPlanSlotDraftSchema.nullable(),
+  summary: z.string().min(1).max(160),
+});
+
+export type TemplateCopyPlanDraft = z.infer<typeof TemplateCopyPlanDraftSchema>;
+
+export const TemplateAbstractLayoutDraftSchema = z.object({
+  layoutFamily: z.enum(templateAbstractLayoutFamilies),
+  copyAnchor: z.enum(templateCopyAnchors),
+  visualAnchor: z.enum(templateVisualAnchors),
+  ctaAnchor: z.enum(templateCtaAnchors),
+  density: z.enum(templateLayoutDensities),
+  slotTopology: z.enum(templateSlotTopologies),
+  summary: z.string().min(1).max(160),
+});
+
+export type TemplateAbstractLayoutDraft = z.infer<
+  typeof TemplateAbstractLayoutDraftSchema
+>;
+
 const legacyTemplateAssetPolicyMap: Record<
   LegacyTemplateAssetPolicy,
   TemplateAssetPolicy
@@ -146,6 +233,8 @@ export const TemplateIntentDraftSchema = z.object({
       "broad_offer",
     ]),
   }),
+  copyPlanDraft: TemplateCopyPlanDraftSchema.optional(),
+  abstractLayoutDraft: TemplateAbstractLayoutDraftSchema.optional(),
 });
 
 export type TemplateIntentDraft = z.infer<typeof TemplateIntentDraftSchema>;
@@ -218,7 +307,7 @@ export function createHeuristicTemplatePlanner(): TemplatePlanner {
       const promotionStyle = inferPromotionStyle(prompt, domain);
       const menuType = inferMenuType(prompt, domain);
       const campaignGoal = inferCampaignGoal(promotionStyle);
-      return {
+      const draft: TemplateIntentDraft = {
         goalSummary: prompt,
         templateKind:
           promotionStyle === "sale_campaign"
@@ -254,9 +343,15 @@ export function createHeuristicTemplatePlanner(): TemplatePlanner {
             promotionStyle === "sale_campaign"
               ? "broad_offer"
               : menuType === null
-                ? "multi_item"
-                : "single_product",
+            ? "multi_item"
+            : "single_product",
         },
+      };
+
+      return {
+        ...draft,
+        copyPlanDraft: buildHeuristicCopyPlanDraft(prompt, draft),
+        abstractLayoutDraft: buildHeuristicAbstractLayoutDraft(prompt, draft),
       };
     },
   };
@@ -300,13 +395,15 @@ export function createLangChainTemplatePlanner(config: {
         },
       ]);
 
-      return {
+      const normalizedDraft: TemplateIntentDraft = {
         ...result,
         assetPolicy: normalizeTemplateAssetPolicy(result.assetPolicy),
         searchKeywords: result.searchKeywords.includes("봄")
           ? result.searchKeywords
           : ["봄", ...result.searchKeywords].slice(0, 5),
       };
+
+      return ensurePlanningDraftSubplans(input.prompt, normalizedDraft);
     },
   };
 }
@@ -676,4 +773,228 @@ function ensureBackgroundFamily(
   return families.includes("background")
     ? families
     : ["background", ...families];
+}
+
+function ensurePlanningDraftSubplans(
+  prompt: string,
+  draft: TemplateIntentDraft,
+): TemplateIntentDraft {
+  return {
+    ...draft,
+    copyPlanDraft:
+      draft.copyPlanDraft ?? buildHeuristicCopyPlanDraft(prompt, draft),
+    abstractLayoutDraft:
+      draft.abstractLayoutDraft ??
+      buildHeuristicAbstractLayoutDraft(prompt, draft),
+  };
+}
+
+function buildHeuristicCopyPlanDraft(
+  prompt: string,
+  draft: TemplateIntentDraft,
+): TemplateCopyPlanDraft {
+  const genericPromo =
+    draft.domain === "general_marketing" && draft.facets.menuType === null;
+  const headline = sanitizeCopyText(
+    genericPromo
+      ? derivePromoHeadline(prompt, draft)
+      : draft.goalSummary,
+    28,
+  );
+  const subheadline = sanitizeCopyText(
+    genericPromo
+      ? "지금 바로 확인하세요"
+      : draft.domain === "cafe"
+        ? "봄 시즌 신메뉴를 만나보세요"
+        : draft.domain === "restaurant"
+          ? "이번 시즌 메뉴를 지금 공개합니다"
+          : "혜택을 지금 확인하세요",
+    36,
+  );
+  const offerLine = sanitizeCopyText(
+    draft.facets.promotionStyle === "sale_campaign"
+      ? "최대 50% OFF"
+      : draft.facets.menuType === "drink_menu"
+        ? "신메뉴 음료 출시"
+        : draft.facets.menuType === "food_menu"
+          ? "시즌 메뉴 공개"
+          : null,
+    24,
+  );
+  const cta = sanitizeCopyText(
+    draft.facets.menuType === "food_menu"
+      ? "메뉴 보기"
+      : draft.facets.menuType === "drink_menu"
+        ? "지금 주문하기"
+        : "자세히 보기",
+    18,
+  );
+  const footerNote = sanitizeCopyText(
+    draft.facets.promotionStyle === "sale_campaign"
+      ? "한정 수량 / 재고 소진 시 종료"
+      : genericPromo
+        ? "이벤트 기간 내 혜택 적용"
+        : null,
+    32,
+  );
+  const badgeText = sanitizeCopyText(
+    draft.layoutIntent === "badge_led"
+      ? draft.facets.promotionStyle === "sale_campaign"
+        ? "SALE"
+        : "NEW"
+      : null,
+    12,
+  );
+
+  return {
+    headline: {
+      text: headline ?? draft.goalSummary.slice(0, 28),
+      priority: "primary",
+      required: true,
+      maxLength: 28,
+      toneHint:
+        draft.facets.promotionStyle === "sale_campaign"
+          ? "promotional"
+          : "informational",
+    },
+    subheadline: subheadline
+      ? {
+          text: subheadline,
+          priority: "secondary",
+          required: true,
+          maxLength: 36,
+          toneHint: "informational",
+        }
+      : null,
+    offerLine: offerLine
+      ? {
+          text: offerLine,
+          priority: "secondary",
+          required: draft.facets.promotionStyle === "sale_campaign",
+          maxLength: 24,
+          toneHint:
+            draft.facets.promotionStyle === "sale_campaign"
+              ? "urgent"
+              : "promotional",
+        }
+      : null,
+    cta: {
+      text: cta ?? "자세히 보기",
+      priority: "supporting",
+      required: true,
+      maxLength: 18,
+      toneHint: "promotional",
+    },
+    footerNote: footerNote
+      ? {
+          text: footerNote,
+          priority: "utility",
+          required: false,
+          maxLength: 32,
+          toneHint: "informational",
+        }
+      : null,
+    badgeText: badgeText
+      ? {
+          text: badgeText,
+          priority: "supporting",
+          required: false,
+          maxLength: 12,
+          toneHint: "urgent",
+        }
+      : null,
+    summary:
+      genericPromo
+        ? "Generic promo copy slots keep the message short, offer-led, and CTA clear."
+        : "Subject-aware copy slots emphasize the hero offer while preserving CTA clarity.",
+  };
+}
+
+function buildHeuristicAbstractLayoutDraft(
+  prompt: string,
+  draft: TemplateIntentDraft,
+): TemplateAbstractLayoutDraft {
+  const assetPolicy = normalizeTemplateAssetPolicy(draft.assetPolicy);
+  const genericPromo =
+    draft.domain === "general_marketing" && draft.facets.menuType === null;
+  const layoutFamily = genericPromo
+    ? draft.layoutIntent === "badge_led"
+      ? "promo_badge"
+      : assetPolicy.primaryVisualPolicy === "graphic_preferred"
+        ? "promo_split"
+        : "promo_center"
+    : assetPolicy.primaryVisualPolicy === "photo_preferred"
+      ? "subject_hero"
+      : draft.layoutIntent === "badge_led"
+        ? "promo_badge"
+        : "promo_split";
+
+  const copyAnchor =
+    layoutFamily === "promo_center" ? "center" : "left";
+  const visualAnchor =
+    layoutFamily === "promo_center"
+      ? "center"
+      : layoutFamily === "subject_hero"
+        ? "right"
+        : "right";
+  const ctaAnchor =
+    layoutFamily === "promo_center" ? "bottom_center" : "below_copy";
+  const density =
+    layoutFamily === "promo_badge"
+      ? "dense"
+      : prompt.includes("미니멀") || prompt.includes("깔끔")
+        ? "airy"
+        : "balanced";
+  const slotTopology =
+    layoutFamily === "subject_hero"
+      ? "hero_headline_supporting_cta_footer"
+      : layoutFamily === "promo_badge"
+        ? "badge_headline_offer_cta_footer"
+        : draft.facets.promotionStyle === "sale_campaign"
+          ? "headline_supporting_offer_cta_footer"
+          : "headline_supporting_cta_footer";
+
+  return {
+    layoutFamily,
+    copyAnchor,
+    visualAnchor,
+    ctaAnchor,
+    density,
+    slotTopology,
+    summary:
+      genericPromo
+        ? "Generic promo layout keeps a clear copy block and a separate graphic cluster."
+        : "Subject-aware layout preserves room for a hero visual while keeping the copy hierarchy stable.",
+  };
+}
+
+function derivePromoHeadline(
+  prompt: string,
+  draft: TemplateIntentDraft,
+): string {
+  if (prompt.includes("세일") || prompt.includes("할인")) {
+    return "봄 세일";
+  }
+  if (prompt.includes("오픈")) {
+    return "오픈 이벤트";
+  }
+  if (prompt.includes("한정")) {
+    return "한정 혜택";
+  }
+  return draft.goalSummary;
+}
+
+function sanitizeCopyText(text: string | null, maxLength: number): string | null {
+  if (!text) {
+    return null;
+  }
+
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return null;
+  }
+
+  return normalized.length > maxLength
+    ? normalized.slice(0, maxLength).trim()
+    : normalized;
 }

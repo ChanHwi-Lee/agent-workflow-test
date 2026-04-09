@@ -5,6 +5,9 @@ import type { ExecutablePlan, TemplatePriorSummary } from "@tooldi/agent-contrac
 import { normalizeTemplateAssetPolicy } from "@tooldi/agent-llm";
 
 import type {
+  AbstractLayoutPlan,
+  ConcreteLayoutPlan,
+  CopyPlan,
   NormalizedIntent,
   RuleJudgeIssue,
   RuleJudgeVerdict,
@@ -388,6 +391,114 @@ function createTemplatePriorSummary(): TemplatePriorSummary {
   };
 }
 
+function createCopyPlan(overrides: Partial<CopyPlan> = {}): CopyPlan {
+  return {
+    planId: "copy-plan-1",
+    runId: "run-1",
+    traceId: "trace-1",
+    plannerMode: "langchain",
+    source: "langchain",
+    slots: [
+      {
+        key: "headline",
+        text: "봄 세일",
+        priority: "primary",
+        required: true,
+        maxLength: 28,
+        toneHint: "promotional",
+      },
+      {
+        key: "subheadline",
+        text: "지금 바로 확인하세요",
+        priority: "secondary",
+        required: true,
+        maxLength: 36,
+        toneHint: "informational",
+      },
+      {
+        key: "offer_line",
+        text: "최대 50% OFF",
+        priority: "secondary",
+        required: true,
+        maxLength: 24,
+        toneHint: "urgent",
+      },
+      {
+        key: "cta",
+        text: "혜택 보기",
+        priority: "supporting",
+        required: true,
+        maxLength: 18,
+        toneHint: "promotional",
+      },
+      {
+        key: "footer_note",
+        text: "이벤트 기간 내 혜택 적용",
+        priority: "utility",
+        required: false,
+        maxLength: 32,
+        toneHint: "informational",
+      },
+    ],
+    primaryMessage: "봄 세일",
+    summary:
+      "Copy plan uses a generic promotional headline, offer, CTA, and footer without explicit product or venue wording.",
+    ...overrides,
+  };
+}
+
+function createAbstractLayoutPlan(
+  overrides: Partial<AbstractLayoutPlan> = {},
+): AbstractLayoutPlan {
+  return {
+    planId: "abstract-layout-1",
+    runId: "run-1",
+    traceId: "trace-1",
+    plannerMode: "langchain",
+    source: "langchain",
+    layoutFamily: "promo_split",
+    copyAnchor: "left",
+    visualAnchor: "right",
+    ctaAnchor: "below_copy",
+    density: "balanced",
+    slotTopology: "headline_supporting_offer_cta_footer",
+    summary:
+      "Abstract layout plan keeps promotional copy and supporting graphics in separate zones.",
+    ...overrides,
+  };
+}
+
+function createConcreteLayoutPlan(
+  overrides: Partial<ConcreteLayoutPlan> = {},
+): ConcreteLayoutPlan {
+  return {
+    planId: "concrete-layout-1",
+    runId: "run-1",
+    traceId: "trace-1",
+    plannerMode: "langchain",
+    abstractLayoutFamily: "promo_split",
+    resolvedLayoutMode: "left_copy_right_graphic",
+    slotAnchors: {
+      headline: "left_copy_column",
+      subheadline: "left_copy_column",
+      offer_line: "left_copy_column",
+      cta: "left_copy_column",
+      footer_note: "footer_strip",
+    },
+    clusterZones: ["right_cluster", "top_corner", "bottom_strip"],
+    ctaContainerExpected: true,
+    graphicRolePlacementHints: [
+      { role: "primary_accent", zone: "right_cluster" },
+      { role: "cta_container", zone: "right_cluster" },
+      { role: "corner_accent", zone: "top_corner" },
+    ],
+    spacingIntent: "balanced",
+    summary:
+      "Concrete layout maps left_copy_right_graphic onto promotional copy slots and supporting graphic zones.",
+    ...overrides,
+  };
+}
+
 type HardeningMismatchCode = (typeof ruleJudgeHardeningMismatchCodes)[number];
 interface PhotoLaneRegressionFixture {
   querySurface: {
@@ -646,6 +757,109 @@ test("ruleJudgeCreateTemplate recommends refine when photo preference and typogr
   assert.equal(
     verdict.issues.some((issue) => issue.code === "typography_fallback"),
     true,
+  );
+});
+
+test("ruleJudgeCreateTemplate surfaces generic promo copy and abstract layout subject leakage as refine warnings", async () => {
+  const intent = createIntent({
+    goalSummary: "봄 세일 배너를 만들어줘",
+    domain: "general_marketing",
+    audience: "general_consumers",
+    campaignGoal: "sale_conversion",
+    layoutIntent: "copy_focused",
+    assetPolicy: normalizeTemplateAssetPolicy({
+      allowedFamilies: ["background", "graphic", "photo"],
+      preferredFamilies: ["graphic"],
+      primaryVisualPolicy: "graphic_preferred",
+      avoidFamilies: [],
+    }),
+    searchKeywords: ["봄", "세일", "배너"],
+    facets: {
+      seasonality: "spring",
+      menuType: null,
+      promotionStyle: "sale_campaign",
+      offerSpecificity: "broad_offer",
+    },
+  });
+  const searchProfile = await buildSearchProfile(intent);
+  const verdict = await ruleJudgeCreateTemplate(
+    intent,
+    searchProfile,
+    createSelectionDecision({
+      layoutMode: "left_copy_right_graphic",
+      selectedLayoutCandidateId: "layout_left_copy_right_graphic",
+      decorationMode: "promo_multi_graphic",
+      photoBranchMode: "graphic_preferred",
+      photoBranchReason: "generic promo remained graphic-first",
+      executionStrategy: "graphic_first_shape_text_group",
+    }),
+    createTypographyDecision(),
+    createSourceSearchSummary(),
+    createPlan(),
+    null,
+    createCopyPlan({
+      slots: [
+        {
+          key: "headline",
+          text: "봄을 담은 특별한 한 잔",
+          priority: "primary",
+          required: true,
+          maxLength: 28,
+          toneHint: "promotional",
+        },
+        {
+          key: "subheadline",
+          text: "지금 바로 확인하세요",
+          priority: "secondary",
+          required: true,
+          maxLength: 36,
+          toneHint: "informational",
+        },
+        {
+          key: "offer_line",
+          text: "최대 50% OFF",
+          priority: "secondary",
+          required: true,
+          maxLength: 24,
+          toneHint: "urgent",
+        },
+        {
+          key: "cta",
+          text: "지금 주문하기",
+          priority: "supporting",
+          required: true,
+          maxLength: 18,
+          toneHint: "promotional",
+        },
+      ],
+      primaryMessage: "봄을 담은 특별한 한 잔",
+      summary: "신메뉴 출시와 고객 방문 유도에 맞춘 copy plan",
+    }),
+    createAbstractLayoutPlan({
+      summary: "음료 사진을 중심으로 카피를 배치하는 hero layout",
+    }),
+    createConcreteLayoutPlan(),
+  );
+
+  assert.equal(verdict.recommendation, "refine");
+  assert.deepEqual(
+    verdict.issues
+      .map((issue) => issue.code)
+      .filter((code) =>
+        [
+          "copy_subject_leakage",
+          "copy_cta_subject_mismatch",
+          "copy_summary_intent_mismatch",
+          "abstract_layout_subject_leakage",
+        ].includes(code),
+      )
+      .sort(),
+    [
+      "abstract_layout_subject_leakage",
+      "copy_cta_subject_mismatch",
+      "copy_subject_leakage",
+      "copy_summary_intent_mismatch",
+    ],
   );
 });
 

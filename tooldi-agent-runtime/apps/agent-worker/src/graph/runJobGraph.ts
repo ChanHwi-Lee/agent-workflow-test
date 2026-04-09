@@ -40,6 +40,8 @@ import {
   SpringCatalogActivationError,
 } from "../phases/assembleTemplateCandidates.js";
 import { buildPlannerDraft } from "../phases/buildPlannerDraft.js";
+import { buildConcreteLayoutPlan } from "../phases/buildConcreteLayoutPlan.js";
+import { buildCopyAndAbstractLayoutPlan } from "../phases/buildCopyAndAbstractLayoutPlan.js";
 import { buildSearchProfile } from "../phases/buildSearchProfile.js";
 import { buildTemplatePriorSummary } from "../phases/buildTemplatePriorSummary.js";
 import { buildExecutablePlan } from "../phases/buildExecutablePlan.js";
@@ -54,6 +56,11 @@ import { selectTypography } from "../phases/selectTypography.js";
 import { selectTemplateComposition } from "../phases/selectTemplateComposition.js";
 import type {
   FinalizeRunDraft,
+  AbstractLayoutPlan,
+  AbstractLayoutPlanNormalizationReport,
+  ConcreteLayoutPlan,
+  CopyPlan,
+  CopyPlanNormalizationReport,
   HydratedPlanningInput,
   IntentNormalizationReport,
   MutationProposalDraft as WorkerMutationProposalDraft,
@@ -108,6 +115,14 @@ const RunJobGraphState = Annotation.Root({
   intentNormalizationReportRef: replaceValue<string | null>(() => null),
   intent: replaceValue<NormalizedIntent | null>(() => null),
   normalizedIntentRef: replaceValue<string | null>(() => null),
+  copyPlan: replaceValue<CopyPlan | null>(() => null),
+  copyPlanRef: replaceValue<string | null>(() => null),
+  copyPlanNormalizationReport: replaceValue<CopyPlanNormalizationReport | null>(() => null),
+  copyPlanNormalizationReportRef: replaceValue<string | null>(() => null),
+  abstractLayoutPlan: replaceValue<AbstractLayoutPlan | null>(() => null),
+  abstractLayoutPlanRef: replaceValue<string | null>(() => null),
+  abstractLayoutPlanNormalizationReport: replaceValue<AbstractLayoutPlanNormalizationReport | null>(() => null),
+  abstractLayoutPlanNormalizationReportRef: replaceValue<string | null>(() => null),
   templatePriorSummary: replaceValue<TemplatePriorSummary | null>(() => null),
   templatePriorSummaryRef: replaceValue<string | null>(() => null),
   searchProfile: replaceValue<SearchProfileArtifact | null>(() => null),
@@ -122,6 +137,8 @@ const RunJobGraphState = Annotation.Root({
   sourceSearchPhoto: replaceValue<SourceSearchPhoto | null>(() => null),
   selectionDecision: replaceValue<SelectionDecision | null>(() => null),
   selectionDecisionRef: replaceValue<string | null>(() => null),
+  concreteLayoutPlan: replaceValue<ConcreteLayoutPlan | null>(() => null),
+  concreteLayoutPlanRef: replaceValue<string | null>(() => null),
   typographyDecision: replaceValue<TypographyDecision | null>(() => null),
   typographyDecisionRef: replaceValue<string | null>(() => null),
   typographySearchSummary: replaceValue<SourceSearchFont | null>(() => null),
@@ -433,6 +450,72 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         finalizeDraft,
       };
     })
+    .addNode("build_copy_and_abstract_layout_plan", async (state) => {
+      if (!state.hydrated || !state.intent) {
+        throw new Error(
+          "build_copy_and_abstract_layout_plan requires hydrated normalized intent state",
+        );
+      }
+
+      const planArtifacts = await buildCopyAndAbstractLayoutPlan(
+        state.hydrated,
+        state.intent,
+        state.normalizedIntentDraft?.draft ?? null,
+      );
+
+      const copyPlanRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/copy-plan.json`,
+        planArtifacts.copyPlan,
+        {
+          artifactKind: "copy-plan",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+      const copyPlanNormalizationReportRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/copy-plan-normalization-report.json`,
+        planArtifacts.copyPlanNormalizationReport,
+        {
+          artifactKind: "copy-plan-normalization-report",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+      const abstractLayoutPlanRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/layout-plan-abstract.json`,
+        planArtifacts.abstractLayoutPlan,
+        {
+          artifactKind: "layout-plan-abstract",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+      const abstractLayoutPlanNormalizationReportRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/layout-plan-normalization-report.json`,
+        planArtifacts.abstractLayoutPlanNormalizationReport,
+        {
+          artifactKind: "layout-plan-normalization-report",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      return {
+        copyPlan: planArtifacts.copyPlan,
+        copyPlanRef,
+        copyPlanNormalizationReport: planArtifacts.copyPlanNormalizationReport,
+        copyPlanNormalizationReportRef,
+        abstractLayoutPlan: planArtifacts.abstractLayoutPlan,
+        abstractLayoutPlanRef,
+        abstractLayoutPlanNormalizationReport:
+          planArtifacts.abstractLayoutPlanNormalizationReport,
+        abstractLayoutPlanNormalizationReportRef,
+      };
+    })
     .addNode("build_search_profile", async (state) => {
       if (!state.intent || !state.templatePriorSummary) {
         throw new Error("build_search_profile requires normalized intent state");
@@ -661,6 +744,34 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         selectionDecisionRef,
       };
     })
+    .addNode("build_concrete_layout_plan", async (state) => {
+      if (!state.copyPlan || !state.abstractLayoutPlan || !state.selectionDecision) {
+        throw new Error(
+          "build_concrete_layout_plan requires copy/abstract-layout/selection state",
+        );
+      }
+
+      const concreteLayoutPlan = await buildConcreteLayoutPlan(
+        state.copyPlan,
+        state.abstractLayoutPlan,
+        state.selectionDecision,
+      );
+      const concreteLayoutPlanRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/layout-plan-concrete.json`,
+        concreteLayoutPlan,
+        {
+          artifactKind: "layout-plan-concrete",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      return {
+        concreteLayoutPlan,
+        concreteLayoutPlanRef,
+      };
+    })
     .addNode("select_typography", async (state) => {
       if (!state.hydrated) {
         throw new Error("select_typography requires hydrated state");
@@ -765,14 +876,23 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       };
     })
     .addNode("build_plan", async (state) => {
-      if (!state.hydrated || !state.intent || !state.selectionDecision || !state.typographyDecision) {
+      if (
+        !state.hydrated ||
+        !state.intent ||
+        !state.selectionDecision ||
+        !state.typographyDecision ||
+        !state.copyPlan ||
+        !state.concreteLayoutPlan
+      ) {
         throw new Error("build_plan requires intent/selection/typography state");
       }
 
       const plan = await buildExecutablePlan(
         state.hydrated,
         state.intent,
+        state.copyPlan,
         state.selectionDecision,
+        state.concreteLayoutPlan,
         state.typographyDecision,
         {
           toolRegistry: dependencies.toolRegistry,
@@ -799,6 +919,9 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         !state.intent ||
         !state.searchProfile ||
         !state.selectionDecision ||
+        !state.copyPlan ||
+        !state.abstractLayoutPlan ||
+        !state.concreteLayoutPlan ||
         !state.typographyDecision ||
         !state.sourceSearchSummary ||
         !state.plan
@@ -815,6 +938,9 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         state.sourceSearchSummary,
         state.plan,
         state.templatePriorSummary,
+        state.copyPlan,
+        state.abstractLayoutPlan,
+        state.concreteLayoutPlan,
       );
       const ruleJudgeVerdictRef = await persistArtifactTask(
         `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/rule-judge-verdict.json`,
@@ -1194,6 +1320,22 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
           ...(state.intentNormalizationReport
             ? { intentNormalizationReport: state.intentNormalizationReport }
             : {}),
+          ...(state.copyPlan ? { copyPlan: state.copyPlan } : {}),
+          ...(state.copyPlanNormalizationReport
+            ? { copyPlanNormalizationReport: state.copyPlanNormalizationReport }
+            : {}),
+          ...(state.abstractLayoutPlan
+            ? { abstractLayoutPlan: state.abstractLayoutPlan }
+            : {}),
+          ...(state.abstractLayoutPlanNormalizationReport
+            ? {
+                abstractLayoutPlanNormalizationReport:
+                  state.abstractLayoutPlanNormalizationReport,
+              }
+            : {}),
+          ...(state.concreteLayoutPlan
+            ? { concreteLayoutPlan: state.concreteLayoutPlan }
+            : {}),
           ...(state.templatePriorSummary
             ? { templatePriorSummary: state.templatePriorSummary }
             : {}),
@@ -1224,15 +1366,17 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
     .addEdge("plan_intent_draft", "normalize_intent")
     .addEdge("normalize_intent", "gate_scope")
     .addConditionalEdges("gate_scope", (state) =>
-      state.finalizeDraft ? "send_finalize" : "build_template_prior_summary",
+      state.finalizeDraft ? "send_finalize" : "build_copy_and_abstract_layout_plan",
     )
+    .addEdge("build_copy_and_abstract_layout_plan", "build_template_prior_summary")
     .addEdge("build_template_prior_summary", "build_search_profile")
     .addEdge("build_search_profile", "compute_retrieval_policy")
     .addEdge("compute_retrieval_policy", "assemble_candidates")
     .addConditionalEdges("assemble_candidates", (state) =>
       state.finalizeDraft ? "send_finalize" : "select_composition",
     )
-    .addEdge("select_composition", "select_typography")
+    .addEdge("select_composition", "build_concrete_layout_plan")
+    .addEdge("build_concrete_layout_plan", "select_typography")
     .addEdge("select_typography", "persist_selection_artifacts")
     .addEdge("persist_selection_artifacts", "build_plan")
     .addEdge("build_plan", "rule_judge")
@@ -1424,6 +1568,24 @@ function buildFinalizeOptions(
     ...(state.intentNormalizationReportRef
       ? { intentNormalizationReportRef: state.intentNormalizationReportRef }
       : {}),
+    ...(state.copyPlanRef ? { copyPlanRef: state.copyPlanRef } : {}),
+    ...(state.copyPlanNormalizationReportRef
+      ? {
+          copyPlanNormalizationReportRef: state.copyPlanNormalizationReportRef,
+        }
+      : {}),
+    ...(state.abstractLayoutPlanRef
+      ? { abstractLayoutPlanRef: state.abstractLayoutPlanRef }
+      : {}),
+    ...(state.abstractLayoutPlanNormalizationReportRef
+      ? {
+          abstractLayoutPlanNormalizationReportRef:
+            state.abstractLayoutPlanNormalizationReportRef,
+        }
+      : {}),
+    ...(state.concreteLayoutPlanRef
+      ? { concreteLayoutPlanRef: state.concreteLayoutPlanRef }
+      : {}),
     ...(state.templatePriorSummaryRef
       ? { templatePriorSummaryRef: state.templatePriorSummaryRef }
       : {}),
@@ -1470,6 +1632,24 @@ function buildArtifactRefs(
       : {}),
     ...(state.intentNormalizationReportRef
       ? { intentNormalizationReportRef: state.intentNormalizationReportRef }
+      : {}),
+    ...(state.copyPlanRef ? { copyPlanRef: state.copyPlanRef } : {}),
+    ...(state.copyPlanNormalizationReportRef
+      ? {
+          copyPlanNormalizationReportRef: state.copyPlanNormalizationReportRef,
+        }
+      : {}),
+    ...(state.abstractLayoutPlanRef
+      ? { abstractLayoutPlanRef: state.abstractLayoutPlanRef }
+      : {}),
+    ...(state.abstractLayoutPlanNormalizationReportRef
+      ? {
+          abstractLayoutPlanNormalizationReportRef:
+            state.abstractLayoutPlanNormalizationReportRef,
+        }
+      : {}),
+    ...(state.concreteLayoutPlanRef
+      ? { concreteLayoutPlanRef: state.concreteLayoutPlanRef }
       : {}),
     ...(state.templatePriorSummaryRef
       ? { templatePriorSummaryRef: state.templatePriorSummaryRef }

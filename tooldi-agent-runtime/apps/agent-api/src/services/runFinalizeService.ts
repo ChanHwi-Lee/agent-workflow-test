@@ -50,6 +50,11 @@ type MaterializationInput = {
   normalizedIntentRef: string;
   normalizedIntentDraftRef: string | null;
   intentNormalizationReportRef: string | null;
+  copyPlanRef: string | null;
+  copyPlanNormalizationReportRef: string | null;
+  abstractLayoutPlanRef: string | null;
+  abstractLayoutPlanNormalizationReportRef: string | null;
+  concreteLayoutPlanRef: string | null;
   templatePriorSummaryRef: string | null;
   searchProfileRef: string | null;
   executablePlanRef: string;
@@ -296,6 +301,13 @@ export class RunFinalizeService {
         normalizedIntentRef: request.normalizedIntentRef,
         normalizedIntentDraftRef: request.normalizedIntentDraftRef ?? null,
         intentNormalizationReportRef: request.intentNormalizationReportRef ?? null,
+        copyPlanRef: request.copyPlanRef ?? null,
+        copyPlanNormalizationReportRef:
+          request.copyPlanNormalizationReportRef ?? null,
+        abstractLayoutPlanRef: request.abstractLayoutPlanRef ?? null,
+        abstractLayoutPlanNormalizationReportRef:
+          request.abstractLayoutPlanNormalizationReportRef ?? null,
+        concreteLayoutPlanRef: request.concreteLayoutPlanRef ?? null,
         templatePriorSummaryRef: request.templatePriorSummaryRef ?? null,
         searchProfileRef: request.searchProfileRef ?? null,
         executablePlanRef: request.executablePlanRef,
@@ -375,6 +387,13 @@ export class RunFinalizeService {
               snapshotRef: run.snapshotRef,
               normalizedIntentDraftRef: input.normalizedIntentDraftRef,
               intentNormalizationReportRef: input.intentNormalizationReportRef,
+              copyPlanRef: input.copyPlanRef,
+              copyPlanNormalizationReportRef:
+                input.copyPlanNormalizationReportRef,
+              abstractLayoutPlanRef: input.abstractLayoutPlanRef,
+              abstractLayoutPlanNormalizationReportRef:
+                input.abstractLayoutPlanNormalizationReportRef,
+              concreteLayoutPlanRef: input.concreteLayoutPlanRef,
               normalizedIntentRef: input.normalizedIntentRef,
               templatePriorSummaryRef: input.templatePriorSummaryRef,
               executablePlanRef: input.executablePlanRef,
@@ -562,6 +581,25 @@ export class RunFinalizeService {
           : {}),
         ...(input.intentNormalizationReportRef
           ? { intentNormalizationReportRef: input.intentNormalizationReportRef }
+          : {}),
+        ...(input.copyPlanRef ? { copyPlanRef: input.copyPlanRef } : {}),
+        ...(input.copyPlanNormalizationReportRef
+          ? {
+              copyPlanNormalizationReportRef:
+                input.copyPlanNormalizationReportRef,
+            }
+          : {}),
+        ...(input.abstractLayoutPlanRef
+          ? { abstractLayoutPlanRef: input.abstractLayoutPlanRef }
+          : {}),
+        ...(input.abstractLayoutPlanNormalizationReportRef
+          ? {
+              abstractLayoutPlanNormalizationReportRef:
+                input.abstractLayoutPlanNormalizationReportRef,
+            }
+          : {}),
+        ...(input.concreteLayoutPlanRef
+          ? { concreteLayoutPlanRef: input.concreteLayoutPlanRef }
           : {}),
         ...(input.templatePriorSummaryRef
           ? { templatePriorSummaryRef: input.templatePriorSummaryRef }

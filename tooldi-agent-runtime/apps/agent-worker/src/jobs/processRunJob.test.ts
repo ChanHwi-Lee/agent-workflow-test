@@ -1489,11 +1489,16 @@ test(
         "normalized-intent-draft.json",
         "intent-normalization-report.json",
         "normalized-intent.json",
+        "copy-plan.json",
+        "copy-plan-normalization-report.json",
+        "layout-plan-abstract.json",
+        "layout-plan-normalization-report.json",
         "template-prior-summary.json",
         "search-profile.json",
         "retrieval-stage.json",
         "template-candidate-set.json",
         "selection-decision.json",
+        "layout-plan-concrete.json",
         "typography-decision.json",
         "source-search-summary.json",
         "executable-plan.json",
@@ -1503,20 +1508,30 @@ test(
     const normalizedIntentDraftRef = artifactSequence[0]!;
     const intentNormalizationReportRef = artifactSequence[1]!;
     const normalizedIntentRef = artifactSequence[2]!;
-    const templatePriorSummaryRef = artifactSequence[3]!;
-    const searchProfileRef = artifactSequence[4]!;
-    const retrievalStageRef = artifactSequence[5]!;
-    const candidateSetRef = artifactSequence[6]!;
-    const selectionDecisionRef = artifactSequence[7]!;
-    const typographyDecisionRef = artifactSequence[8]!;
-    const sourceSearchSummaryRef = artifactSequence[9]!;
-    const executablePlanRef = artifactSequence[10]!;
-    const ruleJudgeVerdictRef = artifactSequence[11]!;
+    const copyPlanRef = artifactSequence[3]!;
+    const copyPlanNormalizationReportRef = artifactSequence[4]!;
+    const abstractLayoutPlanRef = artifactSequence[5]!;
+    const abstractLayoutPlanNormalizationReportRef = artifactSequence[6]!;
+    const templatePriorSummaryRef = artifactSequence[7]!;
+    const searchProfileRef = artifactSequence[8]!;
+    const retrievalStageRef = artifactSequence[9]!;
+    const candidateSetRef = artifactSequence[10]!;
+    const selectionDecisionRef = artifactSequence[11]!;
+    const concreteLayoutPlanRef = artifactSequence[12]!;
+    const typographyDecisionRef = artifactSequence[13]!;
+    const sourceSearchSummaryRef = artifactSequence[14]!;
+    const executablePlanRef = artifactSequence[15]!;
+    const ruleJudgeVerdictRef = artifactSequence[16]!;
 
     assert.deepEqual(result.artifactRefs, {
       normalizedIntentRef,
       normalizedIntentDraftRef,
       intentNormalizationReportRef,
+      copyPlanRef,
+      copyPlanNormalizationReportRef,
+      abstractLayoutPlanRef,
+      abstractLayoutPlanNormalizationReportRef,
+      concreteLayoutPlanRef,
       templatePriorSummaryRef,
       searchProfileRef,
       executablePlanRef,
@@ -1535,6 +1550,15 @@ test(
         intentNormalizationReportRef:
           callbackClient.finalizations[0]?.intentNormalizationReportRef,
         normalizedIntentRef: callbackClient.finalizations[0]?.normalizedIntentRef,
+        copyPlanRef: callbackClient.finalizations[0]?.copyPlanRef,
+        copyPlanNormalizationReportRef:
+          callbackClient.finalizations[0]?.copyPlanNormalizationReportRef,
+        abstractLayoutPlanRef:
+          callbackClient.finalizations[0]?.abstractLayoutPlanRef,
+        abstractLayoutPlanNormalizationReportRef:
+          callbackClient.finalizations[0]?.abstractLayoutPlanNormalizationReportRef,
+        concreteLayoutPlanRef:
+          callbackClient.finalizations[0]?.concreteLayoutPlanRef,
         templatePriorSummaryRef: callbackClient.finalizations[0]?.templatePriorSummaryRef,
         searchProfileRef: callbackClient.finalizations[0]?.searchProfileRef,
         executablePlanRef: callbackClient.finalizations[0]?.executablePlanRef,
@@ -1549,6 +1573,11 @@ test(
         normalizedIntentDraftRef,
         intentNormalizationReportRef,
         normalizedIntentRef,
+        copyPlanRef,
+        copyPlanNormalizationReportRef,
+        abstractLayoutPlanRef,
+        abstractLayoutPlanNormalizationReportRef,
+        concreteLayoutPlanRef,
         templatePriorSummaryRef,
         searchProfileRef,
         executablePlanRef,
@@ -1570,6 +1599,17 @@ test(
     );
     assert.ok(result.intentNormalizationReport);
     assert.equal(result.intentNormalizationReport.draftAvailable, true);
+    assert.ok(result.copyPlan);
+    assert.equal(
+      result.copyPlan?.slots.some((slot) => slot.key === "headline"),
+      true,
+    );
+    assert.equal(
+      result.copyPlan?.slots.some((slot) => slot.key === "cta"),
+      true,
+    );
+    assert.ok(result.abstractLayoutPlan);
+    assert.ok(result.concreteLayoutPlan);
     assert.equal(result.templatePriorSummary?.runId, testRun.runId);
     assert.equal(result.templatePriorSummary?.traceId, testRun.traceId);
     assert.deepEqual(result.searchProfile?.assetPolicy, result.intent.assetPolicy);

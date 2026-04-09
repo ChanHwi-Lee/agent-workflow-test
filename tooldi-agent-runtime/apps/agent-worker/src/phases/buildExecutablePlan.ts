@@ -3,6 +3,8 @@ import { createRequestId } from "@tooldi/agent-domain";
 import type { ToolRegistry } from "@tooldi/tool-registry";
 
 import type {
+  ConcreteLayoutPlan,
+  CopyPlan,
   HydratedPlanningInput,
   NormalizedIntent,
   SelectionDecision,
@@ -16,7 +18,9 @@ export interface BuildExecutablePlanDependencies {
 export async function buildExecutablePlan(
   input: HydratedPlanningInput,
   normalizedIntent: NormalizedIntent,
+  copyPlan: CopyPlan,
   selectionDecision: SelectionDecision,
+  concreteLayoutPlan: ConcreteLayoutPlan,
   typographyDecision: TypographyDecision,
   dependencies: BuildExecutablePlanDependencies,
 ): Promise<ExecutablePlan> {
@@ -170,6 +174,9 @@ export async function buildExecutablePlan(
         bodyFontWeight: typographyDecision.body?.fontWeight ?? null,
         requiredSlots: normalizedIntent.requiredSlots,
         goalSummary: normalizedIntent.goalSummary,
+        copyPlanPrimaryMessage: copyPlan.primaryMessage,
+        copyPlanSummary: copyPlan.summary,
+        concreteLayoutPlanSummary: concreteLayoutPlan.summary,
         includeHeroCaption,
         includeBadge,
       },
@@ -208,6 +215,7 @@ export async function buildExecutablePlan(
         bodyFontFamily: typographyDecision.body?.fontToken ?? null,
         bodyFontWeight: typographyDecision.body?.fontWeight ?? null,
         layoutMode: selectionDecision.layoutMode,
+        concreteLayoutPlanSummary: concreteLayoutPlan.summary,
         executionStrategy: selectionDecision.executionStrategy,
         fallbackSummary: selectionDecision.fallbackSummary,
         includeBadge,

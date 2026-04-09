@@ -11,6 +11,11 @@ export async function finalizeRun(
     normalizedIntentRef?: string;
     normalizedIntentDraftRef?: string;
     intentNormalizationReportRef?: string;
+    copyPlanRef?: string;
+    copyPlanNormalizationReportRef?: string;
+    abstractLayoutPlanRef?: string;
+    abstractLayoutPlanNormalizationReportRef?: string;
+    concreteLayoutPlanRef?: string;
     templatePriorSummaryRef?: string;
     searchProfileRef?: string;
     executablePlanRef?: string;
@@ -123,6 +128,22 @@ export async function finalizeRun(
         : {}),
       ...(options.intentNormalizationReportRef
         ? { intentNormalizationReportRef: options.intentNormalizationReportRef }
+        : {}),
+      ...(options.copyPlanRef ? { copyPlanRef: options.copyPlanRef } : {}),
+      ...(options.copyPlanNormalizationReportRef
+        ? { copyPlanNormalizationReportRef: options.copyPlanNormalizationReportRef }
+        : {}),
+      ...(options.abstractLayoutPlanRef
+        ? { abstractLayoutPlanRef: options.abstractLayoutPlanRef }
+        : {}),
+      ...(options.abstractLayoutPlanNormalizationReportRef
+        ? {
+            abstractLayoutPlanNormalizationReportRef:
+              options.abstractLayoutPlanNormalizationReportRef,
+          }
+        : {}),
+      ...(options.concreteLayoutPlanRef
+        ? { concreteLayoutPlanRef: options.concreteLayoutPlanRef }
         : {}),
       ...(options.templatePriorSummaryRef
         ? { templatePriorSummaryRef: options.templatePriorSummaryRef }

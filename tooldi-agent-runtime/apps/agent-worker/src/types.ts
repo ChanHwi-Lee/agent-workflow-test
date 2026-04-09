@@ -10,7 +10,9 @@ import type {
   WaitMutationAckResponse,
 } from "@tooldi/agent-contracts";
 import type {
+  TemplateAbstractLayoutDraft,
   TemplateAssetPolicy,
+  TemplateCopyPlanDraft,
   TemplateIntentDraft,
 } from "@tooldi/agent-llm";
 import type {
@@ -126,6 +128,133 @@ export interface NormalizedIntent {
   normalizationNotes: string[];
   supportedInV1: boolean;
   futureCapableOperations: IntentEnvelope["futureCapableOperations"];
+}
+
+export type CopyPlanSlotKey =
+  | "headline"
+  | "subheadline"
+  | "offer_line"
+  | "cta"
+  | "footer_note"
+  | "badge_text";
+
+export type CopyPlanPriority =
+  | "primary"
+  | "secondary"
+  | "supporting"
+  | "utility";
+
+export type CopyPlanToneHint = "promotional" | "informational" | "urgent";
+
+export interface CopyPlanSlot {
+  key: CopyPlanSlotKey;
+  text: string;
+  priority: CopyPlanPriority;
+  required: boolean;
+  maxLength: number;
+  toneHint: CopyPlanToneHint | null;
+}
+
+export interface CopyPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  plannerMode: NormalizedIntent["plannerMode"];
+  source: "heuristic" | "langchain";
+  slots: CopyPlanSlot[];
+  primaryMessage: string;
+  summary: string;
+}
+
+export interface CopyPlanNormalizationReport {
+  reportId: string;
+  runId: string;
+  traceId: string;
+  source: "heuristic" | "langchain";
+  draftAvailable: boolean;
+  repairCount: number;
+  normalizationNotes: string[];
+}
+
+export type AbstractLayoutFamily =
+  | "promo_split"
+  | "promo_center"
+  | "promo_badge"
+  | "promo_frame"
+  | "subject_hero";
+
+export type AbstractLayoutCopyAnchor = "left" | "center";
+export type AbstractLayoutVisualAnchor = "right" | "center" | "background";
+export type AbstractLayoutCtaAnchor =
+  | "below_copy"
+  | "inline_offer"
+  | "bottom_center";
+export type AbstractLayoutDensity = "airy" | "balanced" | "dense";
+export type AbstractLayoutSlotTopology =
+  | "headline_supporting_offer_cta_footer"
+  | "headline_supporting_cta_footer"
+  | "badge_headline_offer_cta_footer"
+  | "hero_headline_supporting_cta_footer";
+
+export interface AbstractLayoutPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  plannerMode: NormalizedIntent["plannerMode"];
+  source: "heuristic" | "langchain";
+  layoutFamily: AbstractLayoutFamily;
+  copyAnchor: AbstractLayoutCopyAnchor;
+  visualAnchor: AbstractLayoutVisualAnchor;
+  ctaAnchor: AbstractLayoutCtaAnchor;
+  density: AbstractLayoutDensity;
+  slotTopology: AbstractLayoutSlotTopology;
+  summary: string;
+}
+
+export interface AbstractLayoutPlanNormalizationReport {
+  reportId: string;
+  runId: string;
+  traceId: string;
+  source: "heuristic" | "langchain";
+  draftAvailable: boolean;
+  repairCount: number;
+  normalizationNotes: string[];
+}
+
+export type ConcreteLayoutAnchorZone =
+  | "left_copy_column"
+  | "center_copy_stack"
+  | "bottom_center"
+  | "framed_copy_column"
+  | "right_graphic_cluster"
+  | "center_hero_panel"
+  | "top_badge_band"
+  | "footer_strip";
+
+export type ConcreteLayoutClusterZone =
+  | "hero_panel"
+  | "right_cluster"
+  | "center_cluster"
+  | "top_corner"
+  | "bottom_strip"
+  | "frame";
+
+export interface ConcreteLayoutPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  plannerMode: NormalizedIntent["plannerMode"];
+  abstractLayoutFamily: AbstractLayoutFamily;
+  resolvedLayoutMode: SelectionDecision["layoutMode"];
+  slotAnchors: Partial<Record<CopyPlanSlotKey, ConcreteLayoutAnchorZone>>;
+  clusterZones: ConcreteLayoutClusterZone[];
+  ctaContainerExpected: boolean;
+  graphicRolePlacementHints: Array<{
+    role: GraphicCompositionRole;
+    zone: ConcreteLayoutClusterZone;
+  }>;
+  spacingIntent: AbstractLayoutDensity;
+  summary: string;
 }
 
 export interface TemplateCandidateBundle {
@@ -406,7 +535,17 @@ export type RuleJudgeIssueCode =
   | "promo_structure_incomplete"
   | "cta_copy_overlap_risk"
   | "excessive_empty_space"
-  | "graphic_role_imbalance";
+  | "graphic_role_imbalance"
+  | "copy_slot_missing"
+  | "copy_subject_leakage"
+  | "copy_cta_subject_mismatch"
+  | "copy_summary_intent_mismatch"
+  | "headline_overflow_risk"
+  | "cta_missing_or_weak"
+  | "copy_hierarchy_weak"
+  | "abstract_layout_intent_mismatch"
+  | "abstract_layout_subject_leakage"
+  | "concrete_layout_slot_conflict";
 
 export type RuleJudgeIssueCategory =
   | "readability"
@@ -422,7 +561,9 @@ export type RuleJudgeIssueCategory =
   | "visual_consistency"
   | "graphic_density"
   | "spatial_composition"
-  | "composition_balance";
+  | "composition_balance"
+  | "copy_quality"
+  | "layout_structure";
 
 export type RuleJudgeIssueSeverity = "info" | "warn" | "error";
 
@@ -441,9 +582,11 @@ export interface RuleJudgeIssueMetadata {
     | "semantic_domain_alignment"
     | "retrieval_intent_alignment"
     | "policy_alignment"
-    | "prior_alignment"
-    | "visual_consistency"
-    | "execution_safety";
+  | "prior_alignment"
+  | "visual_consistency"
+  | "execution_safety"
+  | "copy_quality"
+  | "layout_structure";
   recommendationImpact: RuleJudgeRecommendation;
   repairAttempted?: boolean;
   repairOutcome?: "not_attempted" | "repaired" | "warning_only" | "irrecoverable";
@@ -502,6 +645,11 @@ export interface ProcessRunJobResult {
   intent: NormalizedIntent;
   normalizedIntentDraft?: NormalizedIntentDraftArtifact;
   intentNormalizationReport?: IntentNormalizationReport;
+  copyPlan?: CopyPlan;
+  copyPlanNormalizationReport?: CopyPlanNormalizationReport;
+  abstractLayoutPlan?: AbstractLayoutPlan;
+  abstractLayoutPlanNormalizationReport?: AbstractLayoutPlanNormalizationReport;
+  concreteLayoutPlan?: ConcreteLayoutPlan;
   templatePriorSummary?: TemplatePriorSummary;
   searchProfile?: SearchProfileArtifact;
   candidateSets?: TemplateCandidateBundle;
@@ -517,6 +665,11 @@ export interface ProcessRunJobResult {
     normalizedIntentRef: string;
     normalizedIntentDraftRef?: string;
     intentNormalizationReportRef?: string;
+    copyPlanRef?: string;
+    copyPlanNormalizationReportRef?: string;
+    abstractLayoutPlanRef?: string;
+    abstractLayoutPlanNormalizationReportRef?: string;
+    concreteLayoutPlanRef?: string;
     templatePriorSummaryRef?: string;
     searchProfileRef?: string;
     executablePlanRef?: string;
@@ -527,4 +680,9 @@ export interface ProcessRunJobResult {
     typographyDecisionRef?: string;
     ruleJudgeVerdictRef?: string;
   };
+}
+
+export interface CopyAndAbstractLayoutPlanningDraft {
+  copyPlanDraft: TemplateCopyPlanDraft;
+  abstractLayoutDraft: TemplateAbstractLayoutDraft;
 }

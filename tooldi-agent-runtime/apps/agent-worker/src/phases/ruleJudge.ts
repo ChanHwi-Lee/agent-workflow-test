@@ -7,6 +7,9 @@ import {
 } from "@tooldi/agent-llm";
 
 import type {
+  AbstractLayoutPlan,
+  ConcreteLayoutPlan,
+  CopyPlan,
   NormalizedIntent,
   RuleJudgeConfidence,
   RuleJudgeIssue,
@@ -152,6 +155,10 @@ const PRIOR_CONTEXT_REFS = [
   "PICTURE_QUERY_SURFACE",
   "SHAPE_QUERY_SURFACE",
 ] as const;
+
+const GENERIC_PROMO_SUBJECT_LEAKAGE_PATTERN =
+  /메뉴|음료|커피|식당|레스토랑|카페|패션|리테일|의류|한 잔|한잔/u;
+const GENERIC_PROMO_CTA_LEAKAGE_PATTERN = /주문|메뉴|예약|쇼핑/u;
 
 export const RULE_JUDGE_ISSUE_DEFINITIONS = {
   typography_fallback: {
@@ -355,6 +362,113 @@ export const RULE_JUDGE_ISSUE_DEFINITIONS = {
       ruleScope: "composition_balance",
     },
   },
+  copy_slot_missing: {
+    category: "copy_quality",
+    defaultSeverity: "warn",
+    message: "Copy plan is missing one or more required promotional slots",
+    suggestedAction:
+      "Restore the required headline or CTA slot before treating the draft as stable",
+    metadata: {
+      ruleScope: "copy_quality",
+    },
+  },
+  copy_subject_leakage: {
+    category: "copy_quality",
+    defaultSeverity: "warn",
+    message:
+      "Generic promo copy still carries an explicit venue, product, or category subject",
+    suggestedAction:
+      "Rewrite the affected copy slots with generic promo-safe wording before shipping",
+    metadata: {
+      ruleScope: "copy_quality",
+    },
+  },
+  copy_cta_subject_mismatch: {
+    category: "copy_quality",
+    defaultSeverity: "warn",
+    message:
+      "CTA copy implies an explicit ordering or venue action that conflicts with generic promo intent",
+    suggestedAction:
+      "Replace the CTA with a generic promo-safe action such as viewing benefits or details",
+    metadata: {
+      ruleScope: "copy_quality",
+    },
+  },
+  copy_summary_intent_mismatch: {
+    category: "copy_quality",
+    defaultSeverity: "warn",
+    message:
+      "Copy plan summary still describes an explicit subject path that conflicts with repaired generic promo intent",
+    suggestedAction:
+      "Regenerate the copy summary from canonical generic promo grammar before continuing",
+    metadata: {
+      ruleScope: "copy_quality",
+    },
+  },
+  headline_overflow_risk: {
+    category: "copy_quality",
+    defaultSeverity: "warn",
+    message: "Headline length is too close to or above the allowed copy budget",
+    suggestedAction:
+      "Shorten the headline or move supporting language into the secondary copy slot",
+    metadata: {
+      ruleScope: "copy_quality",
+    },
+  },
+  cta_missing_or_weak: {
+    category: "copy_quality",
+    defaultSeverity: "warn",
+    message: "CTA copy is missing or too weak for the current promotional goal",
+    suggestedAction:
+      "Replace the CTA with a more actionable short call-to-action before shipping",
+    metadata: {
+      ruleScope: "copy_quality",
+    },
+  },
+  copy_hierarchy_weak: {
+    category: "copy_quality",
+    defaultSeverity: "warn",
+    message:
+      "Copy plan does not clearly separate headline, offer, and CTA hierarchy for the current prompt",
+    suggestedAction:
+      "Strengthen headline/offer/CTA hierarchy before finalizing the draft",
+    metadata: {
+      ruleScope: "copy_quality",
+    },
+  },
+  abstract_layout_intent_mismatch: {
+    category: "layout_structure",
+    defaultSeverity: "warn",
+    message:
+      "Abstract layout plan still conflicts with the repaired layout intent or asset policy",
+    suggestedAction:
+      "Repair the abstract layout family before synthesizing the concrete scene plan",
+    metadata: {
+      ruleScope: "layout_structure",
+    },
+  },
+  abstract_layout_subject_leakage: {
+    category: "layout_structure",
+    defaultSeverity: "warn",
+    message:
+      "Abstract layout plan still describes an explicit subject visual that conflicts with generic promo intent",
+    suggestedAction:
+      "Rewrite the abstract layout summary around structure rather than venue or product-specific visuals",
+    metadata: {
+      ruleScope: "layout_structure",
+    },
+  },
+  concrete_layout_slot_conflict: {
+    category: "layout_structure",
+    defaultSeverity: "warn",
+    message:
+      "Concrete layout plan maps copy or CTA slots into conflicting zones for the selected layout mode",
+    suggestedAction:
+      "Re-anchor the conflicting slots before materializing the editor mutations",
+    metadata: {
+      ruleScope: "layout_structure",
+    },
+  },
 } satisfies Record<RuleJudgeIssueCode, RuleJudgeIssueDefinition>;
 
 export function surfaceRuleJudgeIssue(
@@ -395,6 +509,9 @@ export async function ruleJudgeCreateTemplate(
   sourceSearchSummary: SourceSearchSummary,
   plan: ExecutablePlan,
   templatePriorSummary: TemplatePriorSummary | null = null,
+  copyPlan: CopyPlan | null = null,
+  abstractLayoutPlan: AbstractLayoutPlan | null = null,
+  concreteLayoutPlan: ConcreteLayoutPlan | null = null,
 ): Promise<RuleJudgeVerdict> {
   const assetPolicy = normalizeTemplateAssetPolicy(intent.assetPolicy);
   const issues: RuleJudgeIssue[] = [];
@@ -446,6 +563,20 @@ export async function ruleJudgeCreateTemplate(
 
   if (intent.brandConstraints.palette.length === 0) {
     issues.push(surfaceRuleJudgeIssue("brand_context_missing"));
+  }
+
+  if (copyPlan) {
+    issues.push(...detectCopyPlanIssues(intent, copyPlan));
+  }
+  if (abstractLayoutPlan && concreteLayoutPlan) {
+    issues.push(
+      ...detectLayoutPlanIssues(
+        intent,
+        abstractLayoutPlan,
+        concreteLayoutPlan,
+        selectionDecision,
+      ),
+    );
   }
 
   const graphicStructureIssues = detectGraphicPromoStructureIssues(
@@ -557,6 +688,107 @@ export async function ruleJudgeCreateTemplate(
   };
 }
 
+function detectCopyPlanIssues(
+  intent: NormalizedIntent,
+  copyPlan: CopyPlan,
+): RuleJudgeIssue[] {
+  const issues: RuleJudgeIssue[] = [];
+  const genericPromoIntent = isGenericPromoIntent(intent);
+  const slotMap = new Map(copyPlan.slots.map((slot) => [slot.key, slot]));
+  if (!slotMap.has("headline") || !slotMap.has("cta")) {
+    issues.push(surfaceRuleJudgeIssue("copy_slot_missing"));
+  }
+
+  if (genericPromoIntent) {
+    const subjectBearingSlot = copyPlan.slots.find(
+      (slot) =>
+        slot.key !== "cta" &&
+        hasGenericPromoSubjectLeakage(slot.text),
+    );
+    if (
+      subjectBearingSlot ||
+      hasGenericPromoSubjectLeakage(copyPlan.primaryMessage)
+    ) {
+      issues.push(surfaceRuleJudgeIssue("copy_subject_leakage"));
+    }
+  }
+
+  const headline = slotMap.get("headline");
+  if (headline && headline.text.length >= headline.maxLength - 2) {
+    issues.push(surfaceRuleJudgeIssue("headline_overflow_risk"));
+  }
+
+  const cta = slotMap.get("cta");
+  if (genericPromoIntent && cta && GENERIC_PROMO_CTA_LEAKAGE_PATTERN.test(cta.text)) {
+    issues.push(surfaceRuleJudgeIssue("copy_cta_subject_mismatch"));
+  }
+  if (
+    !cta ||
+    cta.text.length < 3 ||
+    ["확인", "보기"].includes(cta.text)
+  ) {
+    issues.push(surfaceRuleJudgeIssue("cta_missing_or_weak"));
+  }
+
+  if (
+    intent.campaignGoal === "sale_conversion" &&
+    !slotMap.has("offer_line")
+  ) {
+    issues.push(surfaceRuleJudgeIssue("copy_hierarchy_weak"));
+  }
+
+  if (
+    genericPromoIntent &&
+    hasGenericPromoSubjectLeakage(copyPlan.summary)
+  ) {
+    issues.push(surfaceRuleJudgeIssue("copy_summary_intent_mismatch"));
+  }
+
+  return issues;
+}
+
+function detectLayoutPlanIssues(
+  intent: NormalizedIntent,
+  abstractLayoutPlan: AbstractLayoutPlan,
+  concreteLayoutPlan: ConcreteLayoutPlan,
+  selectionDecision: SelectionDecision,
+): RuleJudgeIssue[] {
+  const issues: RuleJudgeIssue[] = [];
+  const genericPromoIntent = isGenericPromoIntent(intent);
+  if (
+    intent.layoutIntent === "badge_led" &&
+    abstractLayoutPlan.layoutFamily !== "promo_badge"
+  ) {
+    issues.push(surfaceRuleJudgeIssue("abstract_layout_intent_mismatch"));
+  }
+
+  if (
+    genericPromoIntent &&
+    (abstractLayoutPlan.layoutFamily === "subject_hero" ||
+      hasGenericPromoSubjectLeakage(abstractLayoutPlan.summary))
+  ) {
+    issues.push(surfaceRuleJudgeIssue("abstract_layout_subject_leakage"));
+  }
+
+  if (
+    selectionDecision.layoutMode === "left_copy_right_graphic" &&
+    concreteLayoutPlan.slotAnchors.headline !== "left_copy_column"
+  ) {
+    issues.push(surfaceRuleJudgeIssue("concrete_layout_slot_conflict"));
+  }
+
+  if (
+    ["center_stack", "center_stack_promo", "badge_promo_stack"].includes(
+      selectionDecision.layoutMode,
+    ) &&
+    concreteLayoutPlan.slotAnchors.cta !== "bottom_center"
+  ) {
+    issues.push(surfaceRuleJudgeIssue("concrete_layout_slot_conflict"));
+  }
+
+  return issues;
+}
+
 function detectGraphicPromoStructureIssues(
   intent: NormalizedIntent,
   selectionDecision: SelectionDecision,
@@ -608,6 +840,19 @@ function detectGraphicPromoStructureIssues(
   }
 
   return issues;
+}
+
+function isGenericPromoIntent(intent: NormalizedIntent): boolean {
+  const assetPolicy = normalizeTemplateAssetPolicy(intent.assetPolicy);
+  return (
+    intent.domain === "general_marketing" &&
+    intent.facets.menuType === null &&
+    assetPolicy.primaryVisualPolicy === "graphic_preferred"
+  );
+}
+
+function hasGenericPromoSubjectLeakage(text: string): boolean {
+  return GENERIC_PROMO_SUBJECT_LEAKAGE_PATTERN.test(text);
 }
 
 function recommendationImpactForSeverity(
