@@ -3,7 +3,15 @@ import { createRequestId } from "@tooldi/agent-domain";
 import type { TextLayoutHelper } from "@tooldi/tool-adapters";
 
 import type {
+  AbstractLayoutFamily,
+  AbstractLayoutDensity,
+  AssetExecutionEligibility,
+  ConcreteLayoutAnchorZone,
+  ConcreteLayoutClusterZone,
+  CopyPlanSlotKey,
   GraphicCompositionSet,
+  GraphicRoleBinding,
+  GraphicCompositionRole,
   HydratedPlanningInput,
   MutationProposalDraft,
   NormalizedIntent,
@@ -78,23 +86,33 @@ type PhotoMetadata = {
   photoCropMode: "centered_cover";
 };
 
+type CopySlotTextMap = Partial<Record<CopyPlanSlotKey, string>>;
+
+type CopySlotAnchorMap = Partial<Record<CopyPlanSlotKey, ConcreteLayoutAnchorZone>>;
+
+type GraphicRolePlacementHints = Array<{
+  role: GraphicCompositionRole;
+  zone: ConcreteLayoutClusterZone;
+}>;
+
 export async function emitSkeletonMutations(
   input: HydratedPlanningInput,
   normalizedIntent: NormalizedIntent,
   plan: ExecutablePlan,
   dependencies: EmitSkeletonMutationsDependencies,
 ): Promise<SkeletonMutationBatch> {
-  const headline = normalizedIntent.goalSummary.slice(0, 48);
-  const layoutEstimate = await dependencies.textLayoutHelper.estimate({
-    text: headline,
-    maxWidth: Math.max(320, input.request.editorContext.canvasWidth - 160),
-  });
-
   const planActions = validatePlanActions(plan);
   const foundationInputs = readFoundationInputs(planActions.foundation.inputs);
   const photoInputs = readPhotoInputs(planActions.photo?.inputs);
   const copyInputs = readCopyInputs(planActions.copy.inputs);
   const polishInputs = readPolishInputs(planActions.polish.inputs);
+  const headline =
+    (copyInputs.copySlotTexts.headline ?? normalizedIntent.goalSummary).slice(0, 48);
+  const layoutEstimate = await dependencies.textLayoutHelper.estimate({
+    text: headline,
+    maxWidth: Math.max(320, input.request.editorContext.canvasWidth - 160),
+  });
+
   const photoSelected = planActions.photo !== null;
   const typography: TypographyMetadata = {
     displayFontFamily: copyInputs.displayFontFamily,
@@ -105,10 +123,22 @@ export async function emitSkeletonMutations(
   const geometry = createLayoutGeometry(
     input.request.editorContext.canvasWidth,
     input.request.editorContext.canvasHeight,
+    copyInputs.layoutProfile,
     copyInputs.layoutMode,
     polishInputs.decorationMode,
     layoutEstimate.height,
+    copyInputs.spacingIntent,
   );
+  const geometryPresets = createGeometryPresets(
+    input.request.editorContext.canvasWidth,
+    input.request.editorContext.canvasHeight,
+    copyInputs.layoutProfile,
+    copyInputs.layoutMode,
+    polishInputs.decorationMode,
+    layoutEstimate.height,
+    copyInputs.spacingIntent,
+  );
+  const copySlotBounds = resolveCopySlotBounds(geometryPresets, copyInputs);
 
   const commitGroup = plan.actions[0]?.commitGroup ?? createRequestId();
   const draftId = `draft_${input.job.runId}`;
@@ -201,6 +231,7 @@ export async function emitSkeletonMutations(
         role: "badge",
         variantKey: copyInputs.layoutMode,
         candidateId: copyInputs.selectedLayoutCandidateId,
+        textContent: foundationInputs.badgeText,
         fontRole: "display",
         typography,
       }),
@@ -266,10 +297,11 @@ export async function emitSkeletonMutations(
       slotKey: "headline",
       clientLayerKey: `headline_${input.job.runId}`,
       layerType: "text",
-      bounds: geometry.headline,
+      bounds: copySlotBounds.headline,
       role: "headline",
       variantKey: copyInputs.layoutMode,
       candidateId: copyInputs.selectedLayoutCandidateId,
+      textContent: copyInputs.copySlotTexts.headline ?? normalizedIntent.goalSummary,
       fontRole: "display",
       typography,
     }),
@@ -277,10 +309,11 @@ export async function emitSkeletonMutations(
       slotKey: "supporting_copy",
       clientLayerKey: `supporting_copy_${input.job.runId}`,
       layerType: "text",
-      bounds: geometry.supportingCopy,
+      bounds: copySlotBounds.subheadline,
       role: "supporting_copy",
       variantKey: copyInputs.layoutMode,
       candidateId: copyInputs.selectedLayoutCandidateId,
+      textContent: copyInputs.copySlotTexts.subheadline ?? "지금 바로 확인하세요",
       fontRole: "body",
       typography,
     }),
@@ -288,10 +321,11 @@ export async function emitSkeletonMutations(
       slotKey: null,
       clientLayerKey: `price_callout_${input.job.runId}`,
       layerType: "text",
-      bounds: geometry.priceCallout,
+      bounds: copySlotBounds.offer_line,
       role: "price_callout",
       variantKey: copyInputs.layoutMode,
       candidateId: copyInputs.selectedLayoutCandidateId,
+      textContent: copyInputs.copySlotTexts.offer_line ?? "최대 50% OFF",
       fontRole: "display",
       typography,
     }),
@@ -303,10 +337,11 @@ export async function emitSkeletonMutations(
         slotKey: null,
         clientLayerKey: `hero_caption_${input.job.runId}`,
         layerType: "text",
-        bounds: geometry.heroCaption,
+        bounds: copySlotBounds.subheadline,
         role: "hero_caption",
         variantKey: copyInputs.layoutMode,
         candidateId: copyInputs.selectedLayoutCandidateId,
+        textContent: copyInputs.copySlotTexts.subheadline ?? "지금 바로 확인하세요",
         fontRole: "body",
         typography,
       }),
@@ -318,17 +353,23 @@ export async function emitSkeletonMutations(
       slotKey: "cta",
       clientLayerKey: `cta_${input.job.runId}`,
       layerType: "group",
-      bounds: geometry.cta,
+      bounds: copySlotBounds.cta,
       role: "cta",
       variantKey: polishInputs.decorationMode,
       candidateId: polishInputs.selectedDecorationCandidateId,
       sourceAssetId: polishInputs.selectedDecorationAssetId,
       sourceSerial: polishInputs.selectedDecorationSerial,
       sourceCategory: polishInputs.selectedDecorationCategory,
+      textContent: copyInputs.copySlotTexts.cta ?? "자세히 보기",
       fontRole: "display",
       typography,
     }),
-    ...buildGraphicRoleCommands(input.job.runId, polishInputs, geometry),
+    ...buildGraphicRoleCommands(
+      input.job.runId,
+      polishInputs,
+      geometryPresets,
+      copySlotBounds,
+    ),
   ];
 
   if (polishInputs.includeUnderline) {
@@ -364,10 +405,11 @@ export async function emitSkeletonMutations(
       slotKey: null,
       clientLayerKey: `footer_note_${input.job.runId}`,
       layerType: "text",
-      bounds: geometry.footerNote,
+      bounds: copySlotBounds.footer_note,
       role: "footer_note",
       variantKey: foundationInputs.backgroundMode,
       candidateId: foundationInputs.selectedBackgroundCandidateId,
+      textContent: copyInputs.copySlotTexts.footer_note ?? "이벤트 기간 내 혜택 적용",
       fontRole: "body",
       typography,
     }),
@@ -463,6 +505,7 @@ function readFoundationInputs(inputs: PersistedPlanAction["inputs"]) {
     includeBadge?: boolean;
     includeRibbon?: boolean;
     includeFrame?: boolean;
+    badgeText?: string | null;
   };
 
   return {
@@ -476,12 +519,15 @@ function readFoundationInputs(inputs: PersistedPlanAction["inputs"]) {
     includeBadge: record.includeBadge ?? false,
     includeRibbon: record.includeRibbon ?? false,
     includeFrame: record.includeFrame ?? false,
+    badgeText: record.badgeText ?? null,
   };
 }
 
 function readCopyInputs(inputs: PersistedPlanAction["inputs"]) {
   const record = inputs as {
     layoutMode?: LayoutMode;
+    layoutProfile?: AbstractLayoutFamily;
+    primaryVisualFamily?: "graphic" | "photo";
     selectedLayoutCandidateId?: string;
     displayFontFamily?: string | null;
     displayFontWeight?: number | null;
@@ -489,10 +535,16 @@ function readCopyInputs(inputs: PersistedPlanAction["inputs"]) {
     bodyFontWeight?: number | null;
     includeHeroCaption?: boolean;
     includeBadge?: boolean;
+    copySlotTexts?: CopySlotTextMap;
+    copySlotAnchors?: CopySlotAnchorMap;
+    clusterZones?: ConcreteLayoutClusterZone[];
+    spacingIntent?: AbstractLayoutDensity;
   };
 
   return {
     layoutMode: record.layoutMode ?? "copy_left_with_right_decoration",
+    layoutProfile: record.layoutProfile ?? "promo_split",
+    primaryVisualFamily: record.primaryVisualFamily ?? "graphic",
     selectedLayoutCandidateId:
       record.selectedLayoutCandidateId ?? "layout_unknown",
     displayFontFamily: record.displayFontFamily ?? null,
@@ -501,11 +553,16 @@ function readCopyInputs(inputs: PersistedPlanAction["inputs"]) {
     bodyFontWeight: record.bodyFontWeight ?? null,
     includeHeroCaption: record.includeHeroCaption ?? false,
     includeBadge: record.includeBadge ?? false,
+    copySlotTexts: record.copySlotTexts ?? {},
+    copySlotAnchors: record.copySlotAnchors ?? {},
+    clusterZones: record.clusterZones ?? [],
+    spacingIntent: record.spacingIntent ?? "balanced",
   };
 }
 
 function readPhotoInputs(inputs: PersistedPlanAction["inputs"] | undefined) {
   const record = (inputs ?? {}) as {
+    layoutProfile?: AbstractLayoutFamily;
     selectedPhotoCandidateId?: string | null;
     selectedPhotoAssetId?: string | null;
     selectedPhotoSerial?: string | null;
@@ -520,6 +577,7 @@ function readPhotoInputs(inputs: PersistedPlanAction["inputs"] | undefined) {
   };
 
   return {
+    layoutProfile: record.layoutProfile ?? "subject_hero",
     selectedPhotoCandidateId: record.selectedPhotoCandidateId ?? null,
     selectedPhotoAssetId: record.selectedPhotoAssetId ?? null,
     selectedPhotoSerial: record.selectedPhotoSerial ?? null,
@@ -537,42 +595,255 @@ function readPhotoInputs(inputs: PersistedPlanAction["inputs"] | undefined) {
 function readPolishInputs(inputs: PersistedPlanAction["inputs"]) {
   const record = inputs as {
     decorationMode?: DecorationMode;
+    layoutProfile?: AbstractLayoutFamily;
+    primaryVisualFamily?: "graphic" | "photo";
+    assetExecutionEligibility?: AssetExecutionEligibility;
     selectedDecorationCandidateId?: string;
     selectedDecorationAssetId?: string | null;
     selectedDecorationSerial?: string | null;
     selectedDecorationCategory?: string | null;
     graphicCompositionSet?: GraphicCompositionSet | null;
+    graphicRoleBindings?: GraphicRoleBinding[];
     includeUnderline?: boolean;
     includeRibbon?: boolean;
+    clusterZones?: ConcreteLayoutClusterZone[];
+    graphicRolePlacementHints?: GraphicRolePlacementHints;
+    ctaContainerExpected?: boolean;
+    spacingIntent?: AbstractLayoutDensity;
   };
 
   return {
     decorationMode: record.decorationMode ?? "graphic_cluster",
+    layoutProfile: record.layoutProfile ?? "promo_split",
+    primaryVisualFamily: record.primaryVisualFamily ?? "graphic",
+    assetExecutionEligibility:
+      record.assetExecutionEligibility ?? {
+        canRender: true,
+        degraded: false,
+        reasons: [],
+      },
     selectedDecorationCandidateId:
       record.selectedDecorationCandidateId ?? "decoration_unknown",
     selectedDecorationAssetId: record.selectedDecorationAssetId ?? null,
     selectedDecorationSerial: record.selectedDecorationSerial ?? null,
     selectedDecorationCategory: record.selectedDecorationCategory ?? null,
     graphicCompositionSet: record.graphicCompositionSet ?? null,
+    graphicRoleBindings: record.graphicRoleBindings ?? [],
     includeUnderline: record.includeUnderline ?? false,
     includeRibbon: record.includeRibbon ?? false,
+    clusterZones: record.clusterZones ?? [],
+    graphicRolePlacementHints: record.graphicRolePlacementHints ?? [],
+    ctaContainerExpected: record.ctaContainerExpected ?? false,
+    spacingIntent: record.spacingIntent ?? "balanced",
   };
+}
+
+function createGeometryPresets(
+  canvasWidth: number,
+  canvasHeight: number,
+  layoutProfile: AbstractLayoutFamily,
+  layoutMode: LayoutMode,
+  decorationMode: DecorationMode,
+  headlineHeight: number,
+  spacingIntent: AbstractLayoutDensity,
+) {
+  return {
+    current: createLayoutGeometry(
+      canvasWidth,
+      canvasHeight,
+      layoutProfile,
+      layoutMode,
+      decorationMode,
+      headlineHeight,
+      spacingIntent,
+    ),
+    split: createLayoutGeometry(
+      canvasWidth,
+      canvasHeight,
+      "promo_split",
+      "left_copy_right_graphic",
+      decorationMode,
+      headlineHeight,
+      spacingIntent,
+    ),
+    center: createLayoutGeometry(
+      canvasWidth,
+      canvasHeight,
+      "promo_center",
+      "center_stack_promo",
+      decorationMode,
+      headlineHeight,
+      spacingIntent,
+    ),
+    badge: createLayoutGeometry(
+      canvasWidth,
+      canvasHeight,
+      "promo_badge",
+      "badge_promo_stack",
+      decorationMode,
+      headlineHeight,
+      spacingIntent,
+    ),
+    framed: createLayoutGeometry(
+      canvasWidth,
+      canvasHeight,
+      "promo_frame",
+      "framed_promo",
+      decorationMode,
+      headlineHeight,
+      spacingIntent,
+    ),
+    hero: createLayoutGeometry(
+      canvasWidth,
+      canvasHeight,
+      "subject_hero",
+      "copy_left_with_right_photo",
+      decorationMode,
+      headlineHeight,
+      spacingIntent,
+    ),
+  };
+}
+
+function resolveCopySlotBounds(
+  presets: ReturnType<typeof createGeometryPresets>,
+  copyInputs: ReturnType<typeof readCopyInputs>,
+): Record<
+  "headline" | "subheadline" | "offer_line" | "cta" | "footer_note",
+  Bounds
+> {
+  return {
+    headline: resolveBoundsForAnchor(
+      copyInputs.copySlotAnchors.headline ?? "left_copy_column",
+      "headline",
+      presets,
+    ),
+    subheadline: resolveBoundsForAnchor(
+      copyInputs.copySlotAnchors.subheadline ??
+        copyInputs.copySlotAnchors.headline ??
+        "left_copy_column",
+      "subheadline",
+      presets,
+    ),
+    offer_line: resolveBoundsForAnchor(
+      copyInputs.copySlotAnchors.offer_line ??
+        copyInputs.copySlotAnchors.headline ??
+        "left_copy_column",
+      "offer_line",
+      presets,
+    ),
+    cta: resolveBoundsForAnchor(
+      copyInputs.copySlotAnchors.cta ?? "bottom_center",
+      "cta",
+      presets,
+    ),
+    footer_note: resolveBoundsForAnchor("footer_strip", "footer_note", presets),
+  };
+}
+
+function resolveBoundsForAnchor(
+  anchor: ConcreteLayoutAnchorZone,
+  slot:
+    | "headline"
+    | "subheadline"
+    | "offer_line"
+    | "cta"
+    | "footer_note"
+    | "badge_text",
+  presets: ReturnType<typeof createGeometryPresets>,
+): Bounds {
+  switch (anchor) {
+    case "center_copy_stack":
+      return resolveCenterPresetBounds(slot, presets.center);
+    case "framed_copy_column":
+      return resolveLeftPresetBounds(slot, presets.framed);
+    case "bottom_center":
+      return slot === "cta" ? presets.center.cta : resolveCenterPresetBounds(slot, presets.center);
+    case "top_badge_band":
+      return presets.badge.badge;
+    case "footer_strip":
+      return presets.current.footerNote;
+    default:
+      return resolveLeftPresetBounds(slot, presets.split);
+  }
+}
+
+function resolveLeftPresetBounds(
+  slot:
+    | "headline"
+    | "subheadline"
+    | "offer_line"
+    | "cta"
+    | "footer_note"
+    | "badge_text",
+  geometry: LayoutGeometry,
+): Bounds {
+  switch (slot) {
+    case "headline":
+      return geometry.headline;
+    case "subheadline":
+      return geometry.supportingCopy;
+    case "offer_line":
+      return geometry.priceCallout;
+    case "cta":
+      return geometry.cta;
+    case "footer_note":
+      return geometry.footerNote;
+    case "badge_text":
+      return geometry.badge;
+  }
+}
+
+function resolveCenterPresetBounds(
+  slot:
+    | "headline"
+    | "subheadline"
+    | "offer_line"
+    | "cta"
+    | "footer_note"
+    | "badge_text",
+  geometry: LayoutGeometry,
+): Bounds {
+  switch (slot) {
+    case "headline":
+      return geometry.headline;
+    case "subheadline":
+      return geometry.supportingCopy;
+    case "offer_line":
+      return geometry.priceCallout;
+    case "cta":
+      return geometry.cta;
+    case "footer_note":
+      return geometry.footerNote;
+    case "badge_text":
+      return geometry.badge;
+  }
 }
 
 function createLayoutGeometry(
   canvasWidth: number,
   canvasHeight: number,
+  layoutProfile: AbstractLayoutFamily,
   layoutMode: LayoutMode,
   decorationMode: DecorationMode,
   headlineHeight: number,
+  spacingIntent: AbstractLayoutDensity,
 ): LayoutGeometry {
-  const centered = layoutMode === "center_stack";
-  const badgeLed = layoutMode === "badge_led";
-  const photoLayout = layoutMode === "copy_left_with_right_photo";
+  const centered = layoutProfile === "promo_center";
+  const badgeLed = layoutProfile === "promo_badge";
+  const photoLayout = layoutProfile === "subject_hero";
   const promoCenterLayout =
-    layoutMode === "center_stack_promo" || layoutMode === "badge_promo_stack";
+    layoutProfile === "promo_center" || layoutProfile === "promo_badge";
   const graphicHeavyWideLayout =
-    layoutMode === "left_copy_right_graphic" || layoutMode === "framed_promo";
+    layoutProfile === "promo_split" || layoutProfile === "promo_frame";
+  const verticalGapAdjust =
+    spacingIntent === "airy" ? 18 : spacingIntent === "dense" ? -14 : 0;
+  const ctaOffsetAdjust =
+    spacingIntent === "airy" ? 16 : spacingIntent === "dense" ? -10 : 0;
+  const clusterShiftAdjust =
+    spacingIntent === "airy" ? -8 : spacingIntent === "dense" ? 10 : 0;
+  const accentSizeAdjust =
+    spacingIntent === "airy" ? -10 : spacingIntent === "dense" ? 14 : 0;
   const marginX = Math.max(48, Math.round(canvasWidth * 0.07));
   const topY = Math.max(40, Math.round(canvasHeight * 0.12));
   const footerY = canvasHeight - 44;
@@ -625,45 +896,49 @@ function createLayoutGeometry(
         }),
         supportingCopy: fitBounds(canvasWidth, canvasHeight, {
           x: Math.round((canvasWidth - Math.min(centerWidth, canvasWidth - 180)) / 2),
-          y: topY + (promoCenterLayout ? 176 : 190),
+          y: topY + (promoCenterLayout ? 176 : 190) + verticalGapAdjust,
           width: Math.min(centerWidth, canvasWidth - 180),
           height: 72,
         }),
         priceCallout: fitBounds(canvasWidth, canvasHeight, {
           x: Math.round((canvasWidth - 280) / 2),
-          y: topY + (promoCenterLayout ? 292 : 280),
+          y: topY + (promoCenterLayout ? 292 : 280) + verticalGapAdjust,
           width: 280,
           height: 52,
         }),
         heroCaption: fitBounds(canvasWidth, canvasHeight, {
           x: Math.round((canvasWidth - 260) / 2),
-          y: topY + (promoCenterLayout ? 364 : 342),
+          y: topY + (promoCenterLayout ? 364 : 342) + verticalGapAdjust,
           width: 260,
           height: 32,
         }),
         cta: fitBounds(canvasWidth, canvasHeight, {
           x: Math.round((canvasWidth - 240) / 2),
-          y: topY + (promoCenterLayout ? 430 : 360),
+          y: topY + (promoCenterLayout ? 430 : 360) + verticalGapAdjust + ctaOffsetAdjust,
           width: 240,
           height: 64,
         }),
         decoration: fitBounds(canvasWidth, canvasHeight, {
           x: canvasWidth - marginX - (promoCenterLayout ? 130 : 110),
-          y: topY + (promoCenterLayout ? 8 : 0),
-          width: promoCenterLayout ? 130 : decorationMode === "ribbon_badge" ? 96 : 110,
-          height: promoCenterLayout ? 130 : decorationMode === "ribbon_badge" ? 96 : 110,
+          y: topY + (promoCenterLayout ? 8 : 0) + clusterShiftAdjust,
+          width:
+            (promoCenterLayout ? 130 : decorationMode === "ribbon_badge" ? 96 : 110) +
+            accentSizeAdjust,
+          height:
+            (promoCenterLayout ? 130 : decorationMode === "ribbon_badge" ? 96 : 110) +
+            accentSizeAdjust,
         }),
         secondaryAccent: fitBounds(canvasWidth, canvasHeight, {
           x: marginX,
-          y: topY + 18,
-          width: promoCenterLayout ? 92 : 80,
-          height: promoCenterLayout ? 92 : 80,
+          y: topY + 18 + clusterShiftAdjust,
+          width: (promoCenterLayout ? 92 : 80) + accentSizeAdjust,
+          height: (promoCenterLayout ? 92 : 80) + accentSizeAdjust,
         }),
         cornerAccent: fitBounds(canvasWidth, canvasHeight, {
           x: canvasWidth - marginX - 74,
           y: footerY - 118,
-          width: 74,
-          height: 74,
+          width: 74 + Math.round(accentSizeAdjust / 2),
+          height: 74 + Math.round(accentSizeAdjust / 2),
         }),
         frame: fitBounds(canvasWidth, canvasHeight, {
           x: Math.round((canvasWidth - Math.min(centerWidth + 120, canvasWidth - marginX)) / 2),
@@ -725,25 +1000,31 @@ function createLayoutGeometry(
         }),
         supportingCopy: fitBounds(canvasWidth, canvasHeight, {
           x: marginX,
-          y: topY + (graphicHeavyWideLayout ? 166 : 148),
+          y: topY + (graphicHeavyWideLayout ? 166 : 148) + verticalGapAdjust,
           width: leftColumnWidth + 24,
           height: 70,
         }),
         priceCallout: fitBounds(canvasWidth, canvasHeight, {
           x: marginX,
-          y: topY + (graphicHeavyWideLayout ? 278 : 238),
+          y: topY + (graphicHeavyWideLayout ? 278 : 238) + verticalGapAdjust,
           width: Math.min(320, leftColumnWidth),
           height: 48,
         }),
         heroCaption: fitBounds(canvasWidth, canvasHeight, {
           x: rightColumnX + 20,
-          y: topY + Math.min(photoLayout ? 348 : 284, Math.round(canvasHeight * (photoLayout ? 0.58 : 0.46))),
+          y:
+            topY +
+            Math.min(
+              photoLayout ? 348 : 284,
+              Math.round(canvasHeight * (photoLayout ? 0.58 : 0.46)),
+            ) +
+            verticalGapAdjust,
           width: Math.max(160, rightColumnWidth - 40),
           height: 30,
         }),
         cta: fitBounds(canvasWidth, canvasHeight, {
           x: marginX,
-          y: topY + (graphicHeavyWideLayout ? 392 : 320),
+          y: topY + (graphicHeavyWideLayout ? 392 : 320) + verticalGapAdjust + ctaOffsetAdjust,
           width: 230,
           height: 64,
         }),
@@ -753,35 +1034,38 @@ function createLayoutGeometry(
             : graphicHeavyWideLayout
               ? rightColumnX + Math.max(6, Math.round(rightColumnWidth * 0.05))
               : rightColumnX + Math.max(12, Math.round(rightColumnWidth * 0.16)),
-          y: photoLayout
-            ? topY + Math.min(356, Math.round(canvasHeight * 0.58))
-            : graphicHeavyWideLayout
-              ? topY + 18
-            : topY + Math.min(312, Math.round(canvasHeight * 0.5)),
+          y:
+            (photoLayout
+              ? topY + Math.min(356, Math.round(canvasHeight * 0.58))
+              : graphicHeavyWideLayout
+                ? topY + 18
+                : topY + Math.min(312, Math.round(canvasHeight * 0.5))) +
+            clusterShiftAdjust,
           width:
             decorationMode === "ribbon_badge"
               ? Math.min(150, rightColumnWidth - 24)
               : graphicHeavyWideLayout
                 ? Math.min(220, rightColumnWidth - 16)
-              : Math.min(photoLayout ? 120 : 180, rightColumnWidth - 24),
+                : Math.min(photoLayout ? 120 : 180, rightColumnWidth - 24),
           height:
-            decorationMode === "ribbon_badge"
+            (decorationMode === "ribbon_badge"
               ? Math.min(90, canvasHeight - topY - 120)
               : graphicHeavyWideLayout
                 ? Math.min(220, canvasHeight - topY - 180)
-              : Math.min(photoLayout ? 92 : 140, canvasHeight - topY - 120),
+                : Math.min(photoLayout ? 92 : 140, canvasHeight - topY - 120)) +
+            accentSizeAdjust,
         }),
         secondaryAccent: fitBounds(canvasWidth, canvasHeight, {
           x: rightColumnX + Math.max(24, Math.round(rightColumnWidth * 0.24)),
-          y: topY + Math.min(286, Math.round(canvasHeight * 0.48)),
-          width: Math.min(96, rightColumnWidth - 48),
-          height: 96,
+          y: topY + Math.min(286, Math.round(canvasHeight * 0.48)) + clusterShiftAdjust,
+          width: Math.min(96, rightColumnWidth - 48) + accentSizeAdjust,
+          height: 96 + accentSizeAdjust,
         }),
         cornerAccent: fitBounds(canvasWidth, canvasHeight, {
           x: canvasWidth - marginX - 82,
           y: topY - 6,
-          width: 82,
-          height: 82,
+          width: 82 + Math.round(accentSizeAdjust / 2),
+          height: 82 + Math.round(accentSizeAdjust / 2),
         }),
         frame: fitBounds(canvasWidth, canvasHeight, {
           x: marginX - 12,
@@ -803,7 +1087,7 @@ function createLayoutGeometry(
         }),
       };
 
-  if (badgeLed) {
+  if (badgeLed || layoutMode === "badge_led") {
     geometry.badge = fitBounds(canvasWidth, canvasHeight, {
       x: centered ? badgeX : marginX,
       y: topY - 4,
@@ -833,41 +1117,86 @@ function createLayoutGeometry(
 function buildGraphicRoleCommands(
   runId: string,
   polishInputs: ReturnType<typeof readPolishInputs>,
-  geometry: LayoutGeometry,
+  geometryPresets: ReturnType<typeof createGeometryPresets>,
+  copySlotBounds: ReturnType<typeof resolveCopySlotBounds>,
 ): MutationProposalDraft["mutation"]["commands"] {
-  const roleGeometryMap: Record<string, Bounds> = {
-    primary_accent: geometry.decoration,
-    secondary_accent: geometry.secondaryAccent,
-    corner_accent: geometry.cornerAccent,
-    badge_or_ribbon: geometry.ribbon,
-    frame: geometry.frame,
-  };
-
-  const roleCommands =
-    polishInputs.graphicCompositionSet?.roles
-      .filter(
-        (role) =>
-          role.role !== "cta_container" &&
-          role.role !== "badge_or_ribbon" &&
-          role.role !== "frame",
-      )
-      .map((role) =>
-        buildCreateLayerCommand(runId, "polish", {
-          slotKey: role.role === "primary_accent" ? "decoration" : null,
-          clientLayerKey: `${role.role}_${runId}`,
-          layerType: "shape",
-          bounds: roleGeometryMap[role.role] ?? geometry.decoration,
+  const roleGeometryMap = createClusterZoneBounds(
+    geometryPresets,
+    polishInputs.clusterZones,
+  );
+  const placementHintMap = new Map(
+    polishInputs.graphicRolePlacementHints.map((hint) => [hint.role, hint.zone]),
+  );
+  const bindingPool =
+    polishInputs.graphicRoleBindings.length > 0
+      ? polishInputs.graphicRoleBindings
+      : (polishInputs.graphicCompositionSet?.roles ?? []).map((role) => ({
           role: role.role,
-          variantKey: role.variantKey,
           candidateId: role.candidateId,
           sourceAssetId: role.sourceAssetId,
           sourceSerial: role.sourceSerial,
           sourceCategory: role.sourceCategory,
-        }),
-      ) ?? [];
+          variantKey: role.variantKey,
+          decorationMode: role.decorationMode,
+          required: role.role === "primary_accent" || role.role === "cta_container",
+          zonePreference: resolveLegacyRoleZone(role.role),
+        }));
 
-  if (roleCommands.length > 0) {
-    return roleCommands;
+  const roleCommands =
+    bindingPool
+      .map((binding) =>
+        buildCreateLayerCommand(runId, "polish", {
+          slotKey:
+            binding.role === "primary_accent"
+              ? "decoration"
+              : binding.role === "cta_container"
+                ? "cta"
+                : null,
+          clientLayerKey: `${binding.role}_${runId}`,
+          layerType: "shape",
+          bounds: resolveGraphicBindingBounds(
+            binding.role,
+            placementHintMap.get(binding.role) ?? binding.zonePreference,
+            roleGeometryMap,
+            copySlotBounds,
+          ),
+          role: binding.role,
+          variantKey: binding.variantKey,
+          candidateId: binding.candidateId,
+          sourceAssetId: binding.sourceAssetId,
+          sourceSerial: binding.sourceSerial,
+          sourceCategory: binding.sourceCategory,
+          clusterZone:
+            placementHintMap.get(binding.role) ?? binding.zonePreference,
+        }),
+      );
+
+  const hasBoundCtaContainer = bindingPool.some(
+    (binding) => binding.role === "cta_container",
+  );
+  const ctaFallbackCommand =
+    polishInputs.ctaContainerExpected && !hasBoundCtaContainer
+      ? [
+          buildCreateLayerCommand(runId, "polish", {
+            slotKey: null,
+            clientLayerKey: `cta_container_fallback_${runId}`,
+            layerType: "shape",
+            bounds: resolveGraphicBindingBounds(
+              "cta_container",
+              "bottom_strip",
+              roleGeometryMap,
+              copySlotBounds,
+            ),
+            role: "cta_container",
+            variantKey: "fallback_cta_pill",
+            candidateId: `${runId}_fallback_cta_container`,
+            clusterZone: "bottom_strip",
+          }),
+        ]
+      : [];
+
+  if (roleCommands.length > 0 || ctaFallbackCommand.length > 0) {
+    return [...ctaFallbackCommand, ...roleCommands];
   }
 
   return [
@@ -875,7 +1204,7 @@ function buildGraphicRoleCommands(
       slotKey: "decoration",
       clientLayerKey: `decoration_${runId}`,
       layerType: "shape",
-      bounds: geometry.decoration,
+      bounds: roleGeometryMap.right_cluster,
       role:
         polishInputs.decorationMode === "ribbon_badge"
           ? "ribbon_strip"
@@ -885,8 +1214,70 @@ function buildGraphicRoleCommands(
       sourceAssetId: polishInputs.selectedDecorationAssetId,
       sourceSerial: polishInputs.selectedDecorationSerial,
       sourceCategory: polishInputs.selectedDecorationCategory,
+      clusterZone: "right_cluster",
     }),
   ];
+}
+
+function createClusterZoneBounds(
+  geometryPresets: ReturnType<typeof createGeometryPresets>,
+  clusterZones: ConcreteLayoutClusterZone[],
+): Record<ConcreteLayoutClusterZone, Bounds> {
+  const fallback = geometryPresets.current.decoration;
+  return {
+    hero_panel: clusterZones.includes("hero_panel")
+      ? geometryPresets.hero.heroPanel
+      : fallback,
+    right_cluster: clusterZones.includes("right_cluster")
+      ? geometryPresets.split.decoration
+      : fallback,
+    center_cluster: clusterZones.includes("center_cluster")
+      ? geometryPresets.center.decoration
+      : fallback,
+    top_corner: clusterZones.includes("top_corner")
+      ? geometryPresets.current.cornerAccent
+      : fallback,
+    bottom_strip: clusterZones.includes("bottom_strip")
+      ? geometryPresets.current.ribbon
+      : fallback,
+    frame: clusterZones.includes("frame")
+      ? geometryPresets.framed.frame
+      : fallback,
+  };
+}
+
+function resolveGraphicBindingBounds(
+  role: GraphicCompositionRole,
+  zone: ConcreteLayoutClusterZone,
+  zoneBounds: Record<ConcreteLayoutClusterZone, Bounds>,
+  copySlotBounds: ReturnType<typeof resolveCopySlotBounds>,
+): Bounds {
+  if (role === "cta_container") {
+    const ctaBounds = copySlotBounds.cta;
+    return {
+      x: Math.max(0, ctaBounds.x - 12),
+      y: Math.max(0, ctaBounds.y - 6),
+      width: ctaBounds.width + 24,
+      height: ctaBounds.height + 12,
+    };
+  }
+
+  return zoneBounds[zone];
+}
+
+function resolveLegacyRoleZone(
+  role: GraphicCompositionRole,
+): ConcreteLayoutClusterZone {
+  switch (role) {
+    case "frame":
+      return "frame";
+    case "corner_accent":
+      return "top_corner";
+    case "badge_or_ribbon":
+      return "bottom_strip";
+    default:
+      return "right_cluster";
+  }
 }
 
 function fitBounds(
@@ -925,6 +1316,8 @@ function buildCreateLayerCommand(
     cropMode?: "centered_cover";
     fontRole?: "display" | "body";
     typography?: TypographyMetadata;
+    textContent?: string | null;
+    clusterZone?: ConcreteLayoutClusterZone | null;
   },
 ): MutationProposalDraft["mutation"]["commands"][number] {
   const metadata: Record<string, string | number | boolean | null> = {
@@ -941,6 +1334,8 @@ function buildCreateLayerCommand(
     photoOrientation: options.photoOrientation ?? null,
     fitMode: options.fitMode ?? null,
     cropMode: options.cropMode ?? null,
+    copyText: options.textContent ?? null,
+    clusterZone: options.clusterZone ?? null,
   };
 
   if (options.fontRole && options.typography) {

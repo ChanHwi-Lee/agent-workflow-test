@@ -35,14 +35,21 @@
 
 - separate control-plane / execution-plane skeleton 존재
 - `POST /runs -> SSE -> mutation ack -> finalize -> completed` happy-path prototype 존재
-- 2026-04-08 기준 worker 내부 orchestration 은 LangGraph `StateGraph` 로 실제 실행된다.
-- current worker 는 generic `create_template` skeleton 을 가진다.
+- 2026-04-09 기준 worker 내부 orchestration 은 LangGraph `StateGraph` 로 실제 실행된다.
+- current worker 는 generic `create_template` skeleton 을 넘어 `strict core + structured subplans` chain 을 가진다.
   - `normalized-intent`
+  - `copy-plan`
+  - `layout-plan-abstract`
+  - `asset-plan`
+  - `layout-plan-concrete`
   - `search-profile`
   - `candidate-set`
   - `selection-decision`
   - `typography-decision`
   - `rule-judge-verdict`
+  - `execution-scene-summary`
+  - `judge-plan`
+  - `refine-decision`
   - `executable-plan`
 - planner/model abstraction 은 LangChain JS 뒤로 정리됐고, local 기본 provider 는 Gemini 다.
 - picture/shape retrieval은 direct `Picture::index` / `Shape::index` surface를 사용하는 `tooldi_api_direct` mode로 정리됐다.
@@ -52,7 +59,7 @@
 - `run.recovery` 는 projection skeleton 수준으로만 존재한다
 - 실제 editor save evidence, resume engine, rollback engine, production durability는 아직 아니다
 
-즉 현재 상태는 `작동하는 generic create_template skeleton v1` 이며, 다음 단계의 핵심은 새 runtime 도입이 아니라 `planner/judge 품질` 과 `retrieval / refine / save evidence` 를 고도화하는 것이다.
+즉 현재 상태는 `작동하는 create_template subplan-driven runtime v1` 이며, 다음 단계의 핵심은 새 runtime 도입이 아니라 `judgePlan 성숙화 / bounded refine 품질 / real save evidence` 를 고도화하는 것이다.
 
 ## 3. 현재 단계에서 고정할 전제
 
@@ -67,7 +74,8 @@
 ### 3.2 mutation surface는 좁게 유지
 
 - 다음 prototype도 당분간 `shape/text/group only` 가 기본이다.
-- `image/sticker/saveTemplate/updateLayer/deleteLayer` 를 한꺼번에 열지 않는다.
+- `image/sticker/saveTemplate/deleteLayer` 를 한꺼번에 열지 않는다.
+- 예외적으로 post-execution bounded refine 를 위한 **narrow `updateLayer` patch surface** 는 허용한다.
 - 실제 image/sticker는 asset binding, license, save semantics, editor-side apply 제약이 있어 다음 단계로 미룬다.
 
 ### 3.3 single-run / single-worker mental model 유지
@@ -266,13 +274,13 @@ intelligence layer를 붙이면 결과 품질과 비용을 같이 봐야 한다.
 - LangGraph worker runtime
 - LangChain JS planner/model abstraction
 - Gemini planner 연결
-- `NormalizedIntent`, `SearchProfile`, candidate-set, selection, judge artifact chain
+- `NormalizedIntent`, `CopyPlan`, `LayoutPlan`, `AssetPlan`, `SearchProfile`, candidate-set, selection, judge artifact chain
 - `completed_with_warning` terminal semantics
 - 3-domain acceptance suite
 
 즉 이 단계는 더 이상 계획이 아니라 현재 baseline 이다.
 
-### 5.2 다음 1순위: Planner / Judge Consistency Hardening
+### 5.2 완료된 단계: Planner / Judge Consistency Hardening
 
 목표:
 
@@ -288,23 +296,9 @@ intelligence layer를 붙이면 결과 품질과 비용을 같이 봐야 한다.
 
 - `fashion_retail` 인데 `food_menu` 와 음식 photo가 섞이는 대표 mismatch 를 judge가 `keep` 으로 통과시키지 않는다
 
-### 5.3 다음 2순위: Semantic Retrieval 준비와 metadata search 고도화
+즉 이 단계는 generic promo 기준선과 search/profile/prior consistency hardening 을 현재 baseline 으로 만든다.
 
-목표:
-
-- 현재 query-profile 기반 metadata search 를 semantic-ready 구조로 올린다
-
-범위:
-
-- retrieval artifact 보강
-- metadata search fallback 정리
-- semantic/hybrid seam 연결 준비
-
-완료 기준:
-
-- retrieval mode 추가가 현재 selection artifact chain을 깨지 않고 들어갈 수 있다
-
-### 5.4 다음 3순위: Bounded Critique / Refine Loop
+### 5.3 완료된 단계: Bounded Critique / Refine Loop
 
 목표:
 
@@ -312,15 +306,19 @@ intelligence layer를 붙이면 결과 품질과 비용을 같이 봐야 한다.
 
 범위:
 
-- issue list 기반 1회 mutation regenerate
-- budget/time threshold
-- degraded success 와 true keep path 구분
+- `ExecutionSceneSummary`
+- `JudgePlan`
+- `RefineDecision`
+- patch-only mutation regenerate
+- max 1회 bounded refine
 
 완료 기준:
 
-- `refine` recommendation 이 실제 second-pass mutation 또는 explicit skip reason 으로 이어진다
+- `refine` recommendation 이 실제 second-pass patch mutation 또는 explicit skip reason 으로 이어진다
 
-### 5.5 다음 4순위: Real Save Evidence Integration
+즉 이 단계는 현재 baseline 에 포함되고, 남은 일은 refine 품질과 save truth 쪽이다.
+
+### 5.4 다음 1순위: Real Save Evidence Integration
 
 목표:
 
@@ -337,7 +335,40 @@ intelligence layer를 붙이면 결과 품질과 비용을 같이 봐야 한다.
 
 - backend completed path가 synthetic evidence 없이 닫힌다
 
-### 5.6 다음 5순위: Recovery / Resume Revisit
+### 5.5 다음 2순위: JudgePlan / Refine Quality Hardening
+
+목표:
+
+- current patch-only refine 의 품질과 설명 가능성을 끌어올린다
+
+범위:
+
+- topology/spacing/CTA 관련 judge rule 정교화
+- issue taxonomy 정리
+- patch op 우선순위와 skip reason 정교화
+- 대표 prompt eval set 기반 judge false-positive 정리
+
+완료 기준:
+
+- refine 가 있어도 불필요한 second-pass 를 남발하지 않고, patch quality regression 이 줄어든다
+
+### 5.6 다음 3순위: Semantic Retrieval 준비와 metadata search 고도화
+
+목표:
+
+- 현재 query-profile 기반 metadata search 를 semantic-ready 구조로 올린다
+
+범위:
+
+- retrieval artifact 보강
+- metadata search fallback 정리
+- semantic/hybrid seam 연결 준비
+
+완료 기준:
+
+- retrieval mode 추가가 현재 selection artifact chain을 깨지 않고 들어갈 수 있다
+
+### 5.7 다음 4순위: Recovery / Resume Revisit
 
 목표:
 

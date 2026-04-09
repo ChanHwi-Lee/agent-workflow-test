@@ -193,6 +193,7 @@ const LastKnownGoodCheckpointSchema = Type.Object(
         abstractLayoutPlanNormalizationReportRef: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),
         ),
+        assetPlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         concreteLayoutPlanRef: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),
         ),
@@ -208,6 +209,9 @@ const LastKnownGoodCheckpointSchema = Type.Object(
         selectionDecisionRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         typographyDecisionRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         ruleJudgeVerdictRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+        executionSceneSummaryRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+        judgePlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+        refineDecisionRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         latestSaveReceiptId: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         bundleRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
       },

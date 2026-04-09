@@ -40,8 +40,12 @@ import {
   SpringCatalogActivationError,
 } from "../phases/assembleTemplateCandidates.js";
 import { buildPlannerDraft } from "../phases/buildPlannerDraft.js";
+import { buildAssetPlan } from "../phases/buildAssetPlan.js";
 import { buildConcreteLayoutPlan } from "../phases/buildConcreteLayoutPlan.js";
 import { buildCopyAndAbstractLayoutPlan } from "../phases/buildCopyAndAbstractLayoutPlan.js";
+import { buildExecutionSceneSummary } from "../phases/buildExecutionSceneSummary.js";
+import { buildJudgePlan } from "../phases/buildJudgePlan.js";
+import { buildRefineDecision } from "../phases/buildRefineDecision.js";
 import { buildSearchProfile } from "../phases/buildSearchProfile.js";
 import { buildTemplatePriorSummary } from "../phases/buildTemplatePriorSummary.js";
 import { buildExecutablePlan } from "../phases/buildExecutablePlan.js";
@@ -58,21 +62,26 @@ import type {
   FinalizeRunDraft,
   AbstractLayoutPlan,
   AbstractLayoutPlanNormalizationReport,
+  AssetPlan,
   ConcreteLayoutPlan,
   CopyPlan,
   CopyPlanNormalizationReport,
+  ExecutionSceneSummary,
   HydratedPlanningInput,
   IntentNormalizationReport,
+  JudgePlan,
   MutationProposalDraft as WorkerMutationProposalDraft,
   NormalizedIntent,
   NormalizedIntentDraftArtifact,
   ProcessRunJobResult,
+  RefineDecision,
   RetrievalStageResult,
   RuleJudgeVerdict,
   SearchProfileArtifact,
   SelectionDecision,
   SkeletonMutationBatch,
   SourceSearchSummary,
+  StageAckRecord,
   TemplateCandidateBundle,
   TemplateSelectionPolicy,
   TypographyDecision,
@@ -123,6 +132,8 @@ const RunJobGraphState = Annotation.Root({
   abstractLayoutPlanRef: replaceValue<string | null>(() => null),
   abstractLayoutPlanNormalizationReport: replaceValue<AbstractLayoutPlanNormalizationReport | null>(() => null),
   abstractLayoutPlanNormalizationReportRef: replaceValue<string | null>(() => null),
+  assetPlan: replaceValue<AssetPlan | null>(() => null),
+  assetPlanRef: replaceValue<string | null>(() => null),
   templatePriorSummary: replaceValue<TemplatePriorSummary | null>(() => null),
   templatePriorSummaryRef: replaceValue<string | null>(() => null),
   searchProfile: replaceValue<SearchProfileArtifact | null>(() => null),
@@ -148,6 +159,12 @@ const RunJobGraphState = Annotation.Root({
   executablePlanRef: replaceValue<string | null>(() => null),
   ruleJudgeVerdict: replaceValue<RuleJudgeVerdict | null>(() => null),
   ruleJudgeVerdictRef: replaceValue<string | null>(() => null),
+  executionSceneSummary: replaceValue<ExecutionSceneSummary | null>(() => null),
+  executionSceneSummaryRef: replaceValue<string | null>(() => null),
+  judgePlan: replaceValue<JudgePlan | null>(() => null),
+  judgePlanRef: replaceValue<string | null>(() => null),
+  refineDecision: replaceValue<RefineDecision | null>(() => null),
+  refineDecisionRef: replaceValue<string | null>(() => null),
   skeletonBatch: replaceValue<SkeletonMutationBatch | null>(() => null),
   currentStageIndex: replaceValue(() => 0),
   currentProposal: replaceValue<WorkerMutationProposalDraft | null>(() => null),
@@ -155,6 +172,8 @@ const RunJobGraphState = Annotation.Root({
   emittedMutationIds: replaceValue<string[]>(() => []),
   assignedSeqs: replaceValue<number[]>(() => []),
   lastMutationAck: replaceValue<WaitMutationAckResponse | null>(() => null),
+  stageAckHistory: replaceValue<StageAckRecord[]>(() => []),
+  refineAttempt: replaceValue<0 | 1>(() => 0),
   finalizeDraft: replaceValue<FinalizeRunDraft | null>(() => null),
   result: replaceValue<ProcessRunJobResult | null>(() => null),
 });
@@ -744,16 +763,56 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         selectionDecisionRef,
       };
     })
-    .addNode("build_concrete_layout_plan", async (state) => {
-      if (!state.copyPlan || !state.abstractLayoutPlan || !state.selectionDecision) {
+    .addNode("build_asset_plan", async (state) => {
+      if (
+        !state.intent ||
+        !state.templatePriorSummary ||
+        !state.searchProfile ||
+        !state.selectionDecision
+      ) {
         throw new Error(
-          "build_concrete_layout_plan requires copy/abstract-layout/selection state",
+          "build_asset_plan requires intent/prior/search/selection state",
+        );
+      }
+
+      const assetPlan = await buildAssetPlan(
+        state.intent,
+        state.templatePriorSummary,
+        state.searchProfile,
+        state.selectionDecision,
+      );
+      const assetPlanRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/asset-plan.json`,
+        assetPlan,
+        {
+          artifactKind: "asset-plan",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      return {
+        assetPlan,
+        assetPlanRef,
+      };
+    })
+    .addNode("build_concrete_layout_plan", async (state) => {
+      if (
+        !state.copyPlan ||
+        !state.abstractLayoutPlan ||
+        !state.assetPlan ||
+        !state.selectionDecision
+      ) {
+        throw new Error(
+          "build_concrete_layout_plan requires copy/abstract-layout/asset/selection state",
         );
       }
 
       const concreteLayoutPlan = await buildConcreteLayoutPlan(
         state.copyPlan,
         state.abstractLayoutPlan,
+        state.assetPlan,
         state.selectionDecision,
       );
       const concreteLayoutPlanRef = await persistArtifactTask(
@@ -879,6 +938,7 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       if (
         !state.hydrated ||
         !state.intent ||
+        !state.assetPlan ||
         !state.selectionDecision ||
         !state.typographyDecision ||
         !state.copyPlan ||
@@ -891,6 +951,7 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         state.hydrated,
         state.intent,
         state.copyPlan,
+        state.assetPlan,
         state.selectionDecision,
         state.concreteLayoutPlan,
         state.typographyDecision,
@@ -1025,6 +1086,14 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
           : null,
         emittedMutationIds: [],
         assignedSeqs: [],
+        stageAckHistory: [],
+        refineAttempt: 0,
+        executionSceneSummary: null,
+        executionSceneSummaryRef: null,
+        judgePlan: null,
+        judgePlanRef: null,
+        refineDecision: null,
+        refineDecisionRef: null,
       };
     })
     .addNode("emit_stage", async (state) => {
@@ -1183,6 +1252,10 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       return {
         cooperativeStopRequested,
         lastMutationAck,
+        stageAckHistory: [
+          ...state.stageAckHistory,
+          buildStageAckRecord(proposal, lastMutationAck),
+        ],
       };
     })
     .addNode("advance_after_ack", async (state) => {
@@ -1204,22 +1277,130 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         currentProposal: state.skeletonBatch.proposals[nextStageIndex] ?? null,
       };
     })
-    .addNode("run_refinement", async (state) => {
-      if (!state.hydrated || !state.intent) {
-        throw new Error("run_refinement requires hydrated intent state");
+    .addNode("build_execution_scene_summary", async (state) => {
+      if (
+        !state.copyPlan ||
+        !state.assetPlan ||
+        !state.concreteLayoutPlan ||
+        !state.plan
+      ) {
+        throw new Error(
+          "build_execution_scene_summary requires copy/asset/layout/plan state",
+        );
+      }
+
+      const executionSceneSummary = await buildExecutionSceneSummary(
+        state.job.runId,
+        state.job.traceId,
+        state.job.attemptSeq,
+        state.copyPlan,
+        state.assetPlan,
+        state.concreteLayoutPlan,
+        state.plan,
+        state.stageAckHistory,
+      );
+      const suffix = state.refineAttempt > 0 ? `-refine-${state.refineAttempt}` : "";
+      const executionSceneSummaryRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/execution-scene-summary${suffix}.json`,
+        executionSceneSummary,
+        {
+          artifactKind: "execution-scene-summary",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      return {
+        executionSceneSummary,
+        executionSceneSummaryRef,
+      };
+    })
+    .addNode("build_judge_plan", async (state) => {
+      if (
+        !state.copyPlan ||
+        !state.concreteLayoutPlan ||
+        !state.executionSceneSummary ||
+        !state.plan
+      ) {
+        throw new Error(
+          "build_judge_plan requires copy/layout/execution-scene/plan state",
+        );
+      }
+
+      const judgePlan = await buildJudgePlan(
+        state.job.runId,
+        state.job.traceId,
+        state.refineAttempt,
+        state.copyPlan,
+        state.concreteLayoutPlan,
+        state.executionSceneSummary,
+        state.plan,
+        state.ruleJudgeVerdict,
+      );
+      const suffix = state.refineAttempt > 0 ? `-refine-${state.refineAttempt}` : "";
+      const judgePlanRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/judge-plan${suffix}.json`,
+        judgePlan,
+        {
+          artifactKind: "judge-plan",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      return {
+        judgePlan,
+        judgePlanRef,
+      };
+    })
+    .addNode("decide_refine", async (state) => {
+      if (!state.copyPlan || !state.judgePlan || !state.plan) {
+        throw new Error("decide_refine requires copy/judge-plan/plan state");
+      }
+
+      const refineDecision = await buildRefineDecision(
+        state.job.runId,
+        state.job.traceId,
+        state.refineAttempt,
+        state.judgePlan,
+        state.copyPlan,
+        state.plan,
+        state.executionSceneSummary?.finalRevision ?? state.lastMutationAck?.resultingRevision ?? null,
+      );
+      const suffix = state.refineAttempt > 0 ? `-refine-${state.refineAttempt}` : "";
+      const refineDecisionRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/refine-decision${suffix}.json`,
+        refineDecision,
+        {
+          artifactKind: "refine-decision",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      return {
+        refineDecision,
+        refineDecisionRef,
+      };
+    })
+    .addNode("emit_refinement_patch", async (state) => {
+      if (
+        !state.hydrated ||
+        !state.intent ||
+        !state.plan ||
+        !state.copyPlan ||
+        !state.executionSceneSummary ||
+        !state.refineDecision
+      ) {
+        throw new Error(
+          "emit_refinement_patch requires hydrated intent/plan/copy/scene/refine state",
+        );
       }
 
       let cooperativeStopRequested = state.cooperativeStopRequested;
-      const shouldAttemptRefinement =
-        !cooperativeStopRequested &&
-        (state.lastMutationAck === null || state.lastMutationAck.status === "acked");
-
-      if (!shouldAttemptRefinement) {
-        return {
-          cooperativeStopRequested,
-        };
-      }
-
       const heartbeatBase = buildHeartbeatBase(state.job);
       const applyingHeartbeat = await heartbeatTask(state.job.runId, {
         ...heartbeatBase,
@@ -1232,10 +1413,23 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       const nextRefinement = await emitRefinementMutations(
         state.hydrated,
         state.intent,
+        state.plan,
+        state.copyPlan,
+        state.executionSceneSummary,
+        state.refineDecision,
         state.lastMutationAck,
         {
-          imagePrimitiveClient: dependencies.imagePrimitiveClient,
-          assetStorageClient: dependencies.assetStorageClient,
+          textLayoutHelper: dependencies.textLayoutHelper,
+        },
+      );
+      const refinedPlanRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/executable-plan-refine-${state.refineAttempt + 1}.json`,
+        nextRefinement.refinedPlan,
+        {
+          artifactKind: "executable-plan",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
         },
       );
 
@@ -1245,15 +1439,106 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         queueJobId: state.job.queueJobId,
         event: {
           type: "log",
-          level: "info",
-          message: `Refinement placeholder completed after ${nextRefinement.proposedMutationIds.length} additional mutations`,
+          level: nextRefinement.proposal ? "info" : "warn",
+          message: nextRefinement.proposal
+            ? `Prepared patch-only refinement mutation with ${nextRefinement.proposal.mutation.commands.length} commands`
+            : "No patch-only refinement mutation was emitted for the current judge plan",
         },
       });
       cooperativeStopRequested ||= refinementLog.cancelRequested;
 
+      if (!nextRefinement.proposal) {
+        return {
+          cooperativeStopRequested,
+          plan: nextRefinement.refinedPlan,
+          executablePlanRef: refinedPlanRef,
+          currentProposal: null,
+          currentMutationId: null,
+          lastMutationAck: nextRefinement.lastMutationAck,
+          refineAttempt: 1,
+        };
+      }
+
+      const mutationResponse = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "mutation.proposed",
+          mutationId: nextRefinement.proposal.mutationId,
+          rollbackGroupId: nextRefinement.proposal.rollbackGroupId,
+          mutation: nextRefinement.proposal.mutation,
+        },
+      });
+
+      if (mutationResponse.cancelRequested) {
+        return {
+          cooperativeStopRequested: true,
+          plan: nextRefinement.refinedPlan,
+          executablePlanRef: refinedPlanRef,
+          currentProposal: null,
+          currentMutationId: null,
+          lastMutationAck: {
+            found: true,
+            status: "cancelled",
+          } satisfies WaitMutationAckResponse,
+          refineAttempt: 1,
+        };
+      }
+
       return {
         cooperativeStopRequested,
-        lastMutationAck: nextRefinement.lastMutationAck,
+        plan: nextRefinement.refinedPlan,
+        executablePlanRef: refinedPlanRef,
+        emittedMutationIds: [
+          ...state.emittedMutationIds,
+          nextRefinement.proposal.mutationId,
+        ],
+        assignedSeqs: [
+          ...state.assignedSeqs,
+          mutationResponse.assignedSeq ?? nextRefinement.proposal.mutation.seq,
+        ],
+        currentProposal: nextRefinement.proposal,
+        currentMutationId: nextRefinement.proposal.mutationId,
+      };
+    })
+    .addNode("await_refinement_ack", async (state) => {
+      if (!state.currentProposal || !state.currentMutationId) {
+        throw new Error("await_refinement_ack requires an emitted refinement mutation");
+      }
+
+      let cooperativeStopRequested = state.cooperativeStopRequested;
+      let lastMutationAck = await waitMutationAckTask(
+        state.job.runId,
+        state.currentMutationId,
+        { waitMs: 15000 },
+      );
+
+      const ackLog = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: lastMutationAck.status === "acked" ? "info" : "warn",
+          message:
+            lastMutationAck.status === "acked"
+              ? `Refinement patch result: acked revision=${lastMutationAck.resultingRevision ?? "n/a"}`
+              : `Refinement patch result: ${lastMutationAck.status}`,
+        },
+      });
+      cooperativeStopRequested ||= ackLog.cancelRequested;
+
+      return {
+        cooperativeStopRequested,
+        currentMutationId: null,
+        currentProposal: null,
+        lastMutationAck,
+        stageAckHistory: [
+          ...state.stageAckHistory,
+          buildStageAckRecord(state.currentProposal, lastMutationAck),
+        ],
+        refineAttempt: 1,
       };
     })
     .addNode("prepare_finalize", async (state) => {
@@ -1333,6 +1618,7 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
                   state.abstractLayoutPlanNormalizationReport,
               }
             : {}),
+          ...(state.assetPlan ? { assetPlan: state.assetPlan } : {}),
           ...(state.concreteLayoutPlan
             ? { concreteLayoutPlan: state.concreteLayoutPlan }
             : {}),
@@ -1354,6 +1640,11 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
           ...(state.ruleJudgeVerdict
             ? { ruleJudgeVerdict: state.ruleJudgeVerdict }
             : {}),
+          ...(state.executionSceneSummary
+            ? { executionSceneSummary: state.executionSceneSummary }
+            : {}),
+          ...(state.judgePlan ? { judgePlan: state.judgePlan } : {}),
+          ...(state.refineDecision ? { refineDecision: state.refineDecision } : {}),
           ...(state.plan ? { plan: state.plan } : {}),
           emittedMutationIds: state.emittedMutationIds,
           finalizeDraft: state.finalizeDraft,
@@ -1375,7 +1666,8 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
     .addConditionalEdges("assemble_candidates", (state) =>
       state.finalizeDraft ? "send_finalize" : "select_composition",
     )
-    .addEdge("select_composition", "build_concrete_layout_plan")
+    .addEdge("select_composition", "build_asset_plan")
+    .addEdge("build_asset_plan", "build_concrete_layout_plan")
     .addEdge("build_concrete_layout_plan", "select_typography")
     .addEdge("select_typography", "persist_selection_artifacts")
     .addEdge("persist_selection_artifacts", "build_plan")
@@ -1386,19 +1678,27 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         : "prepare_execution",
     )
     .addConditionalEdges("prepare_execution", (state) =>
-      state.currentProposal ? "emit_stage" : "run_refinement",
+      state.currentProposal ? "emit_stage" : "build_execution_scene_summary",
     )
     .addConditionalEdges("emit_stage", (state) =>
-      state.currentMutationId ? "await_stage_ack" : "run_refinement",
+      state.currentMutationId ? "await_stage_ack" : "build_execution_scene_summary",
     )
     .addEdge("await_stage_ack", "advance_after_ack")
     .addConditionalEdges("advance_after_ack", (state) => {
       if (state.lastMutationAck?.status !== "acked" || state.cooperativeStopRequested) {
-        return "run_refinement";
+        return "build_execution_scene_summary";
       }
-      return state.currentProposal ? "emit_stage" : "run_refinement";
+      return state.currentProposal ? "emit_stage" : "build_execution_scene_summary";
     })
-    .addEdge("run_refinement", "prepare_finalize")
+    .addEdge("build_execution_scene_summary", "build_judge_plan")
+    .addEdge("build_judge_plan", "decide_refine")
+    .addConditionalEdges("decide_refine", (state) =>
+      state.refineDecision?.decision === "patch" ? "emit_refinement_patch" : "prepare_finalize",
+    )
+    .addConditionalEdges("emit_refinement_patch", (state) =>
+      state.currentMutationId ? "await_refinement_ack" : "prepare_finalize",
+    )
+    .addEdge("await_refinement_ack", "build_execution_scene_summary")
     .addEdge("prepare_finalize", "send_finalize")
     .addEdge("send_finalize", END);
 
@@ -1583,6 +1883,7 @@ function buildFinalizeOptions(
             state.abstractLayoutPlanNormalizationReportRef,
         }
       : {}),
+    ...(state.assetPlanRef ? { assetPlanRef: state.assetPlanRef } : {}),
     ...(state.concreteLayoutPlanRef
       ? { concreteLayoutPlanRef: state.concreteLayoutPlanRef }
       : {}),
@@ -1605,14 +1906,26 @@ function buildFinalizeOptions(
     ...(state.ruleJudgeVerdictRef
       ? { ruleJudgeVerdictRef: state.ruleJudgeVerdictRef }
       : {}),
-    ...(state.ruleJudgeVerdict?.recommendation === "refine"
+    ...(state.executionSceneSummaryRef
+      ? { executionSceneSummaryRef: state.executionSceneSummaryRef }
+      : {}),
+    ...(state.judgePlanRef ? { judgePlanRef: state.judgePlanRef } : {}),
+    ...(state.refineDecisionRef ? { refineDecisionRef: state.refineDecisionRef } : {}),
+    ...(state.judgePlan && state.judgePlan.recommendation !== "keep"
       ? {
-          warningSummary: state.ruleJudgeVerdict.issues.map((issue) => ({
+          warningSummary: state.judgePlan.issues.map((issue) => ({
             code: issue.code,
             message: issue.message,
           })),
         }
-      : {}),
+      : state.ruleJudgeVerdict?.recommendation === "refine"
+        ? {
+            warningSummary: state.ruleJudgeVerdict.issues.map((issue) => ({
+              code: issue.code,
+              message: issue.message,
+            })),
+          }
+        : {}),
     assignedSeqs,
     ...(overrideResult ? { overrideResult } : {}),
   };
@@ -1648,6 +1961,7 @@ function buildArtifactRefs(
             state.abstractLayoutPlanNormalizationReportRef,
         }
       : {}),
+    ...(state.assetPlanRef ? { assetPlanRef: state.assetPlanRef } : {}),
     ...(state.concreteLayoutPlanRef
       ? { concreteLayoutPlanRef: state.concreteLayoutPlanRef }
       : {}),
@@ -1670,6 +1984,45 @@ function buildArtifactRefs(
     ...(state.ruleJudgeVerdictRef
       ? { ruleJudgeVerdictRef: state.ruleJudgeVerdictRef }
       : {}),
+    ...(state.executionSceneSummaryRef
+      ? { executionSceneSummaryRef: state.executionSceneSummaryRef }
+      : {}),
+    ...(state.judgePlanRef ? { judgePlanRef: state.judgePlanRef } : {}),
+    ...(state.refineDecisionRef ? { refineDecisionRef: state.refineDecisionRef } : {}),
+  };
+}
+
+function buildStageAckRecord(
+  proposal: WorkerMutationProposalDraft,
+  ack: WaitMutationAckResponse,
+): StageAckRecord {
+  return {
+    stageLabel: proposal.stageLabel,
+    mutationId: proposal.mutationId,
+    seq: ack.seq ?? null,
+    status: ack.status,
+    resultingRevision: ack.resultingRevision ?? null,
+    resolvedLayerIds: ack.resolvedLayerIds ?? null,
+    commands: proposal.mutation.commands.map((command) => ({
+      op: command.op,
+      slotKey: command.slotKey ?? null,
+      clientLayerKey:
+        "clientLayerKey" in command && typeof command.clientLayerKey === "string"
+          ? command.clientLayerKey
+          : null,
+      role:
+        command.op === "createLayer" &&
+        typeof command.layerBlueprint.metadata.role === "string"
+          ? command.layerBlueprint.metadata.role
+          : command.op === "updateLayer" &&
+              typeof command.metadataTags.role === "string"
+            ? command.metadataTags.role
+            : null,
+      targetLayerId:
+        "targetRef" in command && command.targetRef.layerId
+          ? command.targetRef.layerId
+          : null,
+    })),
   };
 }
 

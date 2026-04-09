@@ -477,6 +477,8 @@ function createConcreteLayoutPlan(
     traceId: "trace-1",
     plannerMode: "langchain",
     abstractLayoutFamily: "promo_split",
+    resolvedSlotTopology: "headline_supporting_offer_cta_footer",
+    primaryVisualFamily: "graphic",
     resolvedLayoutMode: "left_copy_right_graphic",
     slotAnchors: {
       headline: "left_copy_column",

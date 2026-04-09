@@ -198,6 +198,7 @@ export const RunFinalizeRequestSchema = Type.Object(
     copyPlanNormalizationReportRef: Type.Optional(IdentifierSchema),
     abstractLayoutPlanRef: Type.Optional(IdentifierSchema),
     abstractLayoutPlanNormalizationReportRef: Type.Optional(IdentifierSchema),
+    assetPlanRef: Type.Optional(IdentifierSchema),
     concreteLayoutPlanRef: Type.Optional(IdentifierSchema),
     templatePriorSummaryRef: Type.Optional(IdentifierSchema),
     searchProfileRef: Type.Optional(IdentifierSchema),
@@ -208,6 +209,9 @@ export const RunFinalizeRequestSchema = Type.Object(
     selectionDecisionRef: Type.Optional(IdentifierSchema),
     typographyDecisionRef: Type.Optional(IdentifierSchema),
     ruleJudgeVerdictRef: Type.Optional(IdentifierSchema),
+    executionSceneSummaryRef: Type.Optional(IdentifierSchema),
+    judgePlanRef: Type.Optional(IdentifierSchema),
+    refineDecisionRef: Type.Optional(IdentifierSchema),
     sourceMutationRange: Type.Optional(
       Type.Object(
         {

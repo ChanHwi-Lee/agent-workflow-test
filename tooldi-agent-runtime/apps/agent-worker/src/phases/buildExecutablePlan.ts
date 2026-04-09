@@ -3,8 +3,10 @@ import { createRequestId } from "@tooldi/agent-domain";
 import type { ToolRegistry } from "@tooldi/tool-registry";
 
 import type {
+  AssetPlan,
   ConcreteLayoutPlan,
   CopyPlan,
+  CopyPlanSlotKey,
   HydratedPlanningInput,
   NormalizedIntent,
   SelectionDecision,
@@ -19,11 +21,13 @@ export async function buildExecutablePlan(
   input: HydratedPlanningInput,
   normalizedIntent: NormalizedIntent,
   copyPlan: CopyPlan,
+  assetPlan: AssetPlan,
   selectionDecision: SelectionDecision,
   concreteLayoutPlan: ConcreteLayoutPlan,
   typographyDecision: TypographyDecision,
   dependencies: BuildExecutablePlanDependencies,
 ): Promise<ExecutablePlan> {
+  const copySlotTexts = buildCopySlotTextMap(copyPlan);
   const resolveTool = (toolName: string) => {
     const tool = dependencies.toolRegistry.getTool(toolName);
     if (!tool) {
@@ -38,37 +42,28 @@ export async function buildExecutablePlan(
   const copyActionId = createRequestId();
   const polishActionId = createRequestId();
   const photoSelected =
-    selectionDecision.executionStrategy === "photo_hero_shape_text_group";
+    assetPlan.primaryVisualFamily === "photo" && assetPlan.photoBinding !== null;
   if (photoSelected) {
-    assertPhotoSelectionExecutable(selectionDecision);
+    assertPhotoSelectionExecutable(assetPlan);
   }
+  const graphicRoleBindings = assetPlan.graphicRoleBindings;
   const includeBadge =
-    selectionDecision.layoutMode === "badge_led" ||
-    selectionDecision.layoutMode === "badge_promo_stack" ||
-    selectionDecision.graphicCompositionSet?.roles.some(
-      (role) => role.role === "badge_or_ribbon",
-    ) === true;
+    Boolean(copySlotTexts.badge_text) ||
+    graphicRoleBindings.some((role) => role.role === "badge_or_ribbon");
   const includeHeroCaption =
-    selectionDecision.layoutMode === "copy_left_with_right_decoration";
+    concreteLayoutPlan.resolvedSlotTopology === "hero_headline_supporting_cta_footer";
   const includeHeroPanel =
-    !photoSelected &&
-    !["center_stack", "center_stack_promo", "badge_led", "badge_promo_stack"].includes(
-      selectionDecision.layoutMode,
-    );
+    !photoSelected && concreteLayoutPlan.abstractLayoutFamily === "subject_hero";
   const includeFrame =
-    selectionDecision.layoutMode === "framed_promo" ||
-    selectionDecision.graphicCompositionSet?.roles.some(
-      (role) => role.role === "frame",
-    ) === true;
+    concreteLayoutPlan.abstractLayoutFamily === "promo_frame" ||
+    graphicRoleBindings.some((role) => role.role === "frame");
   const includeUnderline =
     selectionDecision.decorationMode !== "ribbon_badge" &&
     selectionDecision.decorationMode !== "promo_multi_graphic" &&
     !photoSelected;
   const includeRibbon =
     selectionDecision.decorationMode === "ribbon_badge" ||
-    selectionDecision.graphicCompositionSet?.roles.some(
-      (role) => role.role === "badge_or_ribbon",
-    ) === true;
+    graphicRoleBindings.some((role) => role.role === "badge_or_ribbon");
 
   const actions: ExecutablePlan["actions"] = [
     {
@@ -91,18 +86,20 @@ export async function buildExecutablePlan(
         templateKind: normalizedIntent.templateKind,
         canvasPreset: normalizedIntent.canvasPreset,
         tone: normalizedIntent.tone,
-        selectedBackgroundCandidateId:
-          selectionDecision.selectedBackgroundCandidateId,
-        selectedBackgroundAssetId: selectionDecision.selectedBackgroundAssetId,
-        selectedBackgroundSerial: selectionDecision.selectedBackgroundSerial,
-        selectedBackgroundCategory: selectionDecision.selectedBackgroundCategory,
-        backgroundMode: selectionDecision.backgroundMode,
+        selectedBackgroundCandidateId: assetPlan.backgroundBinding.candidateId,
+        selectedBackgroundAssetId: assetPlan.backgroundBinding.sourceAssetId,
+        selectedBackgroundSerial: assetPlan.backgroundBinding.sourceSerial,
+        selectedBackgroundCategory: assetPlan.backgroundBinding.sourceCategory,
+        backgroundMode: assetPlan.backgroundBinding.backgroundMode,
         selectedLayoutCandidateId: selectionDecision.selectedLayoutCandidateId,
-        layoutMode: selectionDecision.layoutMode,
+        layoutMode: concreteLayoutPlan.resolvedLayoutMode,
+        layoutProfile: concreteLayoutPlan.abstractLayoutFamily,
+        primaryVisualFamily: assetPlan.primaryVisualFamily,
         includeHeroPanel,
         includeBadge,
         includeRibbon,
         includeFrame,
+        badgeText: copySlotTexts.badge_text ?? null,
       },
       rollback: {
         strategy: "delete_created_layers",
@@ -129,18 +126,19 @@ export async function buildExecutablePlan(
       },
       inputs: {
         selectedLayoutCandidateId: selectionDecision.selectedLayoutCandidateId,
-        layoutMode: selectionDecision.layoutMode,
-        selectedPhotoCandidateId: selectionDecision.topPhotoCandidateId,
-        selectedPhotoAssetId: selectionDecision.topPhotoAssetId,
-        selectedPhotoSerial: selectionDecision.topPhotoSerial,
-        selectedPhotoCategory: selectionDecision.topPhotoCategory,
-        selectedPhotoUid: selectionDecision.topPhotoUid,
-        selectedPhotoUrl: selectionDecision.topPhotoUrl,
-        selectedPhotoWidth: selectionDecision.topPhotoWidth,
-        selectedPhotoHeight: selectionDecision.topPhotoHeight,
-        selectedPhotoOrientation: selectionDecision.topPhotoOrientation,
-        photoFitMode: "cover",
-        photoCropMode: "centered_cover",
+        layoutMode: concreteLayoutPlan.resolvedLayoutMode,
+        layoutProfile: concreteLayoutPlan.abstractLayoutFamily,
+        selectedPhotoCandidateId: assetPlan.photoBinding?.candidateId ?? null,
+        selectedPhotoAssetId: assetPlan.photoBinding?.sourceAssetId ?? null,
+        selectedPhotoSerial: assetPlan.photoBinding?.sourceSerial ?? null,
+        selectedPhotoCategory: assetPlan.photoBinding?.sourceCategory ?? null,
+        selectedPhotoUid: assetPlan.photoBinding?.sourceUid ?? null,
+        selectedPhotoUrl: assetPlan.photoBinding?.sourceOriginUrl ?? null,
+        selectedPhotoWidth: assetPlan.photoBinding?.sourceWidth ?? null,
+        selectedPhotoHeight: assetPlan.photoBinding?.sourceHeight ?? null,
+        selectedPhotoOrientation: assetPlan.photoBinding?.orientation ?? null,
+        photoFitMode: assetPlan.photoBinding?.fitMode ?? "cover",
+        photoCropMode: assetPlan.photoBinding?.cropMode ?? "centered_cover",
       },
       rollback: {
         strategy: "delete_created_layers",
@@ -177,6 +175,14 @@ export async function buildExecutablePlan(
         copyPlanPrimaryMessage: copyPlan.primaryMessage,
         copyPlanSummary: copyPlan.summary,
         concreteLayoutPlanSummary: concreteLayoutPlan.summary,
+        copySlotTexts: JSON.parse(JSON.stringify(copySlotTexts)),
+        copySlotAnchors: JSON.parse(
+          JSON.stringify(concreteLayoutPlan.slotAnchors),
+        ),
+        clusterZones: JSON.parse(JSON.stringify(concreteLayoutPlan.clusterZones)),
+        spacingIntent: concreteLayoutPlan.spacingIntent,
+        layoutProfile: concreteLayoutPlan.abstractLayoutFamily,
+        primaryVisualFamily: assetPlan.primaryVisualFamily,
         includeHeroCaption,
         includeBadge,
       },
@@ -207,15 +213,27 @@ export async function buildExecutablePlan(
         selectedDecorationSerial: selectionDecision.selectedDecorationSerial,
         selectedDecorationCategory: selectionDecision.selectedDecorationCategory,
         decorationMode: selectionDecision.decorationMode,
+        primaryVisualFamily: assetPlan.primaryVisualFamily,
+        assetExecutionEligibility: JSON.parse(
+          JSON.stringify(assetPlan.executionEligibility),
+        ),
         graphicCompositionSet: selectionDecision.graphicCompositionSet
           ? JSON.parse(JSON.stringify(selectionDecision.graphicCompositionSet))
           : null,
+        graphicRoleBindings: JSON.parse(JSON.stringify(graphicRoleBindings)),
         displayFontFamily: typographyDecision.display?.fontToken ?? null,
         displayFontWeight: typographyDecision.display?.fontWeight ?? null,
         bodyFontFamily: typographyDecision.body?.fontToken ?? null,
         bodyFontWeight: typographyDecision.body?.fontWeight ?? null,
-        layoutMode: selectionDecision.layoutMode,
+        layoutMode: concreteLayoutPlan.resolvedLayoutMode,
+        layoutProfile: concreteLayoutPlan.abstractLayoutFamily,
         concreteLayoutPlanSummary: concreteLayoutPlan.summary,
+        clusterZones: JSON.parse(JSON.stringify(concreteLayoutPlan.clusterZones)),
+        graphicRolePlacementHints: JSON.parse(
+          JSON.stringify(concreteLayoutPlan.graphicRolePlacementHints),
+        ),
+        ctaContainerExpected: concreteLayoutPlan.ctaContainerExpected,
+        spacingIntent: concreteLayoutPlan.spacingIntent,
         executionStrategy: selectionDecision.executionStrategy,
         fallbackSummary: selectionDecision.fallbackSummary,
         includeBadge,
@@ -244,15 +262,25 @@ export async function buildExecutablePlan(
   };
 }
 
-function assertPhotoSelectionExecutable(selectionDecision: SelectionDecision): void {
+function buildCopySlotTextMap(
+  copyPlan: CopyPlan,
+): Partial<Record<CopyPlanSlotKey, string>> {
+  return copyPlan.slots.reduce<Partial<Record<CopyPlanSlotKey, string>>>(
+    (acc, slot) => {
+      acc[slot.key] = slot.text;
+      return acc;
+    },
+    {},
+  );
+}
+
+function assertPhotoSelectionExecutable(assetPlan: AssetPlan): void {
   if (
-    selectionDecision.layoutMode !== "copy_left_with_right_photo" ||
-    selectionDecision.selectedLayoutCandidateId !==
-      "layout_copy_left_with_right_photo" ||
-    selectionDecision.topPhotoCandidateId === null ||
-    selectionDecision.topPhotoUrl === null ||
-    selectionDecision.topPhotoWidth === null ||
-    selectionDecision.topPhotoHeight === null
+    assetPlan.photoBinding === null ||
+    assetPlan.photoBinding.candidateId === null ||
+    assetPlan.photoBinding.sourceOriginUrl === null ||
+    assetPlan.photoBinding.sourceWidth === null ||
+    assetPlan.photoBinding.sourceHeight === null
   ) {
     throw new Error(
       "Photo execution path requires an executable photo candidate and the dedicated photo layout candidate",

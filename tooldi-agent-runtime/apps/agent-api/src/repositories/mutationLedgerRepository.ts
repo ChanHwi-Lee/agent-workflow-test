@@ -158,6 +158,9 @@ export class MutationLedgerRepository {
           ...(record.ackRecord.resultingRevision !== undefined
             ? { resultingRevision: record.ackRecord.resultingRevision }
             : {}),
+          ...(record.ackRecord.resolvedLayerIds
+            ? { resolvedLayerIds: record.ackRecord.resolvedLayerIds }
+            : {}),
           ...(record.ackStatus === "rejected"
             ? {
                 error:

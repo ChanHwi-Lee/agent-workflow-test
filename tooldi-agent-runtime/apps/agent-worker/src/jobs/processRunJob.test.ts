@@ -1498,11 +1498,19 @@ test(
         "retrieval-stage.json",
         "template-candidate-set.json",
         "selection-decision.json",
+        "asset-plan.json",
         "layout-plan-concrete.json",
         "typography-decision.json",
         "source-search-summary.json",
         "executable-plan.json",
         "rule-judge-verdict.json",
+        "execution-scene-summary.json",
+        "judge-plan.json",
+        "refine-decision.json",
+        "executable-plan-refine-1.json",
+        "execution-scene-summary-refine-1.json",
+        "judge-plan-refine-1.json",
+        "refine-decision-refine-1.json",
       ],
     );
     const normalizedIntentDraftRef = artifactSequence[0]!;
@@ -1517,11 +1525,15 @@ test(
     const retrievalStageRef = artifactSequence[9]!;
     const candidateSetRef = artifactSequence[10]!;
     const selectionDecisionRef = artifactSequence[11]!;
-    const concreteLayoutPlanRef = artifactSequence[12]!;
-    const typographyDecisionRef = artifactSequence[13]!;
-    const sourceSearchSummaryRef = artifactSequence[14]!;
-    const executablePlanRef = artifactSequence[15]!;
-    const ruleJudgeVerdictRef = artifactSequence[16]!;
+    const assetPlanRef = artifactSequence[12]!;
+    const concreteLayoutPlanRef = artifactSequence[13]!;
+    const typographyDecisionRef = artifactSequence[14]!;
+    const sourceSearchSummaryRef = artifactSequence[15]!;
+    const ruleJudgeVerdictRef = artifactSequence[17]!;
+    const executablePlanRef = artifactSequence[21]!;
+    const executionSceneSummaryRef = artifactSequence[22]!;
+    const judgePlanRef = artifactSequence[23]!;
+    const refineDecisionRef = artifactSequence[24]!;
 
     assert.deepEqual(result.artifactRefs, {
       normalizedIntentRef,
@@ -1531,6 +1543,7 @@ test(
       copyPlanNormalizationReportRef,
       abstractLayoutPlanRef,
       abstractLayoutPlanNormalizationReportRef,
+      assetPlanRef,
       concreteLayoutPlanRef,
       templatePriorSummaryRef,
       searchProfileRef,
@@ -1541,6 +1554,9 @@ test(
       selectionDecisionRef,
       typographyDecisionRef,
       ruleJudgeVerdictRef,
+      executionSceneSummaryRef,
+      judgePlanRef,
+      refineDecisionRef,
     });
     assert.equal(callbackClient.finalizations.length, 1);
     assert.deepEqual(
@@ -1557,6 +1573,7 @@ test(
           callbackClient.finalizations[0]?.abstractLayoutPlanRef,
         abstractLayoutPlanNormalizationReportRef:
           callbackClient.finalizations[0]?.abstractLayoutPlanNormalizationReportRef,
+        assetPlanRef: callbackClient.finalizations[0]?.assetPlanRef,
         concreteLayoutPlanRef:
           callbackClient.finalizations[0]?.concreteLayoutPlanRef,
         templatePriorSummaryRef: callbackClient.finalizations[0]?.templatePriorSummaryRef,
@@ -1568,6 +1585,10 @@ test(
         selectionDecisionRef: callbackClient.finalizations[0]?.selectionDecisionRef,
         typographyDecisionRef: callbackClient.finalizations[0]?.typographyDecisionRef,
         ruleJudgeVerdictRef: callbackClient.finalizations[0]?.ruleJudgeVerdictRef,
+        executionSceneSummaryRef:
+          callbackClient.finalizations[0]?.executionSceneSummaryRef,
+        judgePlanRef: callbackClient.finalizations[0]?.judgePlanRef,
+        refineDecisionRef: callbackClient.finalizations[0]?.refineDecisionRef,
       },
       {
         normalizedIntentDraftRef,
@@ -1577,6 +1598,7 @@ test(
         copyPlanNormalizationReportRef,
         abstractLayoutPlanRef,
         abstractLayoutPlanNormalizationReportRef,
+        assetPlanRef,
         concreteLayoutPlanRef,
         templatePriorSummaryRef,
         searchProfileRef,
@@ -1587,6 +1609,9 @@ test(
         selectionDecisionRef,
         typographyDecisionRef,
         ruleJudgeVerdictRef,
+        executionSceneSummaryRef,
+        judgePlanRef,
+        refineDecisionRef,
       },
     );
     assert.ok(
@@ -1858,7 +1883,7 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   );
   assert.ok(plan);
   assert.equal(plan.actions.length, 3);
-  assert.equal(result.emittedMutationIds.length, 3);
+  assert.equal(result.emittedMutationIds.length, 4);
   assert.ok(selectionDecision);
   assert.equal(selectionDecision.retrievalMode, "none");
   assert.equal(selectionDecision.backgroundMode, "spring_pattern");
@@ -1869,6 +1894,35 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   assert.equal(result.intent.domain, "general_marketing");
   assert.equal(result.intent.facets.menuType, null);
   assert.equal(result.intent.campaignGoal, "sale_conversion");
+  const copyAction = plan.actions.find(
+    (action) => action.operation === "place_copy_cluster",
+  );
+  assert.ok(copyAction);
+  assert.equal(
+    (copyAction.inputs as { copySlotTexts?: { headline?: string } }).copySlotTexts
+      ?.headline,
+    "봄 세일",
+  );
+  assert.equal(
+    (copyAction.inputs as { copySlotTexts?: { cta?: string } }).copySlotTexts?.cta,
+    "혜택 보기",
+  );
+  assert.equal(
+    (
+      copyAction.inputs as {
+        copySlotAnchors?: { headline?: string; cta?: string };
+      }
+    ).copySlotAnchors?.headline,
+    "left_copy_column",
+  );
+  assert.equal(
+    (
+      copyAction.inputs as {
+        copySlotAnchors?: { headline?: string; cta?: string };
+      }
+    ).copySlotAnchors?.cta,
+    "bottom_center",
+  );
   assert.ok(
     ["세일", "프로모션"].includes(
       result.searchProfile?.graphic.queries[0]?.keyword ?? "",
@@ -1894,6 +1948,9 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     ),
     false,
   );
+  assert.equal(result.assetPlan?.primaryVisualFamily, "graphic");
+  assert.equal(result.assetPlan?.photoBinding, null);
+  assert.equal(result.assetPlan?.graphicRoleBindings.length !== 0, true);
   assert.equal(result.ruleJudgeVerdict?.recommendation, "refine");
   assert.ok(candidateSets);
   assert.equal(candidateSets.background.family, "background");
@@ -1918,9 +1975,9 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
       (event) => event.event.type === "mutation.proposed",
     ),
   );
-  assert.equal(callbackClient.ackWaits.length, 3);
+  assert.equal(callbackClient.ackWaits.length, 4);
   assert.equal(callbackClient.finalizations.length, 1);
-  assert.equal(callbackClient.finalizations[0]?.lastAckedSeq, 3);
+  assert.equal(callbackClient.finalizations[0]?.lastAckedSeq, 4);
   assert.equal(
     callbackClient.finalizations[0]?.normalizedIntentRef,
     `runs/${testRun.runId}/attempts/1/normalized-intent.json`,
@@ -1935,7 +1992,7 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   );
   assert.equal(
     callbackClient.finalizations[0]?.executablePlanRef,
-    `runs/${testRun.runId}/attempts/1/executable-plan.json`,
+    `runs/${testRun.runId}/attempts/1/executable-plan-refine-1.json`,
   );
   assert.equal(
     callbackClient.finalizations[0]?.candidateSetRef,

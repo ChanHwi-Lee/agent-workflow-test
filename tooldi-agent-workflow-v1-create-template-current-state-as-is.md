@@ -8,7 +8,7 @@
 | 문서 목적 | 2026-04-08 기준 `create_template` worker/runtime 구현이 실제로 어디까지 왔는지 current truth를 기록한다. |
 | 상태 | Draft |
 | 문서 유형 | AS-IS |
-| 작성일 | 2026-04-08 |
+| 작성일 | 2026-04-09 |
 | 기준 시스템 | `toolditor FE`, `Fastify Agent API`, `BullMQ Worker + LangGraph Runtime`, `LangChain JS planner`, `Google Gemini`, existing Tooldi PHP source APIs |
 | 대상 독자 | PM, FE, Agent Backend, Worker, QA, Reviewer |
 
@@ -35,9 +35,11 @@
 - empty canvas 에서 자연어로 배너 초안을 1개 생성하는 run
 - `LangGraph` worker graph 기반 single-run orchestration
 - planner 기반 `NormalizedIntent`
+- `CopyPlan`, `AbstractLayoutPlan`, `AssetPlan`, `ConcreteLayoutPlan`
 - `SearchProfile` 기반 source query plan
 - candidate assemble / selection / typography selection
 - `RuleJudgeVerdict`
+- `ExecutionSceneSummary`, `JudgePlan`, `RefineDecision`
 - staged mutation execution
 - `completed`, `completed_with_warning`, `failed` terminal semantics
 
@@ -46,7 +48,6 @@
 - existing canvas edit/delete 사용자 표면
 - semantic retrieval / vector DB
 - vision model judge
-- 실제 2차 mutation refine loop
 - public multi-turn memory
 - editor canonical picture seam 정렬
 - actual editor save evidence 완전 연동
@@ -76,9 +77,9 @@
 1. 사용자가 편집기에서 자연어 prompt를 입력한다.
 2. FE는 run 생성 요청을 backend로 보낸다.
 3. backend는 BullMQ queue에 `RunJobEnvelope` 를 넣고 SSE stream을 연다.
-4. worker는 LangGraph graph를 통해 `NormalizedIntent`, `SearchProfile`, candidate set, selection, judge, final plan을 만든다.
-5. worker는 staged mutation을 FE에 제안한다.
-6. FE는 mutation을 적용하고 ack를 backend에 보낸다.
+4. worker는 LangGraph graph를 통해 `NormalizedIntent`, `CopyPlan`, `LayoutPlan`, `AssetPlan`, `SearchProfile`, candidate set, selection, judge, final plan을 만든다.
+5. worker는 staged mutation을 FE에 제안하고 ack를 수집한다.
+6. worker는 ack 결과로 `ExecutionSceneSummary -> JudgePlan -> RefineDecision` 을 만들고 필요 시 1회 patch-only refine mutation을 추가로 보낸다.
 7. backend는 finalize를 materialize 하고 terminal outcome을 남긴다.
 
 ## 6. 현재 기능 요구사항 (AS-IS)
@@ -122,21 +123,30 @@
 - 시스템은 `RuleJudgeVerdict` 를 실제로 생성한다.
 - judge recommendation 은 현재 `keep`, `refine`, `refuse` 를 가진다.
 - `refuse` 는 pre-execution failure 로 닫힌다.
-- `refine` 는 현재 실제 refine mutation loop 대신 `completed_with_warning` terminal semantics 로 반영된다.
+- preflight `refine` 는 실행 이후 `ExecutionSceneSummary -> JudgePlan -> RefineDecision` 을 통해 **최대 1회 patch-only refine mutation** 으로 이어질 수 있다.
+- patch scope 는 `copy text`, `slot anchor`, `cluster zone`, `spacing`, `cta container fallback` 으로 제한된다.
 - `keep` 는 일반 `completed` 로 이어진다.
 
 ### 6.5 artifact chain
 
 - 시스템은 현재 최소 아래 artifact를 남긴다.
   - `normalized-intent.json`
+  - `copy-plan.json`
+  - `layout-plan-abstract.json`
+  - `asset-plan.json`
+  - `layout-plan-concrete.json`
   - `search-profile.json`
   - `template-candidate-set.json`
   - `selection-decision.json`
   - `typography-decision.json`
   - `source-search-summary.json`
   - `rule-judge-verdict.json`
+  - `execution-scene-summary.json`
+  - `judge-plan.json`
+  - `refine-decision.json`
   - `executable-plan.json`
-- finalize/completion chain은 `searchProfileRef`, `ruleJudgeVerdictRef` 를 포함한다.
+- refine가 실제로 돌면 `executable-plan-refine-1.json`, `execution-scene-summary-refine-1.json`, `judge-plan-refine-1.json`, `refine-decision-refine-1.json` 도 남는다.
+- finalize/completion chain은 이제 `copyPlanRef`, `assetPlanRef`, `concreteLayoutPlanRef`, `executionSceneSummaryRef`, `judgePlanRef`, `refineDecisionRef` 까지 포함한다.
 
 ## 7. 현재 business rule
 
@@ -157,8 +167,8 @@
 
 ### 8.2 real refine loop 부재
 
-- `refine` recommendation 이 실제 2차 mutation regenerate/apply 로 이어지지 않는다.
-- 현재는 warning semantics 로만 반영된다.
+- `ruleJudge` 의 `refine` recommendation 은 이제 post-execution `JudgePlan` 과 1회 patch-only refine loop로 이어질 수 있다.
+- 다만 이 refine 는 retrieval 재실행이나 asset rebinding 이 아니라 copy/layout/spacing/CTA container 보정만 허용한다.
 
 ### 8.3 retrieval / vision / memory 미구현
 
@@ -205,8 +215,8 @@ pnpm run local:toolditor:stack:real
 
 | ID | 질문 |
 | --- | --- |
-| OQ-001 | planner prompt/schema를 더 좁혀 domain/facet contradiction을 줄일지, judge 규칙을 먼저 강화할지 |
-| OQ-002 | `refine` recommendation을 실제 1회 mutation refine loop로 언제 승격할지 |
+| OQ-001 | explicit subject path(`restaurant`/`cafe`/`fashion`)에 대한 copy/layout grammar를 언제 별도 subplan 정책으로 승격할지 |
+| OQ-002 | 현재 patch-only refine를 어디까지 topology/spacing/CTA 품질 쪽으로 확장하고, 어디까지는 Phase 4 이후 visual judge로 미룰지 |
 | OQ-003 | semantic retrieval과 real save evidence integration 중 어느 축을 먼저 열지 |
 
 ## 12. Risks / design debt
@@ -214,7 +224,7 @@ pnpm run local:toolditor:stack:real
 | ID | 항목 | 영향 |
 | --- | --- | --- |
 | KD-001 | planner/judge가 domain contradiction을 충분히 잡지 못함 | High |
-| KD-002 | `refine` 가 실제 refinement loop가 아님 | Medium |
+| KD-002 | `refine` 는 현재 patch-only / non-visual 이며 retrieval 재실행과 asset rebinding은 하지 않음 | Medium |
 | KD-003 | real save evidence가 prototype 수준 | Medium |
 | KD-004 | photo insertion canonical picture seam 정렬 deferred | Medium |
 
@@ -229,6 +239,9 @@ pnpm run local:toolditor:stack:real
 - `tooldi-agent-runtime/apps/agent-worker/src/phases/selectTemplateComposition.ts`
 - `tooldi-agent-runtime/apps/agent-worker/src/phases/selectTypography.ts`
 - `tooldi-agent-runtime/apps/agent-worker/src/phases/ruleJudge.ts`
+- `tooldi-agent-runtime/apps/agent-worker/src/phases/buildExecutionSceneSummary.ts`
+- `tooldi-agent-runtime/apps/agent-worker/src/phases/buildJudgePlan.ts`
+- `tooldi-agent-runtime/apps/agent-worker/src/phases/buildRefineDecision.ts`
 - `tooldi-agent-runtime/apps/agent-worker/src/phases/finalizeRun.ts`
 - `tooldi-agent-runtime/packages/agent-llm/src/templatePlanner.ts`
 - `tooldi-agent-runtime/packages/contracts/src/worker/worker-callbacks.ts`

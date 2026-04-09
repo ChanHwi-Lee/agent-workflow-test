@@ -54,6 +54,7 @@ type MaterializationInput = {
   copyPlanNormalizationReportRef: string | null;
   abstractLayoutPlanRef: string | null;
   abstractLayoutPlanNormalizationReportRef: string | null;
+  assetPlanRef: string | null;
   concreteLayoutPlanRef: string | null;
   templatePriorSummaryRef: string | null;
   searchProfileRef: string | null;
@@ -64,6 +65,9 @@ type MaterializationInput = {
   selectionDecisionRef: string | null;
   typographyDecisionRef: string | null;
   ruleJudgeVerdictRef: string | null;
+  executionSceneSummaryRef: string | null;
+  judgePlanRef: string | null;
+  refineDecisionRef: string | null;
   sourceMutationRange: NonNullable<RunFinalizeRequest["sourceMutationRange"]>;
   outputTemplateCode: string | null;
 };
@@ -307,6 +311,7 @@ export class RunFinalizeService {
         abstractLayoutPlanRef: request.abstractLayoutPlanRef ?? null,
         abstractLayoutPlanNormalizationReportRef:
           request.abstractLayoutPlanNormalizationReportRef ?? null,
+        assetPlanRef: request.assetPlanRef ?? null,
         concreteLayoutPlanRef: request.concreteLayoutPlanRef ?? null,
         templatePriorSummaryRef: request.templatePriorSummaryRef ?? null,
         searchProfileRef: request.searchProfileRef ?? null,
@@ -317,6 +322,9 @@ export class RunFinalizeService {
         selectionDecisionRef: request.selectionDecisionRef ?? null,
         typographyDecisionRef: request.typographyDecisionRef ?? null,
         ruleJudgeVerdictRef: request.ruleJudgeVerdictRef ?? null,
+        executionSceneSummaryRef: request.executionSceneSummaryRef ?? null,
+        judgePlanRef: request.judgePlanRef ?? null,
+        refineDecisionRef: request.refineDecisionRef ?? null,
         sourceMutationRange: request.sourceMutationRange,
         outputTemplateCode: request.outputTemplateCode ?? null,
       },
@@ -393,6 +401,7 @@ export class RunFinalizeService {
               abstractLayoutPlanRef: input.abstractLayoutPlanRef,
               abstractLayoutPlanNormalizationReportRef:
                 input.abstractLayoutPlanNormalizationReportRef,
+              assetPlanRef: input.assetPlanRef,
               concreteLayoutPlanRef: input.concreteLayoutPlanRef,
               normalizedIntentRef: input.normalizedIntentRef,
               templatePriorSummaryRef: input.templatePriorSummaryRef,
@@ -402,6 +411,10 @@ export class RunFinalizeService {
               retrievalStageRef: input.retrievalStageRef,
               selectionDecisionRef: input.selectionDecisionRef,
               typographyDecisionRef: input.typographyDecisionRef,
+              ruleJudgeVerdictRef: input.ruleJudgeVerdictRef,
+              executionSceneSummaryRef: input.executionSceneSummaryRef,
+              judgePlanRef: input.judgePlanRef,
+              refineDecisionRef: input.refineDecisionRef,
               latestSaveReceiptId: latestSaveReceipt.saveReceiptId,
               bundleRef,
             },
@@ -598,6 +611,7 @@ export class RunFinalizeService {
                 input.abstractLayoutPlanNormalizationReportRef,
             }
           : {}),
+        ...(input.assetPlanRef ? { assetPlanRef: input.assetPlanRef } : {}),
         ...(input.concreteLayoutPlanRef
           ? { concreteLayoutPlanRef: input.concreteLayoutPlanRef }
           : {}),
@@ -619,6 +633,13 @@ export class RunFinalizeService {
           : {}),
         ...(input.ruleJudgeVerdictRef
           ? { ruleJudgeVerdictRef: input.ruleJudgeVerdictRef }
+          : {}),
+        ...(input.executionSceneSummaryRef
+          ? { executionSceneSummaryRef: input.executionSceneSummaryRef }
+          : {}),
+        ...(input.judgePlanRef ? { judgePlanRef: input.judgePlanRef } : {}),
+        ...(input.refineDecisionRef
+          ? { refineDecisionRef: input.refineDecisionRef }
           : {}),
         bundleRef,
       },

@@ -245,6 +245,8 @@ export interface ConcreteLayoutPlan {
   traceId: string;
   plannerMode: NormalizedIntent["plannerMode"];
   abstractLayoutFamily: AbstractLayoutFamily;
+  resolvedSlotTopology: AbstractLayoutSlotTopology;
+  primaryVisualFamily: "graphic" | "photo";
   resolvedLayoutMode: SelectionDecision["layoutMode"];
   slotAnchors: Partial<Record<CopyPlanSlotKey, ConcreteLayoutAnchorZone>>;
   clusterZones: ConcreteLayoutClusterZone[];
@@ -254,6 +256,65 @@ export interface ConcreteLayoutPlan {
     zone: ConcreteLayoutClusterZone;
   }>;
   spacingIntent: AbstractLayoutDensity;
+  summary: string;
+}
+
+export interface AssetExecutionEligibility {
+  canRender: boolean;
+  degraded: boolean;
+  reasons: string[];
+}
+
+export interface AssetBackgroundBinding {
+  candidateId: string;
+  sourceAssetId: string | null;
+  sourceSerial: string | null;
+  sourceCategory: string | null;
+  backgroundMode: SelectionDecision["backgroundMode"];
+}
+
+export interface GraphicRoleBinding {
+  role: GraphicCompositionRole;
+  candidateId: string;
+  sourceAssetId: string | null;
+  sourceSerial: string | null;
+  sourceCategory: string | null;
+  variantKey: string;
+  decorationMode: GraphicCompositionEntry["decorationMode"];
+  required: boolean;
+  zonePreference: ConcreteLayoutClusterZone;
+}
+
+export interface PhotoBinding {
+  candidateId: string;
+  sourceAssetId: string | null;
+  sourceSerial: string | null;
+  sourceCategory: string | null;
+  sourceUid: string | null;
+  sourceOriginUrl: string | null;
+  sourceWidth: number | null;
+  sourceHeight: number | null;
+  orientation: SelectionDecision["topPhotoOrientation"];
+  fitMode: "cover";
+  cropMode: "centered_cover";
+  required: boolean;
+}
+
+export interface AssetPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  plannerMode: NormalizedIntent["plannerMode"];
+  primaryVisualFamily: "graphic" | "photo";
+  backgroundBinding: AssetBackgroundBinding;
+  graphicRoleBindings: GraphicRoleBinding[];
+  photoBinding: PhotoBinding | null;
+  fallbackPolicy: {
+    missingOptionalGraphicRoles: "drop";
+    missingCtaContainer: "fallback_cta_pill";
+    unavailablePhotoPrimary: "demote_to_graphic_primary";
+  };
+  executionEligibility: AssetExecutionEligibility;
   summary: string;
 }
 
@@ -614,6 +675,152 @@ export interface RuleJudgeVerdict {
   summary: string;
 }
 
+export interface StageAckRecordCommand {
+  op: "createLayer" | "updateLayer" | "deleteLayer" | "saveTemplate";
+  slotKey:
+    | CopyPlanSlotKey
+    | "background"
+    | "supporting_copy"
+    | "decoration"
+    | "hero_image"
+    | "badge"
+    | null;
+  clientLayerKey: string | null;
+  role: string | null;
+  targetLayerId: string | null;
+}
+
+export interface StageAckRecord {
+  stageLabel: string;
+  mutationId: string;
+  seq: number | null;
+  status: WaitMutationAckResponse["status"];
+  resultingRevision: number | null;
+  resolvedLayerIds: Record<string, string> | null;
+  commands: StageAckRecordCommand[];
+}
+
+export interface ExecutionSceneCopyLayerBinding {
+  slotKey: CopyPlanSlotKey;
+  layerId: string | null;
+  text: string | null;
+  anchor: ConcreteLayoutAnchorZone | null;
+}
+
+export interface ExecutionSceneGraphicLayerBinding {
+  role: GraphicCompositionRole;
+  layerId: string | null;
+  zone: ConcreteLayoutClusterZone | null;
+  sourceAssetId: string | null;
+  sourceSerial: string | null;
+}
+
+export interface ExecutionScenePhotoLayerBinding {
+  layerId: string | null;
+  sourceAssetId: string | null;
+  sourceSerial: string | null;
+}
+
+export interface ExecutionSceneSummary {
+  summaryId: string;
+  runId: string;
+  traceId: string;
+  attemptSeq: number;
+  finalRevision: number | null;
+  stageResults: StageAckRecord[];
+  copyLayerBindings: ExecutionSceneCopyLayerBinding[];
+  graphicLayerBindings: ExecutionSceneGraphicLayerBinding[];
+  photoLayerBinding: ExecutionScenePhotoLayerBinding | null;
+  ctaContainerResolved: boolean;
+  summary: string;
+}
+
+export type JudgePlanRecommendation = "keep" | "refine" | "warn_only";
+export type JudgePatchScope =
+  | "copy_text"
+  | "slot_anchor"
+  | "cluster_zone"
+  | "spacing"
+  | "cta_container";
+
+export type JudgePlanIssueCode =
+  | "copy_anchor_execution_mismatch"
+  | "copy_stack_spacing_weak"
+  | "cta_container_missing_after_execution"
+  | "graphic_role_zone_mismatch"
+  | "topology_execution_mismatch"
+  | "footer_zone_mismatch"
+  | "badge_zone_mismatch"
+  | "preflight_copy_cta_subject_mismatch"
+  | "preflight_cta_missing_or_weak"
+  | "preflight_headline_overflow_risk"
+  | "preflight_concrete_layout_slot_conflict"
+  | "preflight_cta_copy_overlap_risk"
+  | "preflight_excessive_empty_space";
+
+export interface JudgePlanIssue {
+  code: JudgePlanIssueCode;
+  severity: "warn" | "error";
+  message: string;
+  patchable: boolean;
+  suggestedPatchScopes: JudgePatchScope[];
+}
+
+export interface JudgePlan {
+  judgePlanId: string;
+  runId: string;
+  traceId: string;
+  refineAttempt: 0 | 1;
+  recommendation: JudgePlanRecommendation;
+  patchable: boolean;
+  issues: JudgePlanIssue[];
+  allowedPatchScopes: JudgePatchScope[];
+  summary: string;
+}
+
+export type RefinementPatchOperation =
+  | {
+      kind: "rewrite_copy_slot_text";
+      slotKey: CopyPlanSlotKey;
+      text: string;
+    }
+  | {
+      kind: "move_copy_slot_anchor";
+      slotKey: CopyPlanSlotKey;
+      anchor: ConcreteLayoutAnchorZone;
+    }
+  | {
+      kind: "set_spacing_intent";
+      spacingIntent: AbstractLayoutDensity;
+    }
+  | {
+      kind: "move_graphic_role_zone";
+      role: GraphicCompositionRole;
+      zone: ConcreteLayoutClusterZone;
+    }
+  | {
+      kind: "ensure_cta_container_fallback";
+    };
+
+export interface RefinementPatchPlan {
+  patchPlanId: string;
+  runId: string;
+  traceId: string;
+  operations: RefinementPatchOperation[];
+  summary: string;
+}
+
+export interface RefineDecision {
+  decisionId: string;
+  runId: string;
+  traceId: string;
+  decision: "skip" | "patch";
+  reason: string;
+  refineAttempt: 0 | 1;
+  targetRevision: number | null;
+  patchPlan: RefinementPatchPlan | null;
+}
+
 export interface MutationProposalDraft {
   mutationId: string;
   rollbackGroupId: string;
@@ -628,6 +835,9 @@ export interface SkeletonMutationBatch {
 }
 
 export interface RefinementMutationBatch {
+  proposal: MutationProposalDraft | null;
+  refinedPlan: ExecutablePlan;
+  refinedPlanRef: string | null;
   proposedMutationIds: string[];
   lastMutationAck: WaitMutationAckResponse | null;
 }
@@ -649,6 +859,7 @@ export interface ProcessRunJobResult {
   copyPlanNormalizationReport?: CopyPlanNormalizationReport;
   abstractLayoutPlan?: AbstractLayoutPlan;
   abstractLayoutPlanNormalizationReport?: AbstractLayoutPlanNormalizationReport;
+  assetPlan?: AssetPlan;
   concreteLayoutPlan?: ConcreteLayoutPlan;
   templatePriorSummary?: TemplatePriorSummary;
   searchProfile?: SearchProfileArtifact;
@@ -658,6 +869,9 @@ export interface ProcessRunJobResult {
   selectionDecision?: SelectionDecision;
   typographyDecision?: TypographyDecision;
   ruleJudgeVerdict?: RuleJudgeVerdict;
+  executionSceneSummary?: ExecutionSceneSummary;
+  judgePlan?: JudgePlan;
+  refineDecision?: RefineDecision;
   plan?: ExecutablePlan;
   emittedMutationIds: string[];
   finalizeDraft: FinalizeRunDraft;
@@ -669,6 +883,7 @@ export interface ProcessRunJobResult {
     copyPlanNormalizationReportRef?: string;
     abstractLayoutPlanRef?: string;
     abstractLayoutPlanNormalizationReportRef?: string;
+    assetPlanRef?: string;
     concreteLayoutPlanRef?: string;
     templatePriorSummaryRef?: string;
     searchProfileRef?: string;
@@ -679,6 +894,9 @@ export interface ProcessRunJobResult {
     selectionDecisionRef?: string;
     typographyDecisionRef?: string;
     ruleJudgeVerdictRef?: string;
+    executionSceneSummaryRef?: string;
+    judgePlanRef?: string;
+    refineDecisionRef?: string;
   };
 }
 

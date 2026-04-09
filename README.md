@@ -15,18 +15,25 @@
 - 표현 전략 lock: [tooldi-agent-workflow-v1-create-template-representation-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-representation-design-lock.md)
 - 다음 작업 우선순위: [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
 
-## 2026-04-08 현재 구현 스냅샷
+## 2026-04-09 현재 구현 스냅샷
 
 - worker orchestration 은 `BullMQ Worker + LangGraph` 로 동작한다.
 - planner/model abstraction 은 `LangChain JS` 로 정리했고, 현재 local 기본 planner provider 는 `Google Gemini` 다.
 - public 제품 표면은 여전히 `empty_canvas -> create_template` 1종이다.
-- 현재 worker 는 generic `create_template` skeleton 을 가진다.
+- 현재 worker 는 generic `create_template` skeleton 을 넘어 `strict core + structured subplans` 체인을 가진다.
   - `normalized-intent`
+  - `copy-plan`
+  - `layout-plan-abstract`
+  - `asset-plan`
+  - `layout-plan-concrete`
   - `search-profile`
   - `candidate-set`
   - `selection-decision`
   - `typography-decision`
   - `rule-judge-verdict`
+  - `execution-scene-summary`
+  - `judge-plan`
+  - `refine-decision`
   - `executable-plan`
 - terminal outcome 은 `completed`, `completed_with_warning`, `failed` 를 실제로 구분한다.
 - real Tooldi source representative slice 는 계속 동작한다.
@@ -42,8 +49,9 @@
   - giant end-to-end schema 금지
   - freeform brief handoff 금지
   - family-specific retrieval/execution semantics 유지
-- 현재 가장 큰 남은 품질 이슈는 planner/judge 정합성이다.
-  - 실제 manual run에서 `domain=fashion_retail` 인데 `facets.menuType=food_menu` 가 섞였고, judge 가 이를 `keep` 으로 통과시킨 사례가 있다.
+- 현재 create-template 는 preflight `ruleJudge` 뒤에 **scene-aware, non-visual 1회 patch refine** 를 가진다.
+  - `execution-scene-summary -> judge-plan -> refine-decision -> patch mutation -> finalize`
+- real save evidence 는 아직 synthetic finalize placeholder 에 의존한다.
 
 ## 범위
 

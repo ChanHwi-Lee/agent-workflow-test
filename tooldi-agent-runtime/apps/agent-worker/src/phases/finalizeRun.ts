@@ -15,6 +15,7 @@ export async function finalizeRun(
     copyPlanNormalizationReportRef?: string;
     abstractLayoutPlanRef?: string;
     abstractLayoutPlanNormalizationReportRef?: string;
+    assetPlanRef?: string;
     concreteLayoutPlanRef?: string;
     templatePriorSummaryRef?: string;
     searchProfileRef?: string;
@@ -25,6 +26,9 @@ export async function finalizeRun(
     selectionDecisionRef?: string;
     typographyDecisionRef?: string;
     ruleJudgeVerdictRef?: string;
+    executionSceneSummaryRef?: string;
+    judgePlanRef?: string;
+    refineDecisionRef?: string;
     warningSummary?: Array<{
       code: string;
       message: string;
@@ -142,6 +146,7 @@ export async function finalizeRun(
               options.abstractLayoutPlanNormalizationReportRef,
           }
         : {}),
+      ...(options.assetPlanRef ? { assetPlanRef: options.assetPlanRef } : {}),
       ...(options.concreteLayoutPlanRef
         ? { concreteLayoutPlanRef: options.concreteLayoutPlanRef }
         : {}),
@@ -169,6 +174,13 @@ export async function finalizeRun(
         : {}),
       ...(options.ruleJudgeVerdictRef
         ? { ruleJudgeVerdictRef: options.ruleJudgeVerdictRef }
+        : {}),
+      ...(options.executionSceneSummaryRef
+        ? { executionSceneSummaryRef: options.executionSceneSummaryRef }
+        : {}),
+      ...(options.judgePlanRef ? { judgePlanRef: options.judgePlanRef } : {}),
+      ...(options.refineDecisionRef
+        ? { refineDecisionRef: options.refineDecisionRef }
         : {}),
       ...(sourceMutationRange ? { sourceMutationRange } : {}),
       createdLayerIds:
