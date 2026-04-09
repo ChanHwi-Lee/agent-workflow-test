@@ -39,17 +39,17 @@ export function createTooldiCatalogSourceClientForMode(
     "tooldiContentApiBaseUrl" | "tooldiContentApiTimeoutMs" | "tooldiContentApiCookie"
   >,
 ): TooldiCatalogSourceClient {
-  if (mode === "tooldi_api") {
+  if (mode === "tooldi_api" || mode === "tooldi_api_direct") {
     if (!env.tooldiContentApiBaseUrl) {
       throw new Error(
-        "TOOLDI_CONTENT_API_BASE_URL is required when TOOLDI_CATALOG_SOURCE_MODE=tooldi_api",
+        "TOOLDI_CONTENT_API_BASE_URL is required when TOOLDI_CATALOG_SOURCE_MODE is a real Tooldi API mode",
       );
     }
 
     const baseUrl = new URL(env.tooldiContentApiBaseUrl);
     if (baseUrl.hostname !== "localhost") {
       throw new Error(
-        "TOOLDI_CONTENT_API_BASE_URL must use localhost when TOOLDI_CATALOG_SOURCE_MODE=tooldi_api",
+        "TOOLDI_CONTENT_API_BASE_URL must use localhost when TOOLDI_CATALOG_SOURCE_MODE uses Tooldi API transport",
       );
     }
 

@@ -59,7 +59,7 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
   langGraphCheckpointerMode: "memory" | "postgres";
   langGraphCheckpointerPostgresUrl: string | null;
   langGraphCheckpointerSchema: string;
-  tooldiCatalogSourceMode: "placeholder" | "tooldi_api";
+  tooldiCatalogSourceMode: "placeholder" | "tooldi_api" | "tooldi_api_direct";
   tooldiContentApiBaseUrl: string | null;
   tooldiContentApiTimeoutMs: number;
   tooldiContentApiCookie: string | null;
@@ -239,14 +239,18 @@ export function loadAgentWorkerEnv(
   const tooldiCatalogSourceMode = readEnumValue(
     source,
     "TOOLDI_CATALOG_SOURCE_MODE",
-    ["placeholder", "tooldi_api"] as const,
+    ["placeholder", "tooldi_api", "tooldi_api_direct"] as const,
     "placeholder",
   );
   const tooldiContentApiBaseUrl = readOptionalString(
     source,
     "TOOLDI_CONTENT_API_BASE_URL",
   );
-  if (tooldiCatalogSourceMode === "tooldi_api" && !tooldiContentApiBaseUrl) {
+  if (
+    (tooldiCatalogSourceMode === "tooldi_api" ||
+      tooldiCatalogSourceMode === "tooldi_api_direct") &&
+    !tooldiContentApiBaseUrl
+  ) {
     throw new Error(
       "Missing required environment variable: TOOLDI_CONTENT_API_BASE_URL",
     );

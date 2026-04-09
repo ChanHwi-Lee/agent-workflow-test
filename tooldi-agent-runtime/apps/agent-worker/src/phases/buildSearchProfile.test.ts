@@ -189,7 +189,7 @@ test("buildSearchProfile uses repaired restaurant intent semantics to populate c
   assert.equal(profile.photo.queries[0]?.format, "horizontal");
   assert.equal(profile.photo.queries[1]?.keyword, "봄");
   assert.match(profile.graphic.rationale, /Shape::index fields/);
-  assert.match(profile.photo.rationale, /Tooldi theme\/type\/format surfaces/);
+  assert.match(profile.photo.rationale, /Tooldi direct picture theme\/type\/format surfaces/);
 });
 
 test("buildSearchProfile prioritizes repaired canonical taxonomy keywords over legacy domain shortcuts", async () => {

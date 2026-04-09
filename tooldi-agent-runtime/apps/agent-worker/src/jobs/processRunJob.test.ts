@@ -86,7 +86,7 @@ function createEnv(): AgentWorkerEnv {
 function createRealSourceEnv(): AgentWorkerEnv {
   return {
     ...createEnv(),
-    tooldiCatalogSourceMode: "tooldi_api",
+    tooldiCatalogSourceMode: "tooldi_api_direct",
     tooldiContentApiBaseUrl: "http://localhost:8080",
   };
 }
@@ -2429,7 +2429,7 @@ test("processRunJob can activate real Tooldi background/graphic/font source mode
     sourceMode: string;
     font: { selectedSerial: string | null };
   };
-  assert.equal(sourceSummaryArtifact.sourceMode, "tooldi_api");
+  assert.equal(sourceSummaryArtifact.sourceMode, "tooldi_api_direct");
   assert.equal(sourceSummaryArtifact.font.selectedSerial, "701");
 });
 

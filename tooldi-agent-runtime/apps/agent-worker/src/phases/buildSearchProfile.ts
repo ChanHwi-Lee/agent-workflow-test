@@ -140,9 +140,11 @@ export async function buildSearchProfile(
       objective: "hero_visual_candidate",
       rationale:
         (photoPreferred
-          ? "Photo is preferred for this intent when a safe hero candidate exists; real picture query fields stay aligned to Tooldi theme/type/format surfaces"
+          ? "Photo is preferred for this intent when a safe hero candidate exists; real picture query fields stay aligned to Tooldi direct picture theme/type/format surfaces"
           : photoEnabled
-            ? "Photo remains optional and should only win when it fits the composition safely; theme stays omitted until a grounded contents_theme serial exists"
+            ? photoTheme !== null
+              ? "Photo remains optional and uses a grounded contents_theme serial on the direct picture transport when one exists."
+              : "Photo remains optional and should only win when it fits the composition safely; no grounded contents_theme serial is available for this profile."
             : "Photo is currently de-emphasized by the asset policy and remains disabled for this profile") +
         (retailMenuContradiction
           ? " Retail/menu contradiction was repaired before picture-query serialization, so menu-taxonomy cues were demoted in favor of fashion-retail signals."
@@ -161,7 +163,7 @@ export async function buildSearchProfile(
               source: "search",
               transportApplied: {
                 keyword: photoKeyword !== null,
-                theme: false,
+                theme: photoTheme !== null,
                 type: photoType !== null,
                 format: photoFormat !== null,
                 price: pricePreference !== null,
@@ -466,7 +468,7 @@ function buildShapeQueries(input: {
       categoryName: input.categoryName,
       transportApplied: {
         keyword: keyword !== null,
-        theme: false,
+        theme: input.theme !== null,
         type: type !== null,
         method: input.method !== null,
         price: input.price !== null,
@@ -604,8 +606,8 @@ function buildShapeRationale(input: {
       ? "Shape search keeps the repaired promotional keyword but serializes only canonical Shape::index fields."
       : "Shape search falls back to repaired subject keywords while staying on canonical Shape::index fields.",
     input.shapeTheme === null
-      ? "Theme remains a semantic hint only because the current Tooldi adapter cannot send contents_theme serials on the active shape transport."
-      : "A grounded shape theme prior was carried as a semantic hint while the active shape transport still omits contents_theme serials.",
+      ? "No grounded contents_theme serial is available for the current direct shape query plan."
+      : "A grounded shape theme prior was carried into the direct shape query transport.",
     input.shapeMethod === null
       ? input.methodConflict
         ? "Conflicting AI and creator origin cues were neutralized so method remains open."

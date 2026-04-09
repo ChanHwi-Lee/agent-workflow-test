@@ -1323,7 +1323,7 @@ function buildSelectionLogMessages(
   typographyDecision: TypographyDecision,
   selectionDecision: SelectionDecision,
 ): Array<{ level: "info" | "warn"; message: string }> {
-  if (sourceSearchSummary.sourceMode !== "tooldi_api") {
+  if (sourceSearchSummary.sourceMode === "placeholder") {
     return [];
   }
 

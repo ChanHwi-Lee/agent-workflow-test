@@ -71,7 +71,7 @@ test("loadAgentWorkerEnv defaults Tooldi catalog source to placeholder mode", ()
   assert.equal(env.templatePlannerMode, "heuristic");
 });
 
-test("loadAgentWorkerEnv requires Tooldi content API base URL in tooldi_api mode", () => {
+test("loadAgentWorkerEnv requires Tooldi content API base URL in real Tooldi API mode", () => {
   assert.throws(
     () =>
       loadAgentWorkerEnv({
@@ -86,7 +86,7 @@ test("loadAgentWorkerEnv requires Tooldi content API base URL in tooldi_api mode
         OBJECT_STORE_PREFIX: "agent-runtime-test",
         WORKER_QUEUE_TRANSPORT_MODE: "disabled",
         AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
-        TOOLDI_CATALOG_SOURCE_MODE: "tooldi_api",
+        TOOLDI_CATALOG_SOURCE_MODE: "tooldi_api_direct",
       }),
     /TOOLDI_CONTENT_API_BASE_URL/,
   );
@@ -138,8 +138,8 @@ test("loadAgentWorkerEnv는 지원하지 않는 planner provider를 거부한다
   );
 });
 
-test("tooldi_api catalog source mode creates an HTTP-backed source client", async () => {
-  const client = createTooldiCatalogSourceClientForMode("tooldi_api", {
+test("tooldi_api_direct catalog source mode creates an HTTP-backed source client", async () => {
+  const client = createTooldiCatalogSourceClientForMode("tooldi_api_direct", {
     tooldiContentApiBaseUrl: "http://localhost:8080",
     tooldiContentApiTimeoutMs: 5000,
     tooldiContentApiCookie: null,
@@ -151,10 +151,10 @@ test("tooldi_api catalog source mode creates an HTTP-backed source client", asyn
   assert.equal(typeof client.listFontAssets, "function");
 });
 
-test("tooldi_api catalog source mode rejects non-localhost base URLs", () => {
+test("real Tooldi API catalog source mode rejects non-localhost base URLs", () => {
   assert.throws(
     () =>
-      createTooldiCatalogSourceClientForMode("tooldi_api", {
+      createTooldiCatalogSourceClientForMode("tooldi_api_direct", {
         tooldiContentApiBaseUrl: "http://127.0.0.1:8080",
         tooldiContentApiTimeoutMs: 5000,
         tooldiContentApiCookie: null,

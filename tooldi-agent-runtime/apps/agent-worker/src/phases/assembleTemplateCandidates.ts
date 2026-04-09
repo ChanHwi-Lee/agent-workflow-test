@@ -84,7 +84,7 @@ export async function assembleTemplateCandidates(
     selectedCategory: null,
   };
 
-  if (dependencies.sourceMode !== "tooldi_api") {
+  if (dependencies.sourceMode === "placeholder") {
     const [background, graphicDecorations, photoCandidates] = await Promise.all([
       dependencies.templateCatalogClient.listBackgroundCandidates(catalogContext),
       dependencies.templateCatalogClient.listGraphicCandidates(catalogContext),
@@ -287,19 +287,16 @@ async function searchGraphicCandidates(
       label: attempt.label,
       query: {
         keyword: attempt.query.keyword ?? null,
-        semanticThemeHint: attempt.plannedQuery.theme,
-        type: attempt.plannedQuery.type,
-        method: attempt.plannedQuery.method,
-        page: 1,
+        theme: attempt.query.theme ?? null,
+        type: attempt.query.type ?? null,
+        method: attempt.query.method ?? null,
+        page: attempt.query.page,
         transportPage: attempt.query.page,
-        transportShapeType: attempt.query.shapeType ?? null,
-        transportFormat: attempt.query.format ?? null,
+        transportType: attempt.query.type ?? null,
         transportPrice: attempt.query.price ?? null,
-        transportFollow:
-          attempt.query.follow === undefined ? null : attempt.query.follow,
-        transportIsAi:
-          attempt.query.isAi === undefined ? null : attempt.query.isAi,
-        transportCategoryName: attempt.query.categoryName ?? null,
+        transportOwner: attempt.query.owner ?? null,
+        transportTheme: attempt.query.theme ?? null,
+        transportMethod: attempt.query.method ?? null,
       },
       returnedCount: result.assets.length,
     });
@@ -340,36 +337,15 @@ async function searchGraphicCandidates(
 function createGraphicTransportQuery(
   plannedQuery: SearchProfileArtifact["graphic"]["queries"][number],
 ): SearchGraphicAssetsQuery {
-  const format = mapShapeTypeToTransportFormat(plannedQuery.type);
-
   return {
     page: 0,
     ...(plannedQuery.keyword !== null ? { keyword: plannedQuery.keyword } : {}),
     ...(plannedQuery.price !== null ? { price: plannedQuery.price } : {}),
-    ...(plannedQuery.ownerBias === "follow" ? { follow: true } : {}),
-    shapeType: plannedQuery.type === "bitmap" ? "bitmap" : "graphics",
-    ...(format !== undefined ? { format } : {}),
-    ...(plannedQuery.method === "ai"
-      ? { isAi: true }
-      : plannedQuery.method === "creator"
-        ? { isAi: false }
-        : {}),
-    ...(plannedQuery.categoryName !== null
-      ? { categoryName: plannedQuery.categoryName }
-      : {}),
+    ...(plannedQuery.ownerBias === "follow" ? { owner: "follow" as const } : {}),
+    ...(plannedQuery.theme !== null ? { theme: plannedQuery.theme } : {}),
+    ...(plannedQuery.type !== null ? { type: plannedQuery.type } : {}),
+    ...(plannedQuery.method !== null ? { method: plannedQuery.method } : {}),
   };
-}
-
-function mapShapeTypeToTransportFormat(
-  type: SearchProfileArtifact["graphic"]["queries"][number]["type"],
-): SearchGraphicAssetsQuery["format"] {
-  if (type === "vector") {
-    return "vector";
-  }
-  if (type === "bitmap") {
-    return "bitmap";
-  }
-  return undefined;
 }
 
 async function searchPhotoCandidates(
@@ -397,13 +373,10 @@ async function searchPhotoCandidates(
         ? { keyword: plannedQuery.keyword }
         : {}),
       ...(plannedQuery.price !== null ? { price: plannedQuery.price } : {}),
-      ...(plannedQuery.ownerBias === "follow" ? { follow: true } : {}),
-      ...(mapPhotoFormatToOrientation(plannedQuery.format) !== null
-        ? { orientation: mapPhotoFormatToOrientation(plannedQuery.format)! }
-        : {}),
-      ...(plannedQuery.type !== null
-        ? { backgroundRemoval: plannedQuery.type === "rmbg" }
-        : {}),
+      ...(plannedQuery.ownerBias === "follow" ? { owner: "follow" as const } : {}),
+      ...(plannedQuery.theme !== null ? { theme: plannedQuery.theme } : {}),
+      ...(plannedQuery.type !== null ? { type: plannedQuery.type } : {}),
+      ...(plannedQuery.format !== null ? { format: plannedQuery.format } : {}),
     } satisfies SearchPhotoAssetsQuery,
   }));
 
@@ -414,18 +387,14 @@ async function searchPhotoCandidates(
       label: attempt.label,
       query: {
         keyword: attempt.query.keyword ?? null,
-        semanticThemeHint: attempt.theme,
-        type: attempt.type,
-        format: attempt.format,
+        theme: attempt.query.theme ?? null,
+        type: attempt.query.type ?? null,
+        format: attempt.query.format ?? null,
         page: attempt.query.page,
         source: attempt.query.source ?? null,
         transportPrice: attempt.query.price ?? null,
-        transportFollow:
-          attempt.query.follow === undefined ? null : attempt.query.follow,
-        transportBackgroundRemoval:
-          attempt.query.backgroundRemoval === undefined
-            ? null
-            : attempt.query.backgroundRemoval,
+        transportOwner: attempt.query.owner ?? null,
+        transportTheme: attempt.query.theme ?? null,
       },
       returnedCount: result.assets.length,
     });

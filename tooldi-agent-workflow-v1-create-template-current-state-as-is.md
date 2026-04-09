@@ -108,6 +108,7 @@
   - `graphic`
   - `photo`
   - `font`
+- picture/shape real source는 현재 `Editor::get_pictures/get_shapes` 가 아니라 direct `Picture::index` / `Shape::index` surface를 쓰며, `theme/owner/price/type/method` transport를 지원한다.
 - `photo` 는 `wide_1200x628` representative preset에서만 execution-enabled path를 가진다.
 
 ### 6.3 selection / typography
@@ -185,6 +186,7 @@
 ## 10. Non-functional / 운영 메모
 
 - local representative boot는 docker 기반 local Postgres-backed LangGraph checkpointer를 사용한다.
+- local real source boot는 `TOOLDI_CATALOG_SOURCE_MODE=tooldi_api_direct` 를 기본으로 사용한다.
 - local representative command:
 
 ```bash

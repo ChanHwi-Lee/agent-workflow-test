@@ -27,7 +27,7 @@ export async function selectTypography(
   input: HydratedPlanningInput,
   dependencies: SelectTypographyDependencies,
 ): Promise<SelectTypographyResult> {
-  if (dependencies.sourceMode !== "tooldi_api") {
+  if (dependencies.sourceMode === "placeholder") {
     return {
       decision: {
         decisionId: createRequestId(),

@@ -89,23 +89,31 @@ test("background search serializes POST body and normalizes response", async () 
 test("graphic search serializes query params and normalizes subtype", async () => {
   const client = createTooldiApiCatalogSourceClient({
     baseUrl: "https://catalog.test",
-    fetchImpl: async (input) => {
-      const url = new URL(String(input));
-      assert.equal(url.pathname, "/editor/get_shapes");
-      assert.equal(url.searchParams.get("page"), "0");
-      assert.equal(url.searchParams.get("type"), "graphics");
-      assert.equal(url.searchParams.get("keyword"), "봄");
-      assert.equal(url.searchParams.get("format"), "bitmap");
+    fetchImpl: async (input, init) => {
+      assert.equal(String(input), "https://catalog.test/shape");
+      assert.equal(init?.method, "POST");
+      assert.equal(
+        init?.body,
+        JSON.stringify({
+          page: 1,
+          keyword: "봄",
+          type: "bitmap",
+          price: "P",
+          sort: "sales",
+          owner: "follow",
+          theme: "11",
+          method: "creator",
+        }),
+      );
 
       return new Response(
         JSON.stringify({
-          result: true,
-          page: 0,
-          hasNextPage: false,
-          data: [
+          page: 1,
+          last_page: true,
+          list: [
             {
               serial: "22",
-              category: "bitmap",
+              categoryName: "bitmap",
               categorySerial: "40",
               priceType: "paid",
               userSerial: "88",
@@ -113,7 +121,7 @@ test("graphic search serializes query params and normalizes subtype", async () =
               thumbnail: "https://thumb.test/shape.png",
               image: "https://origin.test/shape.png",
               uid: "uid-shape-22",
-              isAi: true,
+              isAi: false,
             },
           ],
         }),
@@ -125,14 +133,18 @@ test("graphic search serializes query params and normalizes subtype", async () =
   const result = await client.searchGraphicAssets({
     page: 0,
     keyword: "봄",
-    shapeType: "graphics",
-    format: "bitmap",
+    type: "bitmap",
+    price: "paid",
+    sort: "sales",
+    owner: "follow",
+    theme: "11",
+    method: "creator",
   });
 
   assert.equal(result.assets[0]?.graphicKind, "bitmap");
   assert.equal(result.assets[0]?.insertMode, "object_element");
   assert.equal(result.assets[0]?.priceType, "paid");
-  assert.equal(result.assets[0]?.isAi, true);
+  assert.equal(result.assets[0]?.isAi, false);
   assert.equal(result.assets[0]?.extension, ".png");
 });
 
@@ -144,21 +156,22 @@ test("photo search normalizes orientation and background removal hint", async ()
       assert.equal(
         init?.body,
         JSON.stringify({
-          page: 0,
+          page: 1,
           keyword: "봄",
-          orientation: "landscape",
-          backgroundRemoval: true,
+          type: "rmbg",
+          format: "horizontal",
+          price: "F",
+          owner: "follow",
+          theme: "18",
           source: "search",
         }),
       );
 
       return new Response(
         JSON.stringify({
-          result: true,
-          page: 0,
-          hasNextPage: false,
-          trace_id: "trace-photo-1",
-          data: [
+          page: 1,
+          last_page: true,
+          list: [
             {
               serial: "33",
               priceType: "free",
@@ -181,12 +194,15 @@ test("photo search normalizes orientation and background removal hint", async ()
   const result = await client.searchPhotoAssets({
     page: 0,
     keyword: "봄",
-    orientation: "landscape",
-    backgroundRemoval: true,
+    type: "rmbg",
+    format: "horizontal",
+    price: "free",
+    owner: "follow",
+    theme: "18",
     source: "search",
   });
 
-  assert.equal(result.traceId, "trace-photo-1");
+  assert.equal(result.traceId, null);
   assert.equal(result.assets[0]?.orientation, "landscape");
   assert.equal(result.assets[0]?.backgroundRemovalHint, true);
   assert.equal(result.assets[0]?.insertMode, "object_image");
@@ -275,7 +291,7 @@ test("invalid upstream payload is mapped to an invalid_response error", async ()
   await assert.rejects(
     client.searchGraphicAssets({
       page: 0,
-      shapeType: "graphics",
+      type: "vector",
     }),
     (error: unknown) =>
       error instanceof TooldiCatalogSourceError &&

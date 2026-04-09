@@ -1,4 +1,8 @@
-export const tooldiCatalogSourceModes = ["placeholder", "tooldi_api"] as const;
+export const tooldiCatalogSourceModes = [
+  "placeholder",
+  "tooldi_api",
+  "tooldi_api_direct",
+] as const;
 
 export type TooldiCatalogSourceMode =
   (typeof tooldiCatalogSourceModes)[number];
@@ -113,36 +117,25 @@ export interface SearchBackgroundAssetsQuery {
 }
 
 export interface SearchGraphicAssetsQuery {
-  shapeType?:
-    | "total"
-    | "graphics"
-    | "bitmap"
-    | "calligraphy"
-    | "figure"
-    | "rect"
-    | "line"
-    | "frames"
-    | "chart"
-    | "font_text"
-    | "mix_text"
-    | "wordart";
   keyword?: string;
   page: number;
   price?: "free" | "paid";
-  follow?: boolean;
-  format?: "bitmap" | "vector";
-  isAi?: boolean;
-  categoryName?: string;
+  owner?: "follow" | "superb" | "gold" | "silver" | "regular";
+  theme?: string;
+  sort?: "new" | "sales";
+  type?: "vector" | "bitmap";
+  method?: "ai" | "creator";
 }
 
 export interface SearchPhotoAssetsQuery {
   keyword?: string;
   page: number;
-  orientation?: "portrait" | "landscape" | "square";
   price?: "free" | "paid";
-  follow?: boolean;
-  backgroundRemoval?: boolean;
-  isAi?: boolean;
+  owner?: "follow" | "superb" | "gold" | "silver" | "regular";
+  theme?: string;
+  sort?: "new" | "sales";
+  type?: "pic" | "rmbg";
+  format?: "square" | "horizontal" | "vertical";
   source?: "initial_load" | "search";
 }
 
@@ -217,6 +210,7 @@ interface BackgroundApiRow extends Record<string, unknown> {
 interface ShapeApiRow extends Record<string, unknown> {
   serial: string;
   category?: string;
+  categoryName?: string;
   categorySerial?: string;
   priceType?: "free" | "paid";
   userSerial?: string;
@@ -248,6 +242,12 @@ interface ApiListSuccess<T> {
   hasNextPage?: boolean;
   data: T[];
   trace_id?: string;
+}
+
+interface DirectListSuccess<T> {
+  list: T[];
+  page?: number;
+  last_page?: boolean;
 }
 
 interface FontWeightApiRow extends Record<string, unknown> {
@@ -366,69 +366,59 @@ class TooldiApiCatalogSourceClient implements TooldiCatalogSourceClient {
   async searchGraphicAssets(
     query: SearchGraphicAssetsQuery,
   ): Promise<TooldiCatalogSearchResult<TooldiGraphicAsset>> {
-    const params = new URLSearchParams();
-    params.set("page", String(query.page));
-    params.set("type", query.shapeType ?? "graphics");
-    if (query.keyword) {
-      params.set("keyword", query.keyword);
-    }
-    if (query.price) {
-      params.set("price", query.price);
-    }
-    if (query.follow !== undefined) {
-      params.set("follow", String(query.follow));
-    }
-    if (query.format) {
-      params.set("format", query.format);
-    }
-    if (query.isAi !== undefined) {
-      params.set("isAI", String(query.isAi));
-    }
-    if (query.categoryName) {
-      params.set("categoryName", query.categoryName);
-    }
-    const response = await this.fetchJson<ApiListSuccess<ShapeApiRow>>(
-      `/editor/get_shapes?${params.toString()}`,
+    const response = await this.fetchJson<DirectListSuccess<ShapeApiRow>>(
+      "/shape",
       {
-        method: "GET",
+        method: "POST",
+        body: {
+          page: toDirectPage(query.page),
+          ...(query.keyword ? { keyword: query.keyword } : {}),
+          ...(query.type ? { type: query.type } : {}),
+          ...(query.price ? { price: mapPriceToLegacyCode(query.price) } : {}),
+          ...(query.sort ? { sort: query.sort } : {}),
+          ...(query.owner ? { owner: query.owner } : {}),
+          ...(query.theme ? { theme: query.theme } : {}),
+          ...(query.method ? { method: query.method } : {}),
+        },
       },
     );
-    assertListSuccessResponse(response, `${this.baseUrl}/editor/get_shapes`);
+    assertDirectListResponse(response, `${this.baseUrl}/shape`);
     return {
       sourceFamily: "graphic_source",
-      page: response.page ?? query.page,
-      hasNextPage: response.hasNextPage ?? false,
-      traceId: response.trace_id ?? null,
-      assets: response.data.map((asset) => normalizeGraphicAsset(asset)),
+      page: query.page,
+      hasNextPage: response.last_page === undefined ? false : !response.last_page,
+      traceId: null,
+      assets: response.list.map((asset) => normalizeGraphicAsset(asset)),
     };
   }
 
   async searchPhotoAssets(
     query: SearchPhotoAssetsQuery,
   ): Promise<TooldiCatalogSearchResult<TooldiPhotoAsset>> {
-    const response = await this.fetchJson<ApiListSuccess<PhotoApiRow>>(
-      "/editor/get_pictures",
+    const response = await this.fetchJson<DirectListSuccess<PhotoApiRow>>(
+      "/picture",
       {
         method: "POST",
         body: {
-          page: query.page,
-          keyword: query.keyword ?? "",
-          orientation: query.orientation ?? "",
-          backgroundRemoval: query.backgroundRemoval ?? false,
-          ...(query.price ? { price: query.price } : {}),
-          ...(query.follow !== undefined ? { follow: query.follow } : {}),
-          ...(query.isAi !== undefined ? { isAI: query.isAi } : {}),
+          page: toDirectPage(query.page),
+          ...(query.keyword ? { keyword: query.keyword } : {}),
+          ...(query.type ? { type: query.type } : {}),
+          ...(query.format ? { format: query.format } : {}),
+          ...(query.price ? { price: mapPriceToLegacyCode(query.price) } : {}),
+          ...(query.sort ? { sort: query.sort } : {}),
+          ...(query.owner ? { owner: query.owner } : {}),
+          ...(query.theme ? { theme: query.theme } : {}),
           ...(query.source ? { source: query.source } : {}),
         },
       },
     );
-    assertListSuccessResponse(response, `${this.baseUrl}/editor/get_pictures`);
+    assertDirectListResponse(response, `${this.baseUrl}/picture`);
     return {
       sourceFamily: "photo_source",
-      page: response.page ?? query.page,
-      hasNextPage: response.hasNextPage ?? false,
-      traceId: response.trace_id ?? null,
-      assets: response.data.map((asset) => normalizePhotoAsset(asset)),
+      page: query.page,
+      hasNextPage: response.last_page === undefined ? false : !response.last_page,
+      traceId: null,
+      assets: response.list.map((asset) => normalizePhotoAsset(asset)),
     };
   }
 
@@ -577,7 +567,10 @@ function normalizeBackgroundAsset(
 }
 
 function normalizeGraphicAsset(asset: ShapeApiRow): TooldiGraphicAsset {
-  const graphicKind = normalizeGraphicKind(asset.categorySerial, asset.category);
+  const graphicKind = normalizeGraphicKind(
+    asset.categorySerial,
+    asset.category ?? asset.categoryName,
+  );
   const extension = inferExtension(asset.image);
   return {
     assetId: `graphic:${asset.serial}`,
@@ -720,6 +713,27 @@ function assertListSuccessResponse<T>(
       url,
     });
   }
+}
+
+function assertDirectListResponse<T>(
+  response: DirectListSuccess<T>,
+  url: string,
+): void {
+  if (!Array.isArray(response.list)) {
+    throw new TooldiCatalogSourceError({
+      code: "invalid_response",
+      message: "Tooldi direct catalog endpoint returned an invalid payload",
+      url,
+    });
+  }
+}
+
+function mapPriceToLegacyCode(value: "free" | "paid"): "F" | "P" {
+  return value === "free" ? "F" : "P";
+}
+
+function toDirectPage(page: number): number {
+  return page <= 0 ? 1 : page + 1;
 }
 
 function normalizeGraphicKind(

@@ -44,6 +44,7 @@
   - `rule-judge-verdict`
   - `executable-plan`
 - planner/model abstraction 은 LangChain JS 뒤로 정리됐고, local 기본 provider 는 Gemini 다.
+- picture/shape retrieval은 direct `Picture::index` / `Shape::index` surface를 사용하는 `tooldi_api_direct` mode로 정리됐다.
 - terminal semantics 에 `completed_with_warning` 가 실제로 연결돼 있다.
 - black-box acceptance prompt 3종(`restaurant`, `cafe`, `fashion_retail`)이 integration test 에 고정돼 있다.
 - backend는 `LiveDraftArtifactBundle -> RunCompletionRecord` happy-path chain을 prototype 수준으로 materialize 한다
