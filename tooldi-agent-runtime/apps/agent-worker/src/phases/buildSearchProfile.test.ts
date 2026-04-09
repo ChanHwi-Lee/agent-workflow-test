@@ -221,6 +221,34 @@ test("buildSearchProfile prioritizes repaired canonical taxonomy keywords over l
   assert.equal(profile.photo.queries[0]?.format, "horizontal");
 });
 
+test("buildSearchProfile keeps generic promo prompts subjectless after normalization", async () => {
+  const profile = await buildSearchProfile(
+    createIntent({
+      goalSummary: "봄 세일 배너를 만들어줘",
+      templateKind: "seasonal_sale_banner",
+      domain: "general_marketing",
+      audience: "general_consumers",
+      campaignGoal: "sale_conversion",
+      assetPolicy: normalizeTemplateAssetPolicy(
+        "graphic_allowed_photo_optional",
+      ),
+      searchKeywords: ["봄", "세일", "이벤트", "할인"],
+      facets: {
+        seasonality: "spring",
+        menuType: null,
+        promotionStyle: "sale_campaign",
+        offerSpecificity: "broad_offer",
+      },
+    }),
+  );
+
+  assert.equal(profile.graphic.queries[0]?.keyword, "세일");
+  assert.equal(profile.photo.queries[0]?.keyword, "세일");
+  assert.equal(profile.photo.queries[1]?.keyword, "봄");
+  assert.notEqual(profile.photo.queries[0]?.keyword, "메뉴");
+  assert.notEqual(profile.photo.queries[0]?.keyword, "패션");
+});
+
 test("buildSearchProfile canonicalizes legacy asset policies before serializing the profile", async () => {
   const profile = await buildSearchProfile(
     createIntent({

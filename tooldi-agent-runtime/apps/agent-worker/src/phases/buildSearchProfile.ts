@@ -20,11 +20,20 @@ export async function buildSearchProfile(
   templatePriorSummary?: TemplatePriorSummary | null,
 ): Promise<SearchProfileArtifact> {
   const assetPolicy = normalizeTemplateAssetPolicy(intent.assetPolicy);
+  const genericPromoIntent = isGenericPromoIntent(intent);
   const retailMenuContradiction = hasFashionRetailMenuContradiction(intent);
   const templatePriorKeyword = deriveTemplatePriorKeyword(templatePriorSummary);
   const seasonKeyword = deriveSeasonKeyword(intent);
-  const subjectKeyword = deriveSubjectKeyword(intent, retailMenuContradiction);
-  const promotionKeyword = derivePromotionKeyword(intent, retailMenuContradiction);
+  const subjectKeyword = deriveSubjectKeyword(
+    intent,
+    retailMenuContradiction,
+    genericPromoIntent,
+  );
+  const promotionKeyword = derivePromotionKeyword(
+    intent,
+    retailMenuContradiction,
+    genericPromoIntent,
+  );
   const orientationHint = deriveOrientationHint(intent.canvasPreset);
   const photoFormat = derivePhotoFormat(orientationHint);
   const photoTheme = derivePhotoTheme(templatePriorSummary);
@@ -40,11 +49,17 @@ export async function buildSearchProfile(
     ? derivePhotoType(intent)
     : null;
   const backgroundKeyword =
-    seasonKeyword ?? subjectKeyword ?? templatePriorKeyword ?? firstKeyword(intent);
+    seasonKeyword ??
+    promotionKeyword ??
+    subjectKeyword ??
+    templatePriorKeyword ??
+    firstKeyword(intent);
   const graphicKeyword =
     promotionKeyword ?? subjectKeyword ?? templatePriorKeyword ?? backgroundKeyword;
   const photoKeyword =
-    retailMenuContradiction
+    genericPromoIntent
+      ? promotionKeyword ?? seasonKeyword ?? templatePriorKeyword ?? backgroundKeyword
+      : retailMenuContradiction
       ? photoPreferred
         ? subjectKeyword ?? promotionKeyword ?? templatePriorKeyword ?? backgroundKeyword
         : promotionKeyword ?? subjectKeyword ?? templatePriorKeyword ?? backgroundKeyword
@@ -256,6 +271,15 @@ function hasFashionRetailMenuContradiction(intent: NormalizedIntent): boolean {
   );
 }
 
+function isGenericPromoIntent(intent: NormalizedIntent): boolean {
+  return (
+    intent.domain === "general_marketing" &&
+    intent.facets.menuType === null &&
+    (intent.facets.promotionStyle === "sale_campaign" ||
+      intent.facets.promotionStyle === "general_campaign")
+  );
+}
+
 function hasMenuSignal(text: string | null | undefined): boolean {
   if (!text) {
     return false;
@@ -277,7 +301,12 @@ function deriveSeasonKeyword(intent: NormalizedIntent): string | null {
 function deriveSubjectKeyword(
   intent: NormalizedIntent,
   retailMenuContradiction: boolean,
+  genericPromoIntent: boolean,
 ): string | null {
+  if (genericPromoIntent) {
+    return null;
+  }
+
   if (retailMenuContradiction) {
     return (
       findKeyword(intent, [
@@ -329,7 +358,30 @@ function deriveSubjectKeyword(
 function derivePromotionKeyword(
   intent: NormalizedIntent,
   retailMenuContradiction: boolean,
+  genericPromoIntent: boolean,
 ): string | null {
+  if (genericPromoIntent) {
+    return (
+      findKeyword(intent, [
+        "세일",
+        "할인",
+        "특가",
+        "쿠폰",
+        "행사",
+        "이벤트",
+        "오픈",
+        "프로모션",
+      ]) ??
+      firstKeywordMatching(
+        intent,
+        (keyword) =>
+          !isSeasonKeyword(keyword) &&
+          !hasMenuSignal(keyword) &&
+          !/패션|리테일|의류|식당|레스토랑|카페/i.test(keyword),
+      )
+    );
+  }
+
   if (retailMenuContradiction) {
     return (
       findKeyword(intent, [

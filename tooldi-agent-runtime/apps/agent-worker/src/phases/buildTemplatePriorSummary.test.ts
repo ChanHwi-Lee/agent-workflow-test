@@ -308,6 +308,45 @@ test("buildTemplatePriorSummary keeps theme priors explicit but non-controlling 
   assert.equal(summary.dominantThemePrior, "template_prior");
 });
 
+test("buildTemplatePriorSummary suppresses leaked subject priors for generic promo intents", async () => {
+  const summary = await buildTemplatePriorSummary(
+    createFashionRetailNormalizedIntent({
+      goalSummary: "봄 세일 배너를 만들어줘",
+      templateKind: "seasonal_sale_banner",
+      domain: "general_marketing",
+      audience: "general_consumers",
+      campaignGoal: "sale_conversion",
+      assetPolicy: {
+        allowedFamilies: ["background", "graphic", "photo"],
+        preferredFamilies: ["graphic"],
+        primaryVisualPolicy: "graphic_preferred",
+        avoidFamilies: [],
+      },
+      searchKeywords: ["봄", "세일", "이벤트", "할인"],
+      facets: {
+        seasonality: "spring",
+        menuType: null,
+        promotionStyle: "sale_campaign",
+        offerSpecificity: "broad_offer",
+      },
+    }),
+  );
+
+  assert.equal(
+    summary.templatePriorCandidates.some((candidate) =>
+      candidate.sourceSignal.startsWith("menu_type:"),
+    ),
+    false,
+  );
+  assert.equal(
+    summary.templatePriorCandidates.some((candidate) =>
+      candidate.sourceSignal.startsWith("domain:"),
+    ),
+    false,
+  );
+  assert.equal(summary.selectedTemplatePrior.keyword, "봄");
+});
+
 test("buildTemplatePriorSummary preserves the fixture's graphic-first bias without fabricating photo dominance", async () => {
   const summary = await buildTemplatePriorSummary(
     createFashionRetailNormalizedIntent({

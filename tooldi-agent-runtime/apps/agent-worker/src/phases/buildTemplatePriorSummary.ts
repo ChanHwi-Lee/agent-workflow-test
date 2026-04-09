@@ -244,6 +244,7 @@ function collectTemplatePriorCandidateInputs(
     evidenceRefs: readonly string[];
     contextRefs: readonly string[];
   }> = [];
+  const genericPromoIntent = isGenericPromoIntent(intent);
   const seenKeywords = new Set<string>();
   const pushCandidate = (
     sourceSignal: string,
@@ -291,7 +292,7 @@ function collectTemplatePriorCandidateInputs(
     );
   }
 
-  if (intent.facets.menuType === "drink_menu") {
+  if (!genericPromoIntent && intent.facets.menuType === "drink_menu") {
     pushCandidate(
       "menu_type:drink_menu",
       findKeyword(intent, ["신메뉴", "음료", "커피", "라떼"]) ?? "음료",
@@ -301,7 +302,7 @@ function collectTemplatePriorCandidateInputs(
     );
   }
 
-  if (intent.facets.menuType === "food_menu") {
+  if (!genericPromoIntent && intent.facets.menuType === "food_menu") {
     pushCandidate(
       "menu_type:food_menu",
       findKeyword(intent, ["신메뉴", "메뉴", "요리", "브런치"]) ?? "메뉴",
@@ -311,7 +312,7 @@ function collectTemplatePriorCandidateInputs(
     );
   }
 
-  if (intent.domain === "fashion_retail") {
+  if (!genericPromoIntent && intent.domain === "fashion_retail") {
     pushCandidate(
       "domain:fashion_retail",
       findKeyword(intent, ["패션", "리테일", "의류", "브랜드"]) ?? "패션",
@@ -415,6 +416,16 @@ function buildRankingRationaleEntries(input: {
 function deriveTemplatePriorKeyword(
   intent: NormalizedIntent,
 ): string | null {
+  if (isGenericPromoIntent(intent)) {
+    if (intent.facets.seasonality === "spring" && hasKeyword(intent, "봄")) {
+      return "봄";
+    }
+    if (intent.facets.promotionStyle === "sale_campaign") {
+      return findKeyword(intent, ["세일", "할인", "특가", "쿠폰", "행사"]) ?? "세일";
+    }
+    return findKeyword(intent, ["프로모션", "이벤트", "오픈"]) ?? intent.searchKeywords[0] ?? null;
+  }
+
   if (intent.facets.seasonality === "spring" && hasKeyword(intent, "봄")) {
     return "봄";
   }
@@ -436,6 +447,15 @@ function deriveTemplatePriorKeyword(
   }
 
   return intent.searchKeywords[0] ?? null;
+}
+
+function isGenericPromoIntent(intent: NormalizedIntent): boolean {
+  return (
+    intent.domain === "general_marketing" &&
+    intent.facets.menuType === null &&
+    (intent.facets.promotionStyle === "sale_campaign" ||
+      intent.facets.promotionStyle === "general_campaign")
+  );
 }
 
 function deriveTemplateCategorySerial(

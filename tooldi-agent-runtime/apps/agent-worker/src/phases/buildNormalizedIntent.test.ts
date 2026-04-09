@@ -657,6 +657,59 @@ test("buildNormalizedIntent keeps general marketing spring promotion scenarios c
   );
 });
 
+test("buildNormalizedIntent repairs generic sale prompts into general-marketing graphic-first structure", async () => {
+  const plannerDraft: TemplateIntentDraft = {
+    goalSummary: "봄 시즌 맞이 패션 세일 배너",
+    templateKind: "seasonal_sale_banner",
+    domain: "fashion_retail",
+    audience: "sale_shoppers",
+    campaignGoal: "sale_conversion",
+    layoutIntent: "hero_focused",
+    tone: "bright_playful",
+    assetPolicy: "photo_preferred_graphic_allowed",
+    searchKeywords: ["봄", "세일", "이벤트", "할인"],
+    typographyHint: "가독성이 높은 고딕",
+    facets: {
+      seasonality: "spring",
+      menuType: null,
+      promotionStyle: "sale_campaign",
+      offerSpecificity: "broad_offer",
+    },
+  };
+
+  const result = await buildNormalizedIntent(
+    createHydratedPlanningInput("봄 세일 배너를 만들어줘"),
+    {
+      templatePlanner: createPlanner(),
+      plannerDraft,
+    },
+  );
+
+  assert.equal(result.intent.domain, "general_marketing");
+  assert.equal(result.intent.goalSummary, "봄 세일 배너를 만들어줘");
+  assert.equal(result.intent.facets.menuType, null);
+  assert.deepEqual(result.intent.assetPolicy, {
+    allowedFamilies: ["background", "graphic", "photo"],
+    preferredFamilies: ["graphic"],
+    primaryVisualPolicy: "graphic_preferred",
+    avoidFamilies: [],
+  });
+  assert.equal(result.intent.searchKeywords.includes("메뉴"), false);
+  assert.equal(result.intent.searchKeywords.includes("패션"), false);
+  assert.equal(
+    result.intentNormalizationReport.appliedRepairs.some(
+      (repair) => repair.reasonCode === "generic_promo_domain_repair",
+    ),
+    true,
+  );
+  assert.equal(
+    result.intentNormalizationReport.appliedRepairs.some(
+      (repair) => repair.reasonCode === "generic_promo_graphic_first_repair",
+    ),
+    true,
+  );
+});
+
 test("부분 자산 정책 초안도 정규 의도에서 실행 가능한 정책으로 보수한다", async () => {
   const plannerDraft: TemplateIntentDraft = {
     goalSummary: "카페 음료 배너",

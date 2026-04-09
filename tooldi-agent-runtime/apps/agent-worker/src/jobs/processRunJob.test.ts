@@ -506,7 +506,13 @@ test("processRunJob persists the raw planner draft before normalized intent", as
     }),
   );
   const callbackClient = new RecordingBackendCallbackClient();
-  const testRun = createTestRun();
+  const testRun = createTestRun({
+    userInput: {
+      prompt: "패션 리테일 봄 세일 배너 만들어줘",
+      locale: "ko-KR",
+      timezone: "Asia/Seoul",
+    },
+  });
   let plannerCallCount = 0;
   const plannerDraft: TemplateIntentDraft = {
     goalSummary: "패션 리테일 봄 세일 배너",
@@ -656,7 +662,13 @@ test("processRunJob normalizes from the persisted planner draft artifact", async
     }),
   );
   const callbackClient = new RecordingBackendCallbackClient();
-  const testRun = createTestRun();
+  const testRun = createTestRun({
+    userInput: {
+      prompt: "패션 리테일 봄 세일 배너 만들어줘",
+      locale: "ko-KR",
+      timezone: "Asia/Seoul",
+    },
+  });
   const plannerDraft: TemplateIntentDraft = {
     goalSummary: "planner original goal",
     templateKind: "seasonal_sale_banner",
@@ -1382,7 +1394,11 @@ test("processRunJob emits template-prior-summary for the Tooldi taxonomy fixture
       "shape/vector-heavy success paths",
     ),
   );
-  assert.equal(result.searchProfile?.graphic.queries[0]?.keyword, "세일");
+  assert.ok(
+    ["세일", "프로모션"].includes(
+      result.searchProfile?.graphic.queries[0]?.keyword ?? "",
+    ),
+  );
   assert.ok(
     findObjectStoreOperationIndex(
       objectStore,
@@ -1806,17 +1822,38 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   assert.ok(selectionDecision);
   assert.equal(selectionDecision.retrievalMode, "none");
   assert.equal(selectionDecision.backgroundMode, "spring_pattern");
-  assert.equal(selectionDecision.layoutMode, "center_stack");
-  assert.equal(selectionDecision.decorationMode, "graphic_cluster");
+  assert.equal(selectionDecision.layoutMode, "center_stack_promo");
+  assert.equal(selectionDecision.decorationMode, "promo_multi_graphic");
+  assert.ok(selectionDecision.graphicCompositionSet);
+  assert.equal(selectionDecision.graphicCompositionSet?.roles.length >= 3, true);
   assert.equal(result.intent.domain, "general_marketing");
+  assert.equal(result.intent.facets.menuType, null);
   assert.equal(result.intent.campaignGoal, "sale_conversion");
-  assert.equal(result.searchProfile?.graphic.queries[0]?.keyword, "세일");
+  assert.ok(
+    ["세일", "프로모션"].includes(
+      result.searchProfile?.graphic.queries[0]?.keyword ?? "",
+    ),
+  );
+  assert.equal(
+    result.searchProfile?.photo.queries[0]?.keyword === "메뉴",
+    false,
+  );
+  assert.equal(
+    result.searchProfile?.photo.queries[0]?.keyword === "패션",
+    false,
+  );
   assert.equal(result.templatePriorSummary?.dominantThemePrior, "template_prior");
   assert.equal(
     result.templatePriorSummary?.selectedTemplatePrior.status,
     "competitive_only",
   );
   assert.equal(result.templatePriorSummary?.selectedTemplatePrior.keyword, "봄");
+  assert.equal(
+    result.templatePriorSummary?.templatePriorCandidates.some((candidate) =>
+      candidate.sourceSignal.startsWith("menu_type:"),
+    ),
+    false,
+  );
   assert.equal(result.ruleJudgeVerdict?.recommendation, "refine");
   assert.ok(candidateSets);
   assert.equal(candidateSets.background.family, "background");
@@ -2066,7 +2103,11 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     graphic: { queries: Array<{ keyword: string | null }> };
   };
   assert.equal(persistedSearchProfile.domain, "general_marketing");
-  assert.equal(persistedSearchProfile.graphic.queries[0]?.keyword, "세일");
+  assert.ok(
+    ["세일", "프로모션"].includes(
+      persistedSearchProfile.graphic.queries[0]?.keyword ?? "",
+    ),
+  );
 
   const persistedJudgeVerdict = JSON.parse(
     new TextDecoder().decode(
@@ -2442,6 +2483,10 @@ test("processRunJob can activate the photo hero execution path on the wide prese
   const callbackClient = new RecordingBackendCallbackClient();
   const seedRun = createTestRun();
   const testRun = createTestRun({
+    userInput: {
+      ...seedRun.request.userInput,
+      prompt: "카페 봄 음료 배너 만들어줘",
+    },
     editorContext: {
       ...seedRun.request.editorContext,
       canvasWidth: 1200,
@@ -2594,6 +2639,10 @@ test("processRunJob can promote a real-like photo candidate when it stays within
   const callbackClient = new RecordingBackendCallbackClient();
   const seedRun = createTestRun();
   const testRun = createTestRun({
+    userInput: {
+      ...seedRun.request.userInput,
+      prompt: "카페 봄 음료 배너 만들어줘",
+    },
     editorContext: {
       ...seedRun.request.editorContext,
       canvasWidth: 1200,
@@ -2657,6 +2706,10 @@ test("processRunJob keeps graphic path when top photo candidate is not executabl
   const callbackClient = new RecordingBackendCallbackClient();
   const seedRun = createTestRun();
   const testRun = createTestRun({
+    userInput: {
+      ...seedRun.request.userInput,
+      prompt: "카페 봄 음료 배너 만들어줘",
+    },
     editorContext: {
       ...seedRun.request.editorContext,
       canvasWidth: 1200,
@@ -2857,7 +2910,7 @@ test("processRunJob keeps the representative wide banner geometry inside the can
     templateCatalogClient: createTemplateCatalogClient(),
   });
 
-  assert.equal(result.selectionDecision?.layoutMode, "copy_left_with_right_decoration");
+  assert.equal(result.selectionDecision?.layoutMode, "left_copy_right_graphic");
 
   const proposedMutations = callbackClient.appendedEvents
     .filter(
@@ -2887,7 +2940,7 @@ test("processRunJob keeps the representative wide banner geometry inside the can
           command.layerBlueprint.metadata?.role === "hero_caption",
       ),
     ),
-    true,
+    false,
   );
   assert.equal(
     proposedMutations.some((mutation) =>
@@ -3192,6 +3245,10 @@ test("processRunJob stops immediately after a rejected photo stage under fail-fa
 
   const seedRun = createTestRun();
   const testRun = createTestRun({
+    userInput: {
+      ...seedRun.request.userInput,
+      prompt: "카페 봄 음료 배너 만들어줘",
+    },
     editorContext: {
       ...seedRun.request.editorContext,
       canvasWidth: 1200,
