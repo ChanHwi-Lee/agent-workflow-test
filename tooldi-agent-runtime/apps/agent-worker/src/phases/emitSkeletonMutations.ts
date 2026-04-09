@@ -3,6 +3,7 @@ import { createRequestId } from "@tooldi/agent-domain";
 import type { TextLayoutHelper } from "@tooldi/tool-adapters";
 
 import type {
+  GraphicCompositionSet,
   HydratedPlanningInput,
   MutationProposalDraft,
   NormalizedIntent,
@@ -17,12 +18,17 @@ type LayoutMode =
   | "copy_left_with_right_decoration"
   | "copy_left_with_right_photo"
   | "center_stack"
-  | "badge_led";
+  | "badge_led"
+  | "left_copy_right_graphic"
+  | "center_stack_promo"
+  | "badge_promo_stack"
+  | "framed_promo";
 
 type DecorationMode =
   | "graphic_cluster"
   | "ribbon_badge"
-  | "photo_support";
+  | "photo_support"
+  | "promo_multi_graphic";
 
 type BackgroundMode = "spring_pattern" | "pastel_gradient" | "spring_photo";
 
@@ -44,6 +50,9 @@ type LayoutGeometry = {
   heroCaption: Bounds;
   cta: Bounds;
   decoration: Bounds;
+  secondaryAccent: Bounds;
+  cornerAccent: Bounds;
+  frame: Bounds;
   underlineBar: Bounds;
   footerNote: Bounds;
 };
@@ -212,6 +221,20 @@ export async function emitSkeletonMutations(
     );
   }
 
+  if (foundationInputs.includeFrame) {
+    foundationCommands.push(
+      buildCreateLayerCommand(input.job.runId, "foundation", {
+        slotKey: null,
+        clientLayerKey: `frame_${input.job.runId}`,
+        layerType: "shape",
+        bounds: geometry.frame,
+        role: "frame",
+        variantKey: copyInputs.layoutMode,
+        candidateId: copyInputs.selectedLayoutCandidateId,
+      }),
+    );
+  }
+
   const photoCommands: MutationProposalDraft["mutation"]["commands"] =
     photoSelected
       ? [
@@ -305,21 +328,7 @@ export async function emitSkeletonMutations(
       fontRole: "display",
       typography,
     }),
-    buildCreateLayerCommand(input.job.runId, "polish", {
-      slotKey: "decoration",
-      clientLayerKey: `decoration_${input.job.runId}`,
-      layerType: "shape",
-      bounds: geometry.decoration,
-      role:
-        polishInputs.decorationMode === "ribbon_badge"
-          ? "ribbon_strip"
-          : "decoration",
-      variantKey: polishInputs.decorationMode,
-      candidateId: polishInputs.selectedDecorationCandidateId,
-      sourceAssetId: polishInputs.selectedDecorationAssetId,
-      sourceSerial: polishInputs.selectedDecorationSerial,
-      sourceCategory: polishInputs.selectedDecorationCategory,
-    }),
+    ...buildGraphicRoleCommands(input.job.runId, polishInputs, geometry),
   ];
 
   if (polishInputs.includeUnderline) {
@@ -453,6 +462,7 @@ function readFoundationInputs(inputs: PersistedPlanAction["inputs"]) {
     includeHeroPanel?: boolean;
     includeBadge?: boolean;
     includeRibbon?: boolean;
+    includeFrame?: boolean;
   };
 
   return {
@@ -465,6 +475,7 @@ function readFoundationInputs(inputs: PersistedPlanAction["inputs"]) {
     includeHeroPanel: record.includeHeroPanel ?? false,
     includeBadge: record.includeBadge ?? false,
     includeRibbon: record.includeRibbon ?? false,
+    includeFrame: record.includeFrame ?? false,
   };
 }
 
@@ -530,6 +541,7 @@ function readPolishInputs(inputs: PersistedPlanAction["inputs"]) {
     selectedDecorationAssetId?: string | null;
     selectedDecorationSerial?: string | null;
     selectedDecorationCategory?: string | null;
+    graphicCompositionSet?: GraphicCompositionSet | null;
     includeUnderline?: boolean;
     includeRibbon?: boolean;
   };
@@ -541,6 +553,7 @@ function readPolishInputs(inputs: PersistedPlanAction["inputs"]) {
     selectedDecorationAssetId: record.selectedDecorationAssetId ?? null,
     selectedDecorationSerial: record.selectedDecorationSerial ?? null,
     selectedDecorationCategory: record.selectedDecorationCategory ?? null,
+    graphicCompositionSet: record.graphicCompositionSet ?? null,
     includeUnderline: record.includeUnderline ?? false,
     includeRibbon: record.includeRibbon ?? false,
   };
@@ -556,6 +569,10 @@ function createLayoutGeometry(
   const centered = layoutMode === "center_stack";
   const badgeLed = layoutMode === "badge_led";
   const photoLayout = layoutMode === "copy_left_with_right_photo";
+  const promoCenterLayout =
+    layoutMode === "center_stack_promo" || layoutMode === "badge_promo_stack";
+  const graphicHeavyWideLayout =
+    layoutMode === "left_copy_right_graphic" || layoutMode === "framed_promo";
   const marginX = Math.max(48, Math.round(canvasWidth * 0.07));
   const topY = Math.max(40, Math.round(canvasHeight * 0.12));
   const footerY = canvasHeight - 44;
@@ -574,7 +591,7 @@ function createLayoutGeometry(
     ? Math.round((canvasWidth - badgeWidth) / 2)
     : marginX;
 
-  const geometry: LayoutGeometry = centered
+  const geometry: LayoutGeometry = centered || promoCenterLayout
     ? {
         background: fitBounds(canvasWidth, canvasHeight, {
           x: 0,
@@ -602,43 +619,61 @@ function createLayoutGeometry(
         }),
         headline: fitBounds(canvasWidth, canvasHeight, {
           x: Math.round((canvasWidth - centerWidth) / 2),
-          y: topY + 96,
+          y: topY + (promoCenterLayout ? 82 : 96),
           width: centerWidth,
           height: Math.max(72, headlineHeight),
         }),
         supportingCopy: fitBounds(canvasWidth, canvasHeight, {
           x: Math.round((canvasWidth - Math.min(centerWidth, canvasWidth - 180)) / 2),
-          y: topY + 190,
+          y: topY + (promoCenterLayout ? 176 : 190),
           width: Math.min(centerWidth, canvasWidth - 180),
           height: 72,
         }),
         priceCallout: fitBounds(canvasWidth, canvasHeight, {
           x: Math.round((canvasWidth - 280) / 2),
-          y: topY + 280,
+          y: topY + (promoCenterLayout ? 292 : 280),
           width: 280,
           height: 52,
         }),
         heroCaption: fitBounds(canvasWidth, canvasHeight, {
           x: Math.round((canvasWidth - 260) / 2),
-          y: topY + 342,
+          y: topY + (promoCenterLayout ? 364 : 342),
           width: 260,
           height: 32,
         }),
         cta: fitBounds(canvasWidth, canvasHeight, {
           x: Math.round((canvasWidth - 240) / 2),
-          y: topY + 360,
+          y: topY + (promoCenterLayout ? 430 : 360),
           width: 240,
           height: 64,
         }),
         decoration: fitBounds(canvasWidth, canvasHeight, {
-          x: canvasWidth - marginX - 110,
-          y: topY,
-          width: decorationMode === "ribbon_badge" ? 96 : 110,
-          height: decorationMode === "ribbon_badge" ? 96 : 110,
+          x: canvasWidth - marginX - (promoCenterLayout ? 130 : 110),
+          y: topY + (promoCenterLayout ? 8 : 0),
+          width: promoCenterLayout ? 130 : decorationMode === "ribbon_badge" ? 96 : 110,
+          height: promoCenterLayout ? 130 : decorationMode === "ribbon_badge" ? 96 : 110,
+        }),
+        secondaryAccent: fitBounds(canvasWidth, canvasHeight, {
+          x: marginX,
+          y: topY + 18,
+          width: promoCenterLayout ? 92 : 80,
+          height: promoCenterLayout ? 92 : 80,
+        }),
+        cornerAccent: fitBounds(canvasWidth, canvasHeight, {
+          x: canvasWidth - marginX - 74,
+          y: footerY - 118,
+          width: 74,
+          height: 74,
+        }),
+        frame: fitBounds(canvasWidth, canvasHeight, {
+          x: Math.round((canvasWidth - Math.min(centerWidth + 120, canvasWidth - marginX)) / 2),
+          y: topY + 52,
+          width: Math.min(centerWidth + 120, canvasWidth - marginX),
+          height: Math.min(440, canvasHeight - topY - 120),
         }),
         underlineBar: fitBounds(canvasWidth, canvasHeight, {
           x: Math.round((canvasWidth - 130) / 2),
-          y: topY + 346,
+          y: topY + (promoCenterLayout ? 404 : 346),
           width: 130,
           height: 8,
         }),
@@ -661,10 +696,14 @@ function createLayoutGeometry(
           y: topY,
           width: photoLayout
             ? Math.min(Math.max(280, Math.round(canvasWidth * 0.3)), rightColumnWidth + 40)
-            : rightColumnWidth,
+            : graphicHeavyWideLayout
+              ? Math.min(Math.max(280, Math.round(canvasWidth * 0.3)), rightColumnWidth + 64)
+              : rightColumnWidth,
           height: photoLayout
             ? Math.min(324, Math.round(canvasHeight * 0.62))
-            : Math.min(264, Math.round(canvasHeight * 0.42)),
+            : graphicHeavyWideLayout
+              ? Math.min(340, Math.round(canvasHeight * 0.56))
+              : Math.min(264, Math.round(canvasHeight * 0.42)),
         }),
         badge: fitBounds(canvasWidth, canvasHeight, {
           x: badgeX,
@@ -686,13 +725,13 @@ function createLayoutGeometry(
         }),
         supportingCopy: fitBounds(canvasWidth, canvasHeight, {
           x: marginX,
-          y: topY + 148,
+          y: topY + (graphicHeavyWideLayout ? 166 : 148),
           width: leftColumnWidth + 24,
           height: 70,
         }),
         priceCallout: fitBounds(canvasWidth, canvasHeight, {
           x: marginX,
-          y: topY + 238,
+          y: topY + (graphicHeavyWideLayout ? 278 : 238),
           width: Math.min(320, leftColumnWidth),
           height: 48,
         }),
@@ -704,29 +743,55 @@ function createLayoutGeometry(
         }),
         cta: fitBounds(canvasWidth, canvasHeight, {
           x: marginX,
-          y: topY + 320,
+          y: topY + (graphicHeavyWideLayout ? 392 : 320),
           width: 230,
           height: 64,
         }),
         decoration: fitBounds(canvasWidth, canvasHeight, {
           x: photoLayout
             ? rightColumnX + 12
-            : rightColumnX + Math.max(12, Math.round(rightColumnWidth * 0.16)),
+            : graphicHeavyWideLayout
+              ? rightColumnX + Math.max(6, Math.round(rightColumnWidth * 0.05))
+              : rightColumnX + Math.max(12, Math.round(rightColumnWidth * 0.16)),
           y: photoLayout
             ? topY + Math.min(356, Math.round(canvasHeight * 0.58))
+            : graphicHeavyWideLayout
+              ? topY + 18
             : topY + Math.min(312, Math.round(canvasHeight * 0.5)),
           width:
             decorationMode === "ribbon_badge"
               ? Math.min(150, rightColumnWidth - 24)
+              : graphicHeavyWideLayout
+                ? Math.min(220, rightColumnWidth - 16)
               : Math.min(photoLayout ? 120 : 180, rightColumnWidth - 24),
           height:
             decorationMode === "ribbon_badge"
               ? Math.min(90, canvasHeight - topY - 120)
+              : graphicHeavyWideLayout
+                ? Math.min(220, canvasHeight - topY - 180)
               : Math.min(photoLayout ? 92 : 140, canvasHeight - topY - 120),
+        }),
+        secondaryAccent: fitBounds(canvasWidth, canvasHeight, {
+          x: rightColumnX + Math.max(24, Math.round(rightColumnWidth * 0.24)),
+          y: topY + Math.min(286, Math.round(canvasHeight * 0.48)),
+          width: Math.min(96, rightColumnWidth - 48),
+          height: 96,
+        }),
+        cornerAccent: fitBounds(canvasWidth, canvasHeight, {
+          x: canvasWidth - marginX - 82,
+          y: topY - 6,
+          width: 82,
+          height: 82,
+        }),
+        frame: fitBounds(canvasWidth, canvasHeight, {
+          x: marginX - 12,
+          y: topY + 8,
+          width: canvasWidth - marginX * 2 + 24,
+          height: Math.min(430, canvasHeight - topY - 98),
         }),
         underlineBar: fitBounds(canvasWidth, canvasHeight, {
           x: marginX,
-          y: topY + 298,
+          y: topY + (graphicHeavyWideLayout ? 366 : 298),
           width: 130,
           height: 8,
         }),
@@ -753,7 +818,75 @@ function createLayoutGeometry(
     });
   }
 
+  if (layoutMode === "framed_promo") {
+    geometry.cta = fitBounds(canvasWidth, canvasHeight, {
+      x: geometry.cta.x,
+      y: geometry.cta.y + 12,
+      width: geometry.cta.width,
+      height: geometry.cta.height,
+    });
+  }
+
   return geometry;
+}
+
+function buildGraphicRoleCommands(
+  runId: string,
+  polishInputs: ReturnType<typeof readPolishInputs>,
+  geometry: LayoutGeometry,
+): MutationProposalDraft["mutation"]["commands"] {
+  const roleGeometryMap: Record<string, Bounds> = {
+    primary_accent: geometry.decoration,
+    secondary_accent: geometry.secondaryAccent,
+    corner_accent: geometry.cornerAccent,
+    badge_or_ribbon: geometry.ribbon,
+    frame: geometry.frame,
+  };
+
+  const roleCommands =
+    polishInputs.graphicCompositionSet?.roles
+      .filter(
+        (role) =>
+          role.role !== "cta_container" &&
+          role.role !== "badge_or_ribbon" &&
+          role.role !== "frame",
+      )
+      .map((role) =>
+        buildCreateLayerCommand(runId, "polish", {
+          slotKey: role.role === "primary_accent" ? "decoration" : null,
+          clientLayerKey: `${role.role}_${runId}`,
+          layerType: "shape",
+          bounds: roleGeometryMap[role.role] ?? geometry.decoration,
+          role: role.role,
+          variantKey: role.variantKey,
+          candidateId: role.candidateId,
+          sourceAssetId: role.sourceAssetId,
+          sourceSerial: role.sourceSerial,
+          sourceCategory: role.sourceCategory,
+        }),
+      ) ?? [];
+
+  if (roleCommands.length > 0) {
+    return roleCommands;
+  }
+
+  return [
+    buildCreateLayerCommand(runId, "polish", {
+      slotKey: "decoration",
+      clientLayerKey: `decoration_${runId}`,
+      layerType: "shape",
+      bounds: geometry.decoration,
+      role:
+        polishInputs.decorationMode === "ribbon_badge"
+          ? "ribbon_strip"
+          : "decoration",
+      variantKey: polishInputs.decorationMode,
+      candidateId: polishInputs.selectedDecorationCandidateId,
+      sourceAssetId: polishInputs.selectedDecorationAssetId,
+      sourceSerial: polishInputs.selectedDecorationSerial,
+      sourceCategory: polishInputs.selectedDecorationCategory,
+    }),
+  ];
 }
 
 function fitBounds(

@@ -297,6 +297,34 @@ export interface SearchProfileArtifact {
   };
 }
 
+export type GraphicCompositionRole =
+  | "primary_accent"
+  | "cta_container"
+  | "secondary_accent"
+  | "corner_accent"
+  | "badge_or_ribbon"
+  | "frame";
+
+export interface GraphicCompositionEntry {
+  role: GraphicCompositionRole;
+  candidateId: string;
+  sourceAssetId: string | null;
+  sourceSerial: string | null;
+  sourceCategory: string | null;
+  variantKey: string;
+  decorationMode:
+    | "graphic_cluster"
+    | "ribbon_badge"
+    | "photo_support"
+    | "promo_multi_graphic";
+}
+
+export interface GraphicCompositionSet {
+  density: "minimal" | "medium";
+  roles: GraphicCompositionEntry[];
+  summary: string;
+}
+
 export interface SelectionDecision {
   decisionId: string;
   runId: string;
@@ -336,8 +364,16 @@ export interface SelectionDecision {
     | "copy_left_with_right_decoration"
     | "copy_left_with_right_photo"
     | "center_stack"
-    | "badge_led";
-  decorationMode: "graphic_cluster" | "ribbon_badge" | "photo_support";
+    | "badge_led"
+    | "left_copy_right_graphic"
+    | "center_stack_promo"
+    | "badge_promo_stack"
+    | "framed_promo";
+  decorationMode:
+    | "graphic_cluster"
+    | "ribbon_badge"
+    | "photo_support"
+    | "promo_multi_graphic";
   photoBranchMode:
     | "not_considered"
     | "graphic_preferred"
@@ -346,6 +382,7 @@ export interface SelectionDecision {
   executionStrategy:
     | "graphic_first_shape_text_group"
     | "photo_hero_shape_text_group";
+  graphicCompositionSet: GraphicCompositionSet | null;
   summary: string;
   fallbackSummary: string;
 }
@@ -364,7 +401,12 @@ export type RuleJudgeIssueCode =
   | "asset_policy_conflict"
   | "template_prior_conflict"
   | "primary_visual_drift"
-  | "photo_subject_drift";
+  | "photo_subject_drift"
+  | "insufficient_graphic_density"
+  | "promo_structure_incomplete"
+  | "cta_copy_overlap_risk"
+  | "excessive_empty_space"
+  | "graphic_role_imbalance";
 
 export type RuleJudgeIssueCategory =
   | "readability"
@@ -377,7 +419,10 @@ export type RuleJudgeIssueCategory =
   | "retrieval_intent_alignment"
   | "policy_alignment"
   | "prior_alignment"
-  | "visual_consistency";
+  | "visual_consistency"
+  | "graphic_density"
+  | "spatial_composition"
+  | "composition_balance";
 
 export type RuleJudgeIssueSeverity = "info" | "warn" | "error";
 
@@ -390,6 +435,9 @@ export interface RuleJudgeIssueMetadata {
     | "readability"
     | "layout"
     | "photo_preference"
+    | "graphic_density"
+    | "spatial_composition"
+    | "composition_balance"
     | "semantic_domain_alignment"
     | "retrieval_intent_alignment"
     | "policy_alignment"

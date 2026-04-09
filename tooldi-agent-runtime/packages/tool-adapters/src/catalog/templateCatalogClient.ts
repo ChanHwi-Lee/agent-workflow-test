@@ -36,9 +36,17 @@ export interface TemplateCandidate {
       | "copy_left_with_right_decoration"
       | "copy_left_with_right_photo"
       | "center_stack"
-      | "badge_led";
+      | "badge_led"
+      | "left_copy_right_graphic"
+      | "center_stack_promo"
+      | "badge_promo_stack"
+      | "framed_promo";
     backgroundMode?: "spring_pattern" | "pastel_gradient" | "spring_photo";
-    decorationMode?: "graphic_cluster" | "ribbon_badge" | "photo_support";
+    decorationMode?:
+      | "graphic_cluster"
+      | "ribbon_badge"
+      | "photo_support"
+      | "promo_multi_graphic";
     photoBranchMode?:
       | "not_considered"
       | "graphic_preferred"

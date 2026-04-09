@@ -49,6 +49,19 @@ const menuDrivenPhotoSignalPattern =
 const fashionRetailBlockedTextPattern =
   /메뉴|음료|커피|콜드브루|라떼|에이드|브런치|요리|식사|런치|식당|레스토랑|카페/u;
 
+const genericPromoBlockedKeywords = new Set([
+  ...menuDrivenPhotoSignalKeywords,
+  "식당",
+  "레스토랑",
+  "카페",
+  "패션",
+  "리테일",
+  "의류",
+  "브랜드",
+  "쇼핑",
+  "스타일",
+]);
+
 export async function normalizeTemplateIntent(
   input: HydratedPlanningInput,
   plannerMode: NormalizedIntent["plannerMode"],
@@ -187,6 +200,10 @@ export async function normalizeTemplateIntent(
   };
 
   const explicitDomain = deriveExplicitDomain(promptSignals);
+  const genericPromoStructureFocus = shouldPreferGraphicPromoStructure(
+    promptSignals,
+    plannerDraft,
+  );
   let domain = plannerDraft.domain;
   if (explicitDomain && plannerDraft.domain !== explicitDomain) {
     recordRepair(
@@ -204,6 +221,22 @@ export async function normalizeTemplateIntent(
       },
     );
     domain = explicitDomain;
+  } else if (genericPromoStructureFocus && plannerDraft.domain !== "general_marketing") {
+    recordRepair(
+      "domain",
+      plannerDraft.domain,
+      "general_marketing",
+      "generic_promo_domain_repair",
+      "Generic promo wording without an explicit subject or business domain was normalized to general_marketing before structure-first planning.",
+      {
+        code: "generic_promo_domain_repair",
+        severity: "warning",
+        message:
+          "Planner draft assigned a specific business domain to a generic promo prompt without explicit subject signals.",
+        fields: ["domain"],
+      },
+    );
+    domain = "general_marketing";
   }
 
   const fashionMenuPhotoContradictionFields =
@@ -245,7 +278,16 @@ export async function normalizeTemplateIntent(
 
   const expectedMenuType = deriveExpectedMenuType(promptSignals, domain);
   let menuType = plannerDraft.facets.menuType;
-  if (domain === "fashion_retail" && plannerDraft.facets.menuType !== null) {
+  if (genericPromoStructureFocus && plannerDraft.facets.menuType !== null) {
+    recordRepair(
+      "facets.menuType",
+      plannerDraft.facets.menuType,
+      null,
+      "generic_promo_subject_reset",
+      "Generic promo wording removed menu taxonomy so the canonical intent stays subjectless before downstream retrieval.",
+    );
+    menuType = null;
+  } else if (domain === "fashion_retail" && plannerDraft.facets.menuType !== null) {
     recordRepair(
       "facets.menuType",
       plannerDraft.facets.menuType,
@@ -382,10 +424,29 @@ export async function normalizeTemplateIntent(
     layoutIntent = expectedLayoutIntent;
   }
 
-  const normalizedAssetPolicy = normalizeTemplateAssetPolicy(
-    plannerDraft.assetPolicy,
-  );
-  if (didCanonicalAssetPolicyMeaningfullyChange(plannerDraft.assetPolicy, normalizedAssetPolicy)) {
+  let normalizedAssetPolicy = normalizeTemplateAssetPolicy(plannerDraft.assetPolicy);
+  let assetPolicyExplicitlyRepaired = false;
+  if (
+    genericPromoStructureFocus &&
+    normalizedAssetPolicy.primaryVisualPolicy !== "graphic_preferred"
+  ) {
+    const repairedAssetPolicy = normalizeTemplateAssetPolicy(
+      "graphic_allowed_photo_optional",
+    );
+    recordRepair(
+      "assetPolicy",
+      normalizedAssetPolicy,
+      repairedAssetPolicy,
+      "generic_promo_graphic_first_repair",
+      "Generic promo wording was normalized to a graphic-first asset policy so Tooldi-style vector/bitmap structure stays primary before photo fallback.",
+    );
+    normalizedAssetPolicy = repairedAssetPolicy;
+    assetPolicyExplicitlyRepaired = true;
+  }
+  if (
+    !assetPolicyExplicitlyRepaired &&
+    didCanonicalAssetPolicyMeaningfullyChange(plannerDraft.assetPolicy, normalizedAssetPolicy)
+  ) {
     recordRepair(
       "assetPolicy",
       plannerDraft.assetPolicy,
@@ -411,6 +472,7 @@ export async function normalizeTemplateIntent(
     heuristicDraft.searchKeywords,
     domain,
     menuType,
+    genericPromoStructureFocus,
   );
   if (stableStringify(plannerDraft.searchKeywords) !== stableStringify(normalizedKeywords)) {
     const removedKeywords = plannerDraft.searchKeywords.filter(
@@ -438,9 +500,11 @@ export async function normalizeTemplateIntent(
     );
   }
 
-  const expectedGoalSummary = shouldResetGoalSummary(domain, plannerDraft.goalSummary)
-    ? prompt
-    : plannerDraft.goalSummary;
+  const expectedGoalSummary =
+    genericPromoStructureFocus ||
+    shouldResetGoalSummary(domain, plannerDraft.goalSummary)
+      ? prompt
+      : plannerDraft.goalSummary;
   const goalSummary = expectedGoalSummary;
   if (goalSummary !== plannerDraft.goalSummary) {
     recordRepair(
@@ -562,6 +626,11 @@ function extractPromptSignals(prompt: string) {
   return {
     spring: prompt.includes("봄"),
     sale: prompt.includes("세일") || prompt.includes("할인"),
+    event:
+      prompt.includes("이벤트") ||
+      prompt.includes("행사") ||
+      prompt.includes("오픈") ||
+      prompt.includes("프로모션"),
     newness:
       prompt.includes("신메뉴") ||
       prompt.includes("신상") ||
@@ -599,6 +668,23 @@ function deriveExplicitDomain(
     return "fashion_retail";
   }
   return null;
+}
+
+function shouldPreferGraphicPromoStructure(
+  promptSignals: ReturnType<typeof extractPromptSignals>,
+  plannerDraft: TemplateIntentDraft,
+): boolean {
+  const noExplicitBusinessDomain =
+    !promptSignals.restaurant && !promptSignals.cafe && !promptSignals.fashion;
+  const noConcretePhotoSubject =
+    !promptSignals.menu && !promptSignals.drink && !promptSignals.newness;
+  const promoLanguagePresent =
+    promptSignals.sale ||
+    promptSignals.event ||
+    plannerDraft.facets.promotionStyle === "sale_campaign" ||
+    plannerDraft.facets.promotionStyle === "general_campaign";
+
+  return noExplicitBusinessDomain && noConcretePhotoSubject && promoLanguagePresent;
 }
 
 function deriveExpectedMenuType(
@@ -674,10 +760,16 @@ function buildNormalizedKeywords(
   fallbackKeywords: string[],
   domain: NormalizedIntent["domain"],
   menuType: NormalizedIntent["facets"]["menuType"],
+  genericPromoSubjectless: boolean,
 ): string[] {
   const blockedKeywords = new Set<string>();
   if (domain === "fashion_retail") {
     for (const keyword of fashionRetailBlockedKeywords) {
+      blockedKeywords.add(keyword);
+    }
+  }
+  if (genericPromoSubjectless) {
+    for (const keyword of genericPromoBlockedKeywords) {
       blockedKeywords.add(keyword);
     }
   }
@@ -700,10 +792,10 @@ function buildNormalizedKeywords(
     pushKeyword(keyword);
   }
 
-  if (menuType === "food_menu") {
+  if (!genericPromoSubjectless && menuType === "food_menu") {
     pushKeyword("메뉴");
   }
-  if (menuType === "drink_menu") {
+  if (!genericPromoSubjectless && menuType === "drink_menu") {
     pushKeyword("음료");
   }
 

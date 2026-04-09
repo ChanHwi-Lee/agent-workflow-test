@@ -40,14 +40,31 @@ export async function buildExecutablePlan(
   }
   const includeBadge =
     selectionDecision.layoutMode === "badge_led" ||
-    selectionDecision.decorationMode === "ribbon_badge";
+    selectionDecision.layoutMode === "badge_promo_stack" ||
+    selectionDecision.graphicCompositionSet?.roles.some(
+      (role) => role.role === "badge_or_ribbon",
+    ) === true;
   const includeHeroCaption =
     selectionDecision.layoutMode === "copy_left_with_right_decoration";
   const includeHeroPanel =
-    !photoSelected && selectionDecision.layoutMode !== "center_stack";
+    !photoSelected &&
+    !["center_stack", "center_stack_promo", "badge_led", "badge_promo_stack"].includes(
+      selectionDecision.layoutMode,
+    );
+  const includeFrame =
+    selectionDecision.layoutMode === "framed_promo" ||
+    selectionDecision.graphicCompositionSet?.roles.some(
+      (role) => role.role === "frame",
+    ) === true;
   const includeUnderline =
-    selectionDecision.decorationMode !== "ribbon_badge" && !photoSelected;
-  const includeRibbon = selectionDecision.decorationMode === "ribbon_badge";
+    selectionDecision.decorationMode !== "ribbon_badge" &&
+    selectionDecision.decorationMode !== "promo_multi_graphic" &&
+    !photoSelected;
+  const includeRibbon =
+    selectionDecision.decorationMode === "ribbon_badge" ||
+    selectionDecision.graphicCompositionSet?.roles.some(
+      (role) => role.role === "badge_or_ribbon",
+    ) === true;
 
   const actions: ExecutablePlan["actions"] = [
     {
@@ -81,6 +98,7 @@ export async function buildExecutablePlan(
         includeHeroPanel,
         includeBadge,
         includeRibbon,
+        includeFrame,
       },
       rollback: {
         strategy: "delete_created_layers",
@@ -182,6 +200,9 @@ export async function buildExecutablePlan(
         selectedDecorationSerial: selectionDecision.selectedDecorationSerial,
         selectedDecorationCategory: selectionDecision.selectedDecorationCategory,
         decorationMode: selectionDecision.decorationMode,
+        graphicCompositionSet: selectionDecision.graphicCompositionSet
+          ? JSON.parse(JSON.stringify(selectionDecision.graphicCompositionSet))
+          : null,
         displayFontFamily: typographyDecision.display?.fontToken ?? null,
         displayFontWeight: typographyDecision.display?.fontWeight ?? null,
         bodyFontFamily: typographyDecision.body?.fontToken ?? null,

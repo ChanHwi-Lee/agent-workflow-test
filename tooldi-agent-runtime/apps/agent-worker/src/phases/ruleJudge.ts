@@ -300,6 +300,61 @@ export const RULE_JUDGE_ISSUE_DEFINITIONS = {
       ruleScope: "visual_consistency",
     },
   },
+  insufficient_graphic_density: {
+    category: "graphic_density",
+    defaultSeverity: "warn",
+    message:
+      "Graphic-first promo selection did not assemble enough accent roles for a Tooldi-style composition",
+    suggestedAction:
+      "Promote additional secondary or corner accents before finalizing the promo draft",
+    metadata: {
+      ruleScope: "graphic_density",
+    },
+  },
+  promo_structure_incomplete: {
+    category: "composition_balance",
+    defaultSeverity: "warn",
+    message:
+      "Promo structure is missing one or more required graphic roles for a stable CTA-led banner",
+    suggestedAction:
+      "Restore CTA container and primary accent roles before shipping the generic promo path",
+    metadata: {
+      ruleScope: "composition_balance",
+    },
+  },
+  cta_copy_overlap_risk: {
+    category: "spatial_composition",
+    defaultSeverity: "warn",
+    message:
+      "The selected promo structure keeps CTA and copy in a layout family that tends to overlap under current skeleton geometry",
+    suggestedAction:
+      "Prefer a graphic-first promo layout with more vertical separation before materialization",
+    metadata: {
+      ruleScope: "spatial_composition",
+    },
+  },
+  excessive_empty_space: {
+    category: "spatial_composition",
+    defaultSeverity: "warn",
+    message:
+      "Layout uses too much empty canvas relative to the selected promo graphic density",
+    suggestedAction:
+      "Increase accent density or switch to a denser promo layout family",
+    metadata: {
+      ruleScope: "spatial_composition",
+    },
+  },
+  graphic_role_imbalance: {
+    category: "composition_balance",
+    defaultSeverity: "warn",
+    message:
+      "Graphic-heavy promo structure over-relies on one accent role instead of a balanced set",
+    suggestedAction:
+      "Add or re-rank secondary and corner accents to balance the composition",
+    metadata: {
+      ruleScope: "composition_balance",
+    },
+  },
 } satisfies Record<RuleJudgeIssueCode, RuleJudgeIssueDefinition>;
 
 export function surfaceRuleJudgeIssue(
@@ -392,6 +447,12 @@ export async function ruleJudgeCreateTemplate(
   if (intent.brandConstraints.palette.length === 0) {
     issues.push(surfaceRuleJudgeIssue("brand_context_missing"));
   }
+
+  const graphicStructureIssues = detectGraphicPromoStructureIssues(
+    intent,
+    selectionDecision,
+  );
+  issues.push(...graphicStructureIssues);
 
   const domainSubjectMismatch = detectDomainSubjectMismatch(
     intent,
@@ -494,6 +555,59 @@ export async function ruleJudgeCreateTemplate(
           ? `Rule judge found ${warnCount} refinement issue(s) before execution`
           : `Rule judge refused execution due to ${errorCount} blocking issue(s)`,
   };
+}
+
+function detectGraphicPromoStructureIssues(
+  intent: NormalizedIntent,
+  selectionDecision: SelectionDecision,
+): RuleJudgeIssue[] {
+  const assetPolicy = normalizeTemplateAssetPolicy(intent.assetPolicy);
+  const graphicRoles = selectionDecision.graphicCompositionSet?.roles ?? [];
+  const roleNames = new Set(graphicRoles.map((role) => role.role));
+  const graphicFirstPromo =
+    selectionDecision.executionStrategy === "graphic_first_shape_text_group" &&
+    assetPolicy.primaryVisualPolicy === "graphic_preferred" &&
+    (intent.campaignGoal === "sale_conversion" ||
+      intent.campaignGoal === "promotion_awareness");
+
+  if (!graphicFirstPromo) {
+    return [];
+  }
+
+  const issues: RuleJudgeIssue[] = [];
+
+  if (graphicRoles.length < 3) {
+    issues.push(surfaceRuleJudgeIssue("insufficient_graphic_density"));
+  }
+
+  if (!roleNames.has("primary_accent") || !roleNames.has("cta_container")) {
+    issues.push(surfaceRuleJudgeIssue("promo_structure_incomplete"));
+  }
+
+  if (
+    selectionDecision.layoutMode === "center_stack" ||
+    (selectionDecision.layoutMode === "center_stack_promo" &&
+      graphicRoles.length < 4)
+  ) {
+    issues.push(surfaceRuleJudgeIssue("cta_copy_overlap_risk"));
+  }
+
+  if (
+    ["center_stack", "center_stack_promo"].includes(selectionDecision.layoutMode) &&
+    graphicRoles.length < 4
+  ) {
+    issues.push(surfaceRuleJudgeIssue("excessive_empty_space"));
+  }
+
+  if (
+    roleNames.has("primary_accent") &&
+    !roleNames.has("secondary_accent") &&
+    !roleNames.has("corner_accent")
+  ) {
+    issues.push(surfaceRuleJudgeIssue("graphic_role_imbalance"));
+  }
+
+  return issues;
 }
 
 function recommendationImpactForSeverity(

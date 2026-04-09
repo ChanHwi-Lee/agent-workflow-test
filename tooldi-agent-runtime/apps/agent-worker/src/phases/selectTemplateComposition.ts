@@ -1,7 +1,12 @@
 import { createRequestId } from "@tooldi/agent-domain";
-import { templateAssetPolicyPrefersPhoto } from "@tooldi/agent-llm";
+import {
+  normalizeTemplateAssetPolicy,
+  templateAssetPolicyPrefersPhoto,
+} from "@tooldi/agent-llm";
 
 import type {
+  GraphicCompositionEntry,
+  GraphicCompositionSet,
   SelectionDecision,
   TemplateCandidateBundle,
   NormalizedIntent,
@@ -54,6 +59,23 @@ export async function selectTemplateComposition(
     photoBranchDecision.mode === "photo_selected" && photoLayout
       ? photoLayout
       : baseLayout;
+  const graphicCompositionSet =
+    photoBranchDecision.mode === "photo_selected"
+      ? buildPhotoSupportGraphicCompositionSet(
+          candidates.decoration.candidates,
+          selectedDecoration,
+        )
+      : buildGraphicCompositionSet(
+          candidates.decoration.candidates,
+          selectedDecoration,
+          selectedLayout.payload.layoutMode ?? "copy_left_with_right_decoration",
+        );
+  const decorationMode =
+    photoBranchDecision.mode === "photo_selected"
+      ? "photo_support"
+      : graphicCompositionSet.roles.length >= 3
+        ? "promo_multi_graphic"
+        : selectedDecoration.payload.decorationMode ?? "graphic_cluster";
 
   return {
     decisionId: createRequestId(),
@@ -91,14 +113,14 @@ export async function selectTemplateComposition(
     topPhotoOrientation: topPhotoCandidate?.payload.photoOrientation ?? null,
     backgroundMode: selectedBackground.payload.backgroundMode ?? "spring_pattern",
     layoutMode: selectedLayout.payload.layoutMode ?? "copy_left_with_right_decoration",
-    decorationMode:
-      selectedDecoration.payload.decorationMode ?? "graphic_cluster",
+    decorationMode,
     photoBranchMode: photoBranchDecision.mode,
     photoBranchReason: photoBranchDecision.reason,
     executionStrategy:
       photoBranchDecision.mode === "photo_selected"
         ? "photo_hero_shape_text_group"
         : "graphic_first_shape_text_group",
+    graphicCompositionSet,
     summary:
       `Selected ${selectedBackground.payload.variantKey}, ${selectedLayout.payload.variantKey}, ` +
       `${selectedDecoration.payload.variantKey} for ${intent.domain} ${intent.campaignGoal}` +
@@ -119,22 +141,19 @@ function pickBaseLayout(
   const baseLayouts = candidates.layout.candidates.filter(
     (candidate) => candidate.payload.layoutMode !== "copy_left_with_right_photo",
   );
-  const preferredLayoutMode =
-    intent.layoutIntent === "badge_led"
-      ? "badge_led"
-      : intent.canvasPreset === "wide_1200x628"
-        ? "copy_left_with_right_decoration"
-        : "center_stack";
+  const preferredLayoutModes = resolvePreferredLayoutModes(intent);
 
-  const preferred = baseLayouts.find(
-    (candidate) => candidate.payload.layoutMode === preferredLayoutMode,
-  );
+  for (const layoutMode of preferredLayoutModes) {
+    const preferred = baseLayouts.find(
+      (candidate) => candidate.payload.layoutMode === layoutMode,
+    );
+    if (preferred) {
+      return preferred;
+    }
+  }
 
-  return (
-    preferred ??
-    baseLayouts.reduce((best, current) =>
-      current.fitScore > best.fitScore ? current : best,
-    )
+  return baseLayouts.reduce((best, current) =>
+    current.fitScore > best.fitScore ? current : best,
   );
 }
 
@@ -222,7 +241,11 @@ function decidePhotoBranch(
         | "copy_left_with_right_decoration"
         | "copy_left_with_right_photo"
         | "center_stack"
-        | "badge_led";
+        | "badge_led"
+        | "left_copy_right_graphic"
+        | "center_stack_promo"
+        | "badge_promo_stack"
+        | "framed_promo";
     };
   },
   selectedDecoration: {
@@ -318,4 +341,211 @@ function decidePhotoBranch(
         ? "graphic-first path still remained safer than the preferred photo path after comparison"
         : "graphic-first path remains safer for readability and execution despite the available photo candidate",
   };
+}
+
+function resolvePreferredLayoutModes(
+  intent: NormalizedIntent,
+): Array<
+  | "copy_left_with_right_decoration"
+  | "copy_left_with_right_photo"
+  | "center_stack"
+  | "badge_led"
+  | "left_copy_right_graphic"
+  | "center_stack_promo"
+  | "badge_promo_stack"
+  | "framed_promo"
+> {
+  const assetPolicy = normalizeTemplateAssetPolicy(intent.assetPolicy);
+  const wideCanvas =
+    intent.canvasPreset === "wide_1200x628" ||
+    intent.canvasPreset.startsWith("custom_");
+  const graphicPreferred = assetPolicy.primaryVisualPolicy === "graphic_preferred";
+
+  if (intent.layoutIntent === "badge_led") {
+    return ["badge_promo_stack", "badge_led", "center_stack_promo", "center_stack"];
+  }
+
+  if (graphicPreferred && wideCanvas) {
+    return [
+      "left_copy_right_graphic",
+      "framed_promo",
+      "center_stack_promo",
+      "copy_left_with_right_decoration",
+      "center_stack",
+    ];
+  }
+
+  if (graphicPreferred) {
+    return ["center_stack_promo", "framed_promo", "center_stack", "badge_promo_stack"];
+  }
+
+  return wideCanvas
+    ? ["copy_left_with_right_decoration", "left_copy_right_graphic", "center_stack_promo", "center_stack"]
+    : ["center_stack_promo", "center_stack", "badge_promo_stack"];
+}
+
+function buildGraphicCompositionSet(
+  decorationCandidates: TemplateCandidateBundle["decoration"]["candidates"],
+  selectedDecoration: TemplateCandidateBundle["decoration"]["candidates"][number],
+  layoutMode:
+    | "copy_left_with_right_decoration"
+    | "copy_left_with_right_photo"
+    | "center_stack"
+    | "badge_led"
+    | "left_copy_right_graphic"
+    | "center_stack_promo"
+    | "badge_promo_stack"
+    | "framed_promo",
+): GraphicCompositionSet {
+  const uniqueCandidates = uniqueDecorationCandidates(decorationCandidates);
+  const selectedIndex = uniqueCandidates.findIndex(
+    (candidate) => candidate.candidateId === selectedDecoration.candidateId,
+  );
+  const selectedCandidate =
+    selectedIndex === -1 ? selectedDecoration : uniqueCandidates[selectedIndex]!;
+  const orderedCandidates = [
+    selectedCandidate,
+    ...uniqueCandidates.filter((candidate) => candidate.candidateId !== selectedCandidate.candidateId),
+  ];
+
+  const roles: GraphicCompositionEntry[] = [];
+  const usedCandidateIds = new Set<string>();
+  const canReuseForDensity = orderedCandidates.length < 4;
+  const addRole = (
+    role: GraphicCompositionEntry["role"],
+    preferredCandidate:
+      | TemplateCandidateBundle["decoration"]["candidates"][number]
+      | null,
+    options?: {
+      allowReuse?: boolean;
+      preferredDecorationMode?: "ribbon_badge" | "graphic_cluster";
+    },
+  ) => {
+    const candidate =
+      preferredCandidate &&
+      (options?.allowReuse || !usedCandidateIds.has(preferredCandidate.candidateId))
+        ? preferredCandidate
+        : orderedCandidates.find((entry) => {
+            if (!options?.allowReuse && usedCandidateIds.has(entry.candidateId)) {
+              return false;
+            }
+            if (
+              options?.preferredDecorationMode &&
+              entry.payload.decorationMode !== options.preferredDecorationMode
+            ) {
+              return false;
+            }
+            return true;
+          }) ??
+          (options?.preferredDecorationMode
+            ? orderedCandidates.find((entry) => {
+                if (!options.allowReuse && usedCandidateIds.has(entry.candidateId)) {
+                  return false;
+                }
+                return true;
+              })
+            : null);
+
+    if (!candidate) {
+      return;
+    }
+
+    roles.push({
+      role,
+      candidateId: candidate.candidateId,
+      sourceAssetId: candidate.sourceAssetId ?? null,
+      sourceSerial: candidate.sourceSerial ?? null,
+      sourceCategory: candidate.sourceCategory ?? null,
+      variantKey: candidate.payload.variantKey,
+      decorationMode:
+        candidate.payload.decorationMode ?? "promo_multi_graphic",
+    });
+    usedCandidateIds.add(candidate.candidateId);
+  };
+
+  addRole("primary_accent", orderedCandidates[0] ?? selectedDecoration);
+  addRole("cta_container", orderedCandidates[1] ?? orderedCandidates[0] ?? selectedDecoration, {
+    allowReuse: orderedCandidates.length < 2,
+  });
+  addRole("secondary_accent", orderedCandidates[2] ?? orderedCandidates[0] ?? selectedDecoration, {
+    allowReuse: canReuseForDensity,
+  });
+  addRole("corner_accent", orderedCandidates[3] ?? orderedCandidates[1] ?? orderedCandidates[0] ?? selectedDecoration, {
+    allowReuse: canReuseForDensity,
+  });
+
+  if (layoutMode === "badge_promo_stack" || layoutMode === "badge_led") {
+    addRole("badge_or_ribbon", null, {
+      preferredDecorationMode: "ribbon_badge",
+      allowReuse: true,
+    });
+  }
+
+  if (layoutMode === "framed_promo") {
+    addRole("frame", orderedCandidates[1] ?? orderedCandidates[0] ?? selectedDecoration, {
+      allowReuse: true,
+    });
+  }
+
+  return {
+    density: roles.length >= 3 ? "medium" : "minimal",
+    roles,
+    summary:
+      roles.length === 0
+        ? "No reusable graphic roles were assembled for the promo composition."
+        : `Graphic-heavy promo composition uses ${roles.length} role(s): ${roles
+            .map((role) => role.role)
+            .join(", ")}.`,
+  };
+}
+
+function buildPhotoSupportGraphicCompositionSet(
+  decorationCandidates: TemplateCandidateBundle["decoration"]["candidates"],
+  selectedDecoration: TemplateCandidateBundle["decoration"]["candidates"][number],
+): GraphicCompositionSet {
+  const uniqueCandidates = uniqueDecorationCandidates(decorationCandidates);
+  const accentCandidate =
+    uniqueCandidates.find(
+      (candidate) => candidate.candidateId === selectedDecoration.candidateId,
+    ) ?? selectedDecoration;
+
+  return {
+    density: "minimal",
+    roles: [
+      {
+        role: "cta_container",
+        candidateId: accentCandidate.candidateId,
+        sourceAssetId: accentCandidate.sourceAssetId ?? null,
+        sourceSerial: accentCandidate.sourceSerial ?? null,
+        sourceCategory: accentCandidate.sourceCategory ?? null,
+        variantKey: accentCandidate.payload.variantKey,
+        decorationMode: accentCandidate.payload.decorationMode ?? "photo_support",
+      },
+      {
+        role: "corner_accent",
+        candidateId: accentCandidate.candidateId,
+        sourceAssetId: accentCandidate.sourceAssetId ?? null,
+        sourceSerial: accentCandidate.sourceSerial ?? null,
+        sourceCategory: accentCandidate.sourceCategory ?? null,
+        variantKey: accentCandidate.payload.variantKey,
+        decorationMode: accentCandidate.payload.decorationMode ?? "photo_support",
+      },
+    ],
+    summary: "Photo-support path keeps a minimal graphic set for CTA framing and corner polish.",
+  };
+}
+
+function uniqueDecorationCandidates(
+  candidates: TemplateCandidateBundle["decoration"]["candidates"],
+) {
+  const seen = new Set<string>();
+  return [...candidates]
+    .sort((left, right) => right.fitScore - left.fitScore)
+    .filter((candidate) => {
+      if (seen.has(candidate.candidateId)) {
+        return false;
+      }
+      seen.add(candidate.candidateId);
+      return true;
+    });
 }

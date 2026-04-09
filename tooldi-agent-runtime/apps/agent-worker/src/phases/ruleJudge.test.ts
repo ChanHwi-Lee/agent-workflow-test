@@ -124,6 +124,39 @@ function createSelectionDecision(
     photoBranchMode: "graphic_preferred",
     photoBranchReason: "graphic branch preferred",
     executionStrategy: "graphic_first_shape_text_group",
+    graphicCompositionSet: {
+      density: "medium",
+      roles: [
+        {
+          role: "primary_accent",
+          candidateId: "graphic-1",
+          sourceAssetId: "graphic:1",
+          sourceSerial: "2",
+          sourceCategory: "illust",
+          variantKey: "graphic_primary",
+          decorationMode: "promo_multi_graphic",
+        },
+        {
+          role: "cta_container",
+          candidateId: "graphic-2",
+          sourceAssetId: "graphic:2",
+          sourceSerial: "22",
+          sourceCategory: "illust",
+          variantKey: "graphic_cta",
+          decorationMode: "promo_multi_graphic",
+        },
+        {
+          role: "corner_accent",
+          candidateId: "graphic-3",
+          sourceAssetId: "graphic:3",
+          sourceSerial: "23",
+          sourceCategory: "bitmap",
+          variantKey: "graphic_corner",
+          decorationMode: "promo_multi_graphic",
+        },
+      ],
+      summary: "promo graphic set",
+    },
     summary: "graphic path selected",
     fallbackSummary: "graphic fallback",
     ...overrides,
@@ -801,6 +834,71 @@ test("ruleJudgeCreateTemplate keeps fashion retail graphic-first outcomes when s
   assert.equal(
     verdict.issues.some((issue) => issue.code === "primary_visual_drift"),
     false,
+  );
+});
+
+test("ruleJudgeCreateTemplate surfaces structural promo warnings when generic graphic-first composition is too thin", async () => {
+  const intent = createIntent({
+    domain: "general_marketing",
+    audience: "general_consumers",
+    campaignGoal: "sale_conversion",
+    assetPolicy: normalizeTemplateAssetPolicy("graphic_allowed_photo_optional"),
+    facets: {
+      seasonality: "spring",
+      menuType: null,
+      promotionStyle: "sale_campaign",
+      offerSpecificity: "broad_offer",
+    },
+  });
+  const searchProfile = await buildSearchProfile(intent);
+  const verdict = await ruleJudgeCreateTemplate(
+    intent,
+    searchProfile,
+    createSelectionDecision({
+      layoutMode: "center_stack_promo",
+      decorationMode: "promo_multi_graphic",
+      graphicCompositionSet: {
+        density: "minimal",
+        roles: [
+          {
+            role: "primary_accent",
+            candidateId: "graphic-1",
+            sourceAssetId: "graphic:1",
+            sourceSerial: "2",
+            sourceCategory: "illust",
+            variantKey: "graphic_primary",
+            decorationMode: "promo_multi_graphic",
+          },
+          {
+            role: "cta_container",
+            candidateId: "graphic-1",
+            sourceAssetId: "graphic:1",
+            sourceSerial: "2",
+            sourceCategory: "illust",
+            variantKey: "graphic_primary",
+            decorationMode: "promo_multi_graphic",
+          },
+        ],
+        summary: "thin promo set",
+      },
+    }),
+    createTypographyDecision(),
+    createSourceSearchSummary(),
+    createPlan(),
+  );
+
+  assert.equal(verdict.recommendation, "refine");
+  assert.equal(
+    verdict.issues.some((issue) => issue.code === "insufficient_graphic_density"),
+    true,
+  );
+  assert.equal(
+    verdict.issues.some((issue) => issue.code === "cta_copy_overlap_risk"),
+    true,
+  );
+  assert.equal(
+    verdict.issues.some((issue) => issue.code === "graphic_role_imbalance"),
+    true,
   );
 });
 
