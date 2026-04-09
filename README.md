@@ -12,6 +12,7 @@
 
 - 문서 인덱스: [tooldi-agent-workflow-v1-doc-index.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-doc-index.md)
 - 현재 구현 상태: [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
+- 표현 전략 lock: [tooldi-agent-workflow-v1-create-template-representation-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-representation-design-lock.md)
 - 다음 작업 우선순위: [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
 
 ## 2026-04-08 현재 구현 스냅샷
@@ -37,6 +38,10 @@
   - `식당에서 신규 봄 계절메뉴를 만들어줘`
   - `카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘`
   - `패션 리테일 봄 세일 배너 만들어줘`
+- `create_template` 표현 전략은 이제 giant schema 확장이 아니라 `strict core schema + structured subplans` 방향으로 고정한다.
+  - giant end-to-end schema 금지
+  - freeform brief handoff 금지
+  - family-specific retrieval/execution semantics 유지
 - 현재 가장 큰 남은 품질 이슈는 planner/judge 정합성이다.
   - 실제 manual run에서 `domain=fashion_retail` 인데 `facets.menuType=food_menu` 가 섞였고, judge 가 이를 `keep` 으로 통과시킨 사례가 있다.
 

@@ -6,6 +6,7 @@
 
 - `tooldi-agent-workflow-v1-doc-index.md`
 - `tooldi-agent-workflow-v1-create-template-current-state-as-is.md`
+- `tooldi-agent-workflow-v1-create-template-representation-design-lock.md`
 - `tooldi-natural-language-agent-v1-architecture.md`
 - `tooldi-agent-workflow-v1-functional-spec-to-be.md`
 - `tooldi-agent-workflow-v1-backend-boundary.md`
@@ -35,11 +36,15 @@
    - v1 scope/non-scope, stack lock, operations decision을 잠그는 decision record
    - 무엇을 v1에서 하지 않을지와 운영자가 무엇을 day one부터 봐야 하는지 고정한다.
 
-6. `tooldi-agent-workflow-v1-create-template-current-state-as-is.md`
+6. `tooldi-agent-workflow-v1-create-template-representation-design-lock.md`
+   - `create_template` 내부 표현 전략 authority
+   - giant schema 가 아니라 `strict core schema + structured subplans` 방향을 잠근다.
+
+7. `tooldi-agent-workflow-v1-create-template-current-state-as-is.md`
    - current truth 문서
    - generic `create_template` skeleton 구현 상태, artifact chain, 현재 known gap을 AS-IS 로 기록한다.
 
-7. `tooldi-agent-workflow-v1-doc-index.md`
+8. `tooldi-agent-workflow-v1-doc-index.md`
    - 읽기 순서와 문서 업데이트 기준을 정리한 인덱스
    - 새 세션이나 다른 작업자가 어떤 문서부터 읽어야 하는지 빠르게 판단하게 돕는다.
 
@@ -49,10 +54,10 @@
   - `doc-index` -> `architecture` -> `scope-operations-decisions` -> `functional-spec`
 
 - Backend/worker 구현:
-  - `doc-index` -> `current-state-as-is` -> `architecture` -> `backend-boundary` -> `functional-spec`
+  - `doc-index` -> `current-state-as-is` -> `representation-design-lock` -> `architecture` -> `backend-boundary` -> `functional-spec`
 
 - FE/toolditor 구현:
-  - `doc-index` -> `current-state-as-is` -> `architecture` -> `client-boundary` -> `functional-spec`
+  - `doc-index` -> `current-state-as-is` -> `representation-design-lock` -> `architecture` -> `client-boundary` -> `functional-spec`
 
 - 운영/QA/리뷰:
   - `doc-index` -> `current-state-as-is` -> `architecture` -> `scope-operations-decisions` -> `functional-spec`
@@ -74,6 +79,10 @@
 - v1 포함/제외 범위, stack choice, 운영 decision을 바꾸면:
   - 먼저 `scope-operations-decisions` 를 수정하고
   - 다른 문서의 표현을 동일하게 맞춘다.
+
+- `create_template` 내부 표현 전략, core schema/subplan 분리 기준, giant schema 금지 원칙이 바뀌면:
+  - 먼저 `tooldi-agent-workflow-v1-create-template-representation-design-lock.md` 를 수정하고
+  - 그 다음 `template-intelligence-design-lock`, `current-state-as-is`, `next-implementation-roadmap` 를 projection 한다.
 
 ## 고정된 대표 시나리오
 

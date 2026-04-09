@@ -18,6 +18,7 @@
 
 - 이 문서는 normative spec이 아니라 `다음 구현 우선순위` 를 정리하는 working roadmap이다.
 - `create_template` intelligence layer의 capability catalog / selection policy / candidate schema / hierarchy authority는 [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md) 가 맡고, 이 문서는 sequencing과 implementation track만 다룬다.
+- `create_template` 내부 표현 전략과 `core schema + structured subplans` 기준은 [tooldi-agent-workflow-v1-create-template-representation-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-representation-design-lock.md) 를 따른다.
 - planner/search/judge hardening의 source-grounded TO-BE 기준은 [tooldi-agent-workflow-v1-create-template-hardening-source-grounded-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-hardening-source-grounded-to-be.md) 를 따른다.
 - authority ownership, artifact identity, completion semantics, FE/BE boundary는 sibling 문서를 override하지 않는다.
 - sibling 문서와 충돌이 나면 아래 순서를 따른다.
