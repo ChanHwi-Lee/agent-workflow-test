@@ -5,6 +5,7 @@ import { CanvasMutationEnvelopeSchema } from "../canvas/canvas-mutation.js";
 import { TemplateSaveReceiptSchema } from "../canvas/template-save-receipt.js";
 import {
   DurabilityStateSchema,
+  ExecutionSlotKeySchema,
   IdentifierSchema,
   IsoDateTimeSchema,
   JsonObjectSchema,
@@ -28,6 +29,9 @@ const StoredAssetDescriptorSchema = Type.Object(
     assetRefKey: IdentifierSchema,
     storageKey: Type.String({ minLength: 1 }),
     slotKey: Type.Union([SlotKeySchema, Type.Null()]),
+    executionSlotKey: Type.Optional(
+      Type.Union([ExecutionSlotKeySchema, Type.Null()]),
+    ),
     sourceKind: Type.Union(
       ["generated", "edited", "uploaded", "fallback_graphic"].map((value) =>
         Type.Literal(value),
@@ -54,7 +58,10 @@ const DraftManifestSchema = Type.Object(
     slotBindings: Type.Array(
       Type.Object(
         {
-          slotKey: SlotKeySchema,
+          slotKey: Type.Union([SlotKeySchema, Type.Null()]),
+          executionSlotKey: Type.Optional(
+            Type.Union([ExecutionSlotKeySchema, Type.Null()]),
+          ),
           primaryLayerId: IdentifierSchema,
           layerIds: Type.Array(IdentifierSchema),
           layerType: Type.Union(
@@ -238,7 +245,10 @@ const LastKnownGoodCheckpointSchema = Type.Object(
         slotStatuses: Type.Array(
           Type.Object(
             {
-              slotKey: SlotKeySchema,
+              slotKey: Type.Union([SlotKeySchema, Type.Null()]),
+              executionSlotKey: Type.Optional(
+                Type.Union([ExecutionSlotKeySchema, Type.Null()]),
+              ),
               status: Type.Union(
                 ["not_started", "visible_placeholder", "ready", "fallback_ready"].map(
                   (value) => Type.Literal(value),

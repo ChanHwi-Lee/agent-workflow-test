@@ -487,6 +487,14 @@ function createConcreteLayoutPlan(
       cta: "left_copy_column",
       footer_note: "footer_strip",
     },
+    resolvedSlotBounds: {
+      headline: { x: 80, y: 120, width: 420, height: 90 },
+      subheadline: { x: 80, y: 220, width: 420, height: 70 },
+      offer_line: { x: 80, y: 314, width: 320, height: 48 },
+      cta: { x: 80, y: 392, width: 230, height: 64 },
+      footer_note: { x: 80, y: 560, width: 360, height: 24 },
+    },
+    headlineEstimatedHeight: 90,
     clusterZones: ["right_cluster", "top_corner", "bottom_strip"],
     ctaContainerExpected: true,
     graphicRolePlacementHints: [

@@ -1,4 +1,8 @@
-import type { ExecutablePlan, PersistedPlanAction } from "@tooldi/agent-contracts";
+import type {
+  ExecutablePlan,
+  ExecutionSlotKey,
+  PersistedPlanAction,
+} from "@tooldi/agent-contracts";
 import { createRequestId } from "@tooldi/agent-domain";
 import type { TextLayoutHelper } from "@tooldi/tool-adapters";
 
@@ -13,10 +17,12 @@ import type {
   GraphicRoleBinding,
   GraphicCompositionRole,
   HydratedPlanningInput,
+  LayoutBounds,
   MutationProposalDraft,
   NormalizedIntent,
   SkeletonMutationBatch,
 } from "../types.js";
+import { isExecutionIdentityValid } from "./executionSlotIdentity.js";
 
 export interface EmitSkeletonMutationsDependencies {
   textLayoutHelper: TextLayoutHelper;
@@ -40,12 +46,7 @@ type DecorationMode =
 
 type BackgroundMode = "spring_pattern" | "pastel_gradient" | "spring_photo";
 
-type Bounds = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
+type Bounds = LayoutBounds;
 
 type LayoutGeometry = {
   background: Bounds;
@@ -108,10 +109,14 @@ export async function emitSkeletonMutations(
   const polishInputs = readPolishInputs(planActions.polish.inputs);
   const headline =
     (copyInputs.copySlotTexts.headline ?? normalizedIntent.goalSummary).slice(0, 48);
-  const layoutEstimate = await dependencies.textLayoutHelper.estimate({
-    text: headline,
-    maxWidth: Math.max(320, input.request.editorContext.canvasWidth - 160),
-  });
+  const headlineEstimatedHeight =
+    copyInputs.headlineEstimatedHeight ??
+    (
+      await dependencies.textLayoutHelper.estimate({
+        text: headline,
+        maxWidth: Math.max(320, input.request.editorContext.canvasWidth - 160),
+      })
+    ).height;
 
   const photoSelected = planActions.photo !== null;
   const typography: TypographyMetadata = {
@@ -126,7 +131,7 @@ export async function emitSkeletonMutations(
     copyInputs.layoutProfile,
     copyInputs.layoutMode,
     polishInputs.decorationMode,
-    layoutEstimate.height,
+    headlineEstimatedHeight,
     copyInputs.spacingIntent,
   );
   const geometryPresets = createGeometryPresets(
@@ -135,10 +140,13 @@ export async function emitSkeletonMutations(
     copyInputs.layoutProfile,
     copyInputs.layoutMode,
     polishInputs.decorationMode,
-    layoutEstimate.height,
+    headlineEstimatedHeight,
     copyInputs.spacingIntent,
   );
-  const copySlotBounds = resolveCopySlotBounds(geometryPresets, copyInputs);
+  const copySlotBounds = resolveCopySlotBoundsWithPlan(
+    geometryPresets,
+    copyInputs,
+  );
 
   const commitGroup = plan.actions[0]?.commitGroup ?? createRequestId();
   const draftId = `draft_${input.job.runId}`;
@@ -191,9 +199,10 @@ export async function emitSkeletonMutations(
   const foundationCommands: MutationProposalDraft["mutation"]["commands"] = [
     buildCreateLayerCommand(input.job.runId, "foundation", {
       slotKey: "background",
+      executionSlotKey: "background",
       clientLayerKey: `background_${input.job.runId}`,
       layerType: "shape",
-      bounds: geometry.background,
+      bounds: foundationInputs.resolvedSlotBounds.background ?? geometry.background,
       role: "background",
       variantKey: foundationInputs.backgroundMode,
       candidateId: foundationInputs.selectedBackgroundCandidateId,
@@ -205,12 +214,14 @@ export async function emitSkeletonMutations(
 
   if (foundationInputs.includeHeroPanel) {
     foundationCommands.push(
-      buildCreateLayerCommand(input.job.runId, "foundation", {
-        slotKey:
-          copyInputs.layoutMode === "center_stack" ? null : "hero_image",
-        clientLayerKey: `hero_panel_${input.job.runId}`,
-        layerType: "shape",
-        bounds: geometry.heroPanel,
+        buildCreateLayerCommand(input.job.runId, "foundation", {
+          slotKey:
+            copyInputs.layoutMode === "center_stack" ? null : "hero_image",
+          executionSlotKey: null,
+          clientLayerKey: `hero_panel_${input.job.runId}`,
+          layerType: "shape",
+          bounds:
+            foundationInputs.resolvedSlotBounds.hero_image ?? geometry.heroPanel,
         role:
           copyInputs.layoutMode === "center_stack"
             ? "spotlight_panel"
@@ -225,9 +236,10 @@ export async function emitSkeletonMutations(
     foundationCommands.push(
       buildCreateLayerCommand(input.job.runId, "foundation", {
         slotKey: "badge",
+        executionSlotKey: "badge_text",
         clientLayerKey: `badge_${input.job.runId}`,
         layerType: "text",
-        bounds: geometry.badge,
+        bounds: copySlotBounds.badge_text,
         role: "badge",
         variantKey: copyInputs.layoutMode,
         candidateId: copyInputs.selectedLayoutCandidateId,
@@ -242,6 +254,7 @@ export async function emitSkeletonMutations(
     foundationCommands.push(
       buildCreateLayerCommand(input.job.runId, "foundation", {
         slotKey: null,
+        executionSlotKey: null,
         clientLayerKey: `ribbon_strip_${input.job.runId}`,
         layerType: "shape",
         bounds: geometry.ribbon,
@@ -256,6 +269,7 @@ export async function emitSkeletonMutations(
     foundationCommands.push(
       buildCreateLayerCommand(input.job.runId, "foundation", {
         slotKey: null,
+        executionSlotKey: null,
         clientLayerKey: `frame_${input.job.runId}`,
         layerType: "shape",
         bounds: geometry.frame,
@@ -271,9 +285,10 @@ export async function emitSkeletonMutations(
       ? [
           buildCreateLayerCommand(input.job.runId, "photo", {
             slotKey: "hero_image",
+            executionSlotKey: "hero_image",
             clientLayerKey: `hero_image_${input.job.runId}`,
             layerType: "image",
-            bounds: geometry.heroPanel,
+            bounds: photoInputs.resolvedSlotBounds.hero_image ?? geometry.heroPanel,
             role: "hero_image",
             variantKey: copyInputs.layoutMode,
             candidateId:
@@ -295,6 +310,7 @@ export async function emitSkeletonMutations(
   const copyCommands: MutationProposalDraft["mutation"]["commands"] = [
     buildCreateLayerCommand(input.job.runId, "copy", {
       slotKey: "headline",
+      executionSlotKey: "headline",
       clientLayerKey: `headline_${input.job.runId}`,
       layerType: "text",
       bounds: copySlotBounds.headline,
@@ -307,6 +323,7 @@ export async function emitSkeletonMutations(
     }),
     buildCreateLayerCommand(input.job.runId, "copy", {
       slotKey: "supporting_copy",
+      executionSlotKey: "subheadline",
       clientLayerKey: `supporting_copy_${input.job.runId}`,
       layerType: "text",
       bounds: copySlotBounds.subheadline,
@@ -319,6 +336,7 @@ export async function emitSkeletonMutations(
     }),
     buildCreateLayerCommand(input.job.runId, "copy", {
       slotKey: null,
+      executionSlotKey: "offer_line",
       clientLayerKey: `price_callout_${input.job.runId}`,
       layerType: "text",
       bounds: copySlotBounds.offer_line,
@@ -333,9 +351,10 @@ export async function emitSkeletonMutations(
 
   if (copyInputs.includeHeroCaption) {
     copyCommands.push(
-      buildCreateLayerCommand(input.job.runId, "copy", {
-        slotKey: null,
-        clientLayerKey: `hero_caption_${input.job.runId}`,
+        buildCreateLayerCommand(input.job.runId, "copy", {
+          slotKey: null,
+          executionSlotKey: null,
+          clientLayerKey: `hero_caption_${input.job.runId}`,
         layerType: "text",
         bounds: copySlotBounds.subheadline,
         role: "hero_caption",
@@ -351,6 +370,7 @@ export async function emitSkeletonMutations(
   const polishCommands: MutationProposalDraft["mutation"]["commands"] = [
     buildCreateLayerCommand(input.job.runId, "polish", {
       slotKey: "cta",
+      executionSlotKey: "cta",
       clientLayerKey: `cta_${input.job.runId}`,
       layerType: "group",
       bounds: copySlotBounds.cta,
@@ -376,6 +396,7 @@ export async function emitSkeletonMutations(
     polishCommands.push(
       buildCreateLayerCommand(input.job.runId, "polish", {
         slotKey: null,
+        executionSlotKey: null,
         clientLayerKey: `underline_bar_${input.job.runId}`,
         layerType: "shape",
         bounds: geometry.underlineBar,
@@ -390,6 +411,7 @@ export async function emitSkeletonMutations(
     polishCommands.push(
       buildCreateLayerCommand(input.job.runId, "polish", {
         slotKey: null,
+        executionSlotKey: null,
         clientLayerKey: `ribbon_strip_${input.job.runId}`,
         layerType: "shape",
         bounds: geometry.ribbon,
@@ -403,6 +425,7 @@ export async function emitSkeletonMutations(
   polishCommands.push(
     buildCreateLayerCommand(input.job.runId, "polish", {
       slotKey: null,
+      executionSlotKey: "footer_note",
       clientLayerKey: `footer_note_${input.job.runId}`,
       layerType: "text",
       bounds: copySlotBounds.footer_note,
@@ -506,6 +529,8 @@ function readFoundationInputs(inputs: PersistedPlanAction["inputs"]) {
     includeRibbon?: boolean;
     includeFrame?: boolean;
     badgeText?: string | null;
+    resolvedSlotBounds?: Partial<Record<ExecutionSlotKey, Bounds>>;
+    headlineEstimatedHeight?: number;
   };
 
   return {
@@ -520,6 +545,8 @@ function readFoundationInputs(inputs: PersistedPlanAction["inputs"]) {
     includeRibbon: record.includeRibbon ?? false,
     includeFrame: record.includeFrame ?? false,
     badgeText: record.badgeText ?? null,
+    resolvedSlotBounds: normalizeBoundsRecord(record.resolvedSlotBounds),
+    headlineEstimatedHeight: record.headlineEstimatedHeight ?? null,
   };
 }
 
@@ -537,8 +564,10 @@ function readCopyInputs(inputs: PersistedPlanAction["inputs"]) {
     includeBadge?: boolean;
     copySlotTexts?: CopySlotTextMap;
     copySlotAnchors?: CopySlotAnchorMap;
+    resolvedSlotBounds?: Partial<Record<ExecutionSlotKey, Bounds>>;
     clusterZones?: ConcreteLayoutClusterZone[];
     spacingIntent?: AbstractLayoutDensity;
+    headlineEstimatedHeight?: number;
   };
 
   return {
@@ -555,8 +584,10 @@ function readCopyInputs(inputs: PersistedPlanAction["inputs"]) {
     includeBadge: record.includeBadge ?? false,
     copySlotTexts: record.copySlotTexts ?? {},
     copySlotAnchors: record.copySlotAnchors ?? {},
+    resolvedSlotBounds: normalizeBoundsRecord(record.resolvedSlotBounds),
     clusterZones: record.clusterZones ?? [],
     spacingIntent: record.spacingIntent ?? "balanced",
+    headlineEstimatedHeight: record.headlineEstimatedHeight ?? null,
   };
 }
 
@@ -574,6 +605,7 @@ function readPhotoInputs(inputs: PersistedPlanAction["inputs"] | undefined) {
     selectedPhotoOrientation?: "portrait" | "landscape" | "square" | null;
     photoFitMode?: "cover";
     photoCropMode?: "centered_cover";
+    resolvedSlotBounds?: Partial<Record<ExecutionSlotKey, Bounds>>;
   };
 
   return {
@@ -589,7 +621,37 @@ function readPhotoInputs(inputs: PersistedPlanAction["inputs"] | undefined) {
     selectedPhotoOrientation: record.selectedPhotoOrientation ?? null,
     photoFitMode: record.photoFitMode ?? "cover",
     photoCropMode: record.photoCropMode ?? "centered_cover",
+    resolvedSlotBounds: normalizeBoundsRecord(record.resolvedSlotBounds),
   };
+}
+
+function normalizeBoundsRecord(
+  value: unknown,
+): Partial<Record<ExecutionSlotKey, Bounds>> {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  const normalized: Partial<Record<ExecutionSlotKey, Bounds>> = {};
+  for (const [key, candidate] of Object.entries(value)) {
+    if (
+      candidate &&
+      typeof candidate === "object" &&
+      typeof (candidate as Bounds).x === "number" &&
+      typeof (candidate as Bounds).y === "number" &&
+      typeof (candidate as Bounds).width === "number" &&
+      typeof (candidate as Bounds).height === "number"
+    ) {
+      normalized[key as ExecutionSlotKey] = {
+        x: (candidate as Bounds).x,
+        y: (candidate as Bounds).y,
+        width: (candidate as Bounds).width,
+        height: (candidate as Bounds).height,
+      };
+    }
+  }
+
+  return normalized;
 }
 
 function readPolishInputs(inputs: PersistedPlanAction["inputs"]) {
@@ -702,6 +764,55 @@ function createGeometryPresets(
       headlineHeight,
       spacingIntent,
     ),
+  };
+}
+
+function resolveCopySlotBoundsWithPlan(
+  presets: ReturnType<typeof createGeometryPresets>,
+  copyInputs: ReturnType<typeof readCopyInputs>,
+): Record<
+  "headline" | "subheadline" | "offer_line" | "cta" | "footer_note" | "badge_text",
+  Bounds
+> {
+  return {
+    headline:
+      copyInputs.resolvedSlotBounds.headline ??
+      resolveBoundsForAnchor(
+        copyInputs.copySlotAnchors.headline ?? "left_copy_column",
+        "headline",
+        presets,
+      ),
+    subheadline:
+      copyInputs.resolvedSlotBounds.subheadline ??
+      resolveBoundsForAnchor(
+        copyInputs.copySlotAnchors.subheadline ??
+          copyInputs.copySlotAnchors.headline ??
+          "left_copy_column",
+        "subheadline",
+        presets,
+      ),
+    offer_line:
+      copyInputs.resolvedSlotBounds.offer_line ??
+      resolveBoundsForAnchor(
+        copyInputs.copySlotAnchors.offer_line ??
+          copyInputs.copySlotAnchors.headline ??
+          "left_copy_column",
+        "offer_line",
+        presets,
+      ),
+    cta:
+      copyInputs.resolvedSlotBounds.cta ??
+      resolveBoundsForAnchor(
+        copyInputs.copySlotAnchors.cta ?? "bottom_center",
+        "cta",
+        presets,
+      ),
+    footer_note:
+      copyInputs.resolvedSlotBounds.footer_note ??
+      resolveBoundsForAnchor("footer_strip", "footer_note", presets),
+    badge_text:
+      copyInputs.resolvedSlotBounds.badge_text ??
+      resolveBoundsForAnchor("top_badge_band", "badge_text", presets),
   };
 }
 
@@ -1152,6 +1263,7 @@ function buildGraphicRoleCommands(
               : binding.role === "cta_container"
                 ? "cta"
                 : null,
+          executionSlotKey: null,
           clientLayerKey: `${binding.role}_${runId}`,
           layerType: "shape",
           bounds: resolveGraphicBindingBounds(
@@ -1179,6 +1291,7 @@ function buildGraphicRoleCommands(
       ? [
           buildCreateLayerCommand(runId, "polish", {
             slotKey: null,
+            executionSlotKey: null,
             clientLayerKey: `cta_container_fallback_${runId}`,
             layerType: "shape",
             bounds: resolveGraphicBindingBounds(
@@ -1202,6 +1315,7 @@ function buildGraphicRoleCommands(
   return [
     buildCreateLayerCommand(runId, "polish", {
       slotKey: "decoration",
+      executionSlotKey: null,
       clientLayerKey: `decoration_${runId}`,
       layerType: "shape",
       bounds: roleGeometryMap.right_cluster,
@@ -1298,6 +1412,7 @@ function buildCreateLayerCommand(
   stage: string,
   options: {
     slotKey: MutationProposalDraft["mutation"]["commands"][number]["slotKey"];
+    executionSlotKey: ExecutionSlotKey | null;
     clientLayerKey: string;
     layerType: "shape" | "text" | "group" | "image";
     bounds: Bounds;
@@ -1320,6 +1435,18 @@ function buildCreateLayerCommand(
     clusterZone?: ConcreteLayoutClusterZone | null;
   },
 ): MutationProposalDraft["mutation"]["commands"][number] {
+  if (
+    !isExecutionIdentityValid(
+      options.slotKey,
+      options.executionSlotKey,
+      options.role,
+    )
+  ) {
+    throw new Error(
+      `Invalid execution identity for ${options.clientLayerKey}: slot=${String(options.slotKey)} executionSlot=${String(options.executionSlotKey)} role=${options.role}`,
+    );
+  }
+
   const metadata: Record<string, string | number | boolean | null> = {
     role: options.role,
     variantKey: options.variantKey,
@@ -1350,6 +1477,7 @@ function buildCreateLayerCommand(
     commandId: createRequestId(),
     op: "createLayer",
     slotKey: options.slotKey,
+    executionSlotKey: options.executionSlotKey,
     clientLayerKey: options.clientLayerKey,
     targetRef: {
       layerId: null,

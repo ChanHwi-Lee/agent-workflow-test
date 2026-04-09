@@ -45,6 +45,13 @@ function createConcreteLayoutPlan(): ConcreteLayoutPlan {
       cta: "bottom_center",
       footer_note: "footer_strip",
     },
+    resolvedSlotBounds: {
+      headline: { x: 80, y: 120, width: 400, height: 90 },
+      subheadline: { x: 80, y: 220, width: 420, height: 70 },
+      cta: { x: 80, y: 360, width: 220, height: 64 },
+      footer_note: { x: 80, y: 560, width: 360, height: 24 },
+    },
+    headlineEstimatedHeight: 90,
     clusterZones: ["right_cluster", "top_corner", "bottom_strip"],
     ctaContainerExpected: true,
     graphicRolePlacementHints: [
@@ -64,10 +71,10 @@ function createExecutionSceneSummary(): ExecutionSceneSummary {
     finalRevision: 2,
     stageResults: [],
     copyLayerBindings: [
-      { slotKey: "headline", layerId: "layer-headline", text: "봄 세일", anchor: "left_copy_column" },
-      { slotKey: "subheadline", layerId: "layer-supporting", text: "혜택을 확인하세요", anchor: "left_copy_column" },
-      { slotKey: "cta", layerId: "layer-cta", text: "혜택 보기", anchor: "bottom_center" },
-      { slotKey: "footer_note", layerId: "layer-footer", text: "한정 기간 진행", anchor: "footer_strip" },
+      { executionSlotKey: "headline", layerId: "layer-headline", text: "봄 세일", anchor: "left_copy_column", plannedBounds: { x: 80, y: 120, width: 400, height: 90 }, resolvedBounds: { x: 80, y: 120, width: 400, height: 90 } },
+      { executionSlotKey: "subheadline", layerId: "layer-supporting", text: "혜택을 확인하세요", anchor: "left_copy_column", plannedBounds: { x: 80, y: 220, width: 420, height: 70 }, resolvedBounds: { x: 80, y: 220, width: 420, height: 70 } },
+      { executionSlotKey: "cta", layerId: "layer-cta", text: "혜택 보기", anchor: "bottom_center", plannedBounds: { x: 80, y: 360, width: 220, height: 64 }, resolvedBounds: { x: 80, y: 360, width: 220, height: 64 } },
+      { executionSlotKey: "footer_note", layerId: "layer-footer", text: "한정 기간 진행", anchor: "footer_strip", plannedBounds: { x: 80, y: 560, width: 360, height: 24 }, resolvedBounds: { x: 80, y: 560, width: 360, height: 24 } },
     ],
     graphicLayerBindings: [
       { role: "primary_accent", layerId: "layer-accent", zone: "right_cluster", sourceAssetId: "shape:1", sourceSerial: "11" },

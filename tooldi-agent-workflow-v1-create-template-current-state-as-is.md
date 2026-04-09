@@ -40,6 +40,7 @@
 - candidate assemble / selection / typography selection
 - `RuleJudgeVerdict`
 - `ExecutionSceneSummary`, `JudgePlan`, `RefineDecision`
+- canonical `executionSlotKey` based execution/scene identity for copy/photo/background
 - staged mutation execution
 - `completed`, `completed_with_warning`, `failed` terminal semantics
 
@@ -126,6 +127,9 @@
 - preflight `refine` 는 실행 이후 `ExecutionSceneSummary -> JudgePlan -> RefineDecision` 을 통해 **최대 1회 patch-only refine mutation** 으로 이어질 수 있다.
 - patch scope 는 `copy text`, `slot anchor`, `cluster zone`, `spacing`, `cta container fallback` 으로 제한된다.
 - `keep` 는 일반 `completed` 로 이어진다.
+- emitted mutation, `ExecutionSceneSummary`, `JudgePlan`, `RefineDecision` 는 copy/photo/background slot에 대해 canonical `executionSlotKey` 를 truth로 사용한다.
+- legacy `slotKey` 는 compat field로 유지되며, graphic identity는 계속 `role` 중심이다.
+- `ConcreteLayoutPlan` 은 `resolvedSlotBounds` 를 가지며 copy/photo/background placement authority를 제공한다.
 
 ### 6.5 artifact chain
 
@@ -165,18 +169,24 @@
 - `rule_judge` 는 이 모순을 `keep` 으로 통과시켰다.
 - 즉 현재 가장 큰 gap은 `planner intent consistency` 와 `judge domain consistency detection` 이다.
 
-### 8.2 real refine loop 부재
+### 8.2 execution contract 잔여 품질
+
+- `executionSlotKey` canonicalization 으로 기존 `slotKey`/`role` alias 추론 mismatch 는 크게 줄었다.
+- 다만 현재 refine/judge 는 still non-visual 이고, real scene fidelity 나 screenshot 기반 품질 판정은 아직 없다.
+- 즉 현재 남은 큰 품질 gap은 retrieval 보다 `visual quality` 와 `real save evidence` 쪽이다.
+
+### 8.3 bounded refine 한계
 
 - `ruleJudge` 의 `refine` recommendation 은 이제 post-execution `JudgePlan` 과 1회 patch-only refine loop로 이어질 수 있다.
 - 다만 이 refine 는 retrieval 재실행이나 asset rebinding 이 아니라 copy/layout/spacing/CTA container 보정만 허용한다.
 
-### 8.3 retrieval / vision / memory 미구현
+### 8.4 retrieval / vision / memory 미구현
 
 - semantic retrieval / vector DB 없음
 - vision judge 없음
 - public multi-turn memory 없음
 
-### 8.4 save evidence 완전 연동 미완료
+### 8.5 save evidence 완전 연동 미완료
 
 - backend completion chain은 존재하지만 real editor save evidence 연동은 아직 prototype 수준이다.
 

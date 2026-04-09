@@ -58,6 +58,7 @@ export async function buildRefineDecision(
         break;
       case "preflight_concrete_layout_slot_conflict":
       case "preflight_cta_copy_overlap_risk":
+      case "topology_bounds_conflict":
         operations.push({
           kind: "move_copy_slot_anchor",
           slotKey: "cta",

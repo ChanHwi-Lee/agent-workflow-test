@@ -2,6 +2,7 @@ import { Type } from "@sinclair/typebox";
 import type { Static } from "@sinclair/typebox";
 
 import {
+  ExecutionSlotKeySchema,
   IdentifierSchema,
   IsoDateTimeSchema,
   JsonObjectSchema,
@@ -36,6 +37,9 @@ const CreateLayerCommandSchema = Type.Object(
     commandId: IdentifierSchema,
     op: Type.Literal("createLayer"),
     slotKey: Type.Union([SlotKeySchema, Type.Null()]),
+    executionSlotKey: Type.Optional(
+      Type.Union([ExecutionSlotKeySchema, Type.Null()]),
+    ),
     clientLayerKey: IdentifierSchema,
     targetRef: Type.Object(
       {
@@ -95,6 +99,9 @@ const UpdateLayerCommandSchema = Type.Object(
     commandId: IdentifierSchema,
     op: Type.Literal("updateLayer"),
     slotKey: Type.Union([SlotKeySchema, Type.Null()]),
+    executionSlotKey: Type.Optional(
+      Type.Union([ExecutionSlotKeySchema, Type.Null()]),
+    ),
     clientLayerKey: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
     targetRef: CanvasLayerRefSchema,
     targetLayerVersion: Type.Integer({ minimum: 0 }),
@@ -137,6 +144,9 @@ const DeleteLayerCommandSchema = Type.Object(
     commandId: IdentifierSchema,
     op: Type.Literal("deleteLayer"),
     slotKey: Type.Union([SlotKeySchema, Type.Null()]),
+    executionSlotKey: Type.Optional(
+      Type.Union([ExecutionSlotKeySchema, Type.Null()]),
+    ),
     clientLayerKey: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
     targetRef: CanvasLayerRefSchema,
     targetLayerVersion: Type.Integer({ minimum: 0 }),

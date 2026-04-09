@@ -51,6 +51,21 @@ export const SlotKeySchema = Type.Union(
   SlotKeyValues.map((value) => Type.Literal(value)),
 );
 
+export const ExecutionSlotKeyValues = [
+  "background",
+  "headline",
+  "subheadline",
+  "offer_line",
+  "cta",
+  "footer_note",
+  "badge_text",
+  "hero_image",
+] as const;
+
+export const ExecutionSlotKeySchema = Type.Union(
+  ExecutionSlotKeyValues.map((value) => Type.Literal(value)),
+);
+
 export const LayerTypeValues = [
   "group",
   "shape",
@@ -169,3 +184,4 @@ export type RunStatus = Static<typeof RunStatusSchema>;
 export type TerminalRunStatus = Static<typeof TerminalRunStatusSchema>;
 export type DurabilityState = Static<typeof DurabilityStateSchema>;
 export type CompletionState = Static<typeof CompletionStateSchema>;
+export type ExecutionSlotKey = Static<typeof ExecutionSlotKeySchema>;

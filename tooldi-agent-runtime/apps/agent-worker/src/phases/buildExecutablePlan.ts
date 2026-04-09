@@ -100,6 +100,10 @@ export async function buildExecutablePlan(
         includeRibbon,
         includeFrame,
         badgeText: copySlotTexts.badge_text ?? null,
+        resolvedSlotBounds: JSON.parse(
+          JSON.stringify(concreteLayoutPlan.resolvedSlotBounds),
+        ),
+        headlineEstimatedHeight: concreteLayoutPlan.headlineEstimatedHeight,
       },
       rollback: {
         strategy: "delete_created_layers",
@@ -139,6 +143,9 @@ export async function buildExecutablePlan(
         selectedPhotoOrientation: assetPlan.photoBinding?.orientation ?? null,
         photoFitMode: assetPlan.photoBinding?.fitMode ?? "cover",
         photoCropMode: assetPlan.photoBinding?.cropMode ?? "centered_cover",
+        resolvedSlotBounds: JSON.parse(
+          JSON.stringify(concreteLayoutPlan.resolvedSlotBounds),
+        ),
       },
       rollback: {
         strategy: "delete_created_layers",
@@ -179,8 +186,12 @@ export async function buildExecutablePlan(
         copySlotAnchors: JSON.parse(
           JSON.stringify(concreteLayoutPlan.slotAnchors),
         ),
+        resolvedSlotBounds: JSON.parse(
+          JSON.stringify(concreteLayoutPlan.resolvedSlotBounds),
+        ),
         clusterZones: JSON.parse(JSON.stringify(concreteLayoutPlan.clusterZones)),
         spacingIntent: concreteLayoutPlan.spacingIntent,
+        headlineEstimatedHeight: concreteLayoutPlan.headlineEstimatedHeight,
         layoutProfile: concreteLayoutPlan.abstractLayoutFamily,
         primaryVisualFamily: assetPlan.primaryVisualFamily,
         includeHeroCaption,

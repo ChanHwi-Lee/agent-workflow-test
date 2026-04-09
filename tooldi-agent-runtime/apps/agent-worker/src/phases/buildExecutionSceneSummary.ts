@@ -33,32 +33,21 @@ export async function buildExecutionSceneSummary(
   );
 
   const copyLayerBindings = copyPlan.slots.map((slot) => {
-    const matchingCommand = findLatestCommand(stageAckHistory, {
-      slotKey:
-        slot.key === "badge_text"
-          ? "badge"
-          : slot.key === "offer_line"
-            ? null
-            : slot.key === "footer_note"
-              ? null
-              : slot.key,
-      role:
-        slot.key === "offer_line"
-          ? "price_callout"
-          : slot.key === "badge_text"
-            ? "badge"
-            : slot.key === "footer_note"
-              ? "footer_note"
-              : null,
-    });
+    const matchingCommand = findLatestCommand(stageAckHistory, slot.key);
     return {
-      slotKey: slot.key,
+      executionSlotKey: slot.key,
       layerId: resolveCommandLayerId(matchingCommand),
       text:
         typeof copySlotTexts?.[slot.key] === "string"
           ? (copySlotTexts[slot.key] as string)
           : slot.text,
       anchor: concreteLayoutPlan.slotAnchors[slot.key] ?? null,
+      plannedBounds:
+        concreteLayoutPlan.resolvedSlotBounds[slot.key] ?? matchingCommand?.proposedBounds ?? null,
+      resolvedBounds:
+        matchingCommand?.proposedBounds ??
+        concreteLayoutPlan.resolvedSlotBounds[slot.key] ??
+        null,
     };
   });
 
@@ -84,7 +73,6 @@ export async function buildExecutionSceneSummary(
     assetPlan.photoBinding !== null
       ? findLatestCommand(stageAckHistory, {
           slotKey: "hero_image",
-          role: "hero_image",
         })
       : null;
 
@@ -122,18 +110,29 @@ function normalizeRecord(value: unknown): Record<string, unknown> | null {
 
 function findLatestCommand(
   stageAckHistory: StageAckRecord[],
-  matcher: {
-    slotKey: StageAckRecord["commands"][number]["slotKey"];
-    role: string | null;
-  },
+  executionSlotKey:
+    | StageAckRecord["commands"][number]["executionSlotKey"]
+    | {
+        slotKey: StageAckRecord["commands"][number]["slotKey"];
+        role?: string | null;
+      },
 ) {
   for (let index = stageAckHistory.length - 1; index >= 0; index -= 1) {
     const record = stageAckHistory[index]!;
     for (let commandIndex = record.commands.length - 1; commandIndex >= 0; commandIndex -= 1) {
       const command = record.commands[commandIndex]!;
-      const slotMatch = matcher.slotKey !== null && command.slotKey === matcher.slotKey;
-      const roleMatch = matcher.role !== null && command.role === matcher.role;
-      if (slotMatch || roleMatch) {
+      const directMatch =
+        typeof executionSlotKey === "string" || executionSlotKey === null
+          ? command.executionSlotKey === executionSlotKey
+          : false;
+      const compatMatch =
+        typeof executionSlotKey === "object" &&
+        executionSlotKey !== null &&
+        (command.slotKey === executionSlotKey.slotKey ||
+          ("role" in executionSlotKey &&
+            executionSlotKey.role !== undefined &&
+            command.role === executionSlotKey.role));
+      if (directMatch || compatMatch) {
         return {
           ...command,
           resolvedLayerIds: record.resolvedLayerIds,

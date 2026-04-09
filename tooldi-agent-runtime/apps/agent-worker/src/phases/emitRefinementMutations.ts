@@ -3,6 +3,7 @@ import type { CanvasMutationEnvelope, ExecutablePlan, WaitMutationAckResponse } 
 import type { TextLayoutHelper } from "@tooldi/tool-adapters";
 
 import { emitSkeletonMutations } from "./emitSkeletonMutations.js";
+import { deriveExecutionSlotKey } from "./executionSlotIdentity.js";
 import type {
   ConcreteLayoutAnchorZone,
   ConcreteLayoutClusterZone,
@@ -222,6 +223,15 @@ function convertCreateCommandsToPatchCommands(
         commandId: createRequestId(),
         op: "updateLayer",
         slotKey: command.slotKey,
+        executionSlotKey:
+          "executionSlotKey" in command
+            ? command.executionSlotKey ?? null
+            : deriveExecutionSlotKey(
+                command.slotKey ?? null,
+                typeof command.layerBlueprint.metadata.role === "string"
+                  ? command.layerBlueprint.metadata.role
+                  : null,
+              ),
         clientLayerKey: command.clientLayerKey,
         targetRef: {
           layerId: existingLayerId,
@@ -275,20 +285,14 @@ function resolveExistingLayerId(
     typeof command.layerBlueprint.metadata.role === "string"
       ? command.layerBlueprint.metadata.role
       : null;
-  const slotKey =
-    command.slotKey === "badge"
-      ? "badge_text"
-      : command.slotKey === "supporting_copy"
-        ? "subheadline"
-        : command.slotKey === "background" ||
-            command.slotKey === "headline" ||
-            command.slotKey === "cta"
-          ? command.slotKey
-          : null;
+  const executionSlotKey =
+    "executionSlotKey" in command
+      ? command.executionSlotKey ?? null
+      : deriveExecutionSlotKey(command.slotKey ?? null, metadataRole);
 
-  if (slotKey) {
+  if (executionSlotKey) {
     const binding = executionSceneSummary.copyLayerBindings.find(
-      (candidate) => candidate.slotKey === slotKey,
+      (candidate) => candidate.executionSlotKey === executionSlotKey,
     );
     if (binding?.layerId) {
       return binding.layerId;
@@ -302,7 +306,7 @@ function resolveExistingLayerId(
   if (metadataRole === "footer_note") {
     return (
       executionSceneSummary.copyLayerBindings.find(
-        (candidate) => candidate.slotKey === "footer_note",
+        (candidate) => candidate.executionSlotKey === "footer_note",
       )?.layerId ?? null
     );
   }

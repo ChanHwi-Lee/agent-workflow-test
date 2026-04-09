@@ -29,21 +29,50 @@ export async function buildJudgePlan(
   }
 
   const requiredCopyBindings = copyPlan.slots.filter((slot) => slot.required);
+  const missingIdentityBindings = requiredCopyBindings.filter((slot) => {
+    const binding = executionSceneSummary.copyLayerBindings.find(
+      (candidate) => candidate.executionSlotKey === slot.key,
+    );
+    return !binding;
+  });
+  if (missingIdentityBindings.length > 0) {
+    issues.push({
+      code: "execution_slot_identity_missing",
+      severity: "warn",
+      message:
+        `Execution scene summary did not preserve required execution slot identities: ` +
+        `${missingIdentityBindings.map((slot) => slot.key).join(", ")}`,
+      patchable: false,
+      suggestedPatchScopes: [],
+    });
+  }
+
   const missingRequiredBindings = requiredCopyBindings.filter((slot) => {
     const binding = executionSceneSummary.copyLayerBindings.find(
-      (candidate) => candidate.slotKey === slot.key,
+      (candidate) => candidate.executionSlotKey === slot.key,
     );
     return !binding?.layerId;
   });
   if (missingRequiredBindings.length > 0) {
     issues.push({
-      code: "topology_execution_mismatch",
+      code: "slot_materialization_missing",
       severity: "warn",
       message:
         `Execution did not materialize required copy slots: ` +
         `${missingRequiredBindings.map((slot) => slot.key).join(", ")}`,
       patchable: false,
       suggestedPatchScopes: [],
+    });
+  }
+
+  if (hasCopyBoundsConflict(executionSceneSummary)) {
+    issues.push({
+      code: "topology_bounds_conflict",
+      severity: "warn",
+      message:
+        "Resolved copy slot bounds overlap after execution, so the current topology is likely colliding in the visible draft",
+      patchable: true,
+      suggestedPatchScopes: ["slot_anchor", "spacing"],
     });
   }
 
@@ -78,7 +107,8 @@ export async function buildJudgePlan(
   if (
     badgeSlotPresent &&
     !executionSceneSummary.copyLayerBindings.some(
-      (binding) => binding.slotKey === "badge_text" && binding.layerId !== null,
+      (binding) =>
+        binding.executionSlotKey === "badge_text" && binding.layerId !== null,
     )
   ) {
     issues.push({
@@ -91,7 +121,7 @@ export async function buildJudgePlan(
   }
 
   const footerBinding = executionSceneSummary.copyLayerBindings.find(
-    (binding) => binding.slotKey === "footer_note",
+    (binding) => binding.executionSlotKey === "footer_note",
   );
   if (footerBinding && footerBinding.layerId === null) {
     issues.push({
@@ -124,6 +154,38 @@ export async function buildJudgePlan(
           ? `Post-execution judge found ${issues.length} patchable issue(s) for a single bounded refinement pass`
           : `Post-execution judge found ${issues.length} residual issue(s) but no additional patch pass is allowed`,
   };
+}
+
+function hasCopyBoundsConflict(
+  executionSceneSummary: ExecutionSceneSummary,
+): boolean {
+  const visibleBindings = executionSceneSummary.copyLayerBindings.filter(
+    (binding) => binding.layerId !== null && binding.resolvedBounds !== null,
+  );
+
+  for (let index = 0; index < visibleBindings.length; index += 1) {
+    const current = visibleBindings[index]!;
+    for (let nextIndex = index + 1; nextIndex < visibleBindings.length; nextIndex += 1) {
+      const next = visibleBindings[nextIndex]!;
+      if (boundsOverlap(current.resolvedBounds!, next.resolvedBounds!)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function boundsOverlap(
+  left: NonNullable<ExecutionSceneSummary["copyLayerBindings"][number]["resolvedBounds"]>,
+  right: NonNullable<ExecutionSceneSummary["copyLayerBindings"][number]["resolvedBounds"]>,
+): boolean {
+  return !(
+    left.x + left.width <= right.x ||
+    right.x + right.width <= left.x ||
+    left.y + left.height <= right.y ||
+    right.y + right.height <= left.y
+  );
 }
 
 function mapPreflightIssues(

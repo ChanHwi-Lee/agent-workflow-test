@@ -270,10 +270,12 @@ test("emitSkeletonMutations uses copy slot text and concrete layout hints in mut
     throw new Error("supporting copy createLayer command is required");
   }
   assert.equal(headlineCommand.layerBlueprint.metadata?.copyText, "오픈 이벤트");
+  assert.equal(headlineCommand.executionSlotKey, "headline");
   assert.equal(
     supportingCopyCommand.layerBlueprint.metadata?.copyText,
     "지금 바로 확인하세요",
   );
+  assert.equal(supportingCopyCommand.executionSlotKey, "subheadline");
 
   const ctaCommand = ctaProposal.mutation.commands.find(
     (command) => command.slotKey === "cta",
@@ -282,6 +284,7 @@ test("emitSkeletonMutations uses copy slot text and concrete layout hints in mut
     throw new Error("cta createLayer command is required");
   }
   assert.equal(ctaCommand.layerBlueprint.metadata?.copyText, "이벤트 확인");
+  assert.equal(ctaCommand.executionSlotKey, "cta");
   assert.equal(
     typeof ctaCommand.layerBlueprint.bounds.x === "number" &&
       ctaCommand.layerBlueprint.bounds.x > 300,

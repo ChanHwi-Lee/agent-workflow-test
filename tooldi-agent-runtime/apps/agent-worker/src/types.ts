@@ -1,5 +1,6 @@
 import type {
   CanvasMutationEnvelope,
+  ExecutionSlotKey,
   ExecutablePlan,
   IntentEnvelope,
   RunRepairContext,
@@ -221,6 +222,13 @@ export interface AbstractLayoutPlanNormalizationReport {
   normalizationNotes: string[];
 }
 
+export interface LayoutBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export type ConcreteLayoutAnchorZone =
   | "left_copy_column"
   | "center_copy_stack"
@@ -249,6 +257,8 @@ export interface ConcreteLayoutPlan {
   primaryVisualFamily: "graphic" | "photo";
   resolvedLayoutMode: SelectionDecision["layoutMode"];
   slotAnchors: Partial<Record<CopyPlanSlotKey, ConcreteLayoutAnchorZone>>;
+  resolvedSlotBounds: Partial<Record<ExecutionSlotKey, LayoutBounds>>;
+  headlineEstimatedHeight: number;
   clusterZones: ConcreteLayoutClusterZone[];
   ctaContainerExpected: boolean;
   graphicRolePlacementHints: Array<{
@@ -685,9 +695,11 @@ export interface StageAckRecordCommand {
     | "hero_image"
     | "badge"
     | null;
+  executionSlotKey: ExecutionSlotKey | null;
   clientLayerKey: string | null;
   role: string | null;
   targetLayerId: string | null;
+  proposedBounds: LayoutBounds | null;
 }
 
 export interface StageAckRecord {
@@ -701,10 +713,12 @@ export interface StageAckRecord {
 }
 
 export interface ExecutionSceneCopyLayerBinding {
-  slotKey: CopyPlanSlotKey;
+  executionSlotKey: CopyPlanSlotKey;
   layerId: string | null;
   text: string | null;
   anchor: ConcreteLayoutAnchorZone | null;
+  plannedBounds: LayoutBounds | null;
+  resolvedBounds: LayoutBounds | null;
 }
 
 export interface ExecutionSceneGraphicLayerBinding {
@@ -747,8 +761,10 @@ export type JudgePlanIssueCode =
   | "copy_anchor_execution_mismatch"
   | "copy_stack_spacing_weak"
   | "cta_container_missing_after_execution"
+  | "execution_slot_identity_missing"
   | "graphic_role_zone_mismatch"
-  | "topology_execution_mismatch"
+  | "slot_materialization_missing"
+  | "topology_bounds_conflict"
   | "footer_zone_mismatch"
   | "badge_zone_mismatch"
   | "preflight_copy_cta_subject_mismatch"

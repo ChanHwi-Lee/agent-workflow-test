@@ -51,6 +51,8 @@
   - `judge-plan`
   - `refine-decision`
   - `executable-plan`
+- execution/scene layer는 copy/photo/background slot에 대해 canonical `executionSlotKey` 를 공식 truth로 사용하고, legacy `slotKey` 는 compat field로 유지한다.
+- `ConcreteLayoutPlan` 은 `resolvedSlotBounds` 를 가지며 preflight/execution 쪽 copy bounds authority를 제공한다.
 - planner/model abstraction 은 LangChain JS 뒤로 정리됐고, local 기본 provider 는 Gemini 다.
 - picture/shape retrieval은 direct `Picture::index` / `Shape::index` surface를 사용하는 `tooldi_api_direct` mode로 정리됐다.
 - terminal semantics 에 `completed_with_warning` 가 실제로 연결돼 있다.
@@ -59,7 +61,7 @@
 - `run.recovery` 는 projection skeleton 수준으로만 존재한다
 - 실제 editor save evidence, resume engine, rollback engine, production durability는 아직 아니다
 
-즉 현재 상태는 `작동하는 create_template subplan-driven runtime v1` 이며, 다음 단계의 핵심은 새 runtime 도입이 아니라 `judgePlan 성숙화 / bounded refine 품질 / real save evidence` 를 고도화하는 것이다.
+즉 현재 상태는 `작동하는 create_template subplan-driven runtime v1` 이며, 다음 단계의 핵심은 새 runtime 도입이 아니라 `real save evidence / visual quality judge / bounded refine 품질` 을 고도화하는 것이다.
 
 ## 3. 현재 단계에서 고정할 전제
 

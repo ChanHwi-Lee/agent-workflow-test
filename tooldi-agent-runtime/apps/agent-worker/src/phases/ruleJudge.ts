@@ -770,23 +770,42 @@ function detectLayoutPlanIssues(
     issues.push(surfaceRuleJudgeIssue("abstract_layout_subject_leakage"));
   }
 
-  if (
-    selectionDecision.layoutMode === "left_copy_right_graphic" &&
-    concreteLayoutPlan.slotAnchors.headline !== "left_copy_column"
-  ) {
-    issues.push(surfaceRuleJudgeIssue("concrete_layout_slot_conflict"));
-  }
-
-  if (
-    ["center_stack", "center_stack_promo", "badge_promo_stack"].includes(
-      selectionDecision.layoutMode,
-    ) &&
-    concreteLayoutPlan.slotAnchors.cta !== "bottom_center"
-  ) {
+  if (hasResolvedSlotBoundsConflict(concreteLayoutPlan)) {
     issues.push(surfaceRuleJudgeIssue("concrete_layout_slot_conflict"));
   }
 
   return issues;
+}
+
+function hasResolvedSlotBoundsConflict(
+  concreteLayoutPlan: ConcreteLayoutPlan,
+): boolean {
+  const copyBounds = [
+    concreteLayoutPlan.resolvedSlotBounds.headline,
+    concreteLayoutPlan.resolvedSlotBounds.subheadline,
+    concreteLayoutPlan.resolvedSlotBounds.offer_line,
+    concreteLayoutPlan.resolvedSlotBounds.cta,
+    concreteLayoutPlan.resolvedSlotBounds.footer_note,
+  ].filter((bounds): bounds is NonNullable<typeof bounds> => bounds !== undefined);
+
+  for (let index = 0; index < copyBounds.length; index += 1) {
+    const current = copyBounds[index]!;
+    for (let nextIndex = index + 1; nextIndex < copyBounds.length; nextIndex += 1) {
+      const next = copyBounds[nextIndex]!;
+      if (
+        !(
+          current.x + current.width <= next.x ||
+          next.x + next.width <= current.x ||
+          current.y + current.height <= next.y ||
+          next.y + next.height <= current.y
+        )
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 function detectGraphicPromoStructureIssues(

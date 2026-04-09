@@ -1910,18 +1910,26 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   assert.equal(
     (
       copyAction.inputs as {
-        copySlotAnchors?: { headline?: string; cta?: string };
+        copySlotAnchors?: { headline?: string };
       }
     ).copySlotAnchors?.headline,
     "left_copy_column",
   );
+  const resolvedSlotBounds = (
+    copyAction.inputs as {
+      resolvedSlotBounds?: {
+        offer_line?: { y: number; height: number };
+        cta?: { y: number };
+      };
+    }
+  ).resolvedSlotBounds;
+  assert.ok(resolvedSlotBounds?.cta);
+  assert.ok(resolvedSlotBounds?.offer_line);
   assert.equal(
-    (
-      copyAction.inputs as {
-        copySlotAnchors?: { headline?: string; cta?: string };
-      }
-    ).copySlotAnchors?.cta,
-    "bottom_center",
+    (resolvedSlotBounds?.cta?.y ?? 0) >
+      ((resolvedSlotBounds?.offer_line?.y ?? 0) +
+        (resolvedSlotBounds?.offer_line?.height ?? 0)),
+    true,
   );
   assert.ok(
     ["세일", "프로모션"].includes(

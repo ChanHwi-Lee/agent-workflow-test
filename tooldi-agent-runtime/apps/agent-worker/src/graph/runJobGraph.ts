@@ -52,6 +52,7 @@ import { buildExecutablePlan } from "../phases/buildExecutablePlan.js";
 import { buildNormalizedIntent } from "../phases/buildNormalizedIntent.js";
 import { emitRefinementMutations } from "../phases/emitRefinementMutations.js";
 import { emitSkeletonMutations } from "../phases/emitSkeletonMutations.js";
+import { deriveExecutionSlotKey } from "../phases/executionSlotIdentity.js";
 import { finalizeRun } from "../phases/finalizeRun.js";
 import { hydratePlanningInput } from "../phases/hydratePlanningInput.js";
 import { runRetrievalStage } from "../phases/runRetrievalStage.js";
@@ -799,6 +800,7 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
     })
     .addNode("build_concrete_layout_plan", async (state) => {
       if (
+        !state.hydrated ||
         !state.copyPlan ||
         !state.abstractLayoutPlan ||
         !state.assetPlan ||
@@ -810,10 +812,14 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       }
 
       const concreteLayoutPlan = await buildConcreteLayoutPlan(
+        state.hydrated,
         state.copyPlan,
         state.abstractLayoutPlan,
         state.assetPlan,
         state.selectionDecision,
+        {
+          textLayoutHelper: dependencies.textLayoutHelper,
+        },
       );
       const concreteLayoutPlanRef = await persistArtifactTask(
         `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/layout-plan-concrete.json`,
@@ -2006,6 +2012,19 @@ function buildStageAckRecord(
     commands: proposal.mutation.commands.map((command) => ({
       op: command.op,
       slotKey: command.slotKey ?? null,
+      executionSlotKey:
+        "executionSlotKey" in command
+          ? command.executionSlotKey ?? null
+          : deriveExecutionSlotKey(
+              command.slotKey ?? null,
+              command.op === "createLayer" &&
+                typeof command.layerBlueprint.metadata.role === "string"
+                ? command.layerBlueprint.metadata.role
+                : command.op === "updateLayer" &&
+                    typeof command.metadataTags.role === "string"
+                  ? command.metadataTags.role
+                  : null,
+            ),
       clientLayerKey:
         "clientLayerKey" in command && typeof command.clientLayerKey === "string"
           ? command.clientLayerKey
@@ -2022,6 +2041,22 @@ function buildStageAckRecord(
         "targetRef" in command && command.targetRef.layerId
           ? command.targetRef.layerId
           : null,
+      proposedBounds:
+        command.op === "createLayer"
+          ? command.layerBlueprint.bounds
+          : command.op === "updateLayer" &&
+              command.patch &&
+              typeof command.patch === "object" &&
+              "bounds" in command.patch &&
+              command.patch.bounds &&
+              typeof command.patch.bounds === "object"
+            ? {
+                x: Number((command.patch.bounds as { x?: number }).x ?? 0),
+                y: Number((command.patch.bounds as { y?: number }).y ?? 0),
+                width: Number((command.patch.bounds as { width?: number }).width ?? 0),
+                height: Number((command.patch.bounds as { height?: number }).height ?? 0),
+              }
+            : null,
     })),
   };
 }

@@ -51,6 +51,10 @@
   - family-specific retrieval/execution semantics 유지
 - 현재 create-template 는 preflight `ruleJudge` 뒤에 **scene-aware, non-visual 1회 patch refine** 를 가진다.
   - `execution-scene-summary -> judge-plan -> refine-decision -> patch mutation -> finalize`
+- execution/scene layer는 이제 copy/photo/background semantic slot에 대해 `executionSlotKey` 를 canonical identity로 사용한다.
+  - legacy `slotKey` 는 compat field로 유지한다.
+  - `ExecutionSceneSummary`, `JudgePlan`, `RefineDecision` 은 더 이상 `slotKey`/`role` alias 추론을 truth로 쓰지 않는다.
+- `ConcreteLayoutPlan` 은 이제 `slotAnchors` 외에 `resolvedSlotBounds` 를 가지며, copy/photo/background placement authority는 이 bounds를 기준으로 정렬된다.
 - real save evidence 는 아직 synthetic finalize placeholder 에 의존한다.
 
 ## 범위

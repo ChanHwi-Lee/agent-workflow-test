@@ -5,6 +5,7 @@ import type {
   DraftManifest,
   EditableBannerDraftCommitPayload,
   ErrorSummary,
+  ExecutionSlotKey,
   LiveDraftArtifactBundle,
   MutationLedger,
   MutationLedgerEntry,
@@ -439,6 +440,9 @@ export class RunFinalizeService {
                 slotKey: binding.slotKey,
                 status: "ready" as const,
                 primaryLayerId: binding.primaryLayerId,
+                ...(Object.prototype.hasOwnProperty.call(binding, "executionSlotKey")
+                  ? { executionSlotKey: binding.executionSlotKey ?? null }
+                  : {}),
               })),
             },
             recoveryBase: {
@@ -721,13 +725,21 @@ export class RunFinalizeService {
 
     for (const record of records) {
       for (const command of record.mutation.commands) {
-        if (command.op !== "createLayer" || command.slotKey === null) {
+        if (command.op !== "createLayer") {
+          continue;
+        }
+
+        const executionSlotKey = this.resolveExecutionSlotKey(command);
+        const slotIdentity =
+          executionSlotKey ?? ("executionSlotKey" in command ? null : command.slotKey ?? null);
+        if (slotIdentity === null) {
           continue;
         }
 
         const resolvedLayerId = this.resolvePrimaryLayerId(record, command);
-        bindingsBySlot.set(command.slotKey, {
-          slotKey: command.slotKey,
+        bindingsBySlot.set(slotIdentity, {
+          slotKey: command.slotKey ?? null,
+          executionSlotKey,
           primaryLayerId: resolvedLayerId,
           layerIds: [resolvedLayerId],
           layerType: command.layerBlueprint.layerType,
@@ -761,12 +773,74 @@ export class RunFinalizeService {
     const seen = new Set<string>();
     for (const record of records) {
       for (const command of record.mutation.commands) {
-        if (command.op === "createLayer" && command.slotKey !== null) {
-          seen.add(command.slotKey);
+        if (command.op !== "createLayer") {
+          continue;
+        }
+
+        const compatRequiredSlot = this.resolveRequiredCompatSlot(command);
+        if (compatRequiredSlot) {
+          seen.add(compatRequiredSlot);
         }
       }
     }
     return REQUIRED_SLOTS.every((slot) => seen.has(slot));
+  }
+
+  private resolveExecutionSlotKey(
+    command: Extract<CanvasMutationCommand, { op: "createLayer" }>,
+  ): ExecutionSlotKey | null {
+    if ("executionSlotKey" in command) {
+      return command.executionSlotKey ?? null;
+    }
+
+    switch (command.slotKey) {
+      case "background":
+        return "background";
+      case "headline":
+        return "headline";
+      case "supporting_copy":
+        return "subheadline";
+      case "cta":
+        return command.layerBlueprint.metadata.role === "cta" ? "cta" : null;
+      case "badge":
+        return "badge_text";
+      case "hero_image":
+        return "hero_image";
+      case null:
+        break;
+      default:
+        return null;
+    }
+
+    switch (command.layerBlueprint.metadata.role) {
+      case "price_callout":
+        return "offer_line";
+      case "footer_note":
+        return "footer_note";
+      default:
+        return null;
+    }
+  }
+
+  private resolveRequiredCompatSlot(
+    command: Extract<CanvasMutationCommand, { op: "createLayer" }>,
+  ): (typeof REQUIRED_SLOTS)[number] | null {
+    const executionSlotKey = this.resolveExecutionSlotKey(command);
+    switch (executionSlotKey) {
+      case "background":
+        return "background";
+      case "headline":
+        return "headline";
+      case "subheadline":
+        return "supporting_copy";
+      case "cta":
+        return "cta";
+      default:
+        return command.slotKey !== null &&
+          REQUIRED_SLOTS.includes(command.slotKey as (typeof REQUIRED_SLOTS)[number])
+          ? (command.slotKey as (typeof REQUIRED_SLOTS)[number])
+          : null;
+    }
   }
 
   private enforceMinimumDraft(

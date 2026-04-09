@@ -1,21 +1,32 @@
 import { createRequestId } from "@tooldi/agent-domain";
+import type { ExecutionSlotKey } from "@tooldi/agent-contracts";
+import type { TextLayoutHelper } from "@tooldi/tool-adapters";
 
 import type {
   AssetPlan,
   ConcreteLayoutAnchorZone,
   AbstractLayoutPlan,
+  HydratedPlanningInput,
   ConcreteLayoutClusterZone,
-  ConcreteLayoutPlan,
   CopyPlan,
   GraphicCompositionRole,
+  LayoutBounds,
   SelectionDecision,
+  ConcreteLayoutPlan,
 } from "../types.js";
+import { createGeometryPresets, resolveBoundsForAnchor } from "./layoutGeometry.js";
+
+export interface BuildConcreteLayoutPlanDependencies {
+  textLayoutHelper: TextLayoutHelper;
+}
 
 export async function buildConcreteLayoutPlan(
+  input: HydratedPlanningInput,
   copyPlan: CopyPlan,
   abstractLayoutPlan: AbstractLayoutPlan,
   assetPlan: AssetPlan,
   selectionDecision: SelectionDecision,
+  dependencies: BuildConcreteLayoutPlanDependencies,
 ): Promise<ConcreteLayoutPlan> {
   const resolvedSlotTopology = resolveSlotTopology(
     copyPlan,
@@ -38,6 +49,31 @@ export async function buildConcreteLayoutPlan(
     copyPlan.slots.some((slot) => slot.key === "cta") &&
     (assetPlan.primaryVisualFamily === "graphic" ||
       assetPlan.graphicRoleBindings.some((binding) => binding.role === "cta_container"));
+  const headlineText =
+    copyPlan.slots.find((slot) => slot.key === "headline")?.text ?? copyPlan.primaryMessage;
+  const headlineLayout = await dependencies.textLayoutHelper.estimate({
+    text: headlineText.slice(0, 48),
+    maxWidth: Math.max(320, input.request.editorContext.canvasWidth - 160),
+  });
+  const headlineEstimatedHeight = headlineLayout.height;
+  const geometryPresets = createGeometryPresets(
+    input.request.editorContext.canvasWidth,
+    input.request.editorContext.canvasHeight,
+    abstractLayoutPlan.layoutFamily,
+    resolvedLayoutMode,
+    selectionDecision.decorationMode,
+    headlineEstimatedHeight,
+    abstractLayoutPlan.density,
+  );
+  const resolvedSlotBounds = buildResolvedSlotBounds(
+    copyPlan,
+    slotAnchors,
+    hasBadgeSlot,
+    assetPlan,
+    geometryPresets,
+    input.request.editorContext.canvasWidth,
+    input.request.editorContext.canvasHeight,
+  );
 
   return {
     planId: createRequestId(),
@@ -58,6 +94,8 @@ export async function buildConcreteLayoutPlan(
       footer_note: "footer_strip",
       ...(hasBadgeSlot ? { badge_text: "top_badge_band" as const } : {}),
     },
+    resolvedSlotBounds,
+    headlineEstimatedHeight,
     clusterZones,
     ctaContainerExpected,
     graphicRolePlacementHints,
@@ -67,6 +105,62 @@ export async function buildConcreteLayoutPlan(
       `into ${resolvedLayoutMode} with ${copyPlan.slots.length} copy slots and ` +
       `${graphicRolePlacementHints.length} graphic role hints for ${assetPlan.primaryVisualFamily} primary visual.`,
   };
+}
+
+function buildResolvedSlotBounds(
+  copyPlan: CopyPlan,
+  slotAnchors: {
+    copy: ConcreteLayoutAnchorZone;
+    cta: ConcreteLayoutAnchorZone;
+  },
+  hasBadgeSlot: boolean,
+  assetPlan: AssetPlan,
+  geometryPresets: ReturnType<typeof createGeometryPresets>,
+  canvasWidth: number,
+  canvasHeight: number,
+): Partial<Record<ExecutionSlotKey, LayoutBounds>> {
+  const bounds: Partial<Record<ExecutionSlotKey, LayoutBounds>> = {
+    background: {
+      x: 0,
+      y: 0,
+      width: canvasWidth,
+      height: canvasHeight,
+    },
+    headline: resolveBoundsForAnchor(slotAnchors.copy, "headline", geometryPresets),
+    subheadline: resolveBoundsForAnchor(
+      slotAnchors.copy,
+      "subheadline",
+      geometryPresets,
+    ),
+    cta: resolveBoundsForAnchor(slotAnchors.cta, "cta", geometryPresets),
+    footer_note: resolveBoundsForAnchor(
+      "footer_strip",
+      "footer_note",
+      geometryPresets,
+    ),
+  };
+
+  if (copyPlan.slots.some((slot) => slot.key === "offer_line")) {
+    bounds.offer_line = resolveBoundsForAnchor(
+      slotAnchors.copy,
+      "offer_line",
+      geometryPresets,
+    );
+  }
+
+  if (hasBadgeSlot) {
+    bounds.badge_text = resolveBoundsForAnchor(
+      "top_badge_band",
+      "badge_text",
+      geometryPresets,
+    );
+  }
+
+  if (assetPlan.primaryVisualFamily === "photo" && assetPlan.photoBinding !== null) {
+    bounds.hero_image = geometryPresets.current.heroPanel;
+  }
+
+  return bounds;
 }
 
 function resolveSlotAnchors(

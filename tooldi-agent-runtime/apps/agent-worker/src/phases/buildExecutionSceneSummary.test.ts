@@ -87,6 +87,13 @@ function createConcreteLayoutPlan(): ConcreteLayoutPlan {
       cta: "bottom_center",
       footer_note: "footer_strip",
     },
+    resolvedSlotBounds: {
+      headline: { x: 80, y: 120, width: 400, height: 90 },
+      subheadline: { x: 80, y: 220, width: 420, height: 70 },
+      cta: { x: 80, y: 360, width: 220, height: 64 },
+      footer_note: { x: 80, y: 560, width: 360, height: 24 },
+    },
+    headlineEstimatedHeight: 90,
     clusterZones: ["right_cluster", "top_corner", "bottom_strip"],
     ctaContainerExpected: true,
     graphicRolePlacementHints: [
@@ -157,16 +164,20 @@ test("buildExecutionSceneSummary binds copy and graphic layers from ack history"
         {
           op: "createLayer",
           slotKey: "headline",
+          executionSlotKey: "headline",
           clientLayerKey: "headline_run",
           role: "headline",
           targetLayerId: null,
+          proposedBounds: { x: 80, y: 120, width: 400, height: 90 },
         },
         {
           op: "createLayer",
           slotKey: "supporting_copy",
+          executionSlotKey: "subheadline",
           clientLayerKey: "supporting_copy_run",
           role: "supporting_copy",
           targetLayerId: null,
+          proposedBounds: { x: 80, y: 220, width: 420, height: 70 },
         },
       ],
     },
@@ -183,9 +194,11 @@ test("buildExecutionSceneSummary binds copy and graphic layers from ack history"
         {
           op: "createLayer",
           slotKey: "decoration",
+          executionSlotKey: null,
           clientLayerKey: "primary_accent_run",
           role: "primary_accent",
           targetLayerId: null,
+          proposedBounds: { x: 720, y: 120, width: 240, height: 240 },
         },
       ],
     },
@@ -204,12 +217,93 @@ test("buildExecutionSceneSummary binds copy and graphic layers from ack history"
 
   assert.equal(summary.finalRevision, 2);
   assert.equal(
-    summary.copyLayerBindings.find((binding) => binding.slotKey === "headline")?.layerId,
+    summary.copyLayerBindings.find((binding) => binding.executionSlotKey === "headline")?.layerId,
     "layer-headline",
+  );
+  assert.equal(
+    summary.copyLayerBindings.find(
+      (binding) => binding.executionSlotKey === "subheadline",
+    )?.layerId,
+    "layer-supporting",
   );
   assert.equal(
     summary.graphicLayerBindings.find((binding) => binding.role === "primary_accent")?.layerId,
     "layer-accent",
   );
   assert.equal(summary.ctaContainerResolved, false);
+});
+
+test("buildExecutionSceneSummary preserves canonical execution slots across updateLayer refine acknowledgements", async () => {
+  const summary = await buildExecutionSceneSummary(
+    "run-1",
+    "trace-1",
+    1,
+    createCopyPlan(),
+    createAssetPlan(),
+    createConcreteLayoutPlan(),
+    createExecutablePlan(),
+    [
+      {
+        stageLabel: "copy",
+        mutationId: "mutation-copy",
+        seq: 1,
+        status: "acked",
+        resultingRevision: 1,
+        resolvedLayerIds: {
+          headline_run: "layer-headline",
+          cta_run: "layer-cta",
+        },
+        commands: [
+          {
+            op: "createLayer",
+            slotKey: "headline",
+            executionSlotKey: "headline",
+            clientLayerKey: "headline_run",
+            role: "headline",
+            targetLayerId: null,
+            proposedBounds: { x: 80, y: 120, width: 400, height: 90 },
+          },
+          {
+            op: "createLayer",
+            slotKey: "cta",
+            executionSlotKey: "cta",
+            clientLayerKey: "cta_run",
+            role: "cta",
+            targetLayerId: null,
+            proposedBounds: { x: 80, y: 360, width: 220, height: 64 },
+          },
+        ],
+      },
+      {
+        stageLabel: "refine",
+        mutationId: "mutation-refine",
+        seq: 2,
+        status: "acked",
+        resultingRevision: 2,
+        resolvedLayerIds: null,
+        commands: [
+          {
+            op: "updateLayer",
+            slotKey: "cta",
+            executionSlotKey: "cta",
+            clientLayerKey: "cta_run",
+            role: "cta",
+            targetLayerId: "layer-cta",
+            proposedBounds: { x: 100, y: 380, width: 220, height: 64 },
+          },
+        ],
+      },
+    ],
+  );
+
+  const ctaBinding = summary.copyLayerBindings.find(
+    (binding) => binding.executionSlotKey === "cta",
+  );
+  assert.equal(ctaBinding?.layerId, "layer-cta");
+  assert.deepEqual(ctaBinding?.resolvedBounds, {
+    x: 100,
+    y: 380,
+    width: 220,
+    height: 64,
+  });
 });
