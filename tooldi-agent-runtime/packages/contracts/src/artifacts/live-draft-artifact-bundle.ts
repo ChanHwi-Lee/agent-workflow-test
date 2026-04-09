@@ -177,7 +177,16 @@ const LastKnownGoodCheckpointSchema = Type.Object(
       {
         requestRef: IdentifierSchema,
         snapshotRef: IdentifierSchema,
+        normalizedIntentDraftRef: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
+        intentNormalizationReportRef: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
         normalizedIntentRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+        templatePriorSummaryRef: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
         searchProfileRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         executablePlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         candidateSetRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),

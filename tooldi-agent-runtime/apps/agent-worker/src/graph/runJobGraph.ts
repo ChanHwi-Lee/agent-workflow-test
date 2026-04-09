@@ -9,10 +9,16 @@ import {
 } from "@langchain/langgraph";
 import type {
   RunJobEnvelope,
+  TemplatePriorSummary,
   WaitMutationAckResponse,
 } from "@tooldi/agent-contracts";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
-import type { TemplatePlanner } from "@tooldi/agent-llm";
+import { parseTemplateIntentDraft } from "@tooldi/agent-llm";
+import type {
+  TemplateIntentDraft,
+  TemplatePlanner,
+  TemplatePlannerMode,
+} from "@tooldi/agent-llm";
 import type { Logger } from "@tooldi/agent-observability";
 import type { ObjectStoreClient } from "@tooldi/agent-persistence";
 import type {
@@ -33,7 +39,9 @@ import {
   assembleTemplateCandidates,
   SpringCatalogActivationError,
 } from "../phases/assembleTemplateCandidates.js";
+import { buildPlannerDraft } from "../phases/buildPlannerDraft.js";
 import { buildSearchProfile } from "../phases/buildSearchProfile.js";
+import { buildTemplatePriorSummary } from "../phases/buildTemplatePriorSummary.js";
 import { buildExecutablePlan } from "../phases/buildExecutablePlan.js";
 import { buildNormalizedIntent } from "../phases/buildNormalizedIntent.js";
 import { emitRefinementMutations } from "../phases/emitRefinementMutations.js";
@@ -47,8 +55,10 @@ import { selectTemplateComposition } from "../phases/selectTemplateComposition.j
 import type {
   FinalizeRunDraft,
   HydratedPlanningInput,
+  IntentNormalizationReport,
   MutationProposalDraft as WorkerMutationProposalDraft,
   NormalizedIntent,
+  NormalizedIntentDraftArtifact,
   ProcessRunJobResult,
   RetrievalStageResult,
   RuleJudgeVerdict,
@@ -91,8 +101,15 @@ const RunJobGraphState = Annotation.Root({
   job: Annotation<RunJobEnvelope>(),
   cooperativeStopRequested: replaceValue(() => false),
   hydrated: replaceValue<HydratedPlanningInput | null>(() => null),
+  resolvedPlannerMode: replaceValue<TemplatePlannerMode>(() => "heuristic"),
+  normalizedIntentDraft: replaceValue<NormalizedIntentDraftArtifact | null>(() => null),
+  normalizedIntentDraftRef: replaceValue<string | null>(() => null),
+  intentNormalizationReport: replaceValue<IntentNormalizationReport | null>(() => null),
+  intentNormalizationReportRef: replaceValue<string | null>(() => null),
   intent: replaceValue<NormalizedIntent | null>(() => null),
   normalizedIntentRef: replaceValue<string | null>(() => null),
+  templatePriorSummary: replaceValue<TemplatePriorSummary | null>(() => null),
+  templatePriorSummaryRef: replaceValue<string | null>(() => null),
   searchProfile: replaceValue<SearchProfileArtifact | null>(() => null),
   searchProfileRef: replaceValue<string | null>(() => null),
   retrievalStage: replaceValue<RetrievalStageResult | null>(() => null),
@@ -219,18 +236,100 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         cooperativeStopRequested,
       };
     })
+    .addNode("plan_intent_draft", async (state) => {
+      if (!state.hydrated) {
+        throw new Error("plan_intent_draft requires hydrated input");
+      }
+
+      let cooperativeStopRequested = state.cooperativeStopRequested;
+      const plannerResolution = await buildPlannerDraft(
+        state.hydrated,
+        dependencies.templatePlanner
+          ? { templatePlanner: dependencies.templatePlanner }
+          : undefined,
+      );
+      const { plannerDraft } = plannerResolution;
+
+      if (plannerResolution.fallbackReason) {
+        const fallbackEvent = await appendEventTask(state.job.runId, {
+          traceId: state.job.traceId,
+          attempt: state.job.attemptSeq,
+          queueJobId: state.job.queueJobId,
+          event: {
+            type: "log",
+            level: "warn",
+            message: plannerResolution.fallbackReason,
+          },
+        });
+        cooperativeStopRequested ||= fallbackEvent.cancelRequested;
+      }
+
+      if (!plannerDraft) {
+        return {
+          resolvedPlannerMode: plannerResolution.plannerMode,
+          normalizedIntentDraftRef: null,
+          cooperativeStopRequested,
+        };
+      }
+
+      const normalizedIntentDraftRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/normalized-intent-draft.json`,
+        plannerDraft,
+        {
+          artifactKind: "normalized-intent-draft",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      const draftEvent = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: "info",
+          message: "Planner draft prepared before intent normalization",
+        },
+      });
+      cooperativeStopRequested ||= draftEvent.cancelRequested;
+
+      return {
+        resolvedPlannerMode: plannerResolution.plannerMode,
+        normalizedIntentDraftRef,
+        cooperativeStopRequested,
+      };
+    })
     .addNode("normalize_intent", async (state) => {
       if (!state.hydrated) {
         throw new Error("normalize_intent requires hydrated input");
       }
 
       let cooperativeStopRequested = state.cooperativeStopRequested;
-      const intent = await buildNormalizedIntent(
+      const persistedPlannerDraft = state.normalizedIntentDraftRef
+        ? await readWorkerJsonArtifact<TemplateIntentDraft>(
+            dependencies.objectStore,
+            dependencies.env.objectStoreBucket,
+            state.normalizedIntentDraftRef,
+            parseTemplateIntentDraft,
+          )
+        : null;
+      const normalizedIntent = await buildNormalizedIntent(
         state.hydrated,
-        dependencies.templatePlanner
-          ? { templatePlanner: dependencies.templatePlanner }
-          : undefined,
+        {
+          ...(dependencies.templatePlanner
+            ? { templatePlanner: dependencies.templatePlanner }
+            : {}),
+          plannerDraft: persistedPlannerDraft,
+          plannerMode: state.resolvedPlannerMode,
+        },
       );
+      const {
+        intent,
+        normalizedIntentDraft,
+        intentNormalizationReport,
+      } = normalizedIntent;
 
       const intentEvent = await appendEventTask(state.job.runId, {
         traceId: state.job.traceId,
@@ -244,6 +343,17 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       });
       cooperativeStopRequested ||= intentEvent.cancelRequested;
 
+      const intentNormalizationReportRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/intent-normalization-report.json`,
+        intentNormalizationReport,
+        {
+          artifactKind: "intent-normalization-report",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
       const normalizedIntentRef = await persistArtifactTask(
         `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/normalized-intent.json`,
         intent,
@@ -254,9 +364,17 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
           attemptSeq: String(state.job.attemptSeq),
         },
       );
+      const canonicalIntent = await readWorkerJsonArtifact<NormalizedIntent>(
+        dependencies.objectStore,
+        dependencies.env.objectStoreBucket,
+        normalizedIntentRef,
+      );
 
       return {
-        intent,
+        normalizedIntentDraft,
+        intentNormalizationReport,
+        intentNormalizationReportRef,
+        intent: canonicalIntent,
         normalizedIntentRef,
         cooperativeStopRequested,
       };
@@ -316,12 +434,15 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       };
     })
     .addNode("build_search_profile", async (state) => {
-      if (!state.intent) {
+      if (!state.intent || !state.templatePriorSummary) {
         throw new Error("build_search_profile requires normalized intent state");
       }
 
       let cooperativeStopRequested = state.cooperativeStopRequested;
-      const searchProfile = await buildSearchProfile(state.intent);
+      const searchProfile = await buildSearchProfile(
+        state.intent,
+        state.templatePriorSummary,
+      );
       const searchProfileRef = await persistArtifactTask(
         `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/search-profile.json`,
         searchProfile,
@@ -356,6 +477,47 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         cooperativeStopRequested,
       };
     })
+    .addNode("build_template_prior_summary", async (state) => {
+      if (!state.intent) {
+        throw new Error(
+          "build_template_prior_summary requires normalized intent state",
+        );
+      }
+
+      let cooperativeStopRequested = state.cooperativeStopRequested;
+      const templatePriorSummary = await buildTemplatePriorSummary(state.intent);
+      const templatePriorSummaryRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/template-prior-summary.json`,
+        templatePriorSummary,
+        {
+          artifactKind: "template-prior-summary",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      const priorLog = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: "info",
+          message:
+            `[planner/prior-summary] dominant=${templatePriorSummary.dominantThemePrior} ` +
+            `templateStatus=${templatePriorSummary.selectedTemplatePrior.status} ` +
+            `templateKeyword=${templatePriorSummary.selectedTemplatePrior.keyword ?? "n/a"}`,
+        },
+      });
+      cooperativeStopRequested ||= priorLog.cancelRequested;
+
+      return {
+        templatePriorSummary,
+        templatePriorSummaryRef,
+        cooperativeStopRequested,
+      };
+    })
     .addNode("compute_retrieval_policy", async (state) => {
       if (!state.hydrated || !state.intent) {
         throw new Error("compute_retrieval_policy requires hydrated intent state");
@@ -382,7 +544,13 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       };
     })
     .addNode("assemble_candidates", async (state) => {
-      if (!state.hydrated || !state.intent || !state.selectionPolicy || !state.searchProfile) {
+      if (
+        !state.hydrated ||
+        !state.intent ||
+        !state.selectionPolicy ||
+        !state.searchProfile ||
+        !state.templatePriorSummary
+      ) {
         throw new Error("assemble_candidates requires retrieval policy state");
       }
 
@@ -391,6 +559,7 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
           state.hydrated,
           state.intent,
           state.searchProfile,
+          state.templatePriorSummary,
           {
             templateCatalogClient: dependencies.templateCatalogClient,
             tooldiCatalogSourceClient,
@@ -645,6 +814,7 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
         state.typographyDecision,
         state.sourceSearchSummary,
         state.plan,
+        state.templatePriorSummary,
       );
       const ruleJudgeVerdictRef = await persistArtifactTask(
         `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/rule-judge-verdict.json`,
@@ -1018,6 +1188,15 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       return {
         result: {
           intent: state.intent,
+          ...(state.normalizedIntentDraft
+            ? { normalizedIntentDraft: state.normalizedIntentDraft }
+            : {}),
+          ...(state.intentNormalizationReport
+            ? { intentNormalizationReport: state.intentNormalizationReport }
+            : {}),
+          ...(state.templatePriorSummary
+            ? { templatePriorSummary: state.templatePriorSummary }
+            : {}),
           ...(state.searchProfile ? { searchProfile: state.searchProfile } : {}),
           ...(state.candidateSets ? { candidateSets: state.candidateSets } : {}),
           ...(state.sourceSearchSummary
@@ -1041,11 +1220,13 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       };
     })
     .addEdge(START, "hydrate_input")
-    .addEdge("hydrate_input", "normalize_intent")
+    .addEdge("hydrate_input", "plan_intent_draft")
+    .addEdge("plan_intent_draft", "normalize_intent")
     .addEdge("normalize_intent", "gate_scope")
     .addConditionalEdges("gate_scope", (state) =>
-      state.finalizeDraft ? "send_finalize" : "build_search_profile",
+      state.finalizeDraft ? "send_finalize" : "build_template_prior_summary",
     )
+    .addEdge("build_template_prior_summary", "build_search_profile")
     .addEdge("build_search_profile", "compute_retrieval_policy")
     .addEdge("compute_retrieval_policy", "assemble_candidates")
     .addConditionalEdges("assemble_candidates", (state) =>
@@ -1237,6 +1418,15 @@ function buildFinalizeOptions(
     ...(state.normalizedIntentRef
       ? { normalizedIntentRef: state.normalizedIntentRef }
       : {}),
+    ...(state.normalizedIntentDraftRef
+      ? { normalizedIntentDraftRef: state.normalizedIntentDraftRef }
+      : {}),
+    ...(state.intentNormalizationReportRef
+      ? { intentNormalizationReportRef: state.intentNormalizationReportRef }
+      : {}),
+    ...(state.templatePriorSummaryRef
+      ? { templatePriorSummaryRef: state.templatePriorSummaryRef }
+      : {}),
     ...(state.searchProfileRef ? { searchProfileRef: state.searchProfileRef } : {}),
     ...(state.executablePlanRef ? { executablePlanRef: state.executablePlanRef } : {}),
     ...(state.candidateSetRef ? { candidateSetRef: state.candidateSetRef } : {}),
@@ -1275,6 +1465,15 @@ function buildArtifactRefs(
 
   return {
     normalizedIntentRef: state.normalizedIntentRef,
+    ...(state.normalizedIntentDraftRef
+      ? { normalizedIntentDraftRef: state.normalizedIntentDraftRef }
+      : {}),
+    ...(state.intentNormalizationReportRef
+      ? { intentNormalizationReportRef: state.intentNormalizationReportRef }
+      : {}),
+    ...(state.templatePriorSummaryRef
+      ? { templatePriorSummaryRef: state.templatePriorSummaryRef }
+      : {}),
     ...(state.searchProfileRef ? { searchProfileRef: state.searchProfileRef } : {}),
     ...(state.executablePlanRef ? { executablePlanRef: state.executablePlanRef } : {}),
     ...(state.candidateSetRef ? { candidateSetRef: state.candidateSetRef } : {}),
@@ -1307,4 +1506,19 @@ async function persistWorkerJsonArtifact(
     metadata,
   });
   return key;
+}
+
+async function readWorkerJsonArtifact<T>(
+  objectStore: ObjectStoreClient,
+  bucket: string,
+  key: string,
+  parser?: (value: unknown) => T,
+): Promise<T> {
+  const stored = await objectStore.getObject({
+    bucket,
+    key,
+  });
+  const json = new TextDecoder().decode(stored.body);
+  const parsed = JSON.parse(json) as unknown;
+  return parser ? parser(parsed) : (parsed as T);
 }

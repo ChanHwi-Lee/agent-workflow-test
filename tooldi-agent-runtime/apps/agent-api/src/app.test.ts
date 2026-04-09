@@ -202,6 +202,15 @@ async function readSseStream(
   return text;
 }
 
+function isListenPermissionError(error: unknown): error is NodeJS.ErrnoException {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "EPERM"
+  );
+}
+
 test("POST /runs returns accepted response with required headers", async (t) => {
   const app = await buildApp({ env: createEnv() });
   t.after(async () => {
@@ -442,10 +451,20 @@ test("SSE backlog replay uses event repository offsets with Last-Event-ID", asyn
       publicBaseUrl: "http://127.0.0.1:0",
     },
   });
-  const address = await app.listen({
-    host: "127.0.0.1",
-    port: 0,
-  });
+  let address: string;
+  try {
+    address = await app.listen({
+      host: "127.0.0.1",
+      port: 0,
+    });
+  } catch (error) {
+    if (isListenPermissionError(error)) {
+      t.skip("sandbox denies binding a local TCP port for SSE replay coverage");
+      await app.close();
+      return;
+    }
+    throw error;
+  }
 
   t.after(async () => {
     await app.close();

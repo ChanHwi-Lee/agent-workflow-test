@@ -1,3 +1,5 @@
+import { writeSync } from "node:fs";
+
 export const loggerLevels = [
   "debug",
   "info",
@@ -77,15 +79,8 @@ class ConsoleLogger implements Logger {
 
     const line = JSON.stringify(payload);
 
-    if (level === "error") {
-      console.error(line);
-      return;
-    }
-    if (level === "warn") {
-      console.warn(line);
-      return;
-    }
-    console.log(line);
+    const fd = level === "warn" || level === "error" ? 2 : 1;
+    writeSync(fd, `${line}\n`);
   }
 }
 

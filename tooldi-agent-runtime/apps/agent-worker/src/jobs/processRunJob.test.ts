@@ -4,6 +4,7 @@ import test from "node:test";
 import type {
   RunFinalizeRequest,
   RunRepairContext,
+  TemplatePriorSummary,
   WaitMutationAckQuery,
   WaitMutationAckResponse,
   WorkerAppendEventRequest,
@@ -13,6 +14,17 @@ import type {
   WorkerHeartbeatResponse,
 } from "@tooldi/agent-contracts";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
+import {
+  createHeuristicTemplatePlanner,
+  normalizeTemplateAssetPolicy,
+  type TemplateIntentDraft,
+  type TemplatePlanner,
+} from "@tooldi/agent-llm";
+import type {
+  ObjectStoreClient,
+  PutObjectRequest,
+  PutObjectResult,
+} from "@tooldi/agent-persistence";
 import { createObjectStoreClient } from "@tooldi/agent-persistence";
 import { createTestRun } from "@tooldi/agent-testkit";
 import type {
@@ -32,6 +44,12 @@ import { createAssetStorageClient } from "../tools/adapters/assetStorageAdapter.
 import { createImagePrimitiveClient } from "../tools/adapters/imagePrimitiveAdapter.js";
 import { createTemplateCatalogClient } from "../tools/adapters/templateCatalogAdapter.js";
 import { createTextLayoutHelper } from "../tools/adapters/textLayoutHelperAdapter.js";
+import {
+  createFashionRetailPlannerDraft,
+  fashionRetailGraphicFirstAssetPolicy,
+  legacyGraphicOptionalAssetPolicy,
+  tooldiCreateTemplateTaxonomyFixture,
+} from "../testFixtures/tooldiTaxonomyFixtures.js";
 
 function createEnv(): AgentWorkerEnv {
   return {
@@ -151,6 +169,42 @@ class RecordingBackendCallbackClient implements BackendCallbackClient {
   }
 }
 
+class TrackingObjectStoreClient implements ObjectStoreClient {
+  readonly putKeys: string[] = [];
+  readonly getKeys: string[] = [];
+  readonly operations: Array<{
+    type: "put" | "get";
+    key: string;
+  }> = [];
+  rewritePutObject?: (request: PutObjectRequest) => PutObjectRequest;
+
+  constructor(private readonly base: ObjectStoreClient) {}
+
+  async putObject(request: PutObjectRequest): Promise<PutObjectResult> {
+    this.putKeys.push(request.key);
+    this.operations.push({
+      type: "put",
+      key: request.key,
+    });
+    return this.base.putObject(
+      this.rewritePutObject ? this.rewritePutObject(request) : request,
+    );
+  }
+
+  async getObject(ref: { bucket: string; key: string }) {
+    this.getKeys.push(ref.key);
+    this.operations.push({
+      type: "get",
+      key: ref.key,
+    });
+    return this.base.getObject(ref);
+  }
+
+  async deleteObject(ref: { bucket: string; key: string }) {
+    return this.base.deleteObject(ref);
+  }
+}
+
 class TrackingImagePrimitiveClient implements ImagePrimitiveClient {
   generateCalls = 0;
 
@@ -168,6 +222,93 @@ class TrackingImagePrimitiveClient implements ImagePrimitiveClient {
       promptSummary: instruction,
     };
   }
+}
+
+async function seedRunInputArtifacts(
+  objectStore: ObjectStoreClient,
+  testRun: ReturnType<typeof createTestRun>,
+): Promise<void> {
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+}
+
+function findObjectStoreOperationIndex(
+  objectStore: TrackingObjectStoreClient,
+  operationType: "put" | "get",
+  key: string,
+): number {
+  return objectStore.operations.findIndex(
+    (operation) => operation.type === operationType && operation.key === key,
+  );
+}
+
+function assertPersistedAttemptArtifactSequence(
+  objectStore: TrackingObjectStoreClient,
+  runId: string,
+  attemptSeq: number,
+  expectedFileNames: string[],
+): string[] {
+  const prefix = `runs/${runId}/attempts/${attemptSeq}/`;
+  const expectedKeys = expectedFileNames.map((fileName) => `${prefix}${fileName}`);
+
+  assert.deepEqual(
+    objectStore.putKeys.filter((key) => key.startsWith(prefix)),
+    expectedKeys,
+  );
+
+  return expectedKeys;
+}
+
+function assertTemplatePriorSummaryPayloadShape(
+  summary: TemplatePriorSummary,
+): void {
+  assert.deepEqual(Object.keys(summary), [
+    "summaryId",
+    "runId",
+    "traceId",
+    "plannerMode",
+    "templatePriorCandidates",
+    "selectedTemplatePrior",
+    "selectedContentsThemePrior",
+    "dominantThemePrior",
+    "contentsThemePriorMatches",
+    "keywordThemeMatches",
+    "familyCoverage",
+    "rankingBiases",
+    "rankingRationaleEntries",
+    "summary",
+  ]);
+  assert.equal(typeof summary.summaryId, "string");
+  assert.equal(typeof summary.runId, "string");
+  assert.equal(typeof summary.traceId, "string");
+  assert.equal(typeof summary.selectedTemplatePrior.querySurface, "string");
+  assert.equal(summary.templatePriorCandidates.length > 0, true);
+  assert.equal(summary.rankingRationaleEntries.length > 0, true);
+  assert.equal(summary.selectedContentsThemePrior.template.family, "template");
+  assert.equal(summary.selectedContentsThemePrior.shape.family, "shape");
+  assert.equal(summary.selectedContentsThemePrior.picture.family, "picture");
+  assert.equal(summary.templatePriorCandidates.every((candidate) => candidate.evidenceRefs.length > 0), true);
+  assert.equal(summary.templatePriorCandidates.every((candidate) => candidate.contextRefs.length > 0), true);
+  assert.equal(
+    summary.rankingRationaleEntries.every(
+      (entry) => entry.evidenceRefs.length > 0 && entry.contextRefs.length > 0,
+    ),
+    true,
+  );
 }
 
 class TrackingAssetStorageClient implements AssetStorageClient {
@@ -356,12 +497,1234 @@ class FakeTooldiCatalogSourceClient implements TooldiCatalogSourceClient {
   }
 }
 
-test("processRunJob orchestrates phases and backend callbacks in order", async () => {
+test("processRunJob persists the raw planner draft before normalized intent", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = new TrackingObjectStoreClient(
+    createObjectStoreClient({
+      bucket: env.objectStoreBucket,
+    }),
+  );
+  const callbackClient = new RecordingBackendCallbackClient();
+  const testRun = createTestRun();
+  let plannerCallCount = 0;
+  const plannerDraft: TemplateIntentDraft = {
+    goalSummary: "패션 리테일 봄 세일 배너",
+    templateKind: "seasonal_sale_banner",
+    domain: "fashion_retail",
+    audience: "sale_shoppers",
+    campaignGoal: "sale_conversion",
+    layoutIntent: "badge_led",
+    tone: "bright_playful",
+    assetPolicy: "graphic_allowed_photo_optional",
+    searchKeywords: ["봄", "세일", "패션"],
+    typographyHint: "굵은 고딕",
+    facets: {
+      seasonality: "spring",
+      menuType: null,
+      promotionStyle: "sale_campaign",
+      offerSpecificity: "broad_offer",
+    },
+  };
+  const templatePlanner: TemplatePlanner = {
+    mode: "langchain",
+    async plan() {
+      plannerCallCount += 1;
+      return plannerDraft;
+    },
+  };
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+    templatePlanner,
+  });
+
+  const normalizedIntentDraftRef =
+    `runs/${testRun.runId}/attempts/1/normalized-intent-draft.json`;
+  const persistedDraft = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: normalizedIntentDraftRef,
+        })
+      ).body,
+    ),
+  ) as TemplateIntentDraft;
+  const persistedIntent = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: result.artifactRefs.normalizedIntentRef,
+        })
+      ).body,
+    ),
+  ) as {
+    plannerMode: string;
+    goalSummary: string;
+    layoutIntent: string;
+  };
+  const intentNormalizationReportRef =
+    `runs/${testRun.runId}/attempts/1/intent-normalization-report.json`;
+  const persistedNormalizationReport = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: intentNormalizationReportRef,
+        })
+      ).body,
+    ),
+  ) as {
+    draftAvailable: boolean;
+    repairCount: number;
+    consistencyFlags: Array<{
+      code: string;
+      severity: string;
+      message: string;
+      fields: string[];
+    }>;
+    normalizationNotes: string[];
+  };
+
+  assert.deepEqual(persistedDraft, plannerDraft);
+  assert.equal(plannerCallCount, 1);
+  assert.equal(persistedIntent.plannerMode, "langchain");
+  assert.equal(persistedIntent.goalSummary, plannerDraft.goalSummary);
+  assert.equal(persistedIntent.layoutIntent, plannerDraft.layoutIntent);
+  assert.equal(result.artifactRefs.normalizedIntentDraftRef, normalizedIntentDraftRef);
+  assert.equal(
+    result.artifactRefs.intentNormalizationReportRef,
+    intentNormalizationReportRef,
+  );
+  assert.ok(result.intentNormalizationReport);
+  assert.equal(persistedNormalizationReport.draftAvailable, true);
+  assert.equal(
+    persistedNormalizationReport.repairCount,
+    result.intentNormalizationReport.repairCount,
+  );
+  assert.deepEqual(
+    persistedNormalizationReport.consistencyFlags,
+    result.intent.consistencyFlags,
+  );
+  assert.deepEqual(
+    persistedNormalizationReport.normalizationNotes,
+    result.intent.normalizationNotes,
+  );
+  assert.ok(
+    objectStore.putKeys.indexOf(normalizedIntentDraftRef) <
+      objectStore.putKeys.indexOf(result.artifactRefs.normalizedIntentRef),
+  );
+  assert.ok(
+    objectStore.putKeys.indexOf(intentNormalizationReportRef) <
+      objectStore.putKeys.indexOf(result.artifactRefs.normalizedIntentRef),
+  );
+});
+
+test("processRunJob normalizes from the persisted planner draft artifact", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = new TrackingObjectStoreClient(
+    createObjectStoreClient({
+      bucket: env.objectStoreBucket,
+    }),
+  );
+  const callbackClient = new RecordingBackendCallbackClient();
+  const testRun = createTestRun();
+  const plannerDraft: TemplateIntentDraft = {
+    goalSummary: "planner original goal",
+    templateKind: "seasonal_sale_banner",
+    domain: "fashion_retail",
+    audience: "sale_shoppers",
+    campaignGoal: "sale_conversion",
+    layoutIntent: "badge_led",
+    tone: "bright_playful",
+    assetPolicy: "graphic_allowed_photo_optional",
+    searchKeywords: ["봄", "세일", "패션"],
+    typographyHint: "굵은 고딕",
+    facets: {
+      seasonality: "spring",
+      menuType: null,
+      promotionStyle: "sale_campaign",
+      offerSpecificity: "broad_offer",
+    },
+  };
+  const rewrittenGoalSummary = "persisted draft goal";
+  objectStore.rewritePutObject = (request) => {
+    if (!request.key.endsWith("/normalized-intent-draft.json")) {
+      return request;
+    }
+
+    const serializedBody =
+      typeof request.body === "string"
+        ? request.body
+        : new TextDecoder().decode(request.body);
+    const persistedDraft = JSON.parse(serializedBody) as TemplateIntentDraft;
+
+    return {
+      ...request,
+      body: JSON.stringify({
+        ...persistedDraft,
+        goalSummary: rewrittenGoalSummary,
+      } satisfies TemplateIntentDraft),
+    };
+  };
+
+  const templatePlanner: TemplatePlanner = {
+    mode: "langchain",
+    async plan() {
+      return plannerDraft;
+    },
+  };
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+    templatePlanner,
+  });
+
+  const persistedDraftRef =
+    `runs/${testRun.runId}/attempts/1/normalized-intent-draft.json`;
+  const persistedDraft = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: persistedDraftRef,
+        })
+      ).body,
+    ),
+  ) as TemplateIntentDraft;
+  const persistedIntent = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: result.artifactRefs.normalizedIntentRef,
+        })
+      ).body,
+    ),
+  ) as {
+    goalSummary: string;
+  };
+
+  assert.equal(plannerDraft.goalSummary, "planner original goal");
+  assert.equal(persistedDraft.goalSummary, rewrittenGoalSummary);
+  assert.equal(persistedIntent.goalSummary, rewrittenGoalSummary);
+  assert.equal(
+    result.normalizedIntentDraft?.draft.goalSummary,
+    rewrittenGoalSummary,
+  );
+});
+
+test("processRunJob uses the persisted normalized intent artifact as downstream truth", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = new TrackingObjectStoreClient(
+    createObjectStoreClient({
+      bucket: env.objectStoreBucket,
+    }),
+  );
+  const callbackClient = new RecordingBackendCallbackClient();
+  const testRun = createTestRun({
+    userInput: {
+      prompt: "카페 봄 음료 배너 만들어줘",
+      locale: "ko-KR",
+      timezone: "Asia/Seoul",
+    },
+  });
+  const canonicalTypographyHint = "캐노니컬 고딕 강조";
+  const templatePlanner: TemplatePlanner = {
+    mode: "langchain",
+    async plan() {
+      return {
+        goalSummary: "카페 봄 음료 배너",
+        templateKind: "promo_banner",
+        domain: "cafe",
+        audience: "local_visitors",
+        campaignGoal: "product_trial",
+        layoutIntent: "hero_focused",
+        tone: "bright_playful",
+        assetPolicy: "photo_preferred_graphic_allowed",
+        searchKeywords: ["봄", "카페", "음료"],
+        typographyHint: null,
+        facets: {
+          seasonality: "spring",
+          menuType: "drink_menu",
+          promotionStyle: "new_product_promo",
+          offerSpecificity: "single_product",
+        },
+      } satisfies TemplateIntentDraft;
+    },
+  };
+
+  objectStore.rewritePutObject = (request) => {
+    if (!request.key.endsWith("/normalized-intent.json")) {
+      return request;
+    }
+
+    const serializedBody =
+      typeof request.body === "string"
+        ? request.body
+        : new TextDecoder().decode(request.body);
+    const persistedIntent = JSON.parse(serializedBody) as {
+      searchKeywords: string[];
+      brandConstraints: {
+        palette: string[];
+        typographyHint: string | null;
+        forbiddenStyles: string[];
+      };
+    };
+
+    return {
+      ...request,
+      body: JSON.stringify({
+        ...persistedIntent,
+        searchKeywords: ["봄", "콜드브루", "런칭", "카페"],
+        brandConstraints: {
+          ...persistedIntent.brandConstraints,
+          typographyHint: canonicalTypographyHint,
+        },
+      }),
+    };
+  };
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+    templatePlanner,
+  });
+
+  const persistedIntent = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: result.artifactRefs.normalizedIntentRef,
+        })
+      ).body,
+    ),
+  ) as {
+    searchKeywords: string[];
+    brandConstraints: {
+      typographyHint: string | null;
+    };
+  };
+  const persistedSearchProfile = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: result.artifactRefs.searchProfileRef!,
+        })
+      ).body,
+    ),
+  ) as {
+    graphic: {
+      queries: Array<{ keyword: string | null }>;
+    };
+    photo: {
+      queries: Array<{
+        keyword: string | null;
+        theme: string | null;
+        type: string | null;
+        format: string | null;
+      }>;
+    };
+    font: {
+      rationale: string;
+      sourceSurface: string;
+      typographyHint: string | null;
+      language: {
+        value: string;
+      };
+      category: {
+        attempts: string[];
+      };
+      weight: {
+        displayTarget: number;
+        bodyTarget: number | null;
+      };
+    };
+  };
+
+  assert.equal(
+    persistedIntent.brandConstraints.typographyHint,
+    canonicalTypographyHint,
+  );
+  assert.deepEqual(persistedIntent.searchKeywords, ["봄", "콜드브루", "런칭", "카페"]);
+  assert.equal(
+    result.intent.brandConstraints.typographyHint,
+    canonicalTypographyHint,
+  );
+  assert.equal(result.searchProfile?.font.typographyHint, canonicalTypographyHint);
+  assert.equal(result.searchProfile?.font.sourceSurface, "Editor::loadFont");
+  assert.equal(result.searchProfile?.font.language.value, "KOR");
+  assert.deepEqual(result.searchProfile?.font.category.attempts, [
+    "고딕",
+    "명조",
+    "손글씨",
+  ]);
+  assert.equal(result.searchProfile?.font.weight.displayTarget, 700);
+  assert.equal(result.searchProfile?.font.weight.bodyTarget, 400);
+  assert.equal(result.searchProfile?.graphic.queries[0]?.keyword, "콜드브루");
+  assert.equal(result.searchProfile?.photo.queries[0]?.keyword, "콜드브루");
+  assert.equal(result.searchProfile?.photo.queries[0]?.theme, null);
+  assert.equal(result.searchProfile?.photo.queries[0]?.format, "square");
+  assert.equal(
+    persistedSearchProfile.font.typographyHint,
+    canonicalTypographyHint,
+  );
+  assert.match(persistedSearchProfile.font.rationale, /Editor::loadFont inventory/);
+  assert.equal(persistedSearchProfile.font.sourceSurface, "Editor::loadFont");
+  assert.equal(persistedSearchProfile.font.language.value, "KOR");
+  assert.deepEqual(persistedSearchProfile.font.category.attempts, [
+    "고딕",
+    "명조",
+    "손글씨",
+  ]);
+  assert.equal(persistedSearchProfile.font.weight.displayTarget, 700);
+  assert.equal(persistedSearchProfile.font.weight.bodyTarget, 400);
+  assert.equal(persistedSearchProfile.graphic.queries[0]?.keyword, "콜드브루");
+  assert.equal(persistedSearchProfile.photo.queries[0]?.keyword, "콜드브루");
+  assert.equal(persistedSearchProfile.photo.queries[0]?.theme, null);
+  assert.equal(persistedSearchProfile.photo.queries[0]?.format, "square");
+  assert.ok(objectStore.getKeys.includes(result.artifactRefs.normalizedIntentRef));
+});
+
+test("processRunJob는 잘못된 플래너 초안이면 휴리스틱 초안을 저장하고 계속 진행한다", async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
     bucket: env.objectStoreBucket,
   });
+  const callbackClient = new RecordingBackendCallbackClient();
+  const testRun = createTestRun({
+    userInput: {
+      prompt: "카페 봄 음료 배너 만들어줘",
+      locale: "ko-KR",
+      timezone: "Asia/Seoul",
+    },
+  });
+  const templatePlanner: TemplatePlanner = {
+    mode: "langchain",
+    async plan() {
+      return {
+        goalSummary: "불완전 초안",
+      } as TemplateIntentDraft;
+    },
+  };
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.requestRef,
+    },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: {
+      ref: testRun.snapshotRef,
+    },
+  });
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+    templatePlanner,
+  });
+  const expectedFallbackDraft = await createHeuristicTemplatePlanner().plan({
+    prompt: testRun.request.userInput.prompt,
+    canvasPreset: "square_1080",
+    palette: testRun.snapshot.brandContext.palette,
+  });
+  const normalizedIntentDraftRef =
+    `runs/${testRun.runId}/attempts/1/normalized-intent-draft.json`;
+  const persistedDraft = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: normalizedIntentDraftRef,
+        })
+      ).body,
+    ),
+  ) as TemplateIntentDraft;
+
+  assert.deepEqual(persistedDraft, expectedFallbackDraft);
+  assert.equal(result.intent.plannerMode, "heuristic");
+  assert.equal(result.normalizedIntentDraft?.plannerMode, "heuristic");
+  assert.equal(result.artifactRefs.normalizedIntentDraftRef, normalizedIntentDraftRef);
+  assert.ok(result.intentNormalizationReport);
+  assert.equal(result.intentNormalizationReport.draftAvailable, true);
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.level === "warn" &&
+        event.event.message.includes("fell back to heuristic mode"),
+    ),
+    true,
+  );
+});
+
+test("processRunJob keeps structured and legacy asset-policy inputs compatible through the current create-template flow", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const scenarios = [
+    {
+      name: "structured",
+      plannerDraft: createFashionRetailPlannerDraft(),
+      expectedDraftPolicy: fashionRetailGraphicFirstAssetPolicy,
+      expectedCanonicalPolicy: fashionRetailGraphicFirstAssetPolicy,
+    },
+    {
+      name: "legacy",
+      plannerDraft: createFashionRetailPlannerDraft({
+        assetPolicy: legacyGraphicOptionalAssetPolicy,
+      }),
+      expectedDraftPolicy: legacyGraphicOptionalAssetPolicy,
+      expectedCanonicalPolicy: normalizeTemplateAssetPolicy(
+        legacyGraphicOptionalAssetPolicy,
+      ),
+    },
+  ] as const;
+
+  for (const scenario of scenarios) {
+    const bucket = `${env.objectStoreBucket}-${scenario.name}`;
+    const objectStore = createObjectStoreClient({
+      bucket,
+    });
+    const callbackClient = new RecordingBackendCallbackClient();
+    const testRun = createTestRun({
+      userInput: {
+        prompt: tooldiCreateTemplateTaxonomyFixture.prompt,
+        locale: "ko-KR",
+        timezone: "Asia/Seoul",
+      },
+    });
+    const templatePlanner: TemplatePlanner = {
+      mode: "langchain",
+      async plan() {
+        return scenario.plannerDraft;
+      },
+    };
+
+    await objectStore.putObject({
+      key: testRun.requestObjectKey,
+      body: JSON.stringify(testRun.request),
+      contentType: "application/json",
+      metadata: {
+        ref: testRun.requestRef,
+      },
+    });
+    await objectStore.putObject({
+      key: testRun.snapshotObjectKey,
+      body: JSON.stringify(testRun.snapshot),
+      contentType: "application/json",
+      metadata: {
+        ref: testRun.snapshotRef,
+      },
+    });
+
+    const result = await processRunJob(testRun.job, {
+      env,
+      logger,
+      objectStore,
+      callbackClient,
+      toolRegistry: createWorkerToolRegistry(),
+      imagePrimitiveClient: createImagePrimitiveClient(),
+      assetStorageClient: createAssetStorageClient(),
+      textLayoutHelper: createTextLayoutHelper(),
+      templateCatalogClient: createTemplateCatalogClient(),
+      templatePlanner,
+    });
+
+    const persistedDraft = JSON.parse(
+      new TextDecoder().decode(
+        (
+          await objectStore.getObject({
+            bucket,
+            key: result.artifactRefs.normalizedIntentDraftRef!,
+          })
+        ).body,
+      ),
+    ) as {
+      assetPolicy: unknown;
+    };
+    const persistedIntent = JSON.parse(
+      new TextDecoder().decode(
+        (
+          await objectStore.getObject({
+            bucket,
+            key: result.artifactRefs.normalizedIntentRef,
+          })
+        ).body,
+      ),
+    ) as {
+      assetPolicy: unknown;
+    };
+    const persistedSearchProfile = JSON.parse(
+      new TextDecoder().decode(
+        (
+          await objectStore.getObject({
+            bucket,
+            key: result.artifactRefs.searchProfileRef!,
+          })
+        ).body,
+      ),
+    ) as {
+      assetPolicy: unknown;
+      background: { queries: Array<{ type: string }> };
+      graphic: {
+        queries: Array<{
+          type: string | null;
+          theme: string | null;
+          method: string | null;
+        }>;
+      };
+      photo: {
+        enabled: boolean;
+        queries: Array<{
+          keyword: string | null;
+          theme: string | null;
+          type: string | null;
+          format: string | null;
+        }>;
+      };
+    };
+
+    assert.deepEqual(persistedDraft.assetPolicy, scenario.expectedDraftPolicy);
+    assert.deepEqual(result.intent.assetPolicy, scenario.expectedCanonicalPolicy);
+    assert.deepEqual(persistedIntent.assetPolicy, scenario.expectedCanonicalPolicy);
+    assert.deepEqual(
+      result.searchProfile?.assetPolicy,
+      scenario.expectedCanonicalPolicy,
+    );
+    assert.deepEqual(
+      persistedSearchProfile.assetPolicy,
+      scenario.expectedCanonicalPolicy,
+    );
+    assert.equal(
+      persistedSearchProfile.background.queries[0]?.type,
+      tooldiCreateTemplateTaxonomyFixture.backgroundPrimaryType,
+    );
+    assert.equal(
+      persistedSearchProfile.background.queries[1]?.type,
+      tooldiCreateTemplateTaxonomyFixture.backgroundSecondaryType,
+    );
+    assert.equal(
+      persistedSearchProfile.graphic.queries[0]?.type,
+      tooldiCreateTemplateTaxonomyFixture.graphicType,
+    );
+    assert.equal(
+      persistedSearchProfile.graphic.queries[0]?.theme,
+      tooldiCreateTemplateTaxonomyFixture.graphicTheme,
+    );
+    assert.equal(
+      persistedSearchProfile.graphic.queries[0]?.method,
+      tooldiCreateTemplateTaxonomyFixture.graphicMethod,
+    );
+    assert.equal(persistedSearchProfile.photo.enabled, true);
+    assert.equal(
+      persistedSearchProfile.photo.queries[0]?.keyword,
+      tooldiCreateTemplateTaxonomyFixture.optionalPhotoKeyword,
+    );
+    assert.equal(
+      persistedSearchProfile.photo.queries[0]?.theme,
+      tooldiCreateTemplateTaxonomyFixture.optionalPhotoTheme,
+    );
+    assert.equal(
+      persistedSearchProfile.photo.queries[0]?.type,
+      tooldiCreateTemplateTaxonomyFixture.optionalPhotoType,
+    );
+    assert.equal(
+      persistedSearchProfile.photo.queries[0]?.format,
+      "square",
+    );
+    assert.equal(
+      result.ruleJudgeVerdict?.issues.some(
+        (issue) => issue.code === "photo_preference_unmet",
+      ),
+      false,
+    );
+  }
+});
+
+test("processRunJob emits template-prior-summary for the Tooldi taxonomy fixture with deterministic ranking rationale", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = new TrackingObjectStoreClient(
+    createObjectStoreClient({
+      bucket: env.objectStoreBucket,
+    }),
+  );
+  const callbackClient = new RecordingBackendCallbackClient();
+  const testRun = createTestRun({
+    userInput: {
+      prompt: tooldiCreateTemplateTaxonomyFixture.prompt,
+      locale: "ko-KR",
+      timezone: "Asia/Seoul",
+    },
+    editorContext: {
+      documentId: "document-1",
+      pageId: "page-1",
+      canvasState: "empty",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      sizeSerial: "1200x628@1",
+      workingTemplateCode: null,
+      canvasSnapshotRef: null,
+      selectedLayerIds: [],
+    },
+    brandContext: {
+      brandName: null,
+      palette: ["#ffe4e8"],
+      logoAssetId: null,
+    },
+  });
+  const templatePlanner: TemplatePlanner = {
+    mode: "langchain",
+    async plan() {
+      return createFashionRetailPlannerDraft();
+    },
+  };
+
+  await seedRunInputArtifacts(objectStore, testRun);
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+    templatePlanner,
+  });
+  const templatePriorSummaryRef =
+    `runs/${testRun.runId}/attempts/1/template-prior-summary.json`;
+  const persistedTemplatePriorSummary = JSON.parse(
+    new TextDecoder().decode(
+      (
+        await objectStore.getObject({
+          bucket: env.objectStoreBucket,
+          key: templatePriorSummaryRef,
+        })
+      ).body,
+    ),
+  ) as TemplatePriorSummary;
+
+  assert.equal(result.artifactRefs.templatePriorSummaryRef, templatePriorSummaryRef);
+  assert.equal(
+    callbackClient.finalizations[0]?.templatePriorSummaryRef,
+    templatePriorSummaryRef,
+  );
+  assert.ok(objectStore.putKeys.includes(templatePriorSummaryRef));
+  assertTemplatePriorSummaryPayloadShape(persistedTemplatePriorSummary);
+  assert.equal(persistedTemplatePriorSummary.selectedTemplatePrior.status, "competitive_only");
+  assert.equal(persistedTemplatePriorSummary.selectedTemplatePrior.keyword, "봄");
+  assert.equal(
+    persistedTemplatePriorSummary.selectedTemplatePrior.categorySerial,
+    "0006",
+  );
+  assert.deepEqual(
+    persistedTemplatePriorSummary.templatePriorCandidates.map((candidate) => ({
+      rank: candidate.rank,
+      sourceSignal: candidate.sourceSignal,
+      keyword: candidate.keyword,
+      selected: candidate.selected,
+    })),
+    [
+      {
+        rank: 1,
+        sourceSignal: "seasonality:spring",
+        keyword: "봄",
+        selected: true,
+      },
+      {
+        rank: 2,
+        sourceSignal: "promotion_style:sale_campaign",
+        keyword: "세일",
+        selected: false,
+      },
+      {
+        rank: 3,
+        sourceSignal: "domain:fashion_retail",
+        keyword: "패션",
+        selected: false,
+      },
+    ],
+  );
+  assert.deepEqual(
+    persistedTemplatePriorSummary.rankingRationaleEntries.map((entry) => ({
+      order: entry.order,
+      signal: entry.signal,
+    })),
+    [
+      {
+        order: 1,
+        signal: "template_prior_candidate_order",
+      },
+      {
+        order: 2,
+        signal: "contents_theme_family_coverage",
+      },
+      {
+        order: 3,
+        signal: "asset_policy_graphic_weight",
+      },
+      {
+        order: 4,
+        signal: "domain_weighting_fashion_sale",
+      },
+    ],
+  );
+  assert.ok(
+    persistedTemplatePriorSummary.rankingRationaleEntries[0]?.outcome.includes(
+      "keyword '봄'",
+    ),
+  );
+  assert.ok(
+    persistedTemplatePriorSummary.rankingRationaleEntries[0]?.rationale.includes(
+      "#1 봄 via seasonality:spring -> #2 세일 via promotion_style:sale_campaign -> #3 패션 via domain:fashion_retail",
+    ),
+  );
+  assert.ok(
+    persistedTemplatePriorSummary.rankingRationaleEntries[2]?.rationale.includes(
+      "shape/vector-heavy success paths",
+    ),
+  );
+  assert.equal(result.searchProfile?.graphic.queries[0]?.keyword, "세일");
+  assert.ok(
+    findObjectStoreOperationIndex(
+      objectStore,
+      "put",
+      templatePriorSummaryRef,
+    ) <
+      findObjectStoreOperationIndex(
+        objectStore,
+        "put",
+        result.artifactRefs.searchProfileRef!,
+      ),
+  );
+  assert.ok(
+    findObjectStoreOperationIndex(
+      objectStore,
+      "put",
+      templatePriorSummaryRef,
+    ) <
+      findObjectStoreOperationIndex(
+        objectStore,
+        "put",
+        result.artifactRefs.candidateSetRef!,
+      ),
+  );
+});
+
+test(
+  "processRunJob persists the Tooldi taxonomy artifact chain with planner draft provenance before downstream refs",
+  async () => {
+    const env = createEnv();
+    const logger = createWorkerLogger(env);
+    const objectStore = new TrackingObjectStoreClient(
+      createObjectStoreClient({
+        bucket: env.objectStoreBucket,
+      }),
+    );
+    const callbackClient = new RecordingBackendCallbackClient();
+    const testRun = createTestRun({
+      userInput: {
+        prompt: tooldiCreateTemplateTaxonomyFixture.prompt,
+        locale: "ko-KR",
+        timezone: "Asia/Seoul",
+      },
+      editorContext: {
+        documentId: "document-1",
+        pageId: "page-1",
+        canvasState: "empty",
+        canvasWidth: 1200,
+        canvasHeight: 628,
+        sizeSerial: "1200x628@1",
+        workingTemplateCode: null,
+        canvasSnapshotRef: null,
+        selectedLayerIds: [],
+      },
+      brandContext: {
+        brandName: null,
+        palette: ["#ffe4e8"],
+        logoAssetId: null,
+      },
+    });
+    const templatePlanner: TemplatePlanner = {
+      mode: "langchain",
+      async plan() {
+        return createFashionRetailPlannerDraft();
+      },
+    };
+
+    await seedRunInputArtifacts(objectStore, testRun);
+
+    const result = await processRunJob(testRun.job, {
+      env,
+      logger,
+      objectStore,
+      callbackClient,
+      toolRegistry: createWorkerToolRegistry(),
+      imagePrimitiveClient: createImagePrimitiveClient(),
+      assetStorageClient: createAssetStorageClient(),
+      textLayoutHelper: createTextLayoutHelper(),
+      templateCatalogClient: createTemplateCatalogClient(),
+      templatePlanner,
+    });
+
+    const artifactSequence = assertPersistedAttemptArtifactSequence(
+      objectStore,
+      testRun.runId,
+      testRun.job.attemptSeq,
+      [
+        "normalized-intent-draft.json",
+        "intent-normalization-report.json",
+        "normalized-intent.json",
+        "template-prior-summary.json",
+        "search-profile.json",
+        "retrieval-stage.json",
+        "template-candidate-set.json",
+        "selection-decision.json",
+        "typography-decision.json",
+        "source-search-summary.json",
+        "executable-plan.json",
+        "rule-judge-verdict.json",
+      ],
+    );
+    const normalizedIntentDraftRef = artifactSequence[0]!;
+    const intentNormalizationReportRef = artifactSequence[1]!;
+    const normalizedIntentRef = artifactSequence[2]!;
+    const templatePriorSummaryRef = artifactSequence[3]!;
+    const searchProfileRef = artifactSequence[4]!;
+    const retrievalStageRef = artifactSequence[5]!;
+    const candidateSetRef = artifactSequence[6]!;
+    const selectionDecisionRef = artifactSequence[7]!;
+    const typographyDecisionRef = artifactSequence[8]!;
+    const sourceSearchSummaryRef = artifactSequence[9]!;
+    const executablePlanRef = artifactSequence[10]!;
+    const ruleJudgeVerdictRef = artifactSequence[11]!;
+
+    assert.deepEqual(result.artifactRefs, {
+      normalizedIntentRef,
+      normalizedIntentDraftRef,
+      intentNormalizationReportRef,
+      templatePriorSummaryRef,
+      searchProfileRef,
+      executablePlanRef,
+      candidateSetRef,
+      sourceSearchSummaryRef,
+      retrievalStageRef,
+      selectionDecisionRef,
+      typographyDecisionRef,
+      ruleJudgeVerdictRef,
+    });
+    assert.equal(callbackClient.finalizations.length, 1);
+    assert.deepEqual(
+      {
+        normalizedIntentDraftRef:
+          callbackClient.finalizations[0]?.normalizedIntentDraftRef,
+        intentNormalizationReportRef:
+          callbackClient.finalizations[0]?.intentNormalizationReportRef,
+        normalizedIntentRef: callbackClient.finalizations[0]?.normalizedIntentRef,
+        templatePriorSummaryRef: callbackClient.finalizations[0]?.templatePriorSummaryRef,
+        searchProfileRef: callbackClient.finalizations[0]?.searchProfileRef,
+        executablePlanRef: callbackClient.finalizations[0]?.executablePlanRef,
+        candidateSetRef: callbackClient.finalizations[0]?.candidateSetRef,
+        sourceSearchSummaryRef: callbackClient.finalizations[0]?.sourceSearchSummaryRef,
+        retrievalStageRef: callbackClient.finalizations[0]?.retrievalStageRef,
+        selectionDecisionRef: callbackClient.finalizations[0]?.selectionDecisionRef,
+        typographyDecisionRef: callbackClient.finalizations[0]?.typographyDecisionRef,
+        ruleJudgeVerdictRef: callbackClient.finalizations[0]?.ruleJudgeVerdictRef,
+      },
+      {
+        normalizedIntentDraftRef,
+        intentNormalizationReportRef,
+        normalizedIntentRef,
+        templatePriorSummaryRef,
+        searchProfileRef,
+        executablePlanRef,
+        candidateSetRef,
+        sourceSearchSummaryRef,
+        retrievalStageRef,
+        selectionDecisionRef,
+        typographyDecisionRef,
+        ruleJudgeVerdictRef,
+      },
+    );
+    assert.ok(
+      findObjectStoreOperationIndex(objectStore, "get", normalizedIntentDraftRef) >
+        findObjectStoreOperationIndex(objectStore, "put", normalizedIntentDraftRef),
+    );
+    assert.ok(
+      findObjectStoreOperationIndex(objectStore, "get", normalizedIntentRef) >
+        findObjectStoreOperationIndex(objectStore, "put", normalizedIntentRef),
+    );
+    assert.ok(result.intentNormalizationReport);
+    assert.equal(result.intentNormalizationReport.draftAvailable, true);
+    assert.equal(result.templatePriorSummary?.runId, testRun.runId);
+    assert.equal(result.templatePriorSummary?.traceId, testRun.traceId);
+    assert.deepEqual(result.searchProfile?.assetPolicy, result.intent.assetPolicy);
+  },
+);
+
+test(
+  "processRunJob writes normalized-intent-draft before deterministic repair in both planner paths",
+  async (t) => {
+    await t.test("planner success path remains valid", async () => {
+      const env = createEnv();
+      const logger = createWorkerLogger(env);
+      const objectStore = new TrackingObjectStoreClient(
+        createObjectStoreClient({
+          bucket: env.objectStoreBucket,
+        }),
+      );
+      const callbackClient = new RecordingBackendCallbackClient();
+      const testRun = createTestRun();
+      const plannerDraft: TemplateIntentDraft = {
+        goalSummary: "패션 리테일 봄 세일 배너",
+        templateKind: "seasonal_sale_banner",
+        domain: "fashion_retail",
+        audience: "sale_shoppers",
+        campaignGoal: "sale_conversion",
+        layoutIntent: "badge_led",
+        tone: "bright_playful",
+        assetPolicy: "graphic_allowed_photo_optional",
+        searchKeywords: ["봄", "세일", "패션"],
+        typographyHint: "굵은 고딕",
+        facets: {
+          seasonality: "spring",
+          menuType: null,
+          promotionStyle: "sale_campaign",
+          offerSpecificity: "broad_offer",
+        },
+      };
+      const templatePlanner: TemplatePlanner = {
+        mode: "langchain",
+        async plan() {
+          return plannerDraft;
+        },
+      };
+
+      await seedRunInputArtifacts(objectStore, testRun);
+
+      const result = await processRunJob(testRun.job, {
+        env,
+        logger,
+        objectStore,
+        callbackClient,
+        toolRegistry: createWorkerToolRegistry(),
+        imagePrimitiveClient: createImagePrimitiveClient(),
+        assetStorageClient: createAssetStorageClient(),
+        textLayoutHelper: createTextLayoutHelper(),
+        templateCatalogClient: createTemplateCatalogClient(),
+        templatePlanner,
+      });
+
+      const draftRef = `runs/${testRun.runId}/attempts/1/normalized-intent-draft.json`;
+      const reportRef =
+        `runs/${testRun.runId}/attempts/1/intent-normalization-report.json`;
+      const draftPutIndex = findObjectStoreOperationIndex(objectStore, "put", draftRef);
+      const draftGetIndex = findObjectStoreOperationIndex(objectStore, "get", draftRef);
+      const reportPutIndex = findObjectStoreOperationIndex(
+        objectStore,
+        "put",
+        reportRef,
+      );
+      const normalizedIntentPutIndex = findObjectStoreOperationIndex(
+        objectStore,
+        "put",
+        result.artifactRefs.normalizedIntentRef,
+      );
+
+      assert.ok(draftPutIndex >= 0);
+      assert.ok(draftGetIndex > draftPutIndex);
+      assert.ok(reportPutIndex > draftGetIndex);
+      assert.ok(normalizedIntentPutIndex > draftGetIndex);
+      assert.equal(result.intent.plannerMode, "langchain");
+      assert.equal(result.normalizedIntentDraft?.plannerMode, "langchain");
+      assert.ok(result.intentNormalizationReport);
+      assert.equal(result.intentNormalizationReport.draftAvailable, true);
+      assert.equal(result.artifactRefs.normalizedIntentDraftRef, draftRef);
+    });
+
+    await t.test("heuristic fallback path remains valid", async () => {
+      const env = createEnv();
+      const logger = createWorkerLogger(env);
+      const objectStore = new TrackingObjectStoreClient(
+        createObjectStoreClient({
+          bucket: env.objectStoreBucket,
+        }),
+      );
+      const callbackClient = new RecordingBackendCallbackClient();
+      const testRun = createTestRun({
+        userInput: {
+          prompt: "카페 봄 음료 배너 만들어줘",
+          locale: "ko-KR",
+          timezone: "Asia/Seoul",
+        },
+      });
+      const templatePlanner: TemplatePlanner = {
+        mode: "langchain",
+        async plan() {
+          return {
+            goalSummary: "불완전 초안",
+          } as TemplateIntentDraft;
+        },
+      };
+
+      await seedRunInputArtifacts(objectStore, testRun);
+
+      const result = await processRunJob(testRun.job, {
+        env,
+        logger,
+        objectStore,
+        callbackClient,
+        toolRegistry: createWorkerToolRegistry(),
+        imagePrimitiveClient: createImagePrimitiveClient(),
+        assetStorageClient: createAssetStorageClient(),
+        textLayoutHelper: createTextLayoutHelper(),
+        templateCatalogClient: createTemplateCatalogClient(),
+        templatePlanner,
+      });
+
+      const expectedFallbackDraft = await createHeuristicTemplatePlanner().plan({
+        prompt: testRun.request.userInput.prompt,
+        canvasPreset: "square_1080",
+        palette: testRun.snapshot.brandContext.palette,
+      });
+      const draftRef = `runs/${testRun.runId}/attempts/1/normalized-intent-draft.json`;
+      const draftPutIndex = findObjectStoreOperationIndex(objectStore, "put", draftRef);
+      const draftGetIndex = findObjectStoreOperationIndex(objectStore, "get", draftRef);
+      const normalizedIntentPutIndex = findObjectStoreOperationIndex(
+        objectStore,
+        "put",
+        result.artifactRefs.normalizedIntentRef,
+      );
+      const persistedDraft = JSON.parse(
+        new TextDecoder().decode(
+          (
+            await objectStore.getObject({
+              bucket: env.objectStoreBucket,
+              key: draftRef,
+            })
+          ).body,
+        ),
+      ) as TemplateIntentDraft;
+
+      assert.ok(draftPutIndex >= 0);
+      assert.ok(draftGetIndex > draftPutIndex);
+      assert.ok(normalizedIntentPutIndex > draftGetIndex);
+      assert.deepEqual(persistedDraft, expectedFallbackDraft);
+      assert.equal(result.intent.plannerMode, "heuristic");
+      assert.equal(result.normalizedIntentDraft?.plannerMode, "heuristic");
+      assert.ok(result.intentNormalizationReport);
+      assert.equal(result.intentNormalizationReport.draftAvailable, true);
+      assert.equal(result.artifactRefs.normalizedIntentDraftRef, draftRef);
+    });
+  },
+);
+
+test("processRunJob orchestrates phases and backend callbacks in order", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = new TrackingObjectStoreClient(
+    createObjectStoreClient({
+      bucket: env.objectStoreBucket,
+    }),
+  );
   const callbackClient = new RecordingBackendCallbackClient();
   const imagePrimitiveClient = createImagePrimitiveClient();
   const assetStorageClient = createAssetStorageClient();
@@ -399,11 +1762,44 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   const plan = result.plan;
   const selectionDecision = result.selectionDecision;
   const candidateSets = result.candidateSets;
+  const expectedTemplateCategorySerial =
+    result.intent.canvasPreset === "wide_1200x628" ? "0006" : "0002";
+  const persistedTemplatePriorSummaryRaw = new TextDecoder().decode(
+    (
+      await objectStore.getObject({
+        bucket: env.objectStoreBucket,
+        key: `runs/${testRun.runId}/attempts/1/template-prior-summary.json`,
+      })
+    ).body,
+  );
+  const persistedTemplatePriorSummary = JSON.parse(
+    persistedTemplatePriorSummaryRaw,
+  ) as {
+    templatePriorCandidates: Array<{
+      rank: number;
+      sourceSignal: string;
+      keyword: string | null;
+      selected: boolean;
+    }>;
+    dominantThemePrior: string;
+    rankingRationaleEntries: Array<{
+      signal: string;
+      outcome: string;
+    }>;
+    selectedTemplatePrior: {
+      status: string;
+      keyword: string | null;
+      categorySerial: string | null;
+    };
+  };
 
   assert.equal(result.intent.operationFamily, "create_template");
   assert.equal(result.intent.templateKind, "seasonal_sale_banner");
   assert.equal(result.intent.layoutIntent, "copy_focused");
-  assert.equal(result.intent.assetPolicy, "graphic_allowed_photo_optional");
+  assert.deepEqual(
+    result.intent.assetPolicy,
+    normalizeTemplateAssetPolicy("graphic_allowed_photo_optional"),
+  );
   assert.ok(plan);
   assert.equal(plan.actions.length, 3);
   assert.equal(result.emittedMutationIds.length, 3);
@@ -415,6 +1811,12 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   assert.equal(result.intent.domain, "general_marketing");
   assert.equal(result.intent.campaignGoal, "sale_conversion");
   assert.equal(result.searchProfile?.graphic.queries[0]?.keyword, "세일");
+  assert.equal(result.templatePriorSummary?.dominantThemePrior, "template_prior");
+  assert.equal(
+    result.templatePriorSummary?.selectedTemplatePrior.status,
+    "competitive_only",
+  );
+  assert.equal(result.templatePriorSummary?.selectedTemplatePrior.keyword, "봄");
   assert.equal(result.ruleJudgeVerdict?.recommendation, "refine");
   assert.ok(candidateSets);
   assert.equal(candidateSets.background.family, "background");
@@ -445,6 +1847,10 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   assert.equal(
     callbackClient.finalizations[0]?.normalizedIntentRef,
     `runs/${testRun.runId}/attempts/1/normalized-intent.json`,
+  );
+  assert.equal(
+    callbackClient.finalizations[0]?.templatePriorSummaryRef,
+    `runs/${testRun.runId}/attempts/1/template-prior-summary.json`,
   );
   assert.equal(
     callbackClient.finalizations[0]?.searchProfileRef,
@@ -484,6 +1890,18 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     `runs/${testRun.runId}/attempts/1/search-profile.json`,
   );
   assert.equal(
+    result.artifactRefs.normalizedIntentDraftRef,
+    `runs/${testRun.runId}/attempts/1/normalized-intent-draft.json`,
+  );
+  assert.equal(
+    result.artifactRefs.intentNormalizationReportRef,
+    `runs/${testRun.runId}/attempts/1/intent-normalization-report.json`,
+  );
+  assert.equal(
+    result.artifactRefs.templatePriorSummaryRef,
+    `runs/${testRun.runId}/attempts/1/template-prior-summary.json`,
+  );
+  assert.equal(
     result.artifactRefs.candidateSetRef,
     `runs/${testRun.runId}/attempts/1/template-candidate-set.json`,
   );
@@ -513,6 +1931,84 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   assert.equal(
     result.retrievalStage.allowedSourceFamilies.includes("photo_source"),
     true,
+  );
+  assert.equal(persistedTemplatePriorSummary.dominantThemePrior, "template_prior");
+  assert.equal(
+    persistedTemplatePriorSummary.selectedTemplatePrior.status,
+    "competitive_only",
+  );
+  assert.equal(
+    persistedTemplatePriorSummary.selectedTemplatePrior.keyword,
+    "봄",
+  );
+  assert.equal(
+    persistedTemplatePriorSummary.selectedTemplatePrior.categorySerial,
+    expectedTemplateCategorySerial,
+  );
+  assert.deepEqual(
+    Object.keys(persistedTemplatePriorSummary),
+    [
+      "summaryId",
+      "runId",
+      "traceId",
+      "plannerMode",
+      "templatePriorCandidates",
+      "selectedTemplatePrior",
+      "selectedContentsThemePrior",
+      "dominantThemePrior",
+      "contentsThemePriorMatches",
+      "keywordThemeMatches",
+      "familyCoverage",
+      "rankingBiases",
+      "rankingRationaleEntries",
+      "summary",
+    ],
+  );
+  assert.deepEqual(
+    persistedTemplatePriorSummary.templatePriorCandidates.map((candidate) => ({
+      rank: candidate.rank,
+      sourceSignal: candidate.sourceSignal,
+      keyword: candidate.keyword,
+      selected: candidate.selected,
+    })),
+    [
+      {
+        rank: 1,
+        sourceSignal: "seasonality:spring",
+        keyword: "봄",
+        selected: true,
+      },
+      {
+        rank: 2,
+        sourceSignal: "promotion_style:sale_campaign",
+        keyword: "세일",
+        selected: false,
+      },
+    ],
+  );
+  assert.equal(
+    persistedTemplatePriorSummary.rankingRationaleEntries[0]?.signal,
+    "template_prior_candidate_order",
+  );
+  assert.ok(
+    persistedTemplatePriorSummary.rankingRationaleEntries[0]?.outcome.includes("keyword '봄'"),
+  );
+  assert.ok(
+    persistedTemplatePriorSummaryRaw.includes("\"rankingRationaleEntries\""),
+  );
+  assert.ok(
+    objectStore.putKeys.indexOf(
+      `runs/${testRun.runId}/attempts/1/template-prior-summary.json`,
+    ) <
+      objectStore.putKeys.indexOf(
+        `runs/${testRun.runId}/attempts/1/search-profile.json`,
+      ),
+  );
+  assert.ok(
+    objectStore.putKeys.indexOf(`runs/${testRun.runId}/attempts/1/search-profile.json`) <
+      objectStore.putKeys.indexOf(
+        `runs/${testRun.runId}/attempts/1/template-candidate-set.json`,
+      ),
   );
   assert.deepEqual(plan.actions.map((action) => action.dependsOn), [
     [],
@@ -623,24 +2119,27 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   );
 });
 
-test("processRunJob covers the 3-domain create-template acceptance suite with explainable artifacts", async () => {
+test("processRunJob covers taxonomy-grounded general, cafe, and fashion create-template acceptance scenarios", async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const scenarios = [
     {
-      prompt: "식당에서 신규 봄 계절메뉴를 만들어줘",
-      expectedDomain: "restaurant",
-      expectedGoal: "menu_discovery",
+      prompt: "봄 프로모션 배너",
+      expectedDomain: "general_marketing",
+      expectedGoal: "promotion_awareness",
+      expectedConsistencyFlagCodes: [],
     },
     {
-      prompt: "카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘",
+      prompt: "카페 봄 신메뉴 음료 배너 만들어줘",
       expectedDomain: "cafe",
       expectedGoal: "menu_discovery",
+      expectedConsistencyFlagCodes: [],
     },
     {
       prompt: "패션 리테일 봄 세일 배너 만들어줘",
       expectedDomain: "fashion_retail",
       expectedGoal: "sale_conversion",
+      expectedConsistencyFlagCodes: [],
     },
   ] as const;
 
@@ -695,10 +2194,88 @@ test("processRunJob covers the 3-domain create-template acceptance suite with ex
     assert.equal(result.finalizeDraft.request.finalStatus, "completed_with_warning");
 
     assert.ok(result.artifactRefs.normalizedIntentRef);
+    assert.ok(result.artifactRefs.intentNormalizationReportRef);
+    assert.ok(result.artifactRefs.templatePriorSummaryRef);
     assert.ok(result.artifactRefs.searchProfileRef);
     assert.ok(result.artifactRefs.selectionDecisionRef);
     assert.ok(result.artifactRefs.ruleJudgeVerdictRef);
     assert.ok(result.artifactRefs.executablePlanRef);
+
+    const normalizedIntentArtifact = JSON.parse(
+      new TextDecoder().decode(
+        (
+          await objectStore.getObject({
+            bucket: `${env.objectStoreBucket}-${scenario.expectedDomain}`,
+            key: result.artifactRefs.normalizedIntentRef!,
+          })
+        ).body,
+      ),
+    ) as {
+      domain: string;
+      campaignGoal: string;
+      consistencyFlags: Array<{ code: string }>;
+      normalizationNotes: string[];
+    };
+    assert.equal(normalizedIntentArtifact.domain, scenario.expectedDomain);
+    assert.equal(normalizedIntentArtifact.campaignGoal, scenario.expectedGoal);
+    assert.deepEqual(
+      normalizedIntentArtifact.consistencyFlags.map((flag) => flag.code),
+      scenario.expectedConsistencyFlagCodes,
+    );
+    assert.equal(
+      normalizedIntentArtifact.normalizationNotes.some((note) =>
+        /contradiction/i.test(note),
+      ),
+      false,
+    );
+
+    const normalizationReportArtifact = JSON.parse(
+      new TextDecoder().decode(
+        (
+          await objectStore.getObject({
+            bucket: `${env.objectStoreBucket}-${scenario.expectedDomain}`,
+            key: result.artifactRefs.intentNormalizationReportRef!,
+          })
+        ).body,
+      ),
+    ) as {
+      repairCount: number;
+      consistencyFlags: Array<{ code: string }>;
+      normalizationNotes: string[];
+    };
+    assert.equal(normalizationReportArtifact.repairCount, 0);
+    assert.deepEqual(
+      normalizationReportArtifact.consistencyFlags.map((flag) => flag.code),
+      scenario.expectedConsistencyFlagCodes,
+    );
+    assert.equal(
+      normalizationReportArtifact.normalizationNotes.includes(
+        "Planner draft matched deterministic normalization rules without requiring repair.",
+      ),
+      true,
+    );
+    assert.equal(
+      normalizationReportArtifact.normalizationNotes.some((note) =>
+        /contradiction/i.test(note),
+      ),
+      false,
+    );
+
+    const templatePriorArtifact = JSON.parse(
+      new TextDecoder().decode(
+        (
+          await objectStore.getObject({
+            bucket: `${env.objectStoreBucket}-${scenario.expectedDomain}`,
+            key: result.artifactRefs.templatePriorSummaryRef!,
+          })
+        ).body,
+      ),
+    ) as {
+      dominantThemePrior: string;
+      selectedTemplatePrior: { status: string };
+    };
+    assert.equal(templatePriorArtifact.dominantThemePrior, "template_prior");
+    assert.notEqual(templatePriorArtifact.selectedTemplatePrior.status, "unavailable");
 
     const searchProfileArtifact = JSON.parse(
       new TextDecoder().decode(

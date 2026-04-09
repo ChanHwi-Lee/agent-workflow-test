@@ -9,6 +9,9 @@ export async function finalizeRun(
   options: {
     cooperativeStopRequested?: boolean;
     normalizedIntentRef?: string;
+    normalizedIntentDraftRef?: string;
+    intentNormalizationReportRef?: string;
+    templatePriorSummaryRef?: string;
     searchProfileRef?: string;
     executablePlanRef?: string;
     candidateSetRef?: string;
@@ -114,6 +117,15 @@ export async function finalizeRun(
       outputTemplateCode,
       ...(options.normalizedIntentRef
         ? { normalizedIntentRef: options.normalizedIntentRef }
+        : {}),
+      ...(options.normalizedIntentDraftRef
+        ? { normalizedIntentDraftRef: options.normalizedIntentDraftRef }
+        : {}),
+      ...(options.intentNormalizationReportRef
+        ? { intentNormalizationReportRef: options.intentNormalizationReportRef }
+        : {}),
+      ...(options.templatePriorSummaryRef
+        ? { templatePriorSummaryRef: options.templatePriorSummaryRef }
         : {}),
       ...(options.searchProfileRef
         ? { searchProfileRef: options.searchProfileRef }

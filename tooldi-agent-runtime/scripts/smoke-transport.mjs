@@ -5,13 +5,16 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:net";
 
+import {
+  isListenPermissionError,
+  runTransportSmokeInProcess,
+} from "./smoke-in-process.mjs";
+
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = resolve(currentDir, "..");
 const apiEntrypoint = resolve(workspaceRoot, "apps/agent-api/dist/main.js");
 const workerEntrypoint = resolve(workspaceRoot, "apps/agent-worker/dist/main.js");
 
-const apiPort = await getAvailablePort();
-const apiBaseUrl = `http://127.0.0.1:${apiPort}`;
 const queueName = `agent-workflow-interactive-smoke-${Date.now()}`;
 const objectStoreRootDir = await mkdtemp(
   join(tmpdir(), "tooldi-agent-runtime-smoke-"),
@@ -20,62 +23,78 @@ const objectStoreRootDir = await mkdtemp(
 const processes = [];
 
 try {
-  const api = await startProcess({
-    name: "agent-api",
-    entrypoint: apiEntrypoint,
-    env: {
-      ...process.env,
-      NODE_ENV: "test",
-      LOG_LEVEL: "info",
-      POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
-      REDIS_URL: "redis://localhost:6379/9",
-      BULLMQ_QUEUE_NAME: queueName,
-      OBJECT_STORE_MODE: "filesystem",
-      OBJECT_STORE_ROOT_DIR: objectStoreRootDir,
-      OBJECT_STORE_BUCKET: "tooldi-agent-runtime-smoke",
-      OBJECT_STORE_PREFIX: "agent-runtime-smoke",
-      LANGGRAPH_CHECKPOINTER_MODE: "memory",
-      API_HOST: "127.0.0.1",
-      API_PORT: String(apiPort),
-      PUBLIC_BASE_URL: apiBaseUrl,
-    },
-    readyPattern: /Agent API listening/,
-  });
-  processes.push(api);
+  try {
+    const apiPort = await getAvailablePort();
+    const apiBaseUrl = `http://127.0.0.1:${apiPort}`;
 
-  const worker = await startProcess({
-    name: "agent-worker",
-    entrypoint: workerEntrypoint,
-    env: {
-      ...process.env,
-      NODE_ENV: "test",
-      LOG_LEVEL: "info",
-      POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
-      REDIS_URL: "redis://localhost:6379/9",
-      BULLMQ_QUEUE_NAME: queueName,
-      OBJECT_STORE_MODE: "filesystem",
-      OBJECT_STORE_ROOT_DIR: objectStoreRootDir,
-      OBJECT_STORE_BUCKET: "tooldi-agent-runtime-smoke",
-      OBJECT_STORE_PREFIX: "agent-runtime-smoke",
-      WORKER_CONCURRENCY: "1",
-      WORKER_HEARTBEAT_INTERVAL_MS: "5000",
-      WORKER_LEASE_TTL_MS: "30000",
-      LANGGRAPH_CHECKPOINTER_MODE: "memory",
-      WORKER_QUEUE_TRANSPORT_MODE: "bullmq",
-      AGENT_INTERNAL_BASE_URL: apiBaseUrl,
-    },
-    readyPattern: /Agent worker boot completed/,
-  });
-  processes.push(worker);
+    const api = await startProcess({
+      name: "agent-api",
+      entrypoint: apiEntrypoint,
+      env: {
+        ...process.env,
+        NODE_ENV: "test",
+        LOG_LEVEL: "info",
+        POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
+        REDIS_URL: "redis://localhost:6379/9",
+        BULLMQ_QUEUE_NAME: queueName,
+        OBJECT_STORE_MODE: "filesystem",
+        OBJECT_STORE_ROOT_DIR: objectStoreRootDir,
+        OBJECT_STORE_BUCKET: "tooldi-agent-runtime-smoke",
+        OBJECT_STORE_PREFIX: "agent-runtime-smoke",
+        LANGGRAPH_CHECKPOINTER_MODE: "memory",
+        API_HOST: "127.0.0.1",
+        API_PORT: String(apiPort),
+        PUBLIC_BASE_URL: apiBaseUrl,
+      },
+      readyPattern: /Agent API listening/,
+    });
+    processes.push(api);
 
-  const accepted = await startRun(apiBaseUrl);
-  console.log(
-    `[smoke] accepted run ${accepted.runId} trace=${accepted.traceId}`,
-  );
+    const worker = await startProcess({
+      name: "agent-worker",
+      entrypoint: workerEntrypoint,
+      env: {
+        ...process.env,
+        NODE_ENV: "test",
+        LOG_LEVEL: "info",
+        POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
+        REDIS_URL: "redis://localhost:6379/9",
+        BULLMQ_QUEUE_NAME: queueName,
+        OBJECT_STORE_MODE: "filesystem",
+        OBJECT_STORE_ROOT_DIR: objectStoreRootDir,
+        OBJECT_STORE_BUCKET: "tooldi-agent-runtime-smoke",
+        OBJECT_STORE_PREFIX: "agent-runtime-smoke",
+        WORKER_CONCURRENCY: "1",
+        WORKER_HEARTBEAT_INTERVAL_MS: "5000",
+        WORKER_LEASE_TTL_MS: "30000",
+        LANGGRAPH_CHECKPOINTER_MODE: "memory",
+        WORKER_QUEUE_TRANSPORT_MODE: "bullmq",
+        AGENT_INTERNAL_BASE_URL: apiBaseUrl,
+      },
+      readyPattern: /Agent worker boot completed/,
+    });
+    processes.push(worker);
 
-  await driveRunStream(accepted);
+    const accepted = await startRun(apiBaseUrl);
+    console.log(
+      `[smoke] accepted run ${accepted.runId} trace=${accepted.traceId}`,
+    );
 
-  console.log("[smoke] transport pipeline completed successfully");
+    await driveRunStream(accepted);
+
+    console.log("[smoke] transport pipeline completed successfully");
+  } catch (error) {
+    if (!isListenPermissionError(error)) {
+      throw error;
+    }
+    console.log(
+      "[smoke] sandbox denied local TCP bind; using in-process transport fallback",
+    );
+    await runTransportSmokeInProcess({
+      workspaceRoot,
+      queueName,
+    });
+  }
 } finally {
   await Promise.allSettled(processes.map((processHandle) => stopProcess(processHandle)));
   await rm(objectStoreRootDir, { recursive: true, force: true });

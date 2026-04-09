@@ -1,5 +1,6 @@
 export * from "./artifacts/live-draft-artifact-bundle.js";
 export * from "./artifacts/run-result.js";
+export * from "./artifacts/template-prior-summary.js";
 export * from "./canvas/canvas-mutation.js";
 export * from "./canvas/mutation-ack.js";
 export * from "./canvas/template-save-receipt.js";

@@ -1,4 +1,5 @@
 import { createRequestId } from "@tooldi/agent-domain";
+import { templateAssetPolicyPrefersPhoto } from "@tooldi/agent-llm";
 
 import type {
   SelectionDecision,
@@ -246,8 +247,8 @@ function decidePhotoBranch(
   mode: SelectionDecision["photoBranchMode"];
   reason: string;
 } {
-  const photoPromotionTolerance =
-    intent.assetPolicy === "photo_preferred_graphic_allowed" ? 0.08 : 0.02;
+  const photoPreferred = templateAssetPolicyPrefersPhoto(intent.assetPolicy);
+  const photoPromotionTolerance = photoPreferred ? 0.08 : 0.03;
 
   if (!selectionPolicy.allowPhotoCandidates) {
     return {
@@ -313,7 +314,7 @@ function decidePhotoBranch(
   return {
     mode: "graphic_preferred",
     reason:
-      intent.assetPolicy === "photo_preferred_graphic_allowed"
+      photoPreferred
         ? "graphic-first path still remained safer than the preferred photo path after comparison"
         : "graphic-first path remains safer for readability and execution despite the available photo candidate",
   };

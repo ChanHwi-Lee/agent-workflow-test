@@ -20,7 +20,7 @@
     "local:toolditor:worker:real": "./scripts/start-local-worker-toolditor-real.sh",
     "smoke:retry": "pnpm build && node --enable-source-maps ./scripts/smoke-retry.mjs",
     "smoke:transport": "pnpm build && node --enable-source-maps ./scripts/smoke-transport.mjs",
-    "test": "pnpm build && pnpm -r --if-present test",
+    "test": "pnpm build && pnpm -r --workspace-concurrency=1 --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "format:check": "prettier --check .",
     "format:write": "prettier --write ."

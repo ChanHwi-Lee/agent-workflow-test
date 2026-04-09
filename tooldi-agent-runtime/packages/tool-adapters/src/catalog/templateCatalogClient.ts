@@ -59,7 +59,12 @@ export interface TemplateCatalogContext {
   canvasHeight: number;
   templateKind: string;
   tone: string;
-  assetPolicy: string;
+  assetPolicy: {
+    allowedFamilies: Array<"background" | "graphic" | "photo">;
+    preferredFamilies: Array<"background" | "graphic" | "photo">;
+    primaryVisualPolicy: "graphic_preferred" | "photo_preferred" | "balanced";
+    avoidFamilies: Array<"background" | "graphic" | "photo">;
+  };
 }
 
 export interface BackgroundCatalogClient {

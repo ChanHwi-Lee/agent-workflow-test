@@ -1,4 +1,10 @@
 import { createRequestId } from "@tooldi/agent-domain";
+import type { TemplatePriorSummary } from "@tooldi/agent-contracts";
+import {
+  normalizeTemplateAssetPolicy,
+  templateAssetPolicyPenaltyForFamily,
+  templateAssetPolicyPrefersPhoto,
+} from "@tooldi/agent-llm";
 import type {
   TemplateCandidate,
   TemplateCandidateSet,
@@ -51,14 +57,16 @@ export async function assembleTemplateCandidates(
   input: HydratedPlanningInput,
   intent: NormalizedIntent,
   searchProfile: SearchProfileArtifact,
+  templatePriorSummary: TemplatePriorSummary,
   dependencies: AssembleTemplateCandidatesDependencies,
 ): Promise<AssembleTemplateCandidatesResult> {
+  const assetPolicy = normalizeTemplateAssetPolicy(intent.assetPolicy);
   const catalogContext = {
     canvasWidth: input.request.editorContext.canvasWidth,
     canvasHeight: input.request.editorContext.canvasHeight,
     templateKind: intent.templateKind,
     tone: intent.tone,
-    assetPolicy: intent.assetPolicy,
+    assetPolicy,
   } as const;
   const emptyPhotoCandidates: TemplateCandidateSet = {
     setId: `photo_candidates_${createRequestId()}`,
@@ -130,12 +138,18 @@ export async function assembleTemplateCandidates(
     searchBackgroundCandidates(
       dependencies.tooldiCatalogSourceClient,
       searchProfile,
+      templatePriorSummary,
     ),
-    searchGraphicCandidates(dependencies.tooldiCatalogSourceClient, searchProfile),
+    searchGraphicCandidates(
+      dependencies.tooldiCatalogSourceClient,
+      searchProfile,
+      templatePriorSummary,
+    ),
     dependencies.allowPhotoCandidates
       ? searchPhotoCandidates(
           dependencies.tooldiCatalogSourceClient,
           searchProfile,
+          templatePriorSummary,
         )
       : Promise.resolve({
           candidates: [] as TemplateCandidate[],
@@ -186,6 +200,7 @@ export async function assembleTemplateCandidates(
 async function searchBackgroundCandidates(
   sourceClient: TooldiCatalogSourceClient,
   searchProfile: SearchProfileArtifact,
+  templatePriorSummary: TemplatePriorSummary,
 ): Promise<{
   candidates: TemplateCandidate[];
   summary: SourceSearchFamilySummary;
@@ -223,10 +238,16 @@ async function searchBackgroundCandidates(
   }
 
   const ranked = [...selectedAssets]
-    .sort((left, right) => scoreBackgroundAsset(right) - scoreBackgroundAsset(left))
+    .sort(
+      (left, right) =>
+        scoreBackgroundAsset(right, searchProfile, templatePriorSummary) -
+        scoreBackgroundAsset(left, searchProfile, templatePriorSummary),
+    )
     .slice(0, 8);
   const candidates = assignFallbacks(
-    ranked.map((asset) => mapBackgroundAssetToCandidate(asset)),
+    ranked.map((asset) =>
+      mapBackgroundAssetToCandidate(asset, searchProfile, templatePriorSummary),
+    ),
   );
 
   return {
@@ -247,6 +268,7 @@ async function searchBackgroundCandidates(
 async function searchGraphicCandidates(
   sourceClient: TooldiCatalogSourceClient,
   searchProfile: SearchProfileArtifact,
+  templatePriorSummary: TemplatePriorSummary,
 ): Promise<{
   candidates: TemplateCandidate[];
   summary: SourceSearchFamilySummary;
@@ -254,20 +276,8 @@ async function searchGraphicCandidates(
   const attempts: SourceSearchFamilySummary["queryAttempts"] = [];
   const queries = searchProfile.graphic.queries.map((plannedQuery) => ({
     label: plannedQuery.label,
-    query: {
-      page: 0,
-      ...(plannedQuery.keyword !== null
-        ? { keyword: plannedQuery.keyword }
-        : {}),
-      ...(plannedQuery.categoryName !== null
-        ? { categoryName: plannedQuery.categoryName }
-        : {}),
-      ...(plannedQuery.shapeType !== null
-        ? { shapeType: plannedQuery.shapeType }
-        : {}),
-      ...(plannedQuery.price !== null ? { price: plannedQuery.price } : {}),
-      ...(plannedQuery.format !== null ? { format: plannedQuery.format } : {}),
-    } satisfies SearchGraphicAssetsQuery,
+    plannedQuery,
+    query: createGraphicTransportQuery(plannedQuery),
   }));
 
   let selectedAssets: TooldiGraphicAsset[] = [];
@@ -276,9 +286,20 @@ async function searchGraphicCandidates(
     attempts.push({
       label: attempt.label,
       query: {
-        type: attempt.query.shapeType ?? null,
         keyword: attempt.query.keyword ?? null,
-        page: attempt.query.page,
+        semanticThemeHint: attempt.plannedQuery.theme,
+        type: attempt.plannedQuery.type,
+        method: attempt.plannedQuery.method,
+        page: 1,
+        transportPage: attempt.query.page,
+        transportShapeType: attempt.query.shapeType ?? null,
+        transportFormat: attempt.query.format ?? null,
+        transportPrice: attempt.query.price ?? null,
+        transportFollow:
+          attempt.query.follow === undefined ? null : attempt.query.follow,
+        transportIsAi:
+          attempt.query.isAi === undefined ? null : attempt.query.isAi,
+        transportCategoryName: attempt.query.categoryName ?? null,
       },
       returnedCount: result.assets.length,
     });
@@ -289,10 +310,16 @@ async function searchGraphicCandidates(
   }
 
   const ranked = [...selectedAssets]
-    .sort((left, right) => scoreGraphicAsset(right) - scoreGraphicAsset(left))
+    .sort(
+      (left, right) =>
+        scoreGraphicAsset(right, searchProfile, templatePriorSummary) -
+        scoreGraphicAsset(left, searchProfile, templatePriorSummary),
+    )
     .slice(0, 12);
   const candidates = assignFallbacks(
-    ranked.map((asset) => mapGraphicAssetToCandidate(asset)),
+    ranked.map((asset) =>
+      mapGraphicAssetToCandidate(asset, searchProfile, templatePriorSummary),
+    ),
   );
 
   return {
@@ -310,28 +337,72 @@ async function searchGraphicCandidates(
   };
 }
 
+function createGraphicTransportQuery(
+  plannedQuery: SearchProfileArtifact["graphic"]["queries"][number],
+): SearchGraphicAssetsQuery {
+  const format = mapShapeTypeToTransportFormat(plannedQuery.type);
+
+  return {
+    page: 0,
+    ...(plannedQuery.keyword !== null ? { keyword: plannedQuery.keyword } : {}),
+    ...(plannedQuery.price !== null ? { price: plannedQuery.price } : {}),
+    ...(plannedQuery.ownerBias === "follow" ? { follow: true } : {}),
+    shapeType: plannedQuery.type === "bitmap" ? "bitmap" : "graphics",
+    ...(format !== undefined ? { format } : {}),
+    ...(plannedQuery.method === "ai"
+      ? { isAi: true }
+      : plannedQuery.method === "creator"
+        ? { isAi: false }
+        : {}),
+    ...(plannedQuery.categoryName !== null
+      ? { categoryName: plannedQuery.categoryName }
+      : {}),
+  };
+}
+
+function mapShapeTypeToTransportFormat(
+  type: SearchProfileArtifact["graphic"]["queries"][number]["type"],
+): SearchGraphicAssetsQuery["format"] {
+  if (type === "vector") {
+    return "vector";
+  }
+  if (type === "bitmap") {
+    return "bitmap";
+  }
+  return undefined;
+}
+
 async function searchPhotoCandidates(
   sourceClient: TooldiCatalogSourceClient,
   searchProfile: SearchProfileArtifact,
+  templatePriorSummary: TemplatePriorSummary,
 ): Promise<{
   candidates: TemplateCandidate[];
   summary: SourceSearchFamilySummary;
 }> {
   const attempts: SourceSearchFamilySummary["queryAttempts"] = [];
-  const preferredOrientation = searchProfile.photo.orientationHint ?? "landscape";
+  const preferredOrientation =
+    searchProfile.photo.orientationHint ??
+    mapPhotoFormatToOrientation(searchProfile.photo.queries[0]?.format ?? null) ??
+    "landscape";
   const queries = searchProfile.photo.queries.map((plannedQuery) => ({
     label: plannedQuery.label,
+    theme: plannedQuery.theme,
+    type: plannedQuery.type,
+    format: plannedQuery.format,
     query: {
       page: 0,
       source: plannedQuery.source,
       ...(plannedQuery.keyword !== null
         ? { keyword: plannedQuery.keyword }
         : {}),
-      ...(plannedQuery.orientation !== null
-        ? { orientation: plannedQuery.orientation }
+      ...(plannedQuery.price !== null ? { price: plannedQuery.price } : {}),
+      ...(plannedQuery.ownerBias === "follow" ? { follow: true } : {}),
+      ...(mapPhotoFormatToOrientation(plannedQuery.format) !== null
+        ? { orientation: mapPhotoFormatToOrientation(plannedQuery.format)! }
         : {}),
-      ...(plannedQuery.backgroundRemoval !== null
-        ? { backgroundRemoval: plannedQuery.backgroundRemoval }
+      ...(plannedQuery.type !== null
+        ? { backgroundRemoval: plannedQuery.type === "rmbg" }
         : {}),
     } satisfies SearchPhotoAssetsQuery,
   }));
@@ -343,9 +414,18 @@ async function searchPhotoCandidates(
       label: attempt.label,
       query: {
         keyword: attempt.query.keyword ?? null,
+        semanticThemeHint: attempt.theme,
+        type: attempt.type,
+        format: attempt.format,
         page: attempt.query.page,
-        orientation: attempt.query.orientation ?? null,
         source: attempt.query.source ?? null,
+        transportPrice: attempt.query.price ?? null,
+        transportFollow:
+          attempt.query.follow === undefined ? null : attempt.query.follow,
+        transportBackgroundRemoval:
+          attempt.query.backgroundRemoval === undefined
+            ? null
+            : attempt.query.backgroundRemoval,
       },
       returnedCount: result.assets.length,
     });
@@ -358,12 +438,29 @@ async function searchPhotoCandidates(
   const ranked = [...selectedAssets]
     .sort(
       (left, right) =>
-        scorePhotoAsset(right, preferredOrientation) -
-        scorePhotoAsset(left, preferredOrientation),
+        scorePhotoAsset(
+          right,
+          preferredOrientation,
+          searchProfile,
+          templatePriorSummary,
+        ) -
+        scorePhotoAsset(
+          left,
+          preferredOrientation,
+          searchProfile,
+          templatePriorSummary,
+        ),
     )
     .slice(0, 8);
   const candidates = assignFallbacks(
-    ranked.map((asset) => mapPhotoAssetToCandidate(asset, preferredOrientation)),
+    ranked.map((asset) =>
+      mapPhotoAssetToCandidate(
+        asset,
+        preferredOrientation,
+        searchProfile,
+        templatePriorSummary,
+      ),
+    ),
   );
 
   return {
@@ -383,6 +480,8 @@ async function searchPhotoCandidates(
 
 function mapBackgroundAssetToCandidate(
   asset: TooldiBackgroundAsset,
+  searchProfile: SearchProfileArtifact,
+  templatePriorSummary: TemplatePriorSummary,
 ): TemplateCandidate {
   return {
     candidateId: `background_real_${asset.serial}`,
@@ -394,7 +493,7 @@ function mapBackgroundAssetToCandidate(
     thumbnailUrl: asset.thumbnailUrl,
     insertMode: asset.insertMode,
     summary: `${asset.title} (${asset.backgroundKind})`,
-    fitScore: scoreBackgroundAsset(asset),
+    fitScore: scoreBackgroundAsset(asset, searchProfile, templatePriorSummary),
     selectionReasons: [
       asset.backgroundKind === "pattern"
         ? "pattern backgrounds are preferred for spring readability"
@@ -421,6 +520,8 @@ function mapBackgroundAssetToCandidate(
 
 function mapGraphicAssetToCandidate(
   asset: TooldiGraphicAsset,
+  searchProfile: SearchProfileArtifact,
+  templatePriorSummary: TemplatePriorSummary,
 ): TemplateCandidate {
   const decorationMode =
     asset.graphicKind === "calligraphy" || asset.graphicKind === "wordart"
@@ -437,7 +538,7 @@ function mapGraphicAssetToCandidate(
     thumbnailUrl: asset.thumbnailUrl,
     insertMode: asset.insertMode,
     summary: `${asset.title} (${asset.graphicKind})`,
-    fitScore: scoreGraphicAsset(asset),
+    fitScore: scoreGraphicAsset(asset, searchProfile, templatePriorSummary),
     selectionReasons: [
       "real Tooldi graphic inventory candidate",
       asset.keywordTokens.includes("봄")
@@ -461,6 +562,8 @@ function mapGraphicAssetToCandidate(
 function mapPhotoAssetToCandidate(
   asset: TooldiPhotoAsset,
   preferredOrientation: TooldiPhotoAsset["orientation"],
+  searchProfile: SearchProfileArtifact,
+  templatePriorSummary: TemplatePriorSummary,
 ): TemplateCandidate {
   const orientationMatches = asset.orientation === preferredOrientation;
 
@@ -478,7 +581,12 @@ function mapPhotoAssetToCandidate(
     thumbnailUrl: asset.thumbnailUrl,
     insertMode: asset.insertMode,
     summary: `${asset.title} (${asset.orientation})`,
-    fitScore: scorePhotoAsset(asset, preferredOrientation),
+    fitScore: scorePhotoAsset(
+      asset,
+      preferredOrientation,
+      searchProfile,
+      templatePriorSummary,
+    ),
     selectionReasons: [
       "real Tooldi photo inventory candidate",
       asset.keywordTokens.includes("봄")
@@ -514,17 +622,31 @@ function assignFallbacks(candidates: TemplateCandidate[]): TemplateCandidate[] {
   }));
 }
 
-function scoreBackgroundAsset(asset: TooldiBackgroundAsset): number {
+function scoreBackgroundAsset(
+  asset: TooldiBackgroundAsset,
+  searchProfile: SearchProfileArtifact,
+  templatePriorSummary: TemplatePriorSummary,
+): number {
+  const templatePriorKeyword = templatePriorSummary.selectedTemplatePrior.keyword;
+
   return Number(
     (
       (asset.backgroundKind === "pattern" ? 0.9 : 0.76) +
       (asset.keywordTokens.includes("봄") ? 0.04 : 0) +
+      (templatePriorKeyword !== null && asset.keywordTokens.includes(templatePriorKeyword)
+        ? 0.03
+        : 0) +
+      scoreFamilyAdjustment(searchProfile, "background") +
       (asset.thumbnailUrl ? 0.01 : 0)
     ).toFixed(3),
   );
 }
 
-function scoreGraphicAsset(asset: TooldiGraphicAsset): number {
+function scoreGraphicAsset(
+  asset: TooldiGraphicAsset,
+  searchProfile: SearchProfileArtifact,
+  templatePriorSummary: TemplatePriorSummary,
+): number {
   const base =
     asset.graphicKind === "illust"
       ? 0.92
@@ -535,13 +657,30 @@ function scoreGraphicAsset(asset: TooldiGraphicAsset): number {
           : asset.graphicKind === "icon"
             ? 0.84
             : asset.graphicKind === "wordart"
-              ? 0.83
+        ? 0.83
               : 0.78;
+  const primaryGraphicKeyword = searchProfile.graphic.queries[0]?.keyword;
+  const templatePriorKeyword = templatePriorSummary.selectedTemplatePrior.keyword;
+  const themePriorBonus =
+    templatePriorSummary.selectedContentsThemePrior.shape.status !== "unavailable" &&
+    (templatePriorSummary.dominantThemePrior === "contents_theme_prior" ||
+      templatePriorSummary.dominantThemePrior === "mixed")
+      ? 0.015
+      : 0;
 
   return Number(
     (
       base +
       (asset.keywordTokens.includes("봄") ? 0.03 : 0) +
+      (primaryGraphicKeyword != null &&
+      asset.keywordTokens.includes(primaryGraphicKeyword)
+        ? 0.04
+        : 0) +
+      (templatePriorKeyword !== null && asset.keywordTokens.includes(templatePriorKeyword)
+        ? 0.03
+        : 0) +
+      themePriorBonus +
+      scoreFamilyAdjustment(searchProfile, "graphic") +
       (asset.thumbnailUrl ? 0.01 : 0)
     ).toFixed(3),
   );
@@ -550,22 +689,91 @@ function scoreGraphicAsset(asset: TooldiGraphicAsset): number {
 function scorePhotoAsset(
   asset: TooldiPhotoAsset,
   preferredOrientation: TooldiPhotoAsset["orientation"],
+  searchProfile: SearchProfileArtifact,
+  templatePriorSummary: TemplatePriorSummary,
 ): number {
   const base =
     asset.orientation === preferredOrientation
       ? 0.9
       : asset.orientation === "square"
         ? 0.84
-        : 0.78;
+      : 0.78;
+  const primaryPhotoKeyword = searchProfile.photo.queries[0]?.keyword;
+  const templatePriorKeyword = templatePriorSummary.selectedTemplatePrior.keyword;
+  const themePriorBonus =
+    templatePriorSummary.selectedContentsThemePrior.picture.status !== "unavailable" &&
+    (templatePriorSummary.dominantThemePrior === "contents_theme_prior" ||
+      templatePriorSummary.dominantThemePrior === "mixed")
+      ? 0.015
+      : 0;
 
   return Number(
     (
       base +
       (asset.keywordTokens.includes("봄") ? 0.03 : 0) +
+      (primaryPhotoKeyword != null && asset.keywordTokens.includes(primaryPhotoKeyword)
+        ? 0.04
+        : 0) +
+      (templatePriorKeyword !== null && asset.keywordTokens.includes(templatePriorKeyword)
+        ? 0.03
+        : 0) +
+      themePriorBonus +
+      scoreFamilyAdjustment(searchProfile, "photo") +
       (asset.thumbnailUrl ? 0.01 : 0) +
       (asset.backgroundRemovalHint ? 0.01 : 0)
     ).toFixed(3),
   );
+}
+
+function scoreFamilyAdjustment(
+  searchProfile: SearchProfileArtifact,
+  family: "background" | "graphic" | "photo",
+): number {
+  const assetPolicy = normalizeTemplateAssetPolicy(searchProfile.assetPolicy);
+  let adjustment = 0;
+
+  if (assetPolicy.preferredFamilies.includes(family)) {
+    adjustment += family === "background" ? 0.003 : 0.005;
+  }
+  if (
+    assetPolicy.primaryVisualPolicy === "graphic_preferred" &&
+    family === "graphic"
+  ) {
+    adjustment += 0.005;
+  }
+  if (
+    assetPolicy.primaryVisualPolicy === "photo_preferred" &&
+    family === "photo"
+  ) {
+    adjustment += 0.005;
+  }
+  if (
+    assetPolicy.primaryVisualPolicy === "balanced" &&
+    (family === "graphic" || family === "photo") &&
+    assetPolicy.preferredFamilies.includes(family)
+  ) {
+    adjustment += 0.003;
+  }
+  if (family === "photo" && templateAssetPolicyPrefersPhoto(assetPolicy)) {
+    adjustment += 0.003;
+  }
+
+  return adjustment - templateAssetPolicyPenaltyForFamily(assetPolicy, family);
+}
+
+function mapPhotoFormatToOrientation(
+  format: SearchProfileArtifact["photo"]["queries"][number]["format"],
+): TooldiPhotoAsset["orientation"] | null {
+  if (format === "horizontal") {
+    return "landscape";
+  }
+  if (format === "vertical") {
+    return "portrait";
+  }
+  if (format === "square") {
+    return "square";
+  }
+  return null;
 }
 
 function createLayoutCandidateSet(

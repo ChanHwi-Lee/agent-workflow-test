@@ -48,6 +48,9 @@ type MaterializedArtifacts = {
 type MaterializationInput = {
   draftId: string;
   normalizedIntentRef: string;
+  normalizedIntentDraftRef: string | null;
+  intentNormalizationReportRef: string | null;
+  templatePriorSummaryRef: string | null;
   searchProfileRef: string | null;
   executablePlanRef: string;
   candidateSetRef: string | null;
@@ -291,6 +294,9 @@ export class RunFinalizeService {
       materialization: {
         draftId: request.draftId,
         normalizedIntentRef: request.normalizedIntentRef,
+        normalizedIntentDraftRef: request.normalizedIntentDraftRef ?? null,
+        intentNormalizationReportRef: request.intentNormalizationReportRef ?? null,
+        templatePriorSummaryRef: request.templatePriorSummaryRef ?? null,
         searchProfileRef: request.searchProfileRef ?? null,
         executablePlanRef: request.executablePlanRef,
         candidateSetRef: request.candidateSetRef ?? null,
@@ -367,7 +373,10 @@ export class RunFinalizeService {
             sourceRefs: {
               requestRef: run.requestRef,
               snapshotRef: run.snapshotRef,
+              normalizedIntentDraftRef: input.normalizedIntentDraftRef,
+              intentNormalizationReportRef: input.intentNormalizationReportRef,
               normalizedIntentRef: input.normalizedIntentRef,
+              templatePriorSummaryRef: input.templatePriorSummaryRef,
               executablePlanRef: input.executablePlanRef,
               candidateSetRef: input.candidateSetRef,
               sourceSearchSummaryRef: input.sourceSearchSummaryRef,
@@ -548,6 +557,15 @@ export class RunFinalizeService {
         requestRef: run.requestRef,
         snapshotRef: run.snapshotRef,
         normalizedIntentRef: input.normalizedIntentRef,
+        ...(input.normalizedIntentDraftRef
+          ? { normalizedIntentDraftRef: input.normalizedIntentDraftRef }
+          : {}),
+        ...(input.intentNormalizationReportRef
+          ? { intentNormalizationReportRef: input.intentNormalizationReportRef }
+          : {}),
+        ...(input.templatePriorSummaryRef
+          ? { templatePriorSummaryRef: input.templatePriorSummaryRef }
+          : {}),
         ...(input.searchProfileRef ? { searchProfileRef: input.searchProfileRef } : {}),
         executablePlanRef: input.executablePlanRef,
         ...(input.candidateSetRef ? { candidateSetRef: input.candidateSetRef } : {}),

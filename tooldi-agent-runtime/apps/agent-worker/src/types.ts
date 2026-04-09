@@ -6,8 +6,13 @@ import type {
   RunFinalizeRequest,
   RunJobEnvelope,
   StartAgentWorkflowRunRequest,
+  TemplatePriorSummary,
   WaitMutationAckResponse,
 } from "@tooldi/agent-contracts";
+import type {
+  TemplateAssetPolicy,
+  TemplateIntentDraft,
+} from "@tooldi/agent-llm";
 import type {
   TemplateCandidateSet,
   TooldiCatalogSourceMode,
@@ -27,6 +32,46 @@ export interface HydratedPlanningInput {
   requestRef: string;
   snapshotRef: string;
   repairContext: RunRepairContext | null;
+}
+
+export interface IntentConsistencyFlag {
+  code: string;
+  severity: "info" | "warning";
+  message: string;
+  fields: string[];
+}
+
+export interface IntentNormalizationRepair {
+  field: string;
+  reasonCode: string;
+  before: unknown;
+  after: unknown;
+  note: string;
+}
+
+export interface NormalizedIntentDraftArtifact {
+  draftId: string;
+  runId: string;
+  traceId: string;
+  plannerMode: "heuristic" | "langchain";
+  operationFamily: IntentEnvelope["operationFamily"];
+  canvasPreset: "wide_1200x628" | "square_1080" | "story_1080x1920" | string;
+  prompt: string;
+  palette: string[];
+  draft: TemplateIntentDraft;
+}
+
+export interface IntentNormalizationReport {
+  reportId: string;
+  runId: string;
+  traceId: string;
+  plannerMode: "heuristic" | "langchain";
+  prompt: string;
+  draftAvailable: boolean;
+  repairCount: number;
+  appliedRepairs: IntentNormalizationRepair[];
+  consistencyFlags: IntentConsistencyFlag[];
+  normalizationNotes: string[];
 }
 
 export interface NormalizedIntent {
@@ -60,9 +105,7 @@ export interface NormalizedIntent {
   requiredSlots: Array<
     "background" | "headline" | "supporting_copy" | "cta" | "decoration"
   >;
-  assetPolicy:
-    | "graphic_allowed_photo_optional"
-    | "photo_preferred_graphic_allowed";
+  assetPolicy: TemplateAssetPolicy;
   searchKeywords: string[];
   facets: {
     seasonality: "spring" | null;
@@ -79,6 +122,8 @@ export interface NormalizedIntent {
     typographyHint: string | null;
     forbiddenStyles: string[];
   };
+  consistencyFlags: IntentConsistencyFlag[];
+  normalizationNotes: string[];
   supportedInV1: boolean;
   futureCapableOperations: IntentEnvelope["futureCapableOperations"];
 }
@@ -189,23 +234,21 @@ export interface SearchProfileArtifact {
     queries: Array<{
       label: string;
       keyword: string | null;
-      categoryName: string | null;
-      shapeType:
-        | "total"
-        | "graphics"
-        | "bitmap"
-        | "calligraphy"
-        | "figure"
-        | "rect"
-        | "line"
-        | "frames"
-        | "chart"
-        | "font_text"
-        | "mix_text"
-        | "wordart"
-        | null;
+      theme: string | null;
+      type: "vector" | "bitmap" | null;
+      method: "ai" | "creator" | null;
       price: "free" | "paid" | null;
-      format: "bitmap" | "vector" | null;
+      ownerBias: "follow" | null;
+      categoryName: string | null;
+      transportApplied: {
+        keyword: boolean;
+        theme: boolean;
+        type: boolean;
+        method: boolean;
+        price: boolean;
+        owner: boolean;
+        categoryName: boolean;
+      };
     }>;
   };
   photo: {
@@ -216,17 +259,41 @@ export interface SearchProfileArtifact {
     queries: Array<{
       label: string;
       keyword: string | null;
-      orientation: "portrait" | "landscape" | "square" | null;
-      backgroundRemoval: boolean | null;
+      theme: string | null;
+      type: "pic" | "rmbg" | null;
+      format: "square" | "horizontal" | "vertical" | null;
+      price: "free" | "paid" | null;
+      ownerBias: "follow" | null;
       source: "initial_load" | "search";
+      transportApplied: {
+        keyword: boolean;
+        theme: boolean;
+        type: boolean;
+        format: boolean;
+        price: boolean;
+        owner: boolean;
+        source: boolean;
+      };
     }>;
   };
   font: {
     objective: string;
     rationale: string;
-    supportedLanguage: "KOR";
-    preferredCategories: string[];
+    sourceSurface: "Editor::loadFont";
     typographyHint: string | null;
+    language: {
+      value: "KOR";
+      rationale: string;
+    };
+    category: {
+      attempts: Array<"고딕" | "명조" | "손글씨">;
+      rationale: string;
+    };
+    weight: {
+      displayTarget: number;
+      bodyTarget: number | null;
+      rationale: string;
+    };
   };
 }
 
@@ -283,33 +350,75 @@ export interface SelectionDecision {
   fallbackSummary: string;
 }
 
-export interface RuleJudgeIssue {
-  code:
-    | "typography_fallback"
-    | "layout_intent_mismatch"
-    | "photo_preference_unmet"
-    | "photo_candidate_weak"
-    | "brand_context_missing"
-    | "execution_contract_invalid"
-    | "plan_action_missing";
-  category:
+export type RuleJudgeIssueCode =
+  | "typography_fallback"
+  | "layout_intent_mismatch"
+  | "photo_preference_unmet"
+  | "photo_candidate_weak"
+  | "brand_context_missing"
+  | "execution_contract_invalid"
+  | "plan_action_missing"
+  | "domain_subject_mismatch"
+  | "theme_domain_mismatch"
+  | "search_profile_intent_mismatch"
+  | "asset_policy_conflict"
+  | "template_prior_conflict"
+  | "primary_visual_drift"
+  | "photo_subject_drift";
+
+export type RuleJudgeIssueCategory =
+  | "readability"
+  | "hierarchy"
+  | "cta_prominence"
+  | "copy_visual_separation"
+  | "domain_tone_consistency"
+  | "execution_safety"
+  | "semantic_domain_alignment"
+  | "retrieval_intent_alignment"
+  | "policy_alignment"
+  | "prior_alignment"
+  | "visual_consistency";
+
+export type RuleJudgeIssueSeverity = "info" | "warn" | "error";
+
+export type RuleJudgeRecommendation = "keep" | "refine" | "refuse";
+
+export type RuleJudgeConfidence = "high" | "medium" | "low";
+
+export interface RuleJudgeIssueMetadata {
+  ruleScope:
     | "readability"
-    | "hierarchy"
-    | "cta_prominence"
-    | "copy_visual_separation"
-    | "domain_tone_consistency"
+    | "layout"
+    | "photo_preference"
+    | "semantic_domain_alignment"
+    | "retrieval_intent_alignment"
+    | "policy_alignment"
+    | "prior_alignment"
+    | "visual_consistency"
     | "execution_safety";
-  severity: "info" | "warn" | "error";
+  recommendationImpact: RuleJudgeRecommendation;
+  repairAttempted?: boolean;
+  repairOutcome?: "not_attempted" | "repaired" | "warning_only" | "irrecoverable";
+  evidenceRefs?: string[];
+  contextRefs?: string[];
+  legacyAliases?: string[];
+}
+
+export interface RuleJudgeIssue {
+  code: RuleJudgeIssueCode;
+  category: RuleJudgeIssueCategory;
+  severity: RuleJudgeIssueSeverity;
   message: string;
   suggestedAction: string | null;
+  metadata?: RuleJudgeIssueMetadata;
 }
 
 export interface RuleJudgeVerdict {
   verdictId: string;
   runId: string;
   traceId: string;
-  recommendation: "keep" | "refine" | "refuse";
-  confidence: "high" | "medium" | "low";
+  recommendation: RuleJudgeRecommendation;
+  confidence: RuleJudgeConfidence;
   issues: RuleJudgeIssue[];
   summary: string;
 }
@@ -343,6 +452,9 @@ export interface FinalizeRunDraft {
 
 export interface ProcessRunJobResult {
   intent: NormalizedIntent;
+  normalizedIntentDraft?: NormalizedIntentDraftArtifact;
+  intentNormalizationReport?: IntentNormalizationReport;
+  templatePriorSummary?: TemplatePriorSummary;
   searchProfile?: SearchProfileArtifact;
   candidateSets?: TemplateCandidateBundle;
   sourceSearchSummary?: SourceSearchSummary;
@@ -355,6 +467,9 @@ export interface ProcessRunJobResult {
   finalizeDraft: FinalizeRunDraft;
   artifactRefs: {
     normalizedIntentRef: string;
+    normalizedIntentDraftRef?: string;
+    intentNormalizationReportRef?: string;
+    templatePriorSummaryRef?: string;
     searchProfileRef?: string;
     executablePlanRef?: string;
     candidateSetRef?: string;

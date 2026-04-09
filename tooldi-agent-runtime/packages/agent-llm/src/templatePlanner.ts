@@ -15,6 +15,96 @@ export const templatePlannerProviders = [
 ] as const;
 export type TemplatePlannerProvider = (typeof templatePlannerProviders)[number];
 
+export const legacyTemplateAssetPolicies = [
+  "graphic_allowed_photo_optional",
+  "photo_preferred_graphic_allowed",
+] as const;
+export type LegacyTemplateAssetPolicy =
+  (typeof legacyTemplateAssetPolicies)[number];
+
+export const templateAssetFamilies = ["background", "graphic", "photo"] as const;
+export type TemplateAssetFamily = (typeof templateAssetFamilies)[number];
+
+export const templatePrimaryVisualPolicies = [
+  "graphic_preferred",
+  "photo_preferred",
+  "balanced",
+] as const;
+export type TemplatePrimaryVisualPolicy =
+  (typeof templatePrimaryVisualPolicies)[number];
+
+const templateAssetFamilySchema = z.enum(templateAssetFamilies);
+
+export const TemplateAssetPolicySchema = z
+  .object({
+    allowedFamilies: z.array(templateAssetFamilySchema).min(1).max(3),
+    preferredFamilies: z.array(templateAssetFamilySchema).max(3),
+    primaryVisualPolicy: z.enum(templatePrimaryVisualPolicies),
+    avoidFamilies: z.array(templateAssetFamilySchema).max(3),
+  })
+  .superRefine((value, ctx) => {
+    const allowedFamilies = new Set(value.allowedFamilies);
+
+    for (const family of value.preferredFamilies) {
+      if (!allowedFamilies.has(family)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `preferredFamilies must also be present in allowedFamilies: ${family}`,
+        });
+      }
+    }
+
+    const primaryFamily = resolvePrimaryVisualFamily(value.primaryVisualPolicy);
+    if (primaryFamily !== null && !allowedFamilies.has(primaryFamily)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "primaryVisualPolicy must resolve to an allowed family",
+      });
+    }
+  });
+
+const TemplateAssetPolicyCompatibilitySchema = z.object({
+  allowedFamilies: z.array(templateAssetFamilySchema).max(3).optional(),
+  preferredFamilies: z.array(templateAssetFamilySchema).max(3).optional(),
+  primaryVisualPolicy: z.enum(templatePrimaryVisualPolicies).optional(),
+  avoidFamilies: z.array(templateAssetFamilySchema).max(3).optional(),
+});
+
+export const TemplateAssetPolicyBoundarySchema = z.union([
+  z.enum(legacyTemplateAssetPolicies),
+  TemplateAssetPolicyCompatibilitySchema,
+]);
+
+export type TemplateAssetPolicy = z.infer<typeof TemplateAssetPolicySchema>;
+export type TemplateAssetPolicyInput = z.input<
+  typeof TemplateAssetPolicyBoundarySchema
+>;
+
+const legacyTemplateAssetPolicyMap: Record<
+  LegacyTemplateAssetPolicy,
+  TemplateAssetPolicy
+> = {
+  graphic_allowed_photo_optional: {
+    allowedFamilies: ["background", "graphic", "photo"],
+    preferredFamilies: ["graphic"],
+    primaryVisualPolicy: "graphic_preferred",
+    avoidFamilies: [],
+  },
+  photo_preferred_graphic_allowed: {
+    allowedFamilies: ["background", "photo", "graphic"],
+    preferredFamilies: ["photo", "graphic"],
+    primaryVisualPolicy: "photo_preferred",
+    avoidFamilies: [],
+  },
+};
+
+const balancedTemplateAssetPolicy: TemplateAssetPolicy = {
+  allowedFamilies: ["background", "graphic", "photo"],
+  preferredFamilies: ["graphic", "photo"],
+  primaryVisualPolicy: "balanced",
+  avoidFamilies: [],
+};
+
 export const TemplateIntentDraftSchema = z.object({
   goalSummary: z.string().min(1).max(80),
   templateKind: z.enum(["promo_banner", "seasonal_sale_banner"]),
@@ -38,10 +128,7 @@ export const TemplateIntentDraftSchema = z.object({
   ]),
   layoutIntent: z.enum(["copy_focused", "hero_focused", "badge_led"]),
   tone: z.enum(["bright_playful"]),
-  assetPolicy: z.enum([
-    "graphic_allowed_photo_optional",
-    "photo_preferred_graphic_allowed",
-  ]),
+  assetPolicy: TemplateAssetPolicyBoundarySchema,
   searchKeywords: z.array(z.string().min(1).max(20)).min(1).max(5),
   typographyHint: z.string().nullable(),
   facets: z.object({
@@ -147,10 +234,11 @@ export function createHeuristicTemplatePlanner(): TemplatePlanner {
               ? "hero_focused"
               : "copy_focused",
         tone: "bright_playful",
-        assetPolicy:
+        assetPolicy: normalizeTemplateAssetPolicy(
           domain === "cafe" || menuType !== null
             ? "photo_preferred_graphic_allowed"
             : "graphic_allowed_photo_optional",
+        ),
         searchKeywords: inferSearchKeywords(prompt, domain, promotionStyle, menuType),
         typographyHint:
           domain === "fashion_retail"
@@ -214,6 +302,7 @@ export function createLangChainTemplatePlanner(config: {
 
       return {
         ...result,
+        assetPolicy: normalizeTemplateAssetPolicy(result.assetPolicy),
         searchKeywords: result.searchKeywords.includes("봄")
           ? result.searchKeywords
           : ["봄", ...result.searchKeywords].slice(0, 5),
@@ -245,6 +334,89 @@ function createStructuredOutputModel(
     model: modelName,
     temperature,
   }) as StructuredOutputModel<typeof TemplateIntentDraftSchema>;
+}
+
+export function normalizeTemplateAssetPolicy(
+  value: TemplateAssetPolicyInput | null | undefined,
+): TemplateAssetPolicy {
+  if (value === null || value === undefined) {
+    return cloneTemplateAssetPolicy(
+      legacyTemplateAssetPolicyMap.graphic_allowed_photo_optional,
+    );
+  }
+
+  if (typeof value === "string") {
+    return cloneTemplateAssetPolicy(legacyTemplateAssetPolicyMap[value]);
+  }
+
+  const defaultPolicy = resolveTemplateAssetPolicyDefaults(value);
+  const allowedFamilies = uniqueAssetFamilies(
+    ensureBackgroundFamily(
+      value.allowedFamilies && value.allowedFamilies.length > 0
+        ? value.allowedFamilies
+        : defaultPolicy.allowedFamilies,
+    ),
+  );
+  const avoidFamilies = uniqueAssetFamilies(
+    value.avoidFamilies ?? defaultPolicy.avoidFamilies,
+  );
+  const preferredFamilies = uniqueAssetFamilies(
+    (value.preferredFamilies && value.preferredFamilies.length > 0
+      ? value.preferredFamilies
+      : defaultPolicy.preferredFamilies
+    ).filter(
+      (family) => allowedFamilies.includes(family),
+    ),
+  );
+  const primaryVisualPolicy = resolveCompatiblePrimaryVisualPolicy(
+    value,
+    allowedFamilies,
+    defaultPolicy,
+  );
+  const primaryFamily = resolvePrimaryVisualFamily(primaryVisualPolicy);
+
+  return {
+    allowedFamilies,
+    preferredFamilies:
+      primaryFamily !== null && allowedFamilies.includes(primaryFamily)
+        ? [
+            primaryFamily,
+            ...preferredFamilies.filter((family) => family !== primaryFamily),
+          ]
+        : preferredFamilies,
+    primaryVisualPolicy,
+    avoidFamilies,
+  };
+}
+
+export function parseTemplateIntentDraft(value: unknown): TemplateIntentDraft {
+  return TemplateIntentDraftSchema.parse(value);
+}
+
+export function templateAssetPolicyAllowsFamily(
+  assetPolicy: TemplateAssetPolicyInput | TemplateAssetPolicy | null | undefined,
+  family: TemplateAssetFamily,
+): boolean {
+  const normalizedAssetPolicy = normalizeTemplateAssetPolicy(assetPolicy);
+  return normalizedAssetPolicy.allowedFamilies.includes(family);
+}
+
+export function templateAssetPolicyPrefersPhoto(
+  assetPolicy: TemplateAssetPolicyInput | TemplateAssetPolicy | null | undefined,
+): boolean {
+  const normalizedAssetPolicy = normalizeTemplateAssetPolicy(assetPolicy);
+  return (
+    normalizedAssetPolicy.primaryVisualPolicy === "photo_preferred" &&
+    normalizedAssetPolicy.allowedFamilies.includes("photo")
+  );
+}
+
+export function templateAssetPolicyPenaltyForFamily(
+  assetPolicy: TemplateAssetPolicyInput | TemplateAssetPolicy | null | undefined,
+  family: TemplateAssetFamily,
+): number {
+  const normalizedAssetPolicy = normalizeTemplateAssetPolicy(assetPolicy);
+  return normalizedAssetPolicy.avoidFamilies.includes(family) ? 0.08 : 0;
 }
 
 function inferDomain(
@@ -384,4 +556,124 @@ function inferSearchKeywords(
   }
 
   return [...keywords].slice(0, 5);
+}
+
+function resolvePrimaryVisualFamily(
+  primaryVisualPolicy: TemplatePrimaryVisualPolicy,
+): TemplateAssetFamily | null {
+  if (primaryVisualPolicy === "photo_preferred") {
+    return "photo";
+  }
+  if (primaryVisualPolicy === "graphic_preferred") {
+    return "graphic";
+  }
+  return null;
+}
+
+function resolveTemplateAssetPolicyDefaults(
+  value: Exclude<TemplateAssetPolicyInput, LegacyTemplateAssetPolicy>,
+): TemplateAssetPolicy {
+  if (value.primaryVisualPolicy === "balanced") {
+    return cloneTemplateAssetPolicy(balancedTemplateAssetPolicy);
+  }
+  if (value.primaryVisualPolicy === "photo_preferred") {
+    return cloneTemplateAssetPolicy(
+      legacyTemplateAssetPolicyMap.photo_preferred_graphic_allowed,
+    );
+  }
+  if (value.primaryVisualPolicy === "graphic_preferred") {
+    return cloneTemplateAssetPolicy(
+      legacyTemplateAssetPolicyMap.graphic_allowed_photo_optional,
+    );
+  }
+  if (value.preferredFamilies?.[0] === "photo") {
+    return cloneTemplateAssetPolicy(
+      legacyTemplateAssetPolicyMap.photo_preferred_graphic_allowed,
+    );
+  }
+  if (value.preferredFamilies?.[0] === "graphic") {
+    return cloneTemplateAssetPolicy(
+      legacyTemplateAssetPolicyMap.graphic_allowed_photo_optional,
+    );
+  }
+  if (
+    value.preferredFamilies?.includes("graphic") &&
+    value.preferredFamilies?.includes("photo")
+  ) {
+    return cloneTemplateAssetPolicy(balancedTemplateAssetPolicy);
+  }
+  if (
+    value.allowedFamilies?.[0] === "photo" &&
+    value.allowedFamilies.includes("graphic")
+  ) {
+    return cloneTemplateAssetPolicy(
+      legacyTemplateAssetPolicyMap.photo_preferred_graphic_allowed,
+    );
+  }
+  return cloneTemplateAssetPolicy(
+    legacyTemplateAssetPolicyMap.graphic_allowed_photo_optional,
+  );
+}
+
+function resolveCompatiblePrimaryVisualPolicy(
+  value: Exclude<TemplateAssetPolicyInput, LegacyTemplateAssetPolicy>,
+  allowedFamilies: TemplateAssetFamily[],
+  defaultPolicy: TemplateAssetPolicy,
+): TemplatePrimaryVisualPolicy {
+  if (value.primaryVisualPolicy) {
+    const primaryFamily = resolvePrimaryVisualFamily(value.primaryVisualPolicy);
+    if (primaryFamily === null || allowedFamilies.includes(primaryFamily)) {
+      return value.primaryVisualPolicy;
+    }
+  }
+
+  const preferredFamilies = (
+    value.preferredFamilies && value.preferredFamilies.length > 0
+      ? value.preferredFamilies
+      : defaultPolicy.preferredFamilies
+  ).filter((family) => allowedFamilies.includes(family));
+  if (
+    preferredFamilies.includes("graphic") &&
+    preferredFamilies.includes("photo")
+  ) {
+    return "balanced";
+  }
+  if (preferredFamilies[0] === "photo") {
+    return "photo_preferred";
+  }
+  if (preferredFamilies[0] === "graphic") {
+    return "graphic_preferred";
+  }
+
+  const fallbackFamily = allowedFamilies.find((family) => family !== "background");
+  if (fallbackFamily) {
+    return fallbackFamily === "photo" ? "photo_preferred" : "graphic_preferred";
+  }
+
+  return defaultPolicy.primaryVisualPolicy;
+}
+
+function cloneTemplateAssetPolicy(
+  policy: TemplateAssetPolicy,
+): TemplateAssetPolicy {
+  return {
+    allowedFamilies: [...policy.allowedFamilies],
+    preferredFamilies: [...policy.preferredFamilies],
+    primaryVisualPolicy: policy.primaryVisualPolicy,
+    avoidFamilies: [...policy.avoidFamilies],
+  };
+}
+
+function uniqueAssetFamilies(
+  families: TemplateAssetFamily[],
+): TemplateAssetFamily[] {
+  return [...new Set(families)];
+}
+
+function ensureBackgroundFamily(
+  families: TemplateAssetFamily[],
+): TemplateAssetFamily[] {
+  return families.includes("background")
+    ? families
+    : ["background", ...families];
 }

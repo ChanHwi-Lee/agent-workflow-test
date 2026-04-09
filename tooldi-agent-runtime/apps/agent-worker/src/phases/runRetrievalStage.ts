@@ -39,7 +39,8 @@ export async function runRetrievalStage(
         ...(selectionPolicy.allowTemplateSource ? ["template_source" as const] : []),
       ],
       augmentationCount: 0,
-      reason: "v1 retrieval stage intentionally disabled; curated candidate catalog only",
+      reason:
+        "Semantic retrieval augmentation is disabled in v1; direct Tooldi source search stays active through grounded background/graphic/photo queries.",
     },
     selectionPolicy,
   };
