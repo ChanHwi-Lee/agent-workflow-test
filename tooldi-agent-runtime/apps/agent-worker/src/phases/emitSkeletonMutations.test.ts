@@ -326,10 +326,29 @@ test("emitSkeletonMutations uses copy slot text and concrete layout hints in mut
       isCreateLayerCommand(command) &&
       command.layerBlueprint.metadata?.role === "primary_accent",
   );
+  const cornerAccentCommand = ctaProposal.mutation.commands.find(
+    (command) =>
+      isCreateLayerCommand(command) &&
+      command.layerBlueprint.metadata?.role === "corner_accent",
+  );
+  const ctaFallbackCommand = ctaProposal.mutation.commands.find(
+    (command) =>
+      isCreateLayerCommand(command) &&
+      command.layerBlueprint.metadata?.role === "cta_container",
+  );
   if (!primaryAccentCommand || !isCreateLayerCommand(primaryAccentCommand)) {
     throw new Error("primary accent createLayer command is required");
   }
+  if (!cornerAccentCommand || !isCreateLayerCommand(cornerAccentCommand)) {
+    throw new Error("corner accent createLayer command is required");
+  }
+  if (!ctaFallbackCommand || !isCreateLayerCommand(ctaFallbackCommand)) {
+    throw new Error("cta container fallback createLayer command is required");
+  }
   assert.equal(primaryAccentCommand.layerBlueprint.metadata?.clusterZone, "right_cluster");
+  assert.equal(primaryAccentCommand.layerBlueprint.metadata?.renderPrimitive, "catalog_element");
+  assert.equal(cornerAccentCommand.layerBlueprint.metadata?.renderPrimitive, "catalog_element");
+  assert.equal(ctaFallbackCommand.layerBlueprint.metadata?.renderPrimitive, null);
 });
 
 test("emitSkeletonMutations는 layoutGeometry 계산 결과와 같은 bounds를 사용한다", async () => {

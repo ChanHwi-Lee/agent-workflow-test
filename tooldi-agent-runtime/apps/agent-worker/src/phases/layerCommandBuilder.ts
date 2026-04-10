@@ -36,6 +36,7 @@ type CreateLayerCommandOptions = {
   photoOrientation?: "portrait" | "landscape" | "square" | null;
   fitMode?: "cover";
   cropMode?: "centered_cover";
+  renderPrimitive?: string | null;
   styleTokens?: Record<string, string | number | boolean | null>;
   fontRole?: "display" | "body";
   typography?: TypographyMetadata;
@@ -74,6 +75,7 @@ export function buildCreateLayerCommand(
     photoOrientation: options.photoOrientation ?? null,
     fitMode: options.fitMode ?? null,
     cropMode: options.cropMode ?? null,
+    renderPrimitive: options.renderPrimitive ?? null,
     copyText: options.textContent ?? null,
     clusterZone: options.clusterZone ?? null,
   };

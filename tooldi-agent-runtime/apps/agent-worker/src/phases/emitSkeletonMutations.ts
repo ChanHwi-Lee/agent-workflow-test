@@ -530,6 +530,10 @@ function buildGraphicRoleCommands(
           sourceAssetId: binding.sourceAssetId,
           sourceSerial: binding.sourceSerial,
           sourceCategory: binding.sourceCategory,
+          renderPrimitive:
+            binding.sourceSerial && binding.sourceCategory
+              ? "catalog_element"
+              : null,
           clusterZone:
             placementHintMap.get(binding.role) ?? binding.zonePreference,
         }),
@@ -580,6 +584,11 @@ function buildGraphicRoleCommands(
       sourceAssetId: polishInputs.selectedDecorationAssetId,
       sourceSerial: polishInputs.selectedDecorationSerial,
       sourceCategory: polishInputs.selectedDecorationCategory,
+      renderPrimitive:
+        polishInputs.selectedDecorationSerial &&
+        polishInputs.selectedDecorationCategory
+          ? "catalog_element"
+          : null,
       clusterZone: "right_cluster",
     }),
   ];
