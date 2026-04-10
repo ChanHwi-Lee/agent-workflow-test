@@ -9,7 +9,7 @@ type CompatCanvasSlotKey =
   | "badge"
   | "hero_image";
 
-export function toCompatSlotKey(
+function toCompatSlotKey(
   executionSlotKey: ExecutionSlotKey,
 ): CompatCanvasSlotKey | null {
   switch (executionSlotKey) {
@@ -31,7 +31,7 @@ export function toCompatSlotKey(
   }
 }
 
-export function deriveExecutionSlotKey(
+function deriveExecutionSlotKey(
   slotKey: CompatCanvasSlotKey | null,
   role: string | null,
 ): ExecutionSlotKey | null {

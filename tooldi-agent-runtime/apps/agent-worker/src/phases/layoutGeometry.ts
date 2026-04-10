@@ -1,3 +1,5 @@
+import type { ExecutionSlotKey } from "@tooldi/agent-contracts";
+
 import type {
   AbstractLayoutDensity,
   AbstractLayoutFamily,
@@ -100,11 +102,12 @@ export function createGeometryPresets(
 export function resolveCopySlotBounds(
   presets: ReturnType<typeof createGeometryPresets>,
   slotAnchors: Partial<Record<CopyPlanSlotKey, ConcreteLayoutAnchorZone>>,
+  resolvedSlotBounds: Partial<Record<ExecutionSlotKey, LayoutBounds>> = {},
 ): Record<
   "headline" | "subheadline" | "offer_line" | "cta" | "footer_note" | "badge_text",
   LayoutBounds
 > {
-  return {
+  const defaultBounds = {
     headline: resolveBoundsForAnchor(
       slotAnchors.headline ?? "left_copy_column",
       "headline",
@@ -131,6 +134,15 @@ export function resolveCopySlotBounds(
       "badge_text",
       presets,
     ),
+  };
+
+  return {
+    headline: resolvedSlotBounds.headline ?? defaultBounds.headline,
+    subheadline: resolvedSlotBounds.subheadline ?? defaultBounds.subheadline,
+    offer_line: resolvedSlotBounds.offer_line ?? defaultBounds.offer_line,
+    cta: resolvedSlotBounds.cta ?? defaultBounds.cta,
+    footer_note: resolvedSlotBounds.footer_note ?? defaultBounds.footer_note,
+    badge_text: resolvedSlotBounds.badge_text ?? defaultBounds.badge_text,
   };
 }
 

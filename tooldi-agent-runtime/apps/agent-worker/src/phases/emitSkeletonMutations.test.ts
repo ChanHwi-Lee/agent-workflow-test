@@ -10,6 +10,12 @@ import { createTestRun } from "@tooldi/agent-testkit";
 
 import type { HydratedPlanningInput, NormalizedIntent } from "../types.js";
 import { emitSkeletonMutations } from "./emitSkeletonMutations.js";
+import {
+  createClusterZoneBounds,
+  createGeometryPresets,
+  resolveCopySlotBounds,
+  resolveGraphicBindingBounds,
+} from "./layoutGeometry.js";
 
 function createHydratedPlanningInput(): HydratedPlanningInput {
   const testRun = createTestRun({
@@ -300,4 +306,89 @@ test("emitSkeletonMutations uses copy slot text and concrete layout hints in mut
     throw new Error("primary accent createLayer command is required");
   }
   assert.equal(primaryAccentCommand.layerBlueprint.metadata?.clusterZone, "right_cluster");
+});
+
+test("emitSkeletonMutations는 layoutGeometry 계산 결과와 같은 bounds를 사용한다", async () => {
+  const batch = await emitSkeletonMutations(
+    createHydratedPlanningInput(),
+    createNormalizedIntent(),
+    createExecutablePlan(),
+    {
+      textLayoutHelper: {
+        estimate: async () => ({
+          width: 240,
+          height: 84,
+          lineCount: 1,
+          estimatedLineCount: 1,
+        }),
+      },
+    },
+  );
+
+  const presets = createGeometryPresets(
+    1200,
+    628,
+    "promo_split",
+    "left_copy_right_graphic",
+    "promo_multi_graphic",
+    84,
+    "balanced",
+  );
+  const copyBounds = resolveCopySlotBounds(
+    presets,
+    {
+      headline: "left_copy_column",
+      subheadline: "left_copy_column",
+      offer_line: "left_copy_column",
+      cta: "bottom_center",
+      footer_note: "footer_strip",
+    },
+  );
+  const zoneBounds = createClusterZoneBounds(presets, [
+    "right_cluster",
+    "top_corner",
+    "bottom_strip",
+  ]);
+  const expectedPrimaryAccentBounds = resolveGraphicBindingBounds(
+    "primary_accent",
+    "right_cluster",
+    zoneBounds,
+    copyBounds,
+  );
+
+  const copyProposal = batch.proposals.find((proposal) => proposal.stageLabel === "copy");
+  const polishProposal = batch.proposals.find((proposal) => proposal.stageLabel === "polish");
+  assert.ok(copyProposal);
+  assert.ok(polishProposal);
+
+  const headlineCommand = copyProposal.mutation.commands.find(
+    (command) =>
+      isCreateLayerCommand(command) && command.executionSlotKey === "headline",
+  );
+  const ctaCommand = polishProposal.mutation.commands.find(
+    (command) => isCreateLayerCommand(command) && command.executionSlotKey === "cta",
+  );
+  const primaryAccentCommand = polishProposal.mutation.commands.find(
+    (command) =>
+      isCreateLayerCommand(command) &&
+      command.layerBlueprint.metadata?.role === "primary_accent",
+  );
+
+  if (
+    !headlineCommand ||
+    !isCreateLayerCommand(headlineCommand) ||
+    !ctaCommand ||
+    !isCreateLayerCommand(ctaCommand) ||
+    !primaryAccentCommand ||
+    !isCreateLayerCommand(primaryAccentCommand)
+  ) {
+    throw new Error("headline, cta, primary accent commands are required");
+  }
+
+  assert.deepEqual(headlineCommand.layerBlueprint.bounds, copyBounds.headline);
+  assert.deepEqual(ctaCommand.layerBlueprint.bounds, copyBounds.cta);
+  assert.deepEqual(
+    primaryAccentCommand.layerBlueprint.bounds,
+    expectedPrimaryAccentBounds,
+  );
 });
