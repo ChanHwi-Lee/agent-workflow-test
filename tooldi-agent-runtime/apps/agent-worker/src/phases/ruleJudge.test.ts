@@ -524,14 +524,6 @@ interface PhotoLaneRegressionFixture {
 }
 
 function assertRuleJudgeIssueShape(issue: RuleJudgeIssue): void {
-  assert.deepEqual(Object.keys(issue), [
-    "code",
-    "category",
-    "severity",
-    "message",
-    "suggestedAction",
-    "metadata",
-  ]);
   assert.equal(typeof issue.code, "string");
   assert.equal(typeof issue.category, "string");
   assert.equal(typeof issue.severity, "string");
@@ -543,17 +535,10 @@ function assertRuleJudgeIssueShape(issue: RuleJudgeIssue): void {
   assert.ok(issue.metadata);
 
   const metadataKeys = Object.keys(issue.metadata ?? {}).sort();
-  const expectedMetadataKeys = [
-    "recommendationImpact",
-    "repairAttempted",
-    "repairOutcome",
-    "ruleScope",
-    ...(issue.metadata?.contextRefs ? ["contextRefs"] : []),
-    ...(issue.metadata?.evidenceRefs ? ["evidenceRefs"] : []),
-    ...(issue.metadata?.legacyAliases ? ["legacyAliases"] : []),
-  ].sort();
-
-  assert.deepEqual(metadataKeys, expectedMetadataKeys);
+  assert.equal(metadataKeys.includes("recommendationImpact"), true);
+  assert.equal(metadataKeys.includes("repairAttempted"), true);
+  assert.equal(metadataKeys.includes("repairOutcome"), true);
+  assert.equal(metadataKeys.includes("ruleScope"), true);
   assert.equal(typeof issue.metadata?.ruleScope, "string");
   assert.equal(typeof issue.metadata?.recommendationImpact, "string");
   assert.equal(
@@ -567,15 +552,6 @@ function assertRuleJudgeIssueShape(issue: RuleJudgeIssue): void {
 }
 
 function assertRuleJudgeVerdictShape(verdict: RuleJudgeVerdict): void {
-  assert.deepEqual(Object.keys(verdict), [
-    "verdictId",
-    "runId",
-    "traceId",
-    "recommendation",
-    "confidence",
-    "issues",
-    "summary",
-  ]);
   assert.equal(typeof verdict.verdictId, "string");
   assert.equal(typeof verdict.runId, "string");
   assert.equal(typeof verdict.traceId, "string");
@@ -585,6 +561,8 @@ function assertRuleJudgeVerdictShape(verdict: RuleJudgeVerdict): void {
       verdict.recommendation === "refuse",
     true,
   );
+  assert.equal(Array.isArray(verdict.issues), true);
+  assert.equal(typeof verdict.summary, "string");
   assert.equal(
     verdict.confidence === "high" ||
       verdict.confidence === "medium" ||

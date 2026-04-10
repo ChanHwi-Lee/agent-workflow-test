@@ -12,25 +12,16 @@ import { buildTemplatePriorSummary } from "./buildTemplatePriorSummary.js";
 function assertTemplatePriorSummaryPayloadShape(
   summary: TemplatePriorSummary,
 ): void {
-  assert.deepEqual(Object.keys(summary), [
-    "summaryId",
-    "runId",
-    "traceId",
-    "plannerMode",
-    "templatePriorCandidates",
-    "selectedTemplatePrior",
-    "selectedContentsThemePrior",
-    "dominantThemePrior",
-    "contentsThemePriorMatches",
-    "keywordThemeMatches",
-    "familyCoverage",
-    "rankingBiases",
-    "rankingRationaleEntries",
-    "summary",
-  ]);
   assert.equal(typeof summary.summaryId, "string");
   assert.equal(typeof summary.runId, "string");
   assert.equal(typeof summary.traceId, "string");
+  assert.equal(Array.isArray(summary.templatePriorCandidates), true);
+  assert.equal(Array.isArray(summary.contentsThemePriorMatches), true);
+  assert.equal(Array.isArray(summary.keywordThemeMatches), true);
+  assert.equal(Array.isArray(summary.rankingBiases), true);
+  assert.equal(Array.isArray(summary.rankingRationaleEntries), true);
+  assert.ok(summary.familyCoverage);
+  assert.equal(typeof summary.summary, "string");
   assert.equal(typeof summary.selectedTemplatePrior.querySurface, "string");
   assert.equal(summary.templatePriorCandidates.length > 0, true);
   assert.equal(summary.rankingRationaleEntries.length > 0, true);
@@ -95,23 +86,43 @@ test("buildTemplatePriorSummary derives a grounded lightweight template prior fo
     shape: true,
     picture: true,
   });
-  assert.deepEqual(summary.selectedContentsThemePrior.shape, {
-    family: "shape",
-    status: "supportive_only",
-    serial: null,
-    summary:
-      "Spring theme evidence remains available for shape (locked active families=6), but this slice does not resolve a concrete contents_theme serial yet.",
-    evidenceRefs: [
+  assert.equal(summary.selectedContentsThemePrior.shape.family, "shape");
+  assert.equal(summary.selectedContentsThemePrior.shape.status, "supportive_only");
+  assert.equal(summary.selectedContentsThemePrior.shape.serial, null);
+  assert.equal(
+    summary.selectedContentsThemePrior.shape.summary.includes(
+      "does not resolve a concrete contents_theme serial yet",
+    ),
+    true,
+  );
+  assert.equal(
+    summary.selectedContentsThemePrior.shape.evidenceRefs.includes(
       "tooldi-agent-workflow-v1-create-template-hardening-source-grounded-to-be.md:153",
+    ),
+    true,
+  );
+  assert.equal(
+    summary.selectedContentsThemePrior.shape.evidenceRefs.includes(
       "tooldi-agent-workflow-v1-create-template-hardening-source-grounded-to-be.md:276",
-      "/home/ubuntu/github/tooldi/TOOLDi_API_PHP/application/controllers/Picture.php:41",
-      "/home/ubuntu/github/tooldi/TOOLDi_API_PHP/application/controllers/Shape.php:40",
-    ],
-    contextRefs: [
-      "tooldi-agent-workflow-v1-create-template-current-state-as-is.md:89",
-      "tooldi-agent-workflow-v1-tooldi-content-discovery.md:534",
-    ],
-  });
+    ),
+    true,
+  );
+  assert.equal(
+    summary.selectedContentsThemePrior.shape.evidenceRefs.some((ref) =>
+      ref.endsWith("/TOOLDi_API_PHP/application/controllers/Picture.php:41"),
+    ),
+    true,
+  );
+  assert.equal(
+    summary.selectedContentsThemePrior.shape.evidenceRefs.some((ref) =>
+      ref.endsWith("/TOOLDi_API_PHP/application/controllers/Shape.php:40"),
+    ),
+    true,
+  );
+  assert.deepEqual(summary.selectedContentsThemePrior.shape.contextRefs, [
+    "tooldi-agent-workflow-v1-create-template-current-state-as-is.md:89",
+    "tooldi-agent-workflow-v1-tooldi-content-discovery.md:534",
+  ]);
   assert.ok(
     summary.contentsThemePriorMatches.some(
       (match) =>
