@@ -2579,6 +2579,81 @@ test("processRunJob can activate real Tooldi background/graphic/font source mode
   assert.equal(sourceSummaryArtifact.font.selectedSerial, "701");
 });
 
+test("processRunJob는 실소스 배경 후보가 비면 실패 finalize로 전이한다", async () => {
+  const env = createRealSourceEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = createObjectStoreClient({
+    bucket: env.objectStoreBucket,
+  });
+  const callbackClient = new RecordingBackendCallbackClient();
+  const testRun = createTestRun({
+    userInput: {
+      prompt: "패션 리테일 봄 세일 배너 만들어줘",
+      locale: "ko-KR",
+      timezone: "Asia/Seoul",
+    },
+  });
+
+  await seedRunInputArtifacts(objectStore, testRun);
+
+  const baseSourceClient = new FakeTooldiCatalogSourceClient();
+  const backgroundEmptySourceClient: TooldiCatalogSourceClient = {
+    async searchBackgroundAssets() {
+      return {
+        sourceFamily: "background_source" as const,
+        page: 1,
+        hasNextPage: false,
+        traceId: "trace-background-empty",
+        assets: [],
+      };
+    },
+    async searchGraphicAssets(query) {
+      return baseSourceClient.searchGraphicAssets();
+    },
+    async searchPhotoAssets(query) {
+      return baseSourceClient.searchPhotoAssets();
+    },
+    async listFontAssets(query) {
+      return baseSourceClient.listFontAssets();
+    },
+  };
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+    tooldiCatalogSourceClient: backgroundEmptySourceClient,
+  });
+
+  assert.equal(result.finalizeDraft.request.finalStatus, "failed");
+  assert.equal(
+    result.finalizeDraft.request.errorSummary?.code,
+    "background_candidates_empty",
+  );
+  assert.equal(result.emittedMutationIds.length, 0);
+  assert.equal(callbackClient.ackWaits.length, 0);
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) => event.event.type === "mutation.proposed",
+    ),
+    false,
+  );
+  assert.equal(
+    callbackClient.appendedEvents.some(
+      (event) =>
+        event.event.type === "log" &&
+        event.event.message.includes("Real Tooldi source activation failed"),
+    ),
+    true,
+  );
+});
+
 test("processRunJob can activate the photo hero execution path on the wide preset", async () => {
   const env = createRealSourceEnv();
   const logger = createWorkerLogger(env);
