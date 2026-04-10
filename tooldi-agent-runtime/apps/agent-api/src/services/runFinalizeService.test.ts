@@ -73,6 +73,9 @@ function createFinalizeRequest(overrides: Partial<RunFinalizeRequest> = {}): Run
     selectionDecisionRef: "runs/run-1/attempts/1/selection-decision.json",
     typographyDecisionRef: "runs/run-1/attempts/1/typography-decision.json",
     ruleJudgeVerdictRef: "runs/run-1/attempts/1/rule-judge-verdict.json",
+    executionSceneSummaryRef: "runs/run-1/attempts/1/execution-scene-summary.json",
+    judgePlanRef: "runs/run-1/attempts/1/judge-plan.json",
+    refineDecisionRef: "runs/run-1/attempts/1/refine-decision.json",
     sourceMutationRange: {
       firstSeq: 1,
       lastSeq: 1,
@@ -185,6 +188,7 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
               commandId: "command-background",
               op: "createLayer",
               slotKey: "background",
+              executionSlotKey: "background",
               clientLayerKey: "background-layer",
               targetRef: {
                 layerId: null,
@@ -207,6 +211,7 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
               commandId: "command-headline",
               op: "createLayer",
               slotKey: "headline",
+              executionSlotKey: "headline",
               clientLayerKey: "headline-layer",
               targetRef: {
                 layerId: null,
@@ -229,6 +234,7 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
               commandId: "command-supporting",
               op: "createLayer",
               slotKey: "supporting_copy",
+              executionSlotKey: "subheadline",
               clientLayerKey: "supporting-layer",
               targetRef: {
                 layerId: null,
@@ -248,9 +254,34 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
               editable: true,
             },
             {
+              commandId: "command-offer",
+              op: "createLayer",
+              slotKey: null,
+              executionSlotKey: "offer_line",
+              clientLayerKey: "offer-layer",
+              targetRef: {
+                layerId: null,
+                clientLayerKey: "offer-layer",
+              },
+              targetLayerVersion: null,
+              parentRef: { position: "append" },
+              expectedLayerType: null,
+              allowNoop: false,
+              metadataTags: {},
+              layerBlueprint: {
+                layerType: "text",
+                bounds: { x: 80, y: 360, width: 320, height: 48 },
+                metadata: {
+                  role: "price_callout",
+                },
+              },
+              editable: true,
+            },
+            {
               commandId: "command-cta",
               op: "createLayer",
               slotKey: "cta",
+              executionSlotKey: "cta",
               clientLayerKey: "cta-layer",
               targetRef: {
                 layerId: null,
@@ -270,9 +301,61 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
               editable: true,
             },
             {
+              commandId: "command-footer",
+              op: "createLayer",
+              slotKey: null,
+              executionSlotKey: "footer_note",
+              clientLayerKey: "footer-layer",
+              targetRef: {
+                layerId: null,
+                clientLayerKey: "footer-layer",
+              },
+              targetLayerVersion: null,
+              parentRef: { position: "append" },
+              expectedLayerType: null,
+              allowNoop: false,
+              metadataTags: {},
+              layerBlueprint: {
+                layerType: "text",
+                bounds: { x: 80, y: 540, width: 360, height: 24 },
+                metadata: {
+                  role: "footer_note",
+                },
+              },
+              editable: true,
+            },
+            {
+              commandId: "command-hero-image",
+              op: "createLayer",
+              slotKey: null,
+              executionSlotKey: "hero_image",
+              clientLayerKey: "hero-image-layer",
+              targetRef: {
+                layerId: null,
+                clientLayerKey: "hero-image-layer",
+              },
+              targetLayerVersion: null,
+              parentRef: { position: "append" },
+              expectedLayerType: null,
+              allowNoop: false,
+              metadataTags: {},
+              layerBlueprint: {
+                layerType: "image",
+                bounds: { x: 700, y: 140, width: 260, height: 260 },
+                metadata: {
+                  role: "hero_image",
+                  sourceOriginUrl: "https://cdn.tooldi.test/photo-33.jpg",
+                  sourceWidth: 1600,
+                  sourceHeight: 900,
+                },
+              },
+              editable: true,
+            },
+            {
               commandId: "command-decoration",
               op: "createLayer",
               slotKey: "decoration",
+              executionSlotKey: null,
               clientLayerKey: "decoration-layer",
               targetRef: {
                 layerId: null,
@@ -315,7 +398,10 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
         "background-layer": "background-layer",
         "headline-layer": "headline-layer",
         "supporting-layer": "supporting-layer",
+        "offer-layer": "offer-layer",
         "cta-layer": "cta-layer",
+        "footer-layer": "footer-layer",
+        "hero-image-layer": "hero-image-layer",
         "decoration-layer": "decoration-layer",
       },
       commandResults: [
@@ -362,6 +448,45 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
     assert.equal(bundle.payload.saveMetadata.latestSaveReceipt?.saveReceiptId, "save-receipt-1");
     assert.equal(bundle.payload.editableCanvasState.commitPayload.requiredSlots.length, 5);
     assert.equal(bundle.payload.mutationLedger.lastKnownGoodCheckpointId, "checkpoint_run-1_latest_saved");
+    assert.equal(
+      bundle.payload.editableCanvasState.draftManifest.slotBindings.some(
+        (binding) =>
+          binding.executionSlotKey === "offer_line" &&
+          binding.slotKey === null &&
+          binding.primaryLayerId === "offer-layer",
+      ),
+      true,
+    );
+    assert.equal(
+      bundle.payload.mutationLedger.checkpoints[0]?.bundleSnapshot.slotStatuses.some(
+        (status) =>
+          status.executionSlotKey === "footer_note" &&
+          status.slotKey === null &&
+          status.primaryLayerId === "footer-layer",
+      ),
+      true,
+    );
+    assert.equal(
+      bundle.payload.editableCanvasState.draftManifest.slotBindings.some(
+        (binding) =>
+          binding.executionSlotKey === "hero_image" &&
+          binding.slotKey === null &&
+          binding.primaryLayerId === "hero-image-layer",
+      ),
+      true,
+    );
+    assert.equal(
+      bundle.payload.mutationLedger.checkpoints[0]?.sourceRefs.executionSceneSummaryRef,
+      "runs/run-1/attempts/1/execution-scene-summary.json",
+    );
+    assert.equal(
+      bundle.payload.mutationLedger.checkpoints[0]?.sourceRefs.judgePlanRef,
+      "runs/run-1/attempts/1/judge-plan.json",
+    );
+    assert.equal(
+      bundle.payload.mutationLedger.checkpoints[0]?.sourceRefs.refineDecisionRef,
+      "runs/run-1/attempts/1/refine-decision.json",
+    );
 
     const completion = await completionRepository.findByRunId("run-1");
     assert.ok(completion);
@@ -405,6 +530,18 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
     assert.equal(
       completion.sourceRefs.ruleJudgeVerdictRef,
       "runs/run-1/attempts/1/rule-judge-verdict.json",
+    );
+    assert.equal(
+      completion.sourceRefs.executionSceneSummaryRef,
+      "runs/run-1/attempts/1/execution-scene-summary.json",
+    );
+    assert.equal(
+      completion.sourceRefs.judgePlanRef,
+      "runs/run-1/attempts/1/judge-plan.json",
+    );
+    assert.equal(
+      completion.sourceRefs.refineDecisionRef,
+      "runs/run-1/attempts/1/refine-decision.json",
     );
   } finally {
     await db.end();

@@ -3,7 +3,6 @@ import type { CanvasMutationEnvelope, ExecutablePlan, WaitMutationAckResponse } 
 import type { TextLayoutHelper } from "@tooldi/tool-adapters";
 
 import { emitSkeletonMutations } from "./emitSkeletonMutations.js";
-import { deriveExecutionSlotKey } from "./executionSlotIdentity.js";
 import type {
   ConcreteLayoutAnchorZone,
   ConcreteLayoutClusterZone,
@@ -223,15 +222,7 @@ function convertCreateCommandsToPatchCommands(
         commandId: createRequestId(),
         op: "updateLayer",
         slotKey: command.slotKey,
-        executionSlotKey:
-          "executionSlotKey" in command
-            ? command.executionSlotKey ?? null
-            : deriveExecutionSlotKey(
-                command.slotKey ?? null,
-                typeof command.layerBlueprint.metadata.role === "string"
-                  ? command.layerBlueprint.metadata.role
-                  : null,
-              ),
+        executionSlotKey: command.executionSlotKey ?? null,
         clientLayerKey: command.clientLayerKey,
         targetRef: {
           layerId: existingLayerId,
@@ -285,34 +276,19 @@ function resolveExistingLayerId(
     typeof command.layerBlueprint.metadata.role === "string"
       ? command.layerBlueprint.metadata.role
       : null;
-  const executionSlotKey =
-    "executionSlotKey" in command
-      ? command.executionSlotKey ?? null
-      : deriveExecutionSlotKey(command.slotKey ?? null, metadataRole);
+  const executionSlotKey = command.executionSlotKey ?? null;
 
   if (executionSlotKey) {
-    const binding = executionSceneSummary.copyLayerBindings.find(
+    if (executionSlotKey === "hero_image") {
+      return executionSceneSummary.photoLayerBinding?.layerId ?? null;
+    }
+
+    const copyBinding = executionSceneSummary.copyLayerBindings.find(
       (candidate) => candidate.executionSlotKey === executionSlotKey,
     );
-    if (binding?.layerId) {
-      return binding.layerId;
+    if (copyBinding?.layerId) {
+      return copyBinding.layerId;
     }
-  }
-
-  if (metadataRole === "price_callout") {
-    return null;
-  }
-
-  if (metadataRole === "footer_note") {
-    return (
-      executionSceneSummary.copyLayerBindings.find(
-        (candidate) => candidate.executionSlotKey === "footer_note",
-      )?.layerId ?? null
-    );
-  }
-
-  if (metadataRole === "hero_image") {
-    return executionSceneSummary.photoLayerBinding?.layerId ?? null;
   }
 
   if (metadataRole) {

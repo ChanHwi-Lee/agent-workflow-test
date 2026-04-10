@@ -71,10 +71,10 @@ function createExecutionSceneSummary(): ExecutionSceneSummary {
     finalRevision: 2,
     stageResults: [],
     copyLayerBindings: [
-      { executionSlotKey: "headline", layerId: "layer-headline", text: "봄 세일", anchor: "left_copy_column", plannedBounds: { x: 80, y: 120, width: 400, height: 90 }, resolvedBounds: { x: 80, y: 120, width: 400, height: 90 } },
-      { executionSlotKey: "subheadline", layerId: "layer-supporting", text: "혜택을 확인하세요", anchor: "left_copy_column", plannedBounds: { x: 80, y: 220, width: 420, height: 70 }, resolvedBounds: { x: 80, y: 220, width: 420, height: 70 } },
-      { executionSlotKey: "cta", layerId: "layer-cta", text: "혜택 보기", anchor: "bottom_center", plannedBounds: { x: 80, y: 360, width: 220, height: 64 }, resolvedBounds: { x: 80, y: 360, width: 220, height: 64 } },
-      { executionSlotKey: "footer_note", layerId: "layer-footer", text: "한정 기간 진행", anchor: "footer_strip", plannedBounds: { x: 80, y: 560, width: 360, height: 24 }, resolvedBounds: { x: 80, y: 560, width: 360, height: 24 } },
+      { executionSlotKey: "headline", identityObserved: true, layerId: "layer-headline", text: "봄 세일", anchor: "left_copy_column", plannedBounds: { x: 80, y: 120, width: 400, height: 90 }, resolvedBounds: { x: 80, y: 120, width: 400, height: 90 } },
+      { executionSlotKey: "subheadline", identityObserved: true, layerId: "layer-supporting", text: "혜택을 확인하세요", anchor: "left_copy_column", plannedBounds: { x: 80, y: 220, width: 420, height: 70 }, resolvedBounds: { x: 80, y: 220, width: 420, height: 70 } },
+      { executionSlotKey: "cta", identityObserved: true, layerId: "layer-cta", text: "혜택 보기", anchor: "bottom_center", plannedBounds: { x: 80, y: 360, width: 220, height: 64 }, resolvedBounds: { x: 80, y: 360, width: 220, height: 64 } },
+      { executionSlotKey: "footer_note", identityObserved: true, layerId: "layer-footer", text: "한정 기간 진행", anchor: "footer_strip", plannedBounds: { x: 80, y: 560, width: 360, height: 24 }, resolvedBounds: { x: 80, y: 560, width: 360, height: 24 } },
     ],
     graphicLayerBindings: [
       { role: "primary_accent", layerId: "layer-accent", zone: "right_cluster", sourceAssetId: "shape:1", sourceSerial: "11" },
@@ -119,5 +119,69 @@ test("buildJudgePlan requests patch refinement for missing CTA container and den
   assert.equal(
     judgePlan.allowedPatchScopes.includes("spacing"),
     true,
+  );
+});
+
+test("buildJudgePlan keeps a fully materialized scene when resolved bounds are separated", async () => {
+  const concreteLayoutPlan = {
+    ...createConcreteLayoutPlan(),
+    spacingIntent: "balanced" as const,
+  };
+  const executionSceneSummary = {
+    ...createExecutionSceneSummary(),
+    ctaContainerResolved: true,
+  };
+
+  const judgePlan = await buildJudgePlan(
+    "run-1",
+    "trace-1",
+    0,
+    createCopyPlan(),
+    concreteLayoutPlan,
+    executionSceneSummary,
+    createExecutablePlan(),
+    null,
+  );
+
+  assert.equal(judgePlan.recommendation, "keep");
+  assert.deepEqual(judgePlan.issues, []);
+});
+
+test("buildJudgePlan surfaces execution slot identity loss before materialization failure", async () => {
+  const executionSceneSummary = {
+    ...createExecutionSceneSummary(),
+    copyLayerBindings: createExecutionSceneSummary().copyLayerBindings.map((binding) =>
+      binding.executionSlotKey === "subheadline"
+        ? {
+            ...binding,
+            identityObserved: false,
+            layerId: null,
+          }
+        : binding,
+    ),
+    ctaContainerResolved: true,
+  };
+
+  const judgePlan = await buildJudgePlan(
+    "run-1",
+    "trace-1",
+    0,
+    createCopyPlan(),
+    {
+      ...createConcreteLayoutPlan(),
+      spacingIntent: "balanced" as const,
+    },
+    executionSceneSummary,
+    createExecutablePlan(),
+    null,
+  );
+
+  assert.equal(
+    judgePlan.issues.some((issue) => issue.code === "execution_slot_identity_missing"),
+    true,
+  );
+  assert.equal(
+    judgePlan.issues.some((issue) => issue.code === "slot_materialization_missing"),
+    false,
   );
 });

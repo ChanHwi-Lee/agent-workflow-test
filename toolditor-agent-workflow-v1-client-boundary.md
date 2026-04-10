@@ -383,6 +383,7 @@ type CanvasMutationCommand =
       commandId: string;
       op: 'createLayer';
       slotKey: string | null;
+      executionSlotKey?: string | null;
       clientLayerKey: string;
       targetRef: { layerId: null; clientLayerKey: string; slotKey?: string };
       targetLayerVersion: null;
@@ -406,6 +407,7 @@ type CanvasMutationCommand =
       commandId: string;
       op: 'updateLayer';
       slotKey: string | null;
+      executionSlotKey?: string | null;
       clientLayerKey?: string | null;
       targetRef: CanvasLayerRef;
       targetLayerVersion: number;
@@ -426,6 +428,7 @@ type CanvasMutationCommand =
       commandId: string;
       op: 'deleteLayer';
       slotKey: string | null;
+      executionSlotKey?: string | null;
       clientLayerKey?: string | null;
       targetRef: CanvasLayerRef;
       targetLayerVersion: number;
@@ -447,6 +450,10 @@ type CanvasMutationCommand =
       metadataTags: Record<string, string | number | boolean | null>;
       reason: 'milestone_first_editable' | 'run_completed';
     };
+
+- `executionSlotKey` 는 FE apply/debug path에서 copy/photo/background semantic slot을 식별하는 canonical field다.
+- `slotKey` 는 additive migration 동안 compat field로 유지하며, FE는 semantic truth를 재구성하지 않고 `executionSlotKey` 를 우선 소비한다.
+- semantic `createLayer` / `updateLayer` command 에서 `executionSlotKey` 가 없거나 invalid 하면 FE 는 silent fallback 없이 reject 하고 contract violation 을 surface 한다.
 
 type CanvasMutationEnvelope = {
   mutationId: string;

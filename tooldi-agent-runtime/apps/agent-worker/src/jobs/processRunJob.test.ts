@@ -2716,23 +2716,29 @@ test("processRunJob can activate the photo hero execution path on the wide prese
       event: Extract<WorkerAppendEventRequest["event"], { type: "mutation.proposed" }>;
     } =>
       event.event.type === "mutation.proposed" &&
-      event.event.mutation.commands.some((command) => command.slotKey === "hero_image"),
+      event.event.mutation.commands.some(
+        (command) =>
+          "executionSlotKey" in command && command.executionSlotKey === "hero_image",
+      ),
   );
 
   assert.ok(photoMutation);
   const heroImageCommand = photoMutation.event.mutation.commands.find(
-    (command) => command.slotKey === "hero_image",
+    (command) =>
+      "executionSlotKey" in command && command.executionSlotKey === "hero_image",
   );
   assert.ok(heroImageCommand && "layerBlueprint" in heroImageCommand);
   if (!heroImageCommand || !("layerBlueprint" in heroImageCommand)) {
     return;
   }
+  assert.equal(heroImageCommand.executionSlotKey, "hero_image");
   assert.equal(heroImageCommand.layerBlueprint.layerType, "image");
   assert.equal(heroImageCommand.layerBlueprint.metadata?.sourceSerial, "33");
   assert.equal(
     heroImageCommand.layerBlueprint.metadata?.sourceOriginUrl,
     "https://origin.test/photo-33.png",
   );
+  assert.equal(result.executionSceneSummary?.photoLayerBinding?.executionSlotKey, "hero_image");
 });
 
 test("processRunJob can promote a real-like photo candidate when it stays within the wide-preset tolerance window", async () => {

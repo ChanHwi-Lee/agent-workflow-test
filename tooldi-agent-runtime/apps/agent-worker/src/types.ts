@@ -714,6 +714,7 @@ export interface StageAckRecord {
 
 export interface ExecutionSceneCopyLayerBinding {
   executionSlotKey: CopyPlanSlotKey;
+  identityObserved: boolean;
   layerId: string | null;
   text: string | null;
   anchor: ConcreteLayoutAnchorZone | null;
@@ -730,9 +731,12 @@ export interface ExecutionSceneGraphicLayerBinding {
 }
 
 export interface ExecutionScenePhotoLayerBinding {
+  executionSlotKey: "hero_image";
   layerId: string | null;
   sourceAssetId: string | null;
   sourceSerial: string | null;
+  plannedBounds: LayoutBounds | null;
+  resolvedBounds: LayoutBounds | null;
 }
 
 export interface ExecutionSceneSummary {
@@ -758,7 +762,6 @@ export type JudgePatchScope =
   | "cta_container";
 
 export type JudgePlanIssueCode =
-  | "copy_anchor_execution_mismatch"
   | "copy_stack_spacing_weak"
   | "cta_container_missing_after_execution"
   | "execution_slot_identity_missing"

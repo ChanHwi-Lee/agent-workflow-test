@@ -71,6 +71,49 @@ function createAssetPlan(): AssetPlan {
   };
 }
 
+function createPhotoAssetPlan(): AssetPlan {
+  return {
+    planId: "asset-plan-photo-1",
+    runId: "run-1",
+    traceId: "trace-1",
+    plannerMode: "langchain",
+    primaryVisualFamily: "photo",
+    backgroundBinding: {
+      candidateId: "bg-1",
+      sourceAssetId: "background:1",
+      sourceSerial: "1",
+      sourceCategory: "pattern",
+      backgroundMode: "spring_pattern",
+    },
+    graphicRoleBindings: [],
+    photoBinding: {
+      candidateId: "photo-1",
+      sourceAssetId: "photo:33",
+      sourceSerial: "33",
+      sourceCategory: "horizontal",
+      sourceUid: null,
+      sourceOriginUrl: "https://origin.test/photo-33.png",
+      sourceWidth: 1600,
+      sourceHeight: 900,
+      orientation: "landscape",
+      fitMode: "cover",
+      cropMode: "centered_cover",
+      required: true,
+    },
+    fallbackPolicy: {
+      missingOptionalGraphicRoles: "drop",
+      missingCtaContainer: "fallback_cta_pill",
+      unavailablePhotoPrimary: "demote_to_graphic_primary",
+    },
+    executionEligibility: {
+      canRender: true,
+      degraded: false,
+      reasons: [],
+    },
+    summary: "photo-primary asset plan",
+  };
+}
+
 function createConcreteLayoutPlan(): ConcreteLayoutPlan {
   return {
     planId: "layout-1",
@@ -221,10 +264,18 @@ test("buildExecutionSceneSummary binds copy and graphic layers from ack history"
     "layer-headline",
   );
   assert.equal(
+    summary.copyLayerBindings.find((binding) => binding.executionSlotKey === "headline")?.identityObserved,
+    true,
+  );
+  assert.equal(
     summary.copyLayerBindings.find(
       (binding) => binding.executionSlotKey === "subheadline",
     )?.layerId,
     "layer-supporting",
+  );
+  assert.equal(
+    summary.copyLayerBindings.find((binding) => binding.executionSlotKey === "cta")?.identityObserved,
+    false,
   );
   assert.equal(
     summary.graphicLayerBindings.find((binding) => binding.role === "primary_accent")?.layerId,
@@ -305,5 +356,58 @@ test("buildExecutionSceneSummary preserves canonical execution slots across upda
     y: 380,
     width: 220,
     height: 64,
+  });
+});
+
+test("buildExecutionSceneSummary binds hero_image from canonical executionSlotKey without slotKey compat lookup", async () => {
+  const concreteLayoutPlan = {
+    ...createConcreteLayoutPlan(),
+    primaryVisualFamily: "photo" as const,
+    resolvedSlotBounds: {
+      ...createConcreteLayoutPlan().resolvedSlotBounds,
+      hero_image: { x: 640, y: 96, width: 320, height: 320 },
+    },
+  };
+
+  const summary = await buildExecutionSceneSummary(
+    "run-1",
+    "trace-1",
+    1,
+    createCopyPlan(),
+    createPhotoAssetPlan(),
+    concreteLayoutPlan,
+    createExecutablePlan(),
+    [
+      {
+        stageLabel: "photo",
+        mutationId: "mutation-photo",
+        seq: 1,
+        status: "acked",
+        resultingRevision: 1,
+        resolvedLayerIds: {
+          hero_image_run: "layer-photo",
+        },
+        commands: [
+          {
+            op: "createLayer",
+            slotKey: null,
+            executionSlotKey: "hero_image",
+            clientLayerKey: "hero_image_run",
+            role: "hero_image",
+            targetLayerId: null,
+            proposedBounds: { x: 640, y: 96, width: 320, height: 320 },
+          },
+        ],
+      },
+    ],
+  );
+
+  assert.equal(summary.photoLayerBinding?.executionSlotKey, "hero_image");
+  assert.equal(summary.photoLayerBinding?.layerId, "layer-photo");
+  assert.deepEqual(summary.photoLayerBinding?.plannedBounds, {
+    x: 640,
+    y: 96,
+    width: 320,
+    height: 320,
   });
 });

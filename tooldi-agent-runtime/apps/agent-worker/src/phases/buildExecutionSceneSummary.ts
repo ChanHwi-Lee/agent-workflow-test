@@ -33,9 +33,10 @@ export async function buildExecutionSceneSummary(
   );
 
   const copyLayerBindings = copyPlan.slots.map((slot) => {
-    const matchingCommand = findLatestCommand(stageAckHistory, slot.key);
+    const matchingCommand = findLatestCommandByExecutionSlot(stageAckHistory, slot.key);
     return {
       executionSlotKey: slot.key,
+      identityObserved: matchingCommand !== null,
       layerId: resolveCommandLayerId(matchingCommand),
       text:
         typeof copySlotTexts?.[slot.key] === "string"
@@ -53,10 +54,7 @@ export async function buildExecutionSceneSummary(
 
   const graphicLayerBindings: ExecutionSceneGraphicLayerBinding[] =
     assetPlan.graphicRoleBindings.map((binding) => {
-      const matchingCommand = findLatestCommand(stageAckHistory, {
-        slotKey: binding.role === "primary_accent" ? "decoration" : null,
-        role: binding.role,
-      });
+      const matchingCommand = findLatestGraphicCommandByRole(stageAckHistory, binding.role);
       const placementHint = concreteLayoutPlan.graphicRolePlacementHints.find(
         (hint) => hint.role === binding.role,
       );
@@ -71,9 +69,7 @@ export async function buildExecutionSceneSummary(
 
   const photoCommand =
     assetPlan.photoBinding !== null
-      ? findLatestCommand(stageAckHistory, {
-          slotKey: "hero_image",
-        })
+      ? findLatestCommandByExecutionSlot(stageAckHistory, "hero_image")
       : null;
 
   return {
@@ -89,9 +85,18 @@ export async function buildExecutionSceneSummary(
       assetPlan.photoBinding === null
         ? null
         : {
+            executionSlotKey: "hero_image",
             layerId: resolveCommandLayerId(photoCommand),
             sourceAssetId: assetPlan.photoBinding.sourceAssetId,
             sourceSerial: assetPlan.photoBinding.sourceSerial,
+            plannedBounds:
+              concreteLayoutPlan.resolvedSlotBounds.hero_image ??
+              photoCommand?.proposedBounds ??
+              null,
+            resolvedBounds:
+              photoCommand?.proposedBounds ??
+              concreteLayoutPlan.resolvedSlotBounds.hero_image ??
+              null,
           },
     ctaContainerResolved: graphicLayerBindings.some(
       (binding) => binding.role === "cta_container" && binding.layerId !== null,
@@ -108,31 +113,34 @@ function normalizeRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
 }
 
-function findLatestCommand(
+function findLatestCommandByExecutionSlot(
   stageAckHistory: StageAckRecord[],
-  executionSlotKey:
-    | StageAckRecord["commands"][number]["executionSlotKey"]
-    | {
-        slotKey: StageAckRecord["commands"][number]["slotKey"];
-        role?: string | null;
-      },
+  executionSlotKey: StageAckRecord["commands"][number]["executionSlotKey"],
 ) {
   for (let index = stageAckHistory.length - 1; index >= 0; index -= 1) {
     const record = stageAckHistory[index]!;
     for (let commandIndex = record.commands.length - 1; commandIndex >= 0; commandIndex -= 1) {
       const command = record.commands[commandIndex]!;
-      const directMatch =
-        typeof executionSlotKey === "string" || executionSlotKey === null
-          ? command.executionSlotKey === executionSlotKey
-          : false;
-      const compatMatch =
-        typeof executionSlotKey === "object" &&
-        executionSlotKey !== null &&
-        (command.slotKey === executionSlotKey.slotKey ||
-          ("role" in executionSlotKey &&
-            executionSlotKey.role !== undefined &&
-            command.role === executionSlotKey.role));
-      if (directMatch || compatMatch) {
+      if (command.executionSlotKey === executionSlotKey) {
+        return {
+          ...command,
+          resolvedLayerIds: record.resolvedLayerIds,
+        };
+      }
+    }
+  }
+  return null;
+}
+
+function findLatestGraphicCommandByRole(
+  stageAckHistory: StageAckRecord[],
+  role: string,
+) {
+  for (let index = stageAckHistory.length - 1; index >= 0; index -= 1) {
+    const record = stageAckHistory[index]!;
+    for (let commandIndex = record.commands.length - 1; commandIndex >= 0; commandIndex -= 1) {
+      const command = record.commands[commandIndex]!;
+      if (command.role === role) {
         return {
           ...command,
           resolvedLayerIds: record.resolvedLayerIds,

@@ -33,7 +33,7 @@ export async function buildJudgePlan(
     const binding = executionSceneSummary.copyLayerBindings.find(
       (candidate) => candidate.executionSlotKey === slot.key,
     );
-    return !binding;
+    return !binding?.identityObserved;
   });
   if (missingIdentityBindings.length > 0) {
     issues.push({
@@ -51,7 +51,7 @@ export async function buildJudgePlan(
     const binding = executionSceneSummary.copyLayerBindings.find(
       (candidate) => candidate.executionSlotKey === slot.key,
     );
-    return !binding?.layerId;
+    return binding?.identityObserved === true && !binding.layerId;
   });
   if (missingRequiredBindings.length > 0) {
     issues.push({

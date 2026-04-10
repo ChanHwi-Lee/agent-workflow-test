@@ -52,7 +52,6 @@ import { buildExecutablePlan } from "../phases/buildExecutablePlan.js";
 import { buildNormalizedIntent } from "../phases/buildNormalizedIntent.js";
 import { emitRefinementMutations } from "../phases/emitRefinementMutations.js";
 import { emitSkeletonMutations } from "../phases/emitSkeletonMutations.js";
-import { deriveExecutionSlotKey } from "../phases/executionSlotIdentity.js";
 import { finalizeRun } from "../phases/finalizeRun.js";
 import { hydratePlanningInput } from "../phases/hydratePlanningInput.js";
 import { runRetrievalStage } from "../phases/runRetrievalStage.js";
@@ -1135,7 +1134,9 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
       if (proposal.stageLabel === "photo") {
         const heroCommand = proposal.mutation.commands.find(
           (command) =>
-            command.op === "createLayer" && command.slotKey === "hero_image",
+            command.op === "createLayer" &&
+            "executionSlotKey" in command &&
+            command.executionSlotKey === "hero_image",
         );
         const bounds =
           heroCommand && "layerBlueprint" in heroCommand
@@ -2013,18 +2014,7 @@ function buildStageAckRecord(
       op: command.op,
       slotKey: command.slotKey ?? null,
       executionSlotKey:
-        "executionSlotKey" in command
-          ? command.executionSlotKey ?? null
-          : deriveExecutionSlotKey(
-              command.slotKey ?? null,
-              command.op === "createLayer" &&
-                typeof command.layerBlueprint.metadata.role === "string"
-                ? command.layerBlueprint.metadata.role
-                : command.op === "updateLayer" &&
-                    typeof command.metadataTags.role === "string"
-                  ? command.metadataTags.role
-                  : null,
-            ),
+        "executionSlotKey" in command ? command.executionSlotKey ?? null : null,
       clientLayerKey:
         "clientLayerKey" in command && typeof command.clientLayerKey === "string"
           ? command.clientLayerKey
