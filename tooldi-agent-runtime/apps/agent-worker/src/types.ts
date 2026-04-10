@@ -105,6 +105,7 @@ export interface NormalizedIntent {
   canvasPreset: "wide_1200x628" | "square_1080" | "story_1080x1920" | string;
   layoutIntent: "copy_focused" | "hero_focused" | "badge_led";
   tone: "bright_playful";
+  backgroundColorHex?: string | null;
   requiredSlots: Array<
     "background" | "headline" | "supporting_copy" | "cta" | "decoration"
   >;
@@ -277,10 +278,45 @@ export interface AssetExecutionEligibility {
 
 export interface AssetBackgroundBinding {
   candidateId: string;
+  sourceKind: "generated_solid" | "catalog_background";
   sourceAssetId: string | null;
   sourceSerial: string | null;
   sourceCategory: string | null;
+  colorHex: string;
   backgroundMode: SelectionDecision["backgroundMode"];
+}
+
+export type RepresentativeReadinessStatus =
+  | "target_met"
+  | "degraded"
+  | "failed"
+  | "not_applicable";
+
+export interface RepresentativeReadinessSummary {
+  path: "generic_promo_phase6";
+  overallStatus: RepresentativeReadinessStatus;
+  background: {
+    status: "not_applicable";
+    mode: "generated_solid";
+    colorHex: string;
+    reasonCodes: string[];
+  };
+  graphic: {
+    status: "target_met" | "degraded" | "failed";
+    targetRequired: 2;
+    minimumRequired: 1;
+    materializedRealCount: number;
+    reasonCodes: string[];
+  };
+  font: {
+    status: "target_met" | "degraded" | "failed";
+    targetRequired: "display_and_body";
+    minimumRequired: 1;
+    displayRealSelected: boolean;
+    bodyRealSelected: boolean;
+    realSelectionCount: number;
+    reasonCodes: string[];
+  };
 }
 
 export interface GraphicRoleBinding {
@@ -361,6 +397,7 @@ export interface SourceSearchSummary {
   graphic: SourceSearchFamilySummary;
   photo: SourceSearchFamilySummary;
   font: SourceSearchFamilySummary;
+  representativeReadiness: RepresentativeReadinessSummary;
 }
 
 export interface TypographyChoice {
@@ -421,6 +458,8 @@ export interface SearchProfileArtifact {
   background: {
     objective: string;
     rationale: string;
+    sourceMode: "generated_solid";
+    colorHex: string;
     queries: Array<{
       label: string;
       type: "pattern" | "image";
@@ -548,6 +587,7 @@ export interface SelectionDecision {
   selectedBackgroundAssetId: string | null;
   selectedBackgroundSerial: string | null;
   selectedBackgroundCategory: string | null;
+  selectedBackgroundColorHex: string;
   selectedDecorationAssetId: string | null;
   selectedDecorationSerial: string | null;
   selectedDecorationCategory: string | null;
@@ -559,7 +599,11 @@ export interface SelectionDecision {
   topPhotoWidth: number | null;
   topPhotoHeight: number | null;
   topPhotoOrientation: "portrait" | "landscape" | "square" | null;
-  backgroundMode: "spring_pattern" | "pastel_gradient" | "spring_photo";
+  backgroundMode:
+    | "spring_pattern"
+    | "pastel_gradient"
+    | "spring_photo"
+    | "generated_solid";
   layoutMode:
     | "copy_left_with_right_decoration"
     | "copy_left_with_right_photo"
@@ -698,6 +742,12 @@ export interface StageAckRecordCommand {
   executionSlotKey: ExecutionSlotKey | null;
   clientLayerKey: string | null;
   role: string | null;
+  saveEvidence?: {
+    code: string;
+    serial: number;
+    modified: string;
+    version: string;
+  } | null;
   targetLayerId: string | null;
   proposedBounds: LayoutBounds | null;
 }

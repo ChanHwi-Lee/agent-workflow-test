@@ -337,8 +337,12 @@ async function driveRunLifecycle({
           }
           break;
         case "canvas.mutation":
-          await postMutationAck(app, accepted, event, currentRevision);
-          currentRevision += 1;
+          currentRevision = await postMutationAck(
+            app,
+            accepted,
+            event,
+            currentRevision,
+          );
           console.log(
             `[${logPrefix}] acked mutation ${event.mutation.mutationId} seq=${event.seq}`,
           );
@@ -391,6 +395,14 @@ async function driveRunLifecycle({
 }
 
 async function postMutationAck(app, accepted, payload, currentRevision) {
+  const isSaveOnlyMutation = payload.mutation.commands.every(
+    (command) => command.op === "saveTemplate",
+  );
+  const resultingRevision = isSaveOnlyMutation
+    ? currentRevision
+    : currentRevision + 1;
+  const observedAt = new Date().toISOString();
+
   await injectJson(app, {
     method: "POST",
     url: `/api/agent-workflow/runs/${accepted.runId}/mutation-acks`,
@@ -402,7 +414,7 @@ async function postMutationAck(app, accepted, payload, currentRevision) {
       status: "applied",
       targetPageId: payload.mutation.pageId,
       baseRevision: currentRevision,
-      resultingRevision: currentRevision + 1,
+      resultingRevision,
       resolvedLayerIds: Object.fromEntries(
         payload.mutation.commands
           .filter((command) => command.targetRef.clientLayerKey)
@@ -416,10 +428,22 @@ async function postMutationAck(app, accepted, payload, currentRevision) {
         op: command.op,
         status: "applied",
         resolvedLayerId: command.targetRef.clientLayerKey ?? "resolved-layer-1",
+        ...(command.op === "saveTemplate"
+          ? {
+              saveEvidence: {
+                code: `template_${accepted.runId}`,
+                serial: 198008,
+                modified: observedAt,
+                version: "2",
+              },
+            }
+          : {}),
       })),
-      clientObservedAt: new Date().toISOString(),
+      clientObservedAt: observedAt,
     },
   });
+
+  return resultingRevision;
 }
 
 async function waitForQueuedJob(app, runId, attemptSeq, timeoutMs = 10000) {

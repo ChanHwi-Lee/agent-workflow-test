@@ -61,6 +61,12 @@ function createFinalizeRequest(overrides: Partial<RunFinalizeRequest> = {}): Run
     draftId: "draft_run-1",
     finalRevision: 1,
     lastAckedSeq: 1,
+    latestSaveEvidence: {
+      code: "template_draft_run-1",
+      serial: 198008,
+      modified: "2026-04-10T02:42:19.000Z",
+      version: "2",
+    },
     latestSaveReceiptId: "save-receipt-1",
     outputTemplateCode: "template_draft_run-1",
     normalizedIntentRef: "runs/run-1/attempts/1/normalized-intent.json",
@@ -426,6 +432,12 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
         draftId: "draft_run-1",
         finalRevision: 1,
         durabilityState: "final_saved",
+        latestSaveEvidence: {
+          code: "template_draft_run-1",
+          serial: 198008,
+          modified: "2026-04-10T02:42:19.000Z",
+          version: "2",
+        },
         latestSaveReceiptId: "save-receipt-1",
         warningCount: 0,
         fallbackCount: 0,
@@ -445,7 +457,9 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
 
     const bundle = await draftBundleRepository.findByRunId("run-1");
     assert.ok(bundle);
-    assert.equal(bundle.payload.saveMetadata.latestSaveReceipt?.saveReceiptId, "save-receipt-1");
+    assert.equal(bundle.payload.saveMetadata.latestSaveEvidence?.code, "template_draft_run-1");
+    assert.equal(bundle.payload.saveMetadata.latestSaveEvidence?.serial, 198008);
+    assert.equal(bundle.payload.saveMetadata.latestSaveReceipt, null);
     assert.equal(bundle.payload.editableCanvasState.commitPayload.requiredSlots.length, 5);
     assert.equal(bundle.payload.mutationLedger.lastKnownGoodCheckpointId, "checkpoint_run-1_latest_saved");
     assert.equal(
@@ -491,6 +505,7 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
     const completion = await completionRepository.findByRunId("run-1");
     assert.ok(completion);
     assert.equal(completion.completionRecordId, "completion_run-1");
+    assert.equal(completion.latestSaveEvidence?.code, "template_draft_run-1");
     assert.equal(
       completion.sourceRefs.normalizedIntentRef,
       "runs/run-1/attempts/1/normalized-intent.json",

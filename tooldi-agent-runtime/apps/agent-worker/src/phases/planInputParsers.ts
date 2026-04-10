@@ -49,11 +49,16 @@ export type GraphicRolePlacementHints = Array<{
 }>;
 
 export type FoundationInputs = {
-  backgroundMode: "spring_pattern" | "pastel_gradient" | "spring_photo";
+  backgroundMode:
+    | "spring_pattern"
+    | "pastel_gradient"
+    | "spring_photo"
+    | "generated_solid";
   selectedBackgroundCandidateId: string;
   selectedBackgroundAssetId: string | null;
   selectedBackgroundSerial: string | null;
   selectedBackgroundCategory: string | null;
+  backgroundColorHex: string;
   includeHeroPanel: boolean;
   includeBadge: boolean;
   includeRibbon: boolean;
@@ -61,6 +66,10 @@ export type FoundationInputs = {
   badgeText: string | null;
   resolvedSlotBounds: Partial<Record<ExecutionSlotKey, LayoutBounds>>;
   headlineEstimatedHeight: number | null;
+};
+
+export type SaveInputs = {
+  reason: "run_completed";
 };
 
 export type CopyInputs = {
@@ -115,6 +124,7 @@ export function readFoundationInputs(
     selectedBackgroundAssetId?: string | null;
     selectedBackgroundSerial?: string | null;
     selectedBackgroundCategory?: string | null;
+    backgroundColorHex?: string;
     includeHeroPanel?: boolean;
     includeBadge?: boolean;
     includeRibbon?: boolean;
@@ -131,6 +141,7 @@ export function readFoundationInputs(
     selectedBackgroundAssetId: record.selectedBackgroundAssetId ?? null,
     selectedBackgroundSerial: record.selectedBackgroundSerial ?? null,
     selectedBackgroundCategory: record.selectedBackgroundCategory ?? null,
+    backgroundColorHex: record.backgroundColorHex ?? "#ffffff",
     includeHeroPanel: record.includeHeroPanel ?? false,
     includeBadge: record.includeBadge ?? false,
     includeRibbon: record.includeRibbon ?? false,
@@ -138,6 +149,18 @@ export function readFoundationInputs(
     badgeText: record.badgeText ?? null,
     resolvedSlotBounds: normalizeBoundsRecord(record.resolvedSlotBounds),
     headlineEstimatedHeight: record.headlineEstimatedHeight ?? null,
+  };
+}
+
+export function readSaveInputs(
+  inputs: PersistedPlanAction["inputs"],
+): SaveInputs {
+  const record = inputs as {
+    reason?: "run_completed";
+  };
+
+  return {
+    reason: record.reason ?? "run_completed",
   };
 }
 

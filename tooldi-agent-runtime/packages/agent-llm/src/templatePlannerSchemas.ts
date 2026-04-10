@@ -185,6 +185,10 @@ export const TemplateIntentDraftSchema = z.object({
   ]),
   layoutIntent: z.enum(["copy_focused", "hero_focused", "badge_led"]),
   tone: z.enum(["bright_playful"]),
+  backgroundColorHex: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
   assetPolicy: TemplateAssetPolicyBoundarySchema,
   searchKeywords: z.array(z.string().min(1).max(20)).min(1).max(5),
   typographyHint: z.string().nullable(),

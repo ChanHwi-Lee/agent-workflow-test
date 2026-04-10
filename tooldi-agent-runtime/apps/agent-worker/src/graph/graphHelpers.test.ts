@@ -28,6 +28,7 @@ test("graphHelpers는 정의된 artifact ref만 노출한다", () => {
     refineDecisionRef: null,
     ruleJudgeVerdict: null,
     judgePlan: null,
+    sourceSearchSummary: null,
   });
 
   assert.deepEqual(refs, {
@@ -85,6 +86,7 @@ test("graphHelpers는 judge warning을 finalize option에 투영한다", () => {
         ],
         summary: "warn",
       },
+      sourceSearchSummary: null,
     },
     false,
     [1, 2, 3],

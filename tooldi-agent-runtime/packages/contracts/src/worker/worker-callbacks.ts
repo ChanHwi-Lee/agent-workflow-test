@@ -4,6 +4,7 @@ import { FormatRegistry } from "@sinclair/typebox/type";
 import { Value } from "@sinclair/typebox/value";
 
 import { CanvasMutationEnvelopeSchema } from "../canvas/canvas-mutation.js";
+import { MutationCommandResultSchema } from "../canvas/mutation-ack.js";
 import {
   CompletionStateSchema,
   ErrorSummarySchema,
@@ -13,6 +14,7 @@ import {
   TerminalRunStatusSchema,
   WarningItemSchema,
 } from "../common.js";
+import { TemplateSaveEvidenceSchema } from "../canvas/template-save-receipt.js";
 
 const WorkerPhaseSchema = Type.Union(
   ["planning", "executing", "applying", "saving"].map((value) =>
@@ -172,6 +174,7 @@ export const WaitMutationAckResponseSchema = Type.Object(
     seq: Type.Optional(Type.Integer({ minimum: 1 })),
     resultingRevision: Type.Optional(Type.Integer({ minimum: 0 })),
     resolvedLayerIds: Type.Optional(Type.Record(Type.String(), IdentifierSchema)),
+    commandResults: Type.Optional(Type.Array(MutationCommandResultSchema)),
     error: Type.Optional(ErrorSummarySchema),
   },
   { additionalProperties: false },
@@ -186,6 +189,9 @@ export const RunFinalizeRequestSchema = Type.Object(
     completionState: Type.Optional(CompletionStateSchema),
     draftId: Type.Optional(IdentifierSchema),
     finalRevision: Type.Optional(Type.Union([Type.Integer({ minimum: 0 }), Type.Null()])),
+    latestSaveEvidence: Type.Optional(
+      Type.Union([TemplateSaveEvidenceSchema, Type.Null()]),
+    ),
     lastAckedSeq: Type.Integer({ minimum: 0 }),
     latestSaveReceiptId: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
     outputTemplateCode: Type.Optional(

@@ -1,4 +1,7 @@
-import type { WaitMutationAckResponse } from "@tooldi/agent-contracts";
+import type {
+  TemplateSaveEvidence,
+  WaitMutationAckResponse,
+} from "@tooldi/agent-contracts";
 
 import type { FinalizeRunDraft, HydratedPlanningInput } from "../types.js";
 
@@ -105,12 +108,23 @@ export async function finalizeRun(
           reconciledThroughSeq: lastAckedSeq,
         }
       : undefined;
-  const latestSaveReceiptId =
+  const latestSaveEvidence =
     finalStatus === "completed" || finalStatus === "completed_with_warning"
-      ? `save_receipt_${input.job.runId}_${input.job.attemptSeq}`
+      ? extractSaveEvidence(lastMutationAck)
       : null;
-  const outputTemplateCode =
-    latestSaveReceiptId !== null ? `template_${draftId}` : null;
+
+  if (
+    (finalStatus === "completed" || finalStatus === "completed_with_warning") &&
+    latestSaveEvidence === null
+  ) {
+    finalStatus = "save_failed_after_apply";
+    fallbackCount = Math.max(fallbackCount, 1);
+    errorSummary ??= {
+      code: "save_evidence_missing",
+      message:
+        "Worker could not confirm canonical save evidence after the saveTemplate stage completed",
+    };
+  }
 
   return {
     request: {
@@ -121,9 +135,10 @@ export async function finalizeRun(
       completionState: deriveCompletionState(finalStatus),
       draftId,
       finalRevision: lastMutationAck?.resultingRevision ?? null,
+      latestSaveEvidence,
       lastAckedSeq,
-      latestSaveReceiptId,
-      outputTemplateCode,
+      latestSaveReceiptId: null,
+      outputTemplateCode: null,
       ...(options.normalizedIntentRef
         ? { normalizedIntentRef: options.normalizedIntentRef }
         : {}),
@@ -199,6 +214,18 @@ export async function finalizeRun(
       lastAckedSeq,
     },
   };
+}
+
+function extractSaveEvidence(
+  lastMutationAck: WaitMutationAckResponse | null,
+): TemplateSaveEvidence | null {
+  return (
+    lastMutationAck?.commandResults?.find(
+      (commandResult) =>
+        commandResult.op === "saveTemplate" &&
+        commandResult.saveEvidence !== undefined,
+    )?.saveEvidence ?? null
+  );
 }
 
 function deriveCompletionState(

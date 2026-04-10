@@ -103,7 +103,9 @@ test("buildSearchProfile derives domain-aware query profile for cafe hero prompt
   assert.equal(profile.domain, "cafe");
   assert.equal(profile.photo.enabled, true);
   assert.equal(profile.photo.orientationHint, "landscape");
-  assert.equal(profile.background.queries[0]?.keyword, "봄");
+  assert.equal(profile.background.sourceMode, "generated_solid");
+  assert.equal(typeof profile.background.colorHex, "string");
+  assert.equal(profile.background.queries.length, 0);
   assert.equal(profile.graphic.queries[0]?.keyword, "프로모션");
   assert.equal(profile.photo.queries[0]?.keyword, "음료");
   assert.equal(profile.photo.queries[0]?.theme, null);
@@ -176,7 +178,8 @@ test("buildSearchProfile uses repaired restaurant intent semantics to populate c
     "신메뉴",
     "배너",
   ]);
-  assert.equal(profile.background.queries[0]?.keyword, "봄");
+  assert.equal(profile.background.sourceMode, "generated_solid");
+  assert.equal(profile.background.queries.length, 0);
   assert.equal(profile.graphic.queries[0]?.keyword, "신메뉴");
   assert.equal(profile.graphic.queries[0]?.theme, null);
   assert.equal(profile.graphic.queries[0]?.type, "vector");
@@ -213,7 +216,8 @@ test("buildSearchProfile prioritizes repaired canonical taxonomy keywords over l
     }),
   );
 
-  assert.equal(profile.background.queries[0]?.keyword, "봄");
+  assert.equal(profile.background.sourceMode, "generated_solid");
+  assert.equal(profile.background.queries.length, 0);
   assert.equal(profile.graphic.queries[0]?.keyword, "할인");
   assert.equal(profile.photo.queries[0]?.keyword, "의류");
   assert.equal(profile.photo.queries[0]?.theme, null);
@@ -269,14 +273,8 @@ test("buildSearchProfile keeps Tooldi taxonomy fixture asset policy fields intac
   const profile = await buildSearchProfile(createFashionRetailNormalizedIntent());
 
   assert.deepEqual(profile.assetPolicy, fashionRetailGraphicFirstAssetPolicy);
-  assert.equal(
-    profile.background.queries[0]?.type,
-    tooldiCreateTemplateTaxonomyFixture.backgroundPrimaryType,
-  );
-  assert.equal(
-    profile.background.queries[1]?.type,
-    tooldiCreateTemplateTaxonomyFixture.backgroundSecondaryType,
-  );
+  assert.equal(profile.background.sourceMode, "generated_solid");
+  assert.equal(profile.background.queries.length, 0);
   assert.equal(
     profile.graphic.queries[0]?.type,
     tooldiCreateTemplateTaxonomyFixture.graphicType,

@@ -374,6 +374,14 @@ test("backend authors mutation seq and ack wait route reflects dispatched then a
     status: "acked",
     seq: 1,
     resultingRevision: 1,
+    commandResults: [
+      {
+        commandId: "command-1",
+        op: "createLayer",
+        status: "applied",
+        resolvedLayerId: "layer-1",
+      },
+    ],
   });
 });
 
@@ -407,6 +415,12 @@ test("stale attempt is rejected and finalize is idempotent", async (t) => {
     draftId: `draft_${accepted.runId}`,
     finalRevision: 1,
     lastAckedSeq: 0,
+    latestSaveEvidence: {
+      code: `template_draft_${accepted.runId}`,
+      serial: 198008,
+      modified: "2026-04-10T02:42:19.000Z",
+      version: "2",
+    },
     latestSaveReceiptId: `save_receipt_${accepted.runId}`,
     outputTemplateCode: `template_draft_${accepted.runId}`,
     createdLayerIds: [],

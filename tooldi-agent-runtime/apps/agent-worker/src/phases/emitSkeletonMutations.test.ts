@@ -64,6 +64,7 @@ function createNormalizedIntent(): NormalizedIntent {
     canvasPreset: "wide_1200x628",
     layoutIntent: "copy_focused",
     tone: "bright_playful",
+    backgroundColorHex: "#dff2ff",
     requiredSlots: [
       "background",
       "headline",
@@ -122,8 +123,9 @@ function createExecutablePlan(): ExecutablePlan {
           slotKey: "background",
         },
         inputs: {
-          backgroundMode: "spring_pattern",
+          backgroundMode: "generated_solid",
           selectedBackgroundCandidateId: "background-1",
+          backgroundColorHex: "#dff2ff",
           includeHeroPanel: false,
           includeBadge: false,
           includeRibbon: false,
@@ -230,6 +232,28 @@ function createExecutablePlan(): ExecutablePlan {
         },
         rollback: {
           strategy: "delete_created_layers",
+        },
+      },
+      {
+        actionId: "a-save",
+        kind: "document_commit",
+        operation: "save_template",
+        toolName: "template-save",
+        toolVersion: "1",
+        commitGroup: "group-1",
+        liveCommit: true,
+        idempotencyKey: "id-4",
+        dependsOn: ["a-polish"],
+        targetRef: {
+          documentId: "document-1",
+          pageId: "page-1",
+          layerId: null,
+        },
+        inputs: {
+          reason: "run_completed",
+        },
+        rollback: {
+          strategy: "none",
         },
       },
     ],

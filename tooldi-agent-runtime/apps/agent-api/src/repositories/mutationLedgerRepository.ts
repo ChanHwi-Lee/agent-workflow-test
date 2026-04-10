@@ -28,6 +28,7 @@ export interface MutationAckLedgerRecord {
   targetPageId: string;
   resultingRevision: number | undefined;
   resolvedLayerIds: MutationApplyAckRequest["resolvedLayerIds"];
+  commandResults: MutationApplyAckRequest["commandResults"];
   error: MutationApplyAckRequest["error"];
   clientObservedAt: string;
 }
@@ -101,6 +102,7 @@ export class MutationLedgerRepository {
       targetPageId: request.targetPageId,
       resultingRevision: request.resultingRevision,
       resolvedLayerIds: request.resolvedLayerIds,
+      commandResults: request.commandResults,
       error: request.error,
       clientObservedAt: request.clientObservedAt,
     };
@@ -160,6 +162,9 @@ export class MutationLedgerRepository {
             : {}),
           ...(record.ackRecord.resolvedLayerIds
             ? { resolvedLayerIds: record.ackRecord.resolvedLayerIds }
+            : {}),
+          ...(record.ackRecord.commandResults
+            ? { commandResults: record.ackRecord.commandResults }
             : {}),
           ...(record.ackStatus === "rejected"
             ? {

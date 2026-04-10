@@ -36,6 +36,7 @@ export function createLangChainTemplatePlanner(config: {
             "You are a template-planning assistant for Tooldi's current create-template slice. " +
             "Return a concise Korean design brief. " +
             "Choose only supported enum values. " +
+            "Choose a solid backgroundColorHex that fits the overall design context. " +
             "Until generic retrieval lands, include '봄' in searchKeywords. " +
             "Assume the rollout focuses on Korean marketing banners for restaurant, cafe, and fashion retail prompts.",
         },

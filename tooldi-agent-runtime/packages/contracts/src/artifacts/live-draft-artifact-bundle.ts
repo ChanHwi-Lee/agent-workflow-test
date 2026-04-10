@@ -2,7 +2,10 @@ import { Type } from "@sinclair/typebox";
 import type { Static } from "@sinclair/typebox";
 
 import { CanvasMutationEnvelopeSchema } from "../canvas/canvas-mutation.js";
-import { TemplateSaveReceiptSchema } from "../canvas/template-save-receipt.js";
+import {
+  TemplateSaveEvidenceSchema,
+  TemplateSaveReceiptSchema,
+} from "../canvas/template-save-receipt.js";
 import {
   DurabilityStateSchema,
   ExecutionSlotKeySchema,
@@ -137,6 +140,9 @@ const MutationLedgerEntrySchema = Type.Object(
     targetLayerIds: Type.Array(IdentifierSchema),
     baseRevision: Type.Integer({ minimum: 0 }),
     ackRevision: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
+    saveEvidence: Type.Optional(
+      Type.Union([TemplateSaveEvidenceSchema, Type.Null()]),
+    ),
     applyStatus: Type.Union(
       ["pending", "applied", "compensated", "failed"].map((value) =>
         Type.Literal(value),
@@ -315,6 +321,7 @@ export const LiveDraftArtifactBundleSchema = Type.Object(
     mutationLedger: MutationLedgerSchema,
     saveMetadata: Type.Object(
       {
+        latestSaveEvidence: Type.Union([TemplateSaveEvidenceSchema, Type.Null()]),
         latestSaveReceipt: Type.Union([TemplateSaveReceiptSchema, Type.Null()]),
         completionSnapshot: RunCompletionSnapshotSchema,
       },

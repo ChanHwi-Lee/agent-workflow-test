@@ -6,5 +6,6 @@ export * from "./definitions/image-generate.js";
 export * from "./definitions/layout-selector.js";
 export * from "./definitions/photo-catalog.js";
 export * from "./definitions/style-heuristic.js";
+export * from "./definitions/template-save.js";
 export * from "./definitions/text-layout.js";
 export * from "./registry.js";

@@ -41,7 +41,13 @@ export interface TemplateCandidate {
       | "center_stack_promo"
       | "badge_promo_stack"
       | "framed_promo";
-    backgroundMode?: "spring_pattern" | "pastel_gradient" | "spring_photo";
+    backgroundMode?:
+      | "spring_pattern"
+      | "pastel_gradient"
+      | "spring_photo"
+      | "generated_solid";
+    backgroundColorHex?: string | null;
+    backgroundSourceKind?: "generated_solid";
     decorationMode?:
       | "graphic_cluster"
       | "ribbon_badge"

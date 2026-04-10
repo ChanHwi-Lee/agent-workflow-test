@@ -15,6 +15,10 @@ import type {
   MutationProposalDraft as WorkerMutationProposalDraft,
   TypographyDecision,
 } from "../types.js";
+import {
+  buildRepresentativeReadiness,
+  buildRepresentativeReadinessWarnings,
+} from "./representativeReadiness.js";
 
 type SourceSearchBackground = SourceSearchSummary["background"];
 type SourceSearchGraphic = SourceSearchSummary["graphic"];
@@ -50,6 +54,7 @@ type ArtifactRefState = {
   normalizedIntentRef: string | null;
   ruleJudgeVerdict: RuleJudgeVerdict | null;
   judgePlan: JudgePlan | null;
+  sourceSearchSummary: SourceSearchSummary | null;
 } & Record<ArtifactRefKey, string | null>;
 
 export function buildHeartbeatBase(job: RunJobEnvelope) {
@@ -69,7 +74,9 @@ export function buildSourceSearchSummary(
   graphic: SourceSearchGraphic,
   photo: SourceSearchPhoto,
   font: SourceSearchFont | undefined,
+  typographyDecision: TypographyDecision,
   selectionDecision: SelectionDecision,
+  representativePathEnabled: boolean,
 ): SourceSearchSummary {
   return {
     summaryId: `source_search_${runId}`,
@@ -104,6 +111,11 @@ export function buildSourceSearchSummary(
       selectedSerial: null,
       selectedCategory: null,
     },
+    representativeReadiness: buildRepresentativeReadiness(
+      selectionDecision,
+      typographyDecision,
+      representativePathEnabled,
+    ),
   };
 }
 
@@ -116,13 +128,17 @@ export function buildSelectionLogMessages(
     return [];
   }
 
+  const representativeReadiness = sourceSearchSummary.representativeReadiness;
+
   return [
     {
       level: "info",
       message:
-        `[source/background] returned=${sourceSearchSummary.background.returnedCount} ` +
-        `selectedSerial=${sourceSearchSummary.background.selectedSerial ?? "n/a"} ` +
-        `kind=${sourceSearchSummary.background.selectedCategory ?? "n/a"}`,
+        sourceSearchSummary.background.selectedCategory === "generated_solid"
+          ? `[source/background] mode=generated_solid color=${selectionDecision.selectedBackgroundColorHex}`
+          : `[source/background] returned=${sourceSearchSummary.background.returnedCount} ` +
+            `selectedSerial=${sourceSearchSummary.background.selectedSerial ?? "n/a"} ` +
+            `kind=${sourceSearchSummary.background.selectedCategory ?? "n/a"}`,
     },
     {
       level: "info",
@@ -147,6 +163,16 @@ export function buildSelectionLogMessages(
         `[source/font] inventory=${typographyDecision.inventoryCount} ` +
         `display=${typographyDecision.display?.fontToken ?? "fallback"} ` +
         `body=${typographyDecision.body?.fontToken ?? "fallback"}`,
+    },
+    {
+      level:
+        representativeReadiness.overallStatus === "target_met"
+          ? "info"
+          : "warn",
+      message:
+        `[source/readiness] overall=${representativeReadiness.overallStatus} ` +
+        `graphic=${representativeReadiness.graphic.status} ` +
+        `font=${representativeReadiness.font.status}`,
     },
     {
       level:
@@ -177,32 +203,62 @@ export function buildFinalizeOptions(
     errorSummary?: FinalizeRunDraft["request"]["errorSummary"];
   },
 ) {
+  const representativeFailureOverride =
+    state.sourceSearchSummary?.representativeReadiness.overallStatus === "failed"
+      ? {
+          finalStatus: "failed" as const,
+          errorSummary: {
+            code: "representative_source_readiness_failed",
+            message:
+              "Representative generic promo path did not meet the minimum real graphic/font readiness requirements.",
+          },
+        }
+      : undefined;
+
   const base = {
     cooperativeStopRequested,
     ...(state.normalizedIntentRef
       ? { normalizedIntentRef: state.normalizedIntentRef }
       : {}),
     ...pickDefinedStringRefs(state, OPTIONAL_ARTIFACT_REF_KEYS),
-    ...(state.judgePlan && state.judgePlan.recommendation !== "keep"
+    ...(buildCombinedWarningSummary(state).length > 0
       ? {
-          warningSummary: state.judgePlan.issues.map((issue) => ({
-            code: issue.code,
-            message: issue.message,
-          })),
+          warningSummary: buildCombinedWarningSummary(state),
         }
-      : state.ruleJudgeVerdict?.recommendation === "refine"
-        ? {
-            warningSummary: state.ruleJudgeVerdict.issues.map((issue) => ({
-              code: issue.code,
-              message: issue.message,
-            })),
-          }
-        : {}),
+      : {}),
     assignedSeqs,
-    ...(overrideResult ? { overrideResult } : {}),
+    ...(overrideResult
+      ? { overrideResult }
+      : representativeFailureOverride
+        ? { overrideResult: representativeFailureOverride }
+        : {}),
   };
 
   return base;
+}
+
+function buildCombinedWarningSummary(state: ArtifactRefState) {
+  const judgeWarnings =
+    state.judgePlan && state.judgePlan.recommendation !== "keep"
+      ? state.judgePlan.issues.map((issue) => ({
+          code: issue.code,
+          message: issue.message,
+        }))
+      : state.ruleJudgeVerdict?.recommendation === "refine"
+        ? state.ruleJudgeVerdict.issues.map((issue) => ({
+            code: issue.code,
+            message: issue.message,
+          }))
+        : [];
+  const representativeWarnings =
+    state.sourceSearchSummary?.representativeReadiness.overallStatus ===
+    "degraded"
+      ? buildRepresentativeReadinessWarnings(
+          state.sourceSearchSummary.representativeReadiness,
+        )
+      : [];
+
+  return [...judgeWarnings, ...representativeWarnings];
 }
 
 export function buildArtifactRefs(
@@ -266,12 +322,18 @@ export function buildStageAckRecord(
                 height: Number((command.patch.bounds as { height?: number }).height ?? 0),
               }
             : null,
+      saveEvidence:
+        ack.commandResults?.find(
+          (commandResult) =>
+            commandResult.commandId === command.commandId &&
+            commandResult.saveEvidence !== undefined,
+        )?.saveEvidence ?? null,
     })),
   };
 }
 
 function pickDefinedStringRefs<
-  TState extends Record<string, string | null | RuleJudgeVerdict | JudgePlan>,
+  TState extends Record<string, string | null | RuleJudgeVerdict | JudgePlan | SourceSearchSummary>,
   TKey extends readonly (keyof TState)[],
 >(
   state: TState,

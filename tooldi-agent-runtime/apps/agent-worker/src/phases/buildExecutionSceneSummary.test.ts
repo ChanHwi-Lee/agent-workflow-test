@@ -38,10 +38,12 @@ function createAssetPlan(): AssetPlan {
     primaryVisualFamily: "graphic",
     backgroundBinding: {
       candidateId: "bg-1",
-      sourceAssetId: "background:1",
-      sourceSerial: "1",
-      sourceCategory: "pattern",
-      backgroundMode: "spring_pattern",
+      sourceKind: "generated_solid",
+      sourceAssetId: null,
+      sourceSerial: null,
+      sourceCategory: "generated_solid",
+      colorHex: "#dff2ff",
+      backgroundMode: "generated_solid",
     },
     graphicRoleBindings: [
       {
@@ -80,10 +82,12 @@ function createPhotoAssetPlan(): AssetPlan {
     primaryVisualFamily: "photo",
     backgroundBinding: {
       candidateId: "bg-1",
-      sourceAssetId: "background:1",
-      sourceSerial: "1",
-      sourceCategory: "pattern",
-      backgroundMode: "spring_pattern",
+      sourceKind: "generated_solid",
+      sourceAssetId: null,
+      sourceSerial: null,
+      sourceCategory: "generated_solid",
+      colorHex: "#dff2ff",
+      backgroundMode: "generated_solid",
     },
     graphicRoleBindings: [],
     photoBinding: {

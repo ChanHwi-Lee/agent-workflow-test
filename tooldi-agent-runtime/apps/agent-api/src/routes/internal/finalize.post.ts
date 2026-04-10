@@ -69,9 +69,10 @@ function toAgentRunResultSummary(request: RunFinalizeRequest): AgentRunResultSum
     finalStatus: request.finalStatus,
     draftId: request.draftId ?? null,
     finalRevision: request.finalRevision ?? null,
+    latestSaveEvidence: request.latestSaveEvidence ?? null,
     durabilityState: deriveDurabilityState(
       request.finalStatus,
-      request.latestSaveReceiptId ?? null,
+      request.latestSaveEvidence ?? null,
     ),
     latestSaveReceiptId: request.latestSaveReceiptId ?? null,
     warningCount: warnings.length,
@@ -83,9 +84,9 @@ function toAgentRunResultSummary(request: RunFinalizeRequest): AgentRunResultSum
 
 function deriveDurabilityState(
   finalStatus: RunFinalizeRequest["finalStatus"],
-  latestSaveReceiptId: string | null,
+  latestSaveEvidence: AgentRunResultSummary["latestSaveEvidence"],
 ): AgentRunResultSummary["durabilityState"] {
-  if (latestSaveReceiptId) {
+  if (latestSaveEvidence) {
     if (finalStatus === "completed" || finalStatus === "completed_with_warning") {
       return "final_saved";
     }

@@ -4,6 +4,7 @@ import type {
   ExecutionSlotKey,
   MutationLedgerEntry,
   RunFinalizeRequest,
+  TemplateSaveEvidence,
 } from "@tooldi/agent-contracts";
 
 import type { MutationLedgerRecord } from "../repositories/mutationLedgerRepository.js";
@@ -81,11 +82,26 @@ function buildMutationLedgerEntries(
     ],
     baseRevision: record.mutation.expectedBaseRevision,
     ackRevision: record.ackRecord?.resultingRevision ?? null,
+    saveEvidence: findSaveEvidence(record.ackRecord?.commandResults),
     applyStatus: toApplyStatus(record.ackStatus),
     rollbackGroupId: record.rollbackGroupId,
     emittedAt: record.proposedAt,
     appliedAt: record.ackRecord?.clientObservedAt ?? null,
   }));
+}
+
+function findSaveEvidence(
+  commandResults:
+    | Array<{ op: string; saveEvidence?: TemplateSaveEvidence }>
+    | undefined,
+): TemplateSaveEvidence | null {
+  return (
+    commandResults?.find(
+      (commandResult) =>
+        commandResult.op === "saveTemplate" &&
+        commandResult.saveEvidence !== undefined,
+    )?.saveEvidence ?? null
+  );
 }
 
 function buildSlotBindings(

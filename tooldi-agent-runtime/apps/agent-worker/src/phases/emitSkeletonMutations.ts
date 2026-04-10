@@ -29,6 +29,7 @@ import {
   readPhotoInputs,
   readPolishInputs,
 } from "./planInputParsers.js";
+import { resolveReadabilityPalette } from "./mutationReadabilityPolicy.js";
 
 export interface EmitSkeletonMutationsDependencies {
   textLayoutHelper: TextLayoutHelper;
@@ -77,6 +78,9 @@ export async function emitSkeletonMutations(
     geometryPresets,
     copyInputs.copySlotAnchors,
     copyInputs.resolvedSlotBounds,
+  );
+  const readabilityPalette = resolveReadabilityPalette(
+    foundationInputs.backgroundColorHex,
   );
 
   const commitGroup = plan.actions[0]?.commitGroup ?? createRequestId();
@@ -140,6 +144,9 @@ export async function emitSkeletonMutations(
       sourceAssetId: foundationInputs.selectedBackgroundAssetId,
       sourceSerial: foundationInputs.selectedBackgroundSerial,
       sourceCategory: foundationInputs.selectedBackgroundCategory,
+      styleTokens: {
+        fillColor: foundationInputs.backgroundColorHex,
+      },
     }),
   ];
 
@@ -177,6 +184,9 @@ export async function emitSkeletonMutations(
         textContent: foundationInputs.badgeText,
         fontRole: "display",
         typography,
+        styleTokens: {
+          fillColor: readabilityPalette.inverseTextColor,
+        },
       }),
     );
   }
@@ -251,6 +261,9 @@ export async function emitSkeletonMutations(
       textContent: copyInputs.copySlotTexts.headline ?? normalizedIntent.goalSummary,
       fontRole: "display",
       typography,
+      styleTokens: {
+        fillColor: readabilityPalette.primaryTextColor,
+      },
     }),
     buildCreateLayerCommand(input.job.runId, "copy", {
       slotKey: "supporting_copy",
@@ -264,6 +277,9 @@ export async function emitSkeletonMutations(
       textContent: copyInputs.copySlotTexts.subheadline ?? "지금 바로 확인하세요",
       fontRole: "body",
       typography,
+      styleTokens: {
+        fillColor: readabilityPalette.secondaryTextColor,
+      },
     }),
     buildCreateLayerCommand(input.job.runId, "copy", {
       slotKey: null,
@@ -277,6 +293,9 @@ export async function emitSkeletonMutations(
       textContent: copyInputs.copySlotTexts.offer_line ?? "최대 50% OFF",
       fontRole: "display",
       typography,
+      styleTokens: {
+        fillColor: readabilityPalette.accentTextColor,
+      },
     }),
   ];
 
@@ -294,6 +313,9 @@ export async function emitSkeletonMutations(
         textContent: copyInputs.copySlotTexts.subheadline ?? "지금 바로 확인하세요",
         fontRole: "body",
         typography,
+        styleTokens: {
+          fillColor: readabilityPalette.inverseTextColor,
+        },
       }),
     );
   }
@@ -314,6 +336,10 @@ export async function emitSkeletonMutations(
       textContent: copyInputs.copySlotTexts.cta ?? "자세히 보기",
       fontRole: "display",
       typography,
+      styleTokens: {
+        surfaceColor: readabilityPalette.ctaSurfaceColor,
+        textColor: readabilityPalette.ctaTextColor,
+      },
     }),
     ...buildGraphicRoleCommands(
       input.job.runId,
@@ -366,6 +392,9 @@ export async function emitSkeletonMutations(
       textContent: copyInputs.copySlotTexts.footer_note ?? "이벤트 기간 내 혜택 적용",
       fontRole: "body",
       typography,
+      styleTokens: {
+        fillColor: readabilityPalette.secondaryTextColor,
+      },
     }),
   );
 

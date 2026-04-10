@@ -414,7 +414,11 @@ export function registerBuildNodes(
         state.sourceSearchGraphic,
         state.sourceSearchPhoto,
         state.typographySearchSummary ?? undefined,
+        state.typographyDecision,
         state.selectionDecision,
+        dependencies.env.tooldiCatalogSourceMode !== "placeholder" &&
+          state.intent!.domain === "general_marketing" &&
+          state.intent!.facets.menuType === null,
       );
       const sourceSearchSummaryRef = await persistArtifactTask(
         `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/source-search-summary.json`,

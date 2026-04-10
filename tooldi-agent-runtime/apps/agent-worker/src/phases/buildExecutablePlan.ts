@@ -90,6 +90,7 @@ export async function buildExecutablePlan(
         selectedBackgroundAssetId: assetPlan.backgroundBinding.sourceAssetId,
         selectedBackgroundSerial: assetPlan.backgroundBinding.sourceSerial,
         selectedBackgroundCategory: assetPlan.backgroundBinding.sourceCategory,
+        backgroundColorHex: assetPlan.backgroundBinding.colorHex,
         backgroundMode: assetPlan.backgroundBinding.backgroundMode,
         selectedLayoutCandidateId: selectionDecision.selectedLayoutCandidateId,
         layoutMode: concreteLayoutPlan.resolvedLayoutMode,

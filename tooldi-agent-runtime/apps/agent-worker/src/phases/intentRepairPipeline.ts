@@ -359,6 +359,23 @@ export function repairTemplateIntentDraft(input: {
     );
   }
 
+  const backgroundColorHex =
+    plannerDraft.backgroundColorHex ??
+    heuristicDraft.backgroundColorHex ??
+    "#ffffff";
+  if (
+    plannerDraft.backgroundColorHex !== backgroundColorHex &&
+    backgroundColorHex !== null
+  ) {
+    recordRepair(
+      "backgroundColorHex",
+      plannerDraft.backgroundColorHex ?? null,
+      backgroundColorHex,
+      "background_color_backfilled",
+      "A deterministic background color was backfilled from the planner fallback baseline.",
+    );
+  }
+
   const normalizedKeywords = buildNormalizedKeywords(
     plannerDraft.searchKeywords,
     heuristicDraft.searchKeywords,
@@ -432,6 +449,7 @@ export function repairTemplateIntentDraft(input: {
     canvasPreset,
     layoutIntent,
     tone: plannerDraft.tone,
+    backgroundColorHex,
     requiredSlots: [
       "background",
       "headline",

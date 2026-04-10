@@ -96,6 +96,10 @@ export async function buildAssetPlan(
     searchProfile.graphic.queries[0]?.keyword ??
     searchProfile.photo.queries[0]?.keyword ??
     null;
+  const backgroundColorHex =
+    intent.backgroundColorHex ??
+    selectionDecision.selectedBackgroundColorHex ??
+    searchProfile.background.colorHex;
 
   return {
     planId: createRequestId(),
@@ -105,9 +109,11 @@ export async function buildAssetPlan(
     primaryVisualFamily,
     backgroundBinding: {
       candidateId: selectionDecision.selectedBackgroundCandidateId,
+      sourceKind: "generated_solid",
       sourceAssetId: selectionDecision.selectedBackgroundAssetId,
       sourceSerial: selectionDecision.selectedBackgroundSerial,
       sourceCategory: selectionDecision.selectedBackgroundCategory,
+      colorHex: backgroundColorHex,
       backgroundMode: selectionDecision.backgroundMode,
     },
     graphicRoleBindings,

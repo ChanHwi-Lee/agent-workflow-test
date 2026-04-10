@@ -8,6 +8,7 @@ import { imageGenerateToolDefinition } from "./definitions/image-generate.js";
 import { layoutSelectorToolDefinition } from "./definitions/layout-selector.js";
 import { photoCatalogToolDefinition } from "./definitions/photo-catalog.js";
 import { styleHeuristicToolDefinition } from "./definitions/style-heuristic.js";
+import { templateSaveToolDefinition } from "./definitions/template-save.js";
 import { textLayoutToolDefinition } from "./definitions/text-layout.js";
 
 export interface ToolDefinition extends PlannerEnabledTool {
@@ -29,6 +30,7 @@ export const defaultToolDefinitions = [
   photoCatalogToolDefinition,
   layoutSelectorToolDefinition,
   styleHeuristicToolDefinition,
+  templateSaveToolDefinition,
   imageGenerateToolDefinition,
   imageEditToolDefinition,
   assetStoreToolDefinition,

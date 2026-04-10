@@ -148,7 +148,7 @@ export class RunFinalizeService {
         finalArtifactRef: materialized.bundle.bundleId,
         completionRecordRef: materialized.completionRecord.completionRecordId,
         latestSaveReceiptId: normalized.result.latestSaveReceiptId,
-        latestSavedRevision: materialized.completionRecord.latestSaveReceiptId
+        latestSavedRevision: materialized.completionRecord.latestSaveEvidence
           ? materialized.completionRecord.finalRevision
           : null,
         finalRevision: normalized.result.finalRevision,

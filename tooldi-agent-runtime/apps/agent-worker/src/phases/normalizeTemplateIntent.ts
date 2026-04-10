@@ -64,6 +64,7 @@ export async function normalizeTemplateIntent(
       canvasPreset,
       layoutIntent: "copy_focused",
       tone: "bright_playful",
+      backgroundColorHex: "#ffffff",
       requiredSlots: [
         "background",
         "headline",

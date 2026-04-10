@@ -7,6 +7,7 @@ import {
 } from "@tooldi/agent-llm";
 
 import type { NormalizedIntent, SearchProfileArtifact } from "../types.js";
+import { createGeneratedBackgroundProfile } from "./generatedBackgroundProfile.js";
 
 const RETAIL_MENU_CONTRADICTION_FLAG_CODES = new Set([
   "fashion_menu_photo_contradiction",
@@ -48,14 +49,18 @@ export async function buildSearchProfile(
   const photoType = photoEnabled
     ? derivePhotoType(intent)
     : null;
+  const graphicKeyword =
+    promotionKeyword ??
+    subjectKeyword ??
+    templatePriorKeyword ??
+    seasonKeyword ??
+    firstKeyword(intent);
   const backgroundKeyword =
     seasonKeyword ??
     promotionKeyword ??
     subjectKeyword ??
     templatePriorKeyword ??
     firstKeyword(intent);
-  const graphicKeyword =
-    promotionKeyword ?? subjectKeyword ?? templatePriorKeyword ?? backgroundKeyword;
   const photoKeyword =
     genericPromoIntent
       ? promotionKeyword ?? seasonKeyword ?? templatePriorKeyword ?? backgroundKeyword
@@ -108,33 +113,7 @@ export async function buildSearchProfile(
       (retailMenuContradiction
         ? "; retail/menu contradiction was repaired into fashion-weighted query cues before serialization"
         : ""),
-    background: {
-      objective: "seasonal_backdrop",
-      rationale:
-        backgroundKeyword === "봄"
-          ? "Seasonality drives the backdrop search first"
-          : "Fallback backdrop search uses the strongest available subject keyword",
-      queries: [
-        {
-          label: "background_pattern_primary",
-          type: "pattern",
-          keyword: backgroundKeyword,
-          source: "search",
-        },
-        {
-          label: "background_image_secondary",
-          type: "image",
-          keyword: backgroundKeyword,
-          source: "search",
-        },
-        {
-          label: "background_pattern_fallback",
-          type: "pattern",
-          keyword: null,
-          source: "initial_load",
-        },
-      ],
-    },
+    background: createGeneratedBackgroundProfile(intent),
     graphic: {
       objective: "supporting_promotional_graphics",
       rationale:
@@ -188,7 +167,7 @@ export async function buildSearchProfile(
             },
             {
               label: "photo_seasonal_fallback",
-              keyword: seasonKeyword ?? backgroundKeyword,
+              keyword: seasonKeyword ?? firstKeyword(intent),
               theme: null,
               type: photoType,
               format: photoFormat,
@@ -196,7 +175,7 @@ export async function buildSearchProfile(
               ownerBias,
               source: "search",
               transportApplied: {
-                keyword: (seasonKeyword ?? backgroundKeyword) !== null,
+                keyword: (seasonKeyword ?? firstKeyword(intent)) !== null,
                 theme: false,
                 type: photoType !== null,
                 format: photoFormat !== null,

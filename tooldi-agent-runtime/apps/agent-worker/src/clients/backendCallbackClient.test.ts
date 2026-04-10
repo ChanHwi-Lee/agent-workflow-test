@@ -110,6 +110,12 @@ test("backend callback client hits canonical routes and validates shared respons
     draftId: "draft_run-1",
     finalRevision: 7,
     lastAckedSeq: 1,
+    latestSaveEvidence: {
+      code: "template_draft_run-1",
+      serial: 198008,
+      modified: "2026-04-10T02:42:19.000Z",
+      version: "2",
+    },
     latestSaveReceiptId: "save-receipt-1",
     outputTemplateCode: "template_draft_run-1",
     createdLayerIds: ["layer-1"],

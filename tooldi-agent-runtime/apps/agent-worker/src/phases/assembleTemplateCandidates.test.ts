@@ -52,11 +52,12 @@ test("플레이스홀더 모드에서 후보 세트와 소스 요약을 함께 �
   assert.ok(result.candidates.background.candidates.length > 0);
   assert.ok(result.candidates.layout.candidates.length > 0);
   assert.ok(result.candidates.decoration.candidates.length > 0);
+  assert.equal(result.sourceSearch.background.selectedCategory, "generated_solid");
   assert.equal(result.sourceSearch.background.returnedCount, result.candidates.background.candidates.length);
   assert.equal(result.sourceSearch.graphic.returnedCount, result.candidates.decoration.candidates.length);
 });
 
-test("실소스 모드에서 배경 후보가 비면 Spring 활성화 오류를 던진다", async () => {
+test("실소스 모드에서 그래픽 후보가 비면 Spring 활성화 오류를 던진다", async () => {
   const testRun = createTestRun({
     userInput: {
       prompt: "패션 리테일 봄 세일 배너를 만들어줘",
@@ -107,6 +108,6 @@ test("실소스 모드에서 배경 후보가 비면 Spring 활성화 오류를 
       ),
     (error: unknown) =>
       error instanceof SpringCatalogActivationError &&
-      error.code === "background_candidates_empty",
+      error.code === "graphic_candidates_empty",
   );
 });

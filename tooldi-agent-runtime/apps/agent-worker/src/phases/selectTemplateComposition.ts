@@ -100,6 +100,11 @@ export async function selectTemplateComposition(
     selectedBackgroundAssetId: selectedBackground.sourceAssetId ?? null,
     selectedBackgroundSerial: selectedBackground.sourceSerial ?? null,
     selectedBackgroundCategory: selectedBackground.sourceCategory ?? null,
+    selectedBackgroundColorHex:
+      typeof selectedBackground.payload.backgroundColorHex === "string" &&
+      selectedBackground.payload.backgroundColorHex.length > 0
+        ? selectedBackground.payload.backgroundColorHex
+        : "#ffffff",
     selectedDecorationAssetId: selectedDecoration.sourceAssetId ?? null,
     selectedDecorationSerial: selectedDecoration.sourceSerial ?? null,
     selectedDecorationCategory: selectedDecoration.sourceCategory ?? null,
@@ -111,7 +116,7 @@ export async function selectTemplateComposition(
     topPhotoWidth: topPhotoCandidate?.sourceWidth ?? null,
     topPhotoHeight: topPhotoCandidate?.sourceHeight ?? null,
     topPhotoOrientation: topPhotoCandidate?.payload.photoOrientation ?? null,
-    backgroundMode: selectedBackground.payload.backgroundMode ?? "spring_pattern",
+    backgroundMode: selectedBackground.payload.backgroundMode ?? "generated_solid",
     layoutMode: selectedLayout.payload.layoutMode ?? "copy_left_with_right_decoration",
     decorationMode,
     photoBranchMode: photoBranchDecision.mode,
@@ -196,6 +201,7 @@ function filterCandidatesByPolicy<
 ): T[] {
   const allowedSources = new Set(retrievalStage.allowedSourceFamilies);
   const filtered = candidates.filter((candidate) =>
+    candidate.sourceFamily === "derived_policy" ||
     allowedSources.has(
       candidate.sourceFamily as RetrievalStageResult["allowedSourceFamilies"][number],
     ),

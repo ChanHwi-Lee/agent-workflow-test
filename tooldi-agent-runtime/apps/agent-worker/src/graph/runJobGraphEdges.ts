@@ -40,11 +40,20 @@ export function registerRunJobGraphEdges(graph: any) {
     .addEdge("build_execution_scene_summary", "build_judge_plan")
     .addEdge("build_judge_plan", "decide_refine")
     .addConditionalEdges("decide_refine", (state: any) =>
-      state.refineDecision?.decision === "patch" ? "emit_refinement_patch" : "prepare_finalize",
+      state.refineDecision?.decision === "patch"
+        ? "emit_refinement_patch"
+        : state.lastMutationAck?.status === "acked" &&
+            !state.cooperativeStopRequested
+          ? "emit_save_stage"
+          : "prepare_finalize",
     )
     .addConditionalEdges("emit_refinement_patch", (state: any) =>
       state.currentMutationId ? "await_refinement_ack" : "prepare_finalize",
     )
     .addEdge("await_refinement_ack", "build_execution_scene_summary")
+    .addConditionalEdges("emit_save_stage", (state: any) =>
+      state.currentMutationId ? "await_save_ack" : "prepare_finalize",
+    )
+    .addEdge("await_save_ack", "prepare_finalize")
     .addEdge("prepare_finalize", "send_finalize");
 }

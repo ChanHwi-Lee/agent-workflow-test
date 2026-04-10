@@ -36,6 +36,7 @@ type CreateLayerCommandOptions = {
   photoOrientation?: "portrait" | "landscape" | "square" | null;
   fitMode?: "cover";
   cropMode?: "centered_cover";
+  styleTokens?: Record<string, string | number | boolean | null>;
   fontRole?: "display" | "body";
   typography?: TypographyMetadata;
   textContent?: string | null;
@@ -109,8 +110,28 @@ export function buildCreateLayerCommand(
     layerBlueprint: {
       layerType: options.layerType,
       bounds: options.bounds,
+      ...(options.styleTokens ? { styleTokens: options.styleTokens } : {}),
       metadata,
     },
     editable: true,
+  } satisfies CanvasMutationCommand;
+}
+
+export function buildSaveTemplateCommand(
+  stage: string,
+  reason: "milestone_first_editable" | "run_completed",
+): Extract<CanvasMutationCommand, { op: "saveTemplate" }> {
+  return {
+    commandId: createRequestId(),
+    op: "saveTemplate",
+    slotKey: null,
+    targetRef: {},
+    targetLayerVersion: null,
+    allowNoop: false,
+    metadataTags: {
+      source: "agent-worker-spring-template",
+      stage,
+    },
+    reason,
   } satisfies CanvasMutationCommand;
 }

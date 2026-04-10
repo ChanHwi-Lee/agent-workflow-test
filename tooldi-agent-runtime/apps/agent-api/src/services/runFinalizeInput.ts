@@ -1,6 +1,7 @@
 import type {
   AgentRunResultSummary,
   RunFinalizeRequest,
+  TemplateSaveEvidence,
 } from "@tooldi/agent-contracts";
 
 export type MaterializationInput = {
@@ -27,7 +28,7 @@ export type MaterializationInput = {
   judgePlanRef: string | null;
   refineDecisionRef: string | null;
   sourceMutationRange: NonNullable<RunFinalizeRequest["sourceMutationRange"]>;
-  outputTemplateCode: string | null;
+  latestSaveEvidence: TemplateSaveEvidence | null;
 };
 
 type NormalizeFinalizeInputCommand = {
@@ -51,15 +52,16 @@ export function normalizeFinalizeInput(
     !hasCompleteSaveEvidence(request, result)
   ) {
     const warning = {
-      code: "save_receipt_evidence_incomplete",
+      code: "save_evidence_incomplete",
       message:
-        "Completed status requires save receipt id, output template code, and final revision",
+        "Completed status requires canonical save evidence and final revision",
     };
     const warnings = [...result.warnings, warning];
     result = {
       ...result,
       finalStatus: "save_failed_after_apply",
       durabilityState: "save_uncertain",
+      latestSaveEvidence: null,
       latestSaveReceiptId: null,
       warningCount: warnings.length,
       warnings,
@@ -108,7 +110,7 @@ export function normalizeFinalizeInput(
       judgePlanRef: request.judgePlanRef ?? null,
       refineDecisionRef: request.refineDecisionRef ?? null,
       sourceMutationRange: request.sourceMutationRange,
-      outputTemplateCode: request.outputTemplateCode ?? null,
+      latestSaveEvidence: request.latestSaveEvidence ?? null,
     },
   };
 }
@@ -118,8 +120,7 @@ function hasCompleteSaveEvidence(
   result: AgentRunResultSummary,
 ): boolean {
   return (
-    (request.latestSaveReceiptId ?? null) !== null &&
-    (request.outputTemplateCode ?? null) !== null &&
+    (request.latestSaveEvidence ?? null) !== null &&
     result.finalRevision !== null
   );
 }

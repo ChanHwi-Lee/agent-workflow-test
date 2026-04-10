@@ -143,8 +143,11 @@ async function driveRunStream(accepted) {
 
         if (event.event === "canvas.mutation") {
           const payload = JSON.parse(event.data);
-          await postMutationAck(accepted, payload, currentRevision);
-          currentRevision += 1;
+          currentRevision = await postMutationAck(
+            accepted,
+            payload,
+            currentRevision,
+          );
           console.log(
             `[smoke] acked mutation ${payload.mutation.mutationId} seq=${payload.seq}`,
           );
@@ -194,6 +197,13 @@ function parseSseChunk(chunk) {
 
 async function postMutationAck(accepted, payload, currentRevision) {
   const mutation = payload.mutation;
+  const isSaveOnlyMutation = mutation.commands.every(
+    (command) => command.op === "saveTemplate",
+  );
+  const resultingRevision = isSaveOnlyMutation
+    ? currentRevision
+    : currentRevision + 1;
+  const observedAt = new Date().toISOString();
   const response = await fetch(accepted.mutationAckUrl, {
     method: "POST",
     headers: {
@@ -207,7 +217,7 @@ async function postMutationAck(accepted, payload, currentRevision) {
       status: "applied",
       targetPageId: mutation.pageId,
       baseRevision: currentRevision,
-      resultingRevision: currentRevision + 1,
+      resultingRevision,
       resolvedLayerIds: Object.fromEntries(
         mutation.commands
           .filter((command) => command.targetRef.clientLayerKey)
@@ -221,8 +231,18 @@ async function postMutationAck(accepted, payload, currentRevision) {
         op: command.op,
         status: "applied",
         resolvedLayerId: command.targetRef.clientLayerKey ?? "resolved-layer-1",
+        ...(command.op === "saveTemplate"
+          ? {
+              saveEvidence: {
+                code: `template_${accepted.runId}`,
+                serial: 198008,
+                modified: observedAt,
+                version: "2",
+              },
+            }
+          : {}),
       })),
-      clientObservedAt: new Date().toISOString(),
+      clientObservedAt: observedAt,
     }),
   });
 
@@ -231,6 +251,8 @@ async function postMutationAck(accepted, payload, currentRevision) {
       `Mutation ack failed with ${response.status}: ${await response.text()}`,
     );
   }
+
+  return resultingRevision;
 }
 
 async function startRun(apiBaseUrl) {

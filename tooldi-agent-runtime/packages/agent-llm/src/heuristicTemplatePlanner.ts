@@ -33,6 +33,7 @@ export function createHeuristicTemplatePlanner(): TemplatePlanner {
               ? "hero_focused"
               : "copy_focused",
         tone: "bright_playful",
+        backgroundColorHex: inferBackgroundColorHex(prompt),
         assetPolicy: normalizeTemplateAssetPolicy(
           domain === "cafe" || menuType !== null
             ? "photo_preferred_graphic_allowed"
@@ -65,6 +66,58 @@ export function createHeuristicTemplatePlanner(): TemplatePlanner {
       };
     },
   };
+}
+
+function inferBackgroundColorHex(prompt: string): string {
+  let hash = 0;
+  for (const char of prompt) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+
+  const hue = hash % 360;
+  const saturation = 42;
+  const lightness = 88;
+  return hslToHex(hue, saturation, lightness);
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  const normalizedS = s / 100;
+  const normalizedL = l / 100;
+  const chroma = (1 - Math.abs(2 * normalizedL - 1)) * normalizedS;
+  const hueSection = h / 60;
+  const secondary = chroma * (1 - Math.abs((hueSection % 2) - 1));
+  const match = normalizedL - chroma / 2;
+
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+
+  if (hueSection >= 0 && hueSection < 1) {
+    red = chroma;
+    green = secondary;
+  } else if (hueSection < 2) {
+    red = secondary;
+    green = chroma;
+  } else if (hueSection < 3) {
+    green = chroma;
+    blue = secondary;
+  } else if (hueSection < 4) {
+    green = secondary;
+    blue = chroma;
+  } else if (hueSection < 5) {
+    red = secondary;
+    blue = chroma;
+  } else {
+    red = chroma;
+    blue = secondary;
+  }
+
+  const toHex = (value: number) =>
+    Math.round((value + match) * 255)
+      .toString(16)
+      .padStart(2, "0");
+
+  return `#${toHex(red)}${toHex(green)}${toHex(blue)}`;
 }
 
 export function ensurePlanningDraftSubplans(

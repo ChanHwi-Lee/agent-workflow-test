@@ -18,7 +18,6 @@ import type {
   TemplateCandidateBundle,
 } from "../types.js";
 import {
-  searchBackgroundCandidates,
   searchGraphicCandidates,
   searchPhotoCandidates,
   SpringCatalogActivationError,
@@ -73,10 +72,22 @@ export async function assembleTemplateCandidates(
     selectedSerial: null,
     selectedCategory: null,
   };
+  const generatedBackgroundCandidates = createGeneratedBackgroundCandidateSet(
+    intent,
+  );
+  const generatedBackgroundSummary: SourceSearchFamilySummary = {
+    family: "background",
+    queryAttempts: [],
+    returnedCount: generatedBackgroundCandidates.candidates.length,
+    filteredCount: generatedBackgroundCandidates.candidates.length,
+    fallbackUsed: false,
+    selectedAssetId: null,
+    selectedSerial: null,
+    selectedCategory: "generated_solid",
+  };
 
   if (dependencies.sourceMode === "placeholder") {
-    const [background, graphicDecorations, photoCandidates] = await Promise.all([
-      dependencies.templateCatalogClient.listBackgroundCandidates(catalogContext),
+    const [graphicDecorations, photoCandidates] = await Promise.all([
       dependencies.templateCatalogClient.listGraphicCandidates(catalogContext),
       dependencies.allowPhotoCandidates
         ? dependencies.templateCatalogClient.listPhotoCandidates(catalogContext)
@@ -85,7 +96,7 @@ export async function assembleTemplateCandidates(
 
     return {
       candidates: {
-        background,
+        background: generatedBackgroundCandidates,
         layout: createLayoutCandidateSet(input, intent),
         decoration: {
           setId: `decoration_candidates_${createRequestId()}`,
@@ -95,16 +106,7 @@ export async function assembleTemplateCandidates(
         photo: photoCandidates,
       },
       sourceSearch: {
-        background: {
-          family: "background",
-          queryAttempts: [],
-          returnedCount: background.candidates.length,
-          filteredCount: background.candidates.length,
-          fallbackUsed: false,
-          selectedAssetId: null,
-          selectedSerial: null,
-          selectedCategory: null,
-        },
+        background: generatedBackgroundSummary,
         graphic: {
           family: "graphic",
           queryAttempts: [],
@@ -124,12 +126,7 @@ export async function assembleTemplateCandidates(
     };
   }
 
-  const [backgroundSearch, graphicSearch, photoSearch] = await Promise.all([
-    searchBackgroundCandidates(
-      dependencies.tooldiCatalogSourceClient,
-      searchProfile,
-      templatePriorSummary,
-    ),
+  const [graphicSearch, photoSearch] = await Promise.all([
     searchGraphicCandidates(
       dependencies.tooldiCatalogSourceClient,
       searchProfile,
@@ -147,13 +144,6 @@ export async function assembleTemplateCandidates(
         }),
   ]);
 
-  if (backgroundSearch.candidates.length === 0) {
-    throw new SpringCatalogActivationError(
-      "background_candidates_empty",
-      "Spring real-source activation could not find background candidates",
-    );
-  }
-
   if (graphicSearch.candidates.length === 0) {
     throw new SpringCatalogActivationError(
       "graphic_candidates_empty",
@@ -163,11 +153,7 @@ export async function assembleTemplateCandidates(
 
   return {
     candidates: {
-      background: {
-        setId: `background_candidates_${createRequestId()}`,
-        family: "background",
-        candidates: backgroundSearch.candidates,
-      },
+      background: generatedBackgroundCandidates,
       layout: createLayoutCandidateSet(input, intent),
       decoration: {
         setId: `decoration_candidates_${createRequestId()}`,
@@ -180,9 +166,44 @@ export async function assembleTemplateCandidates(
       },
     },
     sourceSearch: {
-      background: backgroundSearch.summary,
+      background: generatedBackgroundSummary,
       graphic: graphicSearch.summary,
       photo: photoSearch.summary,
     },
+  };
+}
+
+function createGeneratedBackgroundCandidateSet(
+  intent: NormalizedIntent,
+): TemplateCandidateSet {
+  const colorHex = intent.backgroundColorHex ?? "#ffffff";
+
+  return {
+    setId: `background_candidates_${createRequestId()}`,
+    family: "background",
+    candidates: [
+      {
+        candidateId: `background_generated_${colorHex.replace("#", "")}`,
+        family: "background",
+        sourceFamily: "derived_policy",
+        sourceCategory: "generated_solid",
+        summary: `Generated solid background ${colorHex}`,
+        fitScore: 1,
+        selectionReasons: [
+          "background is generated as a solid color in the current generic-promo representative path",
+          "planner-selected color stays inside the current editor-safe solid background lane",
+        ],
+        riskFlags: [],
+        fallbackIfRejected: "",
+        executionAllowed: true,
+        payload: {
+          variantKey: colorHex,
+          backgroundMode: "generated_solid",
+          backgroundColorHex: colorHex,
+          backgroundSourceKind: "generated_solid",
+          themeTokens: ["generated", "solid"],
+        },
+      },
+    ],
   };
 }

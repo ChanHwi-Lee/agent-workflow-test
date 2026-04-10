@@ -6,6 +6,7 @@ import type {
   MutationLedger,
   RunCompletionRecord,
   RunCompletionSnapshot,
+  TemplateSaveEvidence,
   TemplateSaveReceipt,
 } from "@tooldi/agent-contracts";
 import type { ObjectStoreClient } from "@tooldi/agent-persistence";
@@ -56,12 +57,9 @@ export async function materializeRunArtifacts(
   const commitPayloadId = `commit_payload_${input.run.runId}`;
   const completionRecordId = `completion_${input.run.runId}`;
   const parentMutationRangeRef = `mutation_range_${input.run.runId}_${input.input.sourceMutationRange.firstSeq}_${input.input.sourceMutationRange.lastSeq}`;
-  const latestSaveReceipt = buildLatestSaveReceipt(
-    input.commandContext.at,
-    canonicalResult,
-    input.input.outputTemplateCode,
-  );
-  const checkpointId = latestSaveReceipt
+  const latestSaveEvidence = canonicalResult.latestSaveEvidence;
+  const latestSaveReceipt = null;
+  const checkpointId = latestSaveEvidence
     ? `checkpoint_${input.run.runId}_latest_saved`
     : null;
   const bundleRef = `runs/${input.run.runId}/artifacts/${bundleId}.json`;
@@ -71,7 +69,7 @@ export async function materializeRunArtifacts(
       : null;
 
   const savedCheckpoint =
-    checkpointId && checkpointSnapshotRef && latestSaveReceipt
+    checkpointId && checkpointSnapshotRef && latestSaveEvidence
       ? {
           checkpointId,
           checkpointSeq: 1,
@@ -113,7 +111,7 @@ export async function materializeRunArtifacts(
             executionSceneSummaryRef: input.input.executionSceneSummaryRef,
             judgePlanRef: input.input.judgePlanRef,
             refineDecisionRef: input.input.refineDecisionRef,
-            latestSaveReceiptId: latestSaveReceipt.saveReceiptId,
+            latestSaveReceiptId: null,
             bundleRef,
           },
           ledgerBoundary: {
@@ -130,7 +128,7 @@ export async function materializeRunArtifacts(
             bundleSnapshotRef: checkpointSnapshotRef,
             snapshotArtifactType: "LiveDraftArtifactBundle" as const,
             snapshotArtifactVersion: "v1" as const,
-            checkpointRevision: latestSaveReceipt.savedRevision,
+            checkpointRevision: canonicalResult.finalRevision,
             rootLayerIds: input.ledgerProjection.rootLayerIds,
             editableLayerIds: input.ledgerProjection.editableLayerIds,
             referencedAssetIds: [],
@@ -148,7 +146,7 @@ export async function materializeRunArtifacts(
           },
           recoveryBase: {
             restoreTargetKind: "latest_saved_revision" as const,
-            restoreTargetRevision: latestSaveReceipt.savedRevision,
+            restoreTargetRevision: canonicalResult.finalRevision,
             restoreTargetCheckpointId: checkpointId,
             durabilityState: canonicalResult.durabilityState,
           },
@@ -164,7 +162,7 @@ export async function materializeRunArtifacts(
     checkpoints,
     lastKnownGoodCheckpointId: checkpointId,
     reconciledThroughSeq: input.input.sourceMutationRange.reconciledThroughSeq,
-    lastKnownGoodRevision: latestSaveReceipt?.savedRevision ?? null,
+    lastKnownGoodRevision: canonicalResult.finalRevision,
   };
 
   const manifestProjection = {
@@ -236,6 +234,7 @@ export async function materializeRunArtifacts(
     referencedStoredAssets: [],
     mutationLedger,
     saveMetadata: {
+      latestSaveEvidence,
       latestSaveReceipt,
       completionSnapshot,
     },
@@ -288,6 +287,7 @@ export async function materializeRunArtifacts(
     minimumDraftSatisfied: input.ledgerProjection.minimumDraftSatisfied,
     sourceMutationRange: input.input.sourceMutationRange,
     finalRevision: canonicalResult.finalRevision,
+    latestSaveEvidence,
     latestSaveReceiptId: canonicalResult.latestSaveReceiptId,
     draftGeneratedAt: input.commandContext.at,
     completedAt: input.commandContext.at,
@@ -364,28 +364,12 @@ export async function materializeRunArtifacts(
   };
 }
 
-function buildLatestSaveReceipt(
-  finalizedAt: string,
-  result: AgentRunResultSummary,
-  outputTemplateCode: string | null,
+function _buildLatestSaveReceiptCompat(
+  _finalizedAt: string,
+  _result: AgentRunResultSummary,
+  _evidence: TemplateSaveEvidence | null,
 ): TemplateSaveReceipt | null {
-  if (
-    (result.finalStatus !== "completed" &&
-      result.finalStatus !== "completed_with_warning") ||
-    result.latestSaveReceiptId === null ||
-    outputTemplateCode === null ||
-    result.finalRevision === null
-  ) {
-    return null;
-  }
-
-  return {
-    saveReceiptId: result.latestSaveReceiptId,
-    outputTemplateCode,
-    savedRevision: result.finalRevision,
-    savedAt: finalizedAt,
-    reason: "run_completed",
-  };
+  return null;
 }
 
 function enforceMinimumDraft(
@@ -409,6 +393,7 @@ function enforceMinimumDraft(
     ...result,
     finalStatus: "failed",
     durabilityState: "no_saved_draft",
+    latestSaveEvidence: null,
     latestSaveReceiptId: null,
     warningCount: result.warnings.length + 1,
     warnings: [...result.warnings, issue],

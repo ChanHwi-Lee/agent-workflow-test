@@ -10,6 +10,7 @@ import {
   TerminalRunStatusSchema,
   WarningItemSchema,
 } from "../common.js";
+import { TemplateSaveEvidenceSchema } from "../canvas/template-save-receipt.js";
 
 export const AgentRunResultSummarySchema = Type.Object(
   {
@@ -17,6 +18,7 @@ export const AgentRunResultSummarySchema = Type.Object(
     draftId: Type.Union([IdentifierSchema, Type.Null()]),
     finalRevision: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
     durabilityState: DurabilityStateSchema,
+    latestSaveEvidence: Type.Union([TemplateSaveEvidenceSchema, Type.Null()]),
     latestSaveReceiptId: Type.Union([IdentifierSchema, Type.Null()]),
     warningCount: Type.Integer({ minimum: 0 }),
     fallbackCount: Type.Integer({ minimum: 0 }),
@@ -85,6 +87,7 @@ export const RunCompletionRecordSchema = Type.Object(
       { additionalProperties: false },
     ),
     finalRevision: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
+    latestSaveEvidence: Type.Union([TemplateSaveEvidenceSchema, Type.Null()]),
     latestSaveReceiptId: Type.Union([IdentifierSchema, Type.Null()]),
     draftGeneratedAt: IsoDateTimeSchema,
     completedAt: IsoDateTimeSchema,

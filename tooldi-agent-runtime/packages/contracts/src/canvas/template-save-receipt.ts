@@ -3,6 +3,16 @@ import type { Static } from "@sinclair/typebox";
 
 import { IdentifierSchema, IsoDateTimeSchema } from "../common.js";
 
+export const TemplateSaveEvidenceSchema = Type.Object(
+  {
+    code: Type.String({ minLength: 1 }),
+    serial: Type.Integer({ minimum: 1 }),
+    modified: IsoDateTimeSchema,
+    version: Type.String({ minLength: 1 }),
+  },
+  { additionalProperties: false },
+);
+
 export const TemplateSaveReceiptSchema = Type.Object(
   {
     saveReceiptId: IdentifierSchema,
@@ -18,4 +28,5 @@ export const TemplateSaveReceiptSchema = Type.Object(
   { additionalProperties: false },
 );
 
+export type TemplateSaveEvidence = Static<typeof TemplateSaveEvidenceSchema>;
 export type TemplateSaveReceipt = Static<typeof TemplateSaveReceiptSchema>;
