@@ -19,6 +19,17 @@ export interface EmitRefinementMutationsDependencies {
   textLayoutHelper: TextLayoutHelper;
 }
 
+type CreateLayerCommand = Extract<
+  CanvasMutationEnvelope["commands"][number],
+  { op: "createLayer" }
+>;
+type UpdateLayerCommand = Extract<
+  CanvasMutationEnvelope["commands"][number],
+  { op: "updateLayer" }
+>;
+
+type CopyLayerBinding = ExecutionSceneSummary["copyLayerBindings"][number];
+
 export async function emitRefinementMutations(
   input: HydratedPlanningInput,
   normalizedIntent: NormalizedIntent,
@@ -55,6 +66,7 @@ export async function emitRefinementMutations(
     refinedBatch,
     executionSceneSummary,
     lastMutationAck,
+    refineDecision.patchPlan.operations,
   );
 
   return {
@@ -138,24 +150,28 @@ function buildRefinementProposal(
   refinedBatch: Awaited<ReturnType<typeof emitSkeletonMutations>>,
   executionSceneSummary: ExecutionSceneSummary,
   lastMutationAck: WaitMutationAckResponse,
+  operations: RefinementPatchOperation[],
 ) {
-  const copyProposal = refinedBatch.proposals.find((proposal) => proposal.stageLabel === "copy");
-  const polishProposal = refinedBatch.proposals.find(
-    (proposal) => proposal.stageLabel === "polish",
+  assertSupportedPatchOperations(operations);
+  const refinedCreateCommands = refinedBatch.proposals.flatMap((proposal) =>
+    proposal.mutation.commands.filter(
+      (
+        command,
+      ): command is CreateLayerCommand => command.op === "createLayer",
+    ),
   );
-
-  const commands = [
-    ...convertCreateCommandsToPatchCommands(
-      copyProposal?.mutation.commands ?? [],
-      executionSceneSummary,
-      lastMutationAck,
-    ),
-    ...convertCreateCommandsToPatchCommands(
-      polishProposal?.mutation.commands ?? [],
-      executionSceneSummary,
-      lastMutationAck,
-    ),
-  ];
+  const refinedCommandsByExecutionSlot = new Map(
+    refinedCreateCommands
+      .filter((command) => command.executionSlotKey !== null && command.executionSlotKey !== undefined)
+      .map((command) => [command.executionSlotKey!, command] as const),
+  );
+  const commands = compilePatchCommands(
+    operations,
+    refinedCommandsByExecutionSlot,
+    refinedCreateCommands,
+    executionSceneSummary,
+    lastMutationAck,
+  );
 
   if (commands.length === 0) {
     return null;
@@ -195,111 +211,164 @@ function buildRefinementProposal(
   };
 }
 
-function convertCreateCommandsToPatchCommands(
-  commands: CanvasMutationEnvelope["commands"],
+function compilePatchCommands(
+  operations: RefinementPatchOperation[],
+  refinedCommandsByExecutionSlot: Map<
+    NonNullable<CreateLayerCommand["executionSlotKey"]>,
+    CreateLayerCommand
+  >,
+  refinedCreateCommands: CreateLayerCommand[],
   executionSceneSummary: ExecutionSceneSummary,
   lastMutationAck: WaitMutationAckResponse,
 ): CanvasMutationEnvelope["commands"] {
-  const converted: CanvasMutationEnvelope["commands"] = [];
+  const rewriteSlots = new Set(
+    operations
+      .filter(
+        (operation): operation is Extract<
+          RefinementPatchOperation,
+          { kind: "rewrite_copy_slot_text" }
+        > => operation.kind === "rewrite_copy_slot_text",
+      )
+      .map((operation) => operation.slotKey),
+  );
+  const requiresLayoutPatch = operations.some(
+    (operation) =>
+      operation.kind === "move_copy_slot_anchor" ||
+      operation.kind === "set_spacing_intent",
+  );
+  const needsCtaContainerFallback = operations.some(
+    (operation) => operation.kind === "ensure_cta_container_fallback",
+  );
 
-  for (const command of commands) {
-    if (command.op !== "createLayer") {
+  const commands: CanvasMutationEnvelope["commands"] = [];
+
+  for (const binding of executionSceneSummary.copyLayerBindings) {
+    const refinedCommand = refinedCommandsByExecutionSlot.get(binding.executionSlotKey);
+    if (!refinedCommand || !binding.layerId) {
       continue;
     }
 
-    const existingLayerId =
-      resolveExistingLayerId(command, executionSceneSummary) ??
-      (command.layerBlueprint.metadata.role === "cta_container" ? null : null);
+    const nextBounds = refinedCommand.layerBlueprint.bounds;
+    const currentBounds = binding.resolvedBounds ?? binding.plannedBounds;
+    const boundsChanged =
+      requiresLayoutPatch && !areBoundsEqual(currentBounds, nextBounds);
+    const textChanged = rewriteSlots.has(binding.executionSlotKey);
 
-    if (existingLayerId) {
-      const patchMask: Array<
-        "bounds" | "metadata" | "styleTokens"
-      > = ["bounds", "metadata"];
-      if (command.layerBlueprint.styleTokens) {
-        patchMask.push("styleTokens");
-      }
-      converted.push({
-        commandId: createRequestId(),
-        op: "updateLayer",
-        slotKey: command.slotKey,
-        executionSlotKey: command.executionSlotKey ?? null,
-        clientLayerKey: command.clientLayerKey,
-        targetRef: {
-          layerId: existingLayerId,
-          clientLayerKey: command.clientLayerKey,
-          ...(command.slotKey ? { slotKey: command.slotKey } : {}),
-        },
-        targetLayerVersion: lastMutationAck.resultingRevision ?? 0,
-        expectedLayerType: command.layerBlueprint.layerType as
-          | "shape"
-          | "text"
-          | "group"
-          | "image"
-          | "sticker",
-        allowNoop: true,
-        metadataTags: {
-          phase: "refine",
-          role:
-            typeof command.layerBlueprint.metadata.role === "string"
-              ? command.layerBlueprint.metadata.role
-              : null,
-        },
+    if (!boundsChanged && !textChanged) {
+      continue;
+    }
+
+    const patchMask: UpdateLayerCommand["patchMask"] = [];
+    const patch: UpdateLayerCommand["patch"] = {};
+    if (boundsChanged) {
+      patchMask.push("bounds");
+      patch.bounds = nextBounds;
+    }
+    if (textChanged) {
+      patchMask.push("metadata");
+      patch.metadata = {
+        copyText: readCommandCopyText(refinedCommand),
+      };
+    }
+
+    commands.push(
+      buildUpdateLayerPatchCommand(
+        refinedCommand,
+        { ...binding, layerId: binding.layerId },
         patchMask,
-        patch: {
-          bounds: command.layerBlueprint.bounds,
-          metadata: command.layerBlueprint.metadata,
-          ...(command.layerBlueprint.styleTokens
-            ? { styleTokens: command.layerBlueprint.styleTokens }
-            : {}),
-        },
-        preserveLayerId: true,
-      });
-      continue;
-    }
+        patch,
+        lastMutationAck,
+      ),
+    );
+  }
 
-    if (
-      typeof command.layerBlueprint.metadata.role === "string" &&
-      command.layerBlueprint.metadata.role === "cta_container"
-    ) {
-      converted.push(command);
+  if (needsCtaContainerFallback && !executionSceneSummary.ctaContainerResolved) {
+    const fallbackCommand = refinedCreateCommands.find(isFallbackCtaContainerCommand);
+    if (fallbackCommand) {
+      commands.push(fallbackCommand);
     }
   }
 
-  return converted;
+  return commands;
 }
 
-function resolveExistingLayerId(
-  command: Extract<CanvasMutationEnvelope["commands"][number], { op: "createLayer" }>,
-  executionSceneSummary: ExecutionSceneSummary,
-): string | null {
-  const metadataRole =
-    typeof command.layerBlueprint.metadata.role === "string"
-      ? command.layerBlueprint.metadata.role
-      : null;
-  const executionSlotKey = command.executionSlotKey ?? null;
+function buildUpdateLayerPatchCommand(
+  command: CreateLayerCommand,
+  binding: CopyLayerBinding & { layerId: string },
+  patchMask: UpdateLayerCommand["patchMask"],
+  patch: UpdateLayerCommand["patch"],
+  lastMutationAck: WaitMutationAckResponse,
+): UpdateLayerCommand {
+  return {
+    commandId: createRequestId(),
+    op: "updateLayer",
+    slotKey: command.slotKey,
+    executionSlotKey: command.executionSlotKey ?? null,
+    clientLayerKey: command.clientLayerKey,
+    targetRef: {
+      layerId: binding.layerId,
+      clientLayerKey: command.clientLayerKey,
+      ...(command.slotKey ? { slotKey: command.slotKey } : {}),
+    },
+    targetLayerVersion: lastMutationAck.resultingRevision ?? 0,
+    expectedLayerType: command.layerBlueprint.layerType as UpdateLayerCommand["expectedLayerType"],
+    allowNoop: true,
+    metadataTags: {
+      phase: "refine",
+      role:
+        typeof command.layerBlueprint.metadata.role === "string"
+          ? command.layerBlueprint.metadata.role
+          : null,
+    },
+    patchMask,
+    patch,
+    preserveLayerId: true,
+  };
+}
 
-  if (executionSlotKey) {
-    if (executionSlotKey === "hero_image") {
-      return executionSceneSummary.photoLayerBinding?.layerId ?? null;
-    }
+function readCommandCopyText(command: CreateLayerCommand): string | null {
+  return typeof command.layerBlueprint.metadata.copyText === "string"
+    ? command.layerBlueprint.metadata.copyText
+    : null;
+}
 
-    const copyBinding = executionSceneSummary.copyLayerBindings.find(
-      (candidate) => candidate.executionSlotKey === executionSlotKey,
-    );
-    if (copyBinding?.layerId) {
-      return copyBinding.layerId;
-    }
+function isFallbackCtaContainerCommand(command: CreateLayerCommand): boolean {
+  return (
+    command.layerBlueprint.layerType === "shape" &&
+    command.layerBlueprint.metadata.role === "cta_container" &&
+    command.layerBlueprint.metadata.renderPrimitive == null
+  );
+}
+
+function assertSupportedPatchOperations(
+  operations: RefinementPatchOperation[],
+): void {
+  const unsupportedOperation = operations.find(
+    (operation) => operation.kind === "move_graphic_role_zone",
+  );
+  if (!unsupportedOperation) {
+    return;
   }
+  throw new Error(
+    `Unsupported refine patch operation for bounded runtime compiler: ${unsupportedOperation.kind}`,
+  );
+}
 
-  if (metadataRole) {
-    return (
-      executionSceneSummary.graphicLayerBindings.find(
-        (binding) => binding.role === metadataRole,
-      )?.layerId ?? null
-    );
+function areBoundsEqual(
+  left:
+    | ExecutionSceneSummary["copyLayerBindings"][number]["resolvedBounds"]
+    | null,
+  right: CreateLayerCommand["layerBlueprint"]["bounds"],
+): boolean {
+  if (!left) {
+    return false;
   }
-
-  return null;
+  return (
+    left.x === right.x &&
+    left.y === right.y &&
+    left.width === right.width &&
+    left.height === right.height
+  );
 }
 
 function ensureRecord(value: unknown): Record<string, unknown> {

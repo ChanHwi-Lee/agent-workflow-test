@@ -2285,6 +2285,10 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
       } => event.event.type === "mutation.proposed",
     )
     .map((event) => event.event.mutation);
+  const refineMutation = proposedMutations.find((mutation) =>
+    mutation.idempotencyKey.startsWith("refine_patch_"),
+  );
+  assert.ok(refineMutation);
 
   for (const mutation of proposedMutations) {
     for (const command of mutation.commands) {
@@ -2305,6 +2309,14 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
           "layerBlueprint" in command &&
           command.layerBlueprint.metadata?.role === "hero_caption",
       ),
+    ),
+    false,
+  );
+  assert.equal(
+    refineMutation?.commands.some(
+      (command) =>
+        command.op === "updateLayer" &&
+        command.expectedLayerType === "shape",
     ),
     false,
   );

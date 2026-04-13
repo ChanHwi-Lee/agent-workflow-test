@@ -50,6 +50,8 @@ function createIntent(overrides: Partial<NormalizedIntent> = {}): NormalizedInte
     canvasPreset: "wide_1200x628",
     layoutIntent: "hero_focused",
     tone: "bright_playful",
+    subjectBinding: "product_anchored",
+    offerIntent: "launch",
     requiredSlots: [
       "background",
       "headline",
@@ -60,6 +62,7 @@ function createIntent(overrides: Partial<NormalizedIntent> = {}): NormalizedInte
     assetPolicy: normalizeTemplateAssetPolicy(
       "photo_preferred_graphic_allowed",
     ),
+    primaryVisualPolicy: "photo_preferred",
     searchKeywords: ["봄", "카페", "신메뉴", "프로모션"],
     facets: {
       seasonality: "spring",

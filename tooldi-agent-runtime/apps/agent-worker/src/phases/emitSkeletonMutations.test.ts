@@ -64,6 +64,8 @@ function createNormalizedIntent(): NormalizedIntent {
     canvasPreset: "wide_1200x628",
     layoutIntent: "copy_focused",
     tone: "bright_playful",
+    subjectBinding: "subjectless",
+    offerIntent: "announcement",
     backgroundColorHex: "#dff2ff",
     requiredSlots: [
       "background",
@@ -73,6 +75,7 @@ function createNormalizedIntent(): NormalizedIntent {
       "decoration",
     ],
     assetPolicy: normalizeTemplateAssetPolicy("graphic_allowed_photo_optional"),
+    primaryVisualPolicy: "graphic_preferred",
     searchKeywords: ["오픈", "이벤트", "프로모션"],
     facets: {
       seasonality: "spring",
@@ -276,7 +279,6 @@ test("emitSkeletonMutations uses copy slot text and concrete layout hints in mut
         estimate: async () => ({
           width: 240,
           height: 84,
-          lineCount: 1,
           estimatedLineCount: 1,
         }),
       },
@@ -361,7 +363,6 @@ test("emitSkeletonMutations는 layoutGeometry 계산 결과와 같은 bounds를 
         estimate: async () => ({
           width: 240,
           height: 84,
-          lineCount: 1,
           estimatedLineCount: 1,
         }),
       },

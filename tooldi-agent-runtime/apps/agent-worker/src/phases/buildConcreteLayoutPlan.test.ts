@@ -231,7 +231,7 @@ test("buildConcreteLayoutPlan resolves promo topology from abstract layout and a
     }),
     {
       textLayoutHelper: {
-        estimate: async () => ({ width: 240, height: 84, lineCount: 1, estimatedLineCount: 1 }),
+        estimate: async () => ({ width: 240, height: 84, estimatedLineCount: 1 }),
       },
     },
   );
@@ -278,7 +278,7 @@ test("buildConcreteLayoutPlan keeps subject hero only for photo primary", async 
     }),
     {
       textLayoutHelper: {
-        estimate: async () => ({ width: 240, height: 84, lineCount: 1, estimatedLineCount: 1 }),
+        estimate: async () => ({ width: 240, height: 84, estimatedLineCount: 1 }),
       },
     },
   );
