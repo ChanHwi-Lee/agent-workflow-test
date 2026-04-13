@@ -89,8 +89,8 @@ export async function materializeRunArtifacts(
           sourceRefs: {
             requestRef: input.run.requestRef,
             snapshotRef: input.run.snapshotRef,
-            normalizedIntentDraftRef: input.input.normalizedIntentDraftRef,
-            intentNormalizationReportRef: input.input.intentNormalizationReportRef,
+            semanticBriefDraftRef: input.input.semanticBriefDraftRef,
+            briefCompilationReportRef: input.input.briefCompilationReportRef,
             copyPlanRef: input.input.copyPlanRef,
             copyPlanNormalizationReportRef:
               input.input.copyPlanNormalizationReportRef,
@@ -99,7 +99,7 @@ export async function materializeRunArtifacts(
               input.input.abstractLayoutPlanNormalizationReportRef,
             assetPlanRef: input.input.assetPlanRef,
             concreteLayoutPlanRef: input.input.concreteLayoutPlanRef,
-            normalizedIntentRef: input.input.normalizedIntentRef,
+            canonicalDesignBriefRef: input.input.canonicalDesignBriefRef,
             templatePriorSummaryRef: input.input.templatePriorSummaryRef,
             executablePlanRef: input.input.executablePlanRef,
             candidateSetRef: input.input.candidateSetRef,
@@ -294,12 +294,12 @@ export async function materializeRunArtifacts(
     sourceRefs: {
       requestRef: input.run.requestRef,
       snapshotRef: input.run.snapshotRef,
-      normalizedIntentRef: input.input.normalizedIntentRef,
-      ...(input.input.normalizedIntentDraftRef
-        ? { normalizedIntentDraftRef: input.input.normalizedIntentDraftRef }
+      canonicalDesignBriefRef: input.input.canonicalDesignBriefRef,
+      ...(input.input.semanticBriefDraftRef
+        ? { semanticBriefDraftRef: input.input.semanticBriefDraftRef }
         : {}),
-      ...(input.input.intentNormalizationReportRef
-        ? { intentNormalizationReportRef: input.input.intentNormalizationReportRef }
+      ...(input.input.briefCompilationReportRef
+        ? { briefCompilationReportRef: input.input.briefCompilationReportRef }
         : {}),
       ...(input.input.copyPlanRef ? { copyPlanRef: input.input.copyPlanRef } : {}),
       ...(input.input.copyPlanNormalizationReportRef

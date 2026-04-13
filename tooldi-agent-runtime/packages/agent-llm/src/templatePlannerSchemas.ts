@@ -28,6 +28,22 @@ export const templatePrimaryVisualPolicies = [
 export type TemplatePrimaryVisualPolicy =
   (typeof templatePrimaryVisualPolicies)[number];
 
+export const templateSubjectBindings = [
+  "subjectless",
+  "domain_anchored",
+  "product_anchored",
+  "venue_anchored",
+] as const;
+export type TemplateSubjectBinding = (typeof templateSubjectBindings)[number];
+
+export const templateOfferIntents = [
+  "sale",
+  "launch",
+  "announcement",
+  "evergreen",
+] as const;
+export type TemplateOfferIntent = (typeof templateOfferIntents)[number];
+
 const templateAssetFamilySchema = z.enum(templateAssetFamilies);
 
 export const TemplateAssetPolicySchema = z
@@ -162,7 +178,7 @@ export type TemplateAbstractLayoutDraft = z.infer<
   typeof TemplateAbstractLayoutDraftSchema
 >;
 
-export const TemplateIntentDraftSchema = z.object({
+export const TemplateSemanticBriefDraftSchema = z.object({
   goalSummary: z.string().min(1).max(80),
   templateKind: z.enum(["promo_banner", "seasonal_sale_banner"]),
   domain: z.enum([
@@ -183,6 +199,8 @@ export const TemplateIntentDraftSchema = z.object({
     "sale_conversion",
     "promotion_awareness",
   ]),
+  subjectBinding: z.enum(templateSubjectBindings).optional(),
+  offerIntent: z.enum(templateOfferIntents).optional(),
   layoutIntent: z.enum(["copy_focused", "hero_focused", "badge_led"]),
   tone: z.enum(["bright_playful"]),
   backgroundColorHex: z
@@ -190,28 +208,73 @@ export const TemplateIntentDraftSchema = z.object({
     .regex(/^#[0-9a-fA-F]{6}$/)
     .optional(),
   assetPolicy: TemplateAssetPolicyBoundarySchema,
-  searchKeywords: z.array(z.string().min(1).max(20)).min(1).max(5),
   typographyHint: z.string().nullable(),
+  searchKeywords: z.array(z.string().min(1).max(20)).min(1).max(5).optional(),
   facets: z.object({
     seasonality: z.enum(["spring"]).nullable(),
     menuType: z.enum(["food_menu", "drink_menu"]).nullable(),
-    promotionStyle: z.enum([
-      "seasonal_menu_launch",
-      "new_product_promo",
-      "sale_campaign",
-      "general_campaign",
-    ]),
+    promotionStyle: z
+      .enum([
+        "seasonal_menu_launch",
+        "new_product_promo",
+        "sale_campaign",
+        "general_campaign",
+      ])
+      .optional(),
     offerSpecificity: z.enum([
       "single_product",
       "multi_item",
       "broad_offer",
     ]),
   }),
-  copyPlanDraft: TemplateCopyPlanDraftSchema.optional(),
-  abstractLayoutDraft: TemplateAbstractLayoutDraftSchema.optional(),
 });
 
-export type TemplateIntentDraft = z.infer<typeof TemplateIntentDraftSchema>;
+export type TemplateSemanticBriefDraft = z.infer<
+  typeof TemplateSemanticBriefDraftSchema
+>;
+
+export interface TemplateSemanticBriefContext {
+  goalSummary: string;
+  canvasPreset: string;
+  templateKind: "promo_banner" | "seasonal_sale_banner";
+  domain: "restaurant" | "cafe" | "fashion_retail" | "general_marketing";
+  audience:
+    | "walk_in_customers"
+    | "local_visitors"
+    | "sale_shoppers"
+    | "general_consumers";
+  campaignGoal:
+    | "menu_discovery"
+    | "product_trial"
+    | "sale_conversion"
+    | "promotion_awareness";
+  subjectBinding: TemplateSubjectBinding;
+  offerIntent: TemplateOfferIntent;
+  layoutIntent: "copy_focused" | "hero_focused" | "badge_led";
+  tone: "bright_playful";
+  backgroundColorHex?: string | null;
+  assetPolicy: TemplateAssetPolicy;
+  searchKeywords: string[];
+  facets: {
+    seasonality: "spring" | null;
+    menuType: "food_menu" | "drink_menu" | null;
+    promotionStyle:
+      | "seasonal_menu_launch"
+      | "new_product_promo"
+      | "sale_campaign"
+      | "general_campaign";
+    offerSpecificity: "single_product" | "multi_item" | "broad_offer";
+  };
+  brandConstraints: {
+    palette: string[];
+    typographyHint: string | null;
+    forbiddenStyles: string[];
+  };
+  requiredSlots: Array<
+    "background" | "headline" | "supporting_copy" | "cta" | "decoration"
+  >;
+  primaryVisualPolicy: TemplatePrimaryVisualPolicy;
+}
 
 export interface TemplatePlannerInput {
   prompt: string;
@@ -221,7 +284,23 @@ export interface TemplatePlannerInput {
 
 export interface TemplatePlanner {
   readonly mode: TemplatePlannerMode;
-  plan(input: TemplatePlannerInput): Promise<TemplateIntentDraft>;
+  plan(input: TemplatePlannerInput): Promise<TemplateSemanticBriefDraft>;
+}
+
+export interface TemplateCopyPlanGenerator {
+  readonly mode: TemplatePlannerMode;
+  generate(input: {
+    prompt: string;
+    brief: TemplateSemanticBriefContext;
+  }): Promise<TemplateCopyPlanDraft>;
+}
+
+export interface TemplateAbstractLayoutGenerator {
+  readonly mode: TemplatePlannerMode;
+  generate(input: {
+    prompt: string;
+    brief: TemplateSemanticBriefContext;
+  }): Promise<TemplateAbstractLayoutDraft>;
 }
 
 export interface StructuredOutputModel<TSchema extends z.ZodTypeAny> {
@@ -237,9 +316,16 @@ export interface StructuredOutputModel<TSchema extends z.ZodTypeAny> {
   };
 }
 
-export function parseTemplateIntentDraft(value: unknown): TemplateIntentDraft {
-  return TemplateIntentDraftSchema.parse(value);
+export function parseTemplateSemanticBriefDraft(
+  value: unknown,
+): TemplateSemanticBriefDraft {
+  return TemplateSemanticBriefDraftSchema.parse(value);
 }
+
+// Transitional compile-time aliases while worker internals are renamed to brief-native types.
+export const TemplateIntentDraftSchema = TemplateSemanticBriefDraftSchema;
+export type TemplateIntentDraft = TemplateSemanticBriefDraft;
+export const parseTemplateIntentDraft = parseTemplateSemanticBriefDraft;
 
 export function resolvePrimaryVisualFamily(
   primaryVisualPolicy: TemplatePrimaryVisualPolicy,

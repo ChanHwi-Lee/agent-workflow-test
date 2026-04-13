@@ -197,9 +197,9 @@ export const RunFinalizeRequestSchema = Type.Object(
     outputTemplateCode: Type.Optional(
       Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
     ),
-    normalizedIntentRef: Type.Optional(IdentifierSchema),
-    normalizedIntentDraftRef: Type.Optional(IdentifierSchema),
-    intentNormalizationReportRef: Type.Optional(IdentifierSchema),
+    canonicalDesignBriefRef: Type.Optional(IdentifierSchema),
+    semanticBriefDraftRef: Type.Optional(IdentifierSchema),
+    briefCompilationReportRef: Type.Optional(IdentifierSchema),
     copyPlanRef: Type.Optional(IdentifierSchema),
     copyPlanNormalizationReportRef: Type.Optional(IdentifierSchema),
     abstractLayoutPlanRef: Type.Optional(IdentifierSchema),

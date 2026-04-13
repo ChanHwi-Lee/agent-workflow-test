@@ -229,8 +229,8 @@ export function registerFinalizeNodes(
       return {
         result: {
           intent: state.intent,
-          ...(state.normalizedIntentDraft
-            ? { normalizedIntentDraft: state.normalizedIntentDraft }
+          ...(state.semanticBriefDraft
+            ? { semanticBriefDraft: state.semanticBriefDraft }
             : {}),
           ...(state.intentNormalizationReport
             ? { intentNormalizationReport: state.intentNormalizationReport }

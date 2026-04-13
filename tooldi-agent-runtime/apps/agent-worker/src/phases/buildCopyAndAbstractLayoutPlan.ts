@@ -2,7 +2,8 @@ import { createRequestId } from "@tooldi/agent-domain";
 import type {
   TemplateAbstractLayoutDraft,
   TemplateCopyPlanDraft,
-  TemplateIntentDraft,
+  TemplateAbstractLayoutGenerator,
+  TemplateCopyPlanGenerator,
 } from "@tooldi/agent-llm";
 import { normalizeTemplateAssetPolicy } from "@tooldi/agent-llm";
 
@@ -24,21 +25,23 @@ interface BuildCopyAndAbstractLayoutPlanResult {
   abstractLayoutPlanNormalizationReport: AbstractLayoutPlanNormalizationReport;
 }
 
-const GENERIC_PROMO_LEAKAGE_PATTERN =
-  /메뉴|음료|커피|식당|레스토랑|카페|패션|리테일|의류|한 잔|한잔/u;
-
 export async function buildCopyAndAbstractLayoutPlan(
   input: HydratedPlanningInput,
   intent: NormalizedIntent,
-  plannerDraft: TemplateIntentDraft | null,
+  dependencies: {
+    templateCopyPlanGenerator: TemplateCopyPlanGenerator;
+    templateAbstractLayoutGenerator: TemplateAbstractLayoutGenerator;
+  },
 ): Promise<BuildCopyAndAbstractLayoutPlanResult> {
   const prompt = input.request.userInput.prompt.trim();
   const copyRepairs: string[] = [];
   const layoutRepairs: string[] = [];
   const genericPromoIntent = isGenericPromoIntent(intent);
 
-  const copyDraft =
-    plannerDraft?.copyPlanDraft ?? buildFallbackCopyPlanDraft(prompt, intent);
+  const copyDraft = await dependencies.templateCopyPlanGenerator.generate({
+    prompt,
+    brief: intent,
+  });
   const normalizedSlots = normalizeCopyPlanSlots(
     copyDraft,
     prompt,
@@ -52,34 +55,21 @@ export async function buildCopyAndAbstractLayoutPlan(
     runId: intent.runId,
     traceId: intent.traceId,
     plannerMode: intent.plannerMode,
-    source:
-      intent.plannerMode === "langchain" && plannerDraft?.copyPlanDraft
-        ? "langchain"
-        : "heuristic",
+    source: dependencies.templateCopyPlanGenerator.mode,
     slots: normalizedSlots,
     primaryMessage:
       normalizedSlots.find((slot) => slot.key === "headline")?.text ??
       intent.goalSummary,
     summary:
-      genericPromoIntent
-        ? deriveGenericPromoCopySummary(intent.campaignGoal)
-        : copyDraft.summary ||
-          "Copy plan keeps the headline, offer, CTA, and footer as explicit slots.",
+      copyDraft.summary ||
+      "Copy plan keeps the headline, offer, CTA, and footer as explicit slots.",
   };
-  if (
-    genericPromoIntent &&
-    copyPlan.summary !==
-      (copyDraft.summary ||
-        "Copy plan keeps the headline, offer, CTA, and footer as explicit slots.")
-  ) {
-    copyRepairs.push(
-      "Rewrote copy plan summary with generic promo-safe wording after canonical intent normalization.",
-    );
-  }
 
   const abstractLayoutDraft =
-    plannerDraft?.abstractLayoutDraft ??
-    buildFallbackAbstractLayoutDraft(prompt, intent);
+    await dependencies.templateAbstractLayoutGenerator.generate({
+      prompt,
+      brief: intent,
+    });
   const abstractLayoutPlan = normalizeAbstractLayoutDraft(
     abstractLayoutDraft,
     intent,
@@ -93,11 +83,8 @@ export async function buildCopyAndAbstractLayoutPlan(
       reportId: createRequestId(),
       runId: intent.runId,
       traceId: intent.traceId,
-      source:
-        intent.plannerMode === "langchain" && plannerDraft?.copyPlanDraft
-          ? "langchain"
-          : "heuristic",
-      draftAvailable: plannerDraft?.copyPlanDraft !== undefined,
+      source: dependencies.templateCopyPlanGenerator.mode,
+      draftAvailable: true,
       repairCount: copyRepairs.length,
       normalizationNotes:
         copyRepairs.length > 0
@@ -109,11 +96,8 @@ export async function buildCopyAndAbstractLayoutPlan(
       reportId: createRequestId(),
       runId: intent.runId,
       traceId: intent.traceId,
-      source:
-        intent.plannerMode === "langchain" && plannerDraft?.abstractLayoutDraft
-          ? "langchain"
-          : "heuristic",
-      draftAvailable: plannerDraft?.abstractLayoutDraft !== undefined,
+      source: dependencies.templateAbstractLayoutGenerator.mode,
+      draftAvailable: true,
       repairCount: layoutRepairs.length,
       normalizationNotes:
         layoutRepairs.length > 0
@@ -157,29 +141,7 @@ function normalizeCopyPlanSlots(
       return;
     }
 
-    const forceGenericPromoHeadline = genericPromoIntent && key === "headline";
-    const forceGenericPromoCta = genericPromoIntent && key === "cta";
     let text = slotDraft.text.trim();
-    if (forceGenericPromoHeadline) {
-      if (text !== genericPromoHeadline) {
-        notes.push(
-          "Rewrote generic promo headline with deterministic promotional wording.",
-        );
-      }
-      text = genericPromoHeadline;
-    } else if (forceGenericPromoCta) {
-      if (text !== genericPromoCta) {
-        notes.push(
-          "Rewrote generic promo CTA with deterministic promo-safe wording.",
-        );
-      }
-      text = genericPromoCta;
-    } else if (genericPromoIntent && GENERIC_PROMO_LEAKAGE_PATTERN.test(text)) {
-      text = fallbackText;
-      notes.push(
-        `Replaced subject-bearing ${key} copy slot with a generic promo-safe fallback.`,
-      );
-    }
     if (text.length > slotDraft.maxLength) {
       text = text.slice(0, slotDraft.maxLength).trim();
       notes.push(`Trimmed ${key} copy slot to maxLength=${slotDraft.maxLength}.`);

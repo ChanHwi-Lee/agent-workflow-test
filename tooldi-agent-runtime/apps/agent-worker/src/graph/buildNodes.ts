@@ -1,5 +1,9 @@
 import type { StateGraph } from "@langchain/langgraph";
 import type { TooldiCatalogSourceClient } from "@tooldi/tool-adapters";
+import {
+  createTemplateAbstractLayoutGenerator,
+  createTemplateCopyPlanGenerator,
+} from "@tooldi/agent-llm";
 
 import {
   assembleTemplateCandidates,
@@ -35,6 +39,12 @@ export function registerBuildNodes(
     appendEventTask,
     persistArtifactTask,
   } = tasks;
+  const templateCopyPlanGenerator =
+    dependencies.templateCopyPlanGenerator ??
+    createTemplateCopyPlanGenerator(dependencies.env, dependencies.logger);
+  const templateAbstractLayoutGenerator =
+    dependencies.templateAbstractLayoutGenerator ??
+    createTemplateAbstractLayoutGenerator(dependencies.env, dependencies.logger);
 
   return graph
     .addNode("build_copy_and_abstract_layout_plan", async (state) => {
@@ -47,7 +57,10 @@ export function registerBuildNodes(
       const planArtifacts = await buildCopyAndAbstractLayoutPlan(
         state.hydrated,
         state.intent,
-        state.normalizedIntentDraft?.draft ?? null,
+        {
+          templateCopyPlanGenerator,
+          templateAbstractLayoutGenerator,
+        },
       );
 
       const copyPlanRef = await persistArtifactTask(
@@ -257,7 +270,11 @@ export function registerBuildNodes(
           sourceSearchPhoto: candidateAssembly.sourceSearch.photo,
         };
       } catch (error) {
-        if (!isSpringActivationFailure(error) || !state.hydrated || !state.normalizedIntentRef) {
+        if (
+          !isSpringActivationFailure(error) ||
+          !state.hydrated ||
+          !state.canonicalDesignBriefRef
+        ) {
           throw error;
         }
         return buildSpringActivationFailureFinalizeDraft(state, error, {

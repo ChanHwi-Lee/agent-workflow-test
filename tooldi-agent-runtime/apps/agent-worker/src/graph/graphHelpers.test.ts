@@ -5,9 +5,9 @@ import { buildArtifactRefs, buildFinalizeOptions, buildStageAckRecord } from "./
 
 test("graphHelpers는 정의된 artifact ref만 노출한다", () => {
   const refs = buildArtifactRefs({
-    normalizedIntentRef: "runs/run-1/attempts/1/normalized-intent.json",
-    normalizedIntentDraftRef: null,
-    intentNormalizationReportRef: "runs/run-1/attempts/1/intent-normalization-report.json",
+    canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
+    semanticBriefDraftRef: null,
+    briefCompilationReportRef: "runs/run-1/attempts/1/brief-compilation-report.json",
     copyPlanRef: null,
     copyPlanNormalizationReportRef: null,
     abstractLayoutPlanRef: null,
@@ -32,9 +32,9 @@ test("graphHelpers는 정의된 artifact ref만 노출한다", () => {
   });
 
   assert.deepEqual(refs, {
-    normalizedIntentRef: "runs/run-1/attempts/1/normalized-intent.json",
-    intentNormalizationReportRef:
-      "runs/run-1/attempts/1/intent-normalization-report.json",
+    canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
+    briefCompilationReportRef:
+      "runs/run-1/attempts/1/brief-compilation-report.json",
     assetPlanRef: "runs/run-1/attempts/1/asset-plan.json",
     executablePlanRef: "runs/run-1/attempts/1/executable-plan.json",
     executionSceneSummaryRef:
@@ -45,9 +45,9 @@ test("graphHelpers는 정의된 artifact ref만 노출한다", () => {
 test("graphHelpers는 judge warning을 finalize option에 투영한다", () => {
   const options = buildFinalizeOptions(
     {
-      normalizedIntentRef: "runs/run-1/attempts/1/normalized-intent.json",
-      normalizedIntentDraftRef: null,
-      intentNormalizationReportRef: null,
+      canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
+      semanticBriefDraftRef: null,
+      briefCompilationReportRef: null,
       copyPlanRef: null,
       copyPlanNormalizationReportRef: null,
       abstractLayoutPlanRef: null,

@@ -34,7 +34,6 @@ const baseSearchKeywords = ["봄", "세일", "패션", "웹배너"];
 const baseFacets: TemplateIntentDraft["facets"] = {
   seasonality: "spring",
   menuType: null,
-  promotionStyle: "sale_campaign",
   offerSpecificity: "broad_offer",
 };
 
@@ -54,14 +53,12 @@ export function createFashionRetailPlannerDraft(
 ): TemplateIntentDraft {
   const {
     assetPolicy: _assetPolicy,
-    searchKeywords: _searchKeywords,
     facets: _facets,
     ...restOverrides
   } = overrides;
   const assetPolicy =
     overrides.assetPolicy ??
     cloneStructuredAssetPolicy(fashionRetailGraphicFirstAssetPolicy);
-  const searchKeywords = overrides.searchKeywords ?? [...baseSearchKeywords];
   const facets = {
     ...baseFacets,
     ...(overrides.facets ?? {}),
@@ -73,10 +70,11 @@ export function createFashionRetailPlannerDraft(
     domain: "fashion_retail",
     audience: "sale_shoppers",
     campaignGoal: "sale_conversion",
+    subjectBinding: "domain_anchored",
+    offerIntent: "sale",
     layoutIntent: "badge_led",
     tone: "bright_playful",
     assetPolicy,
-    searchKeywords,
     typographyHint: "세련된 고딕 계열로 명확한 가격/혜택 강조",
     facets,
     ...restOverrides,
@@ -129,6 +127,8 @@ export function createFashionRetailNormalizedIntent(
     domain: "fashion_retail",
     audience: "sale_shoppers",
     campaignGoal: "sale_conversion",
+    subjectBinding: "domain_anchored",
+    offerIntent: "sale",
     canvasPreset: "wide_1200x628",
     layoutIntent: "badge_led",
     tone: "bright_playful",
@@ -141,6 +141,7 @@ export function createFashionRetailNormalizedIntent(
     ],
     assetPolicy,
     searchKeywords,
+    primaryVisualPolicy: assetPolicy.primaryVisualPolicy,
     facets,
     brandConstraints,
     consistencyFlags: overrides.consistencyFlags ?? [],

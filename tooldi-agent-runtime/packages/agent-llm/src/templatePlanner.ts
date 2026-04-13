@@ -9,6 +9,7 @@ export * from "./templatePlannerSchemas.js";
 export * from "./templatePlannerAssetPolicy.js";
 export * from "./heuristicTemplatePlanner.js";
 export * from "./langchainTemplatePlanner.js";
+export * from "./templateGenerators.js";
 
 export function createTemplatePlanner(
   env: Pick<

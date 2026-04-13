@@ -1,6 +1,6 @@
 import type { StateGraph } from "@langchain/langgraph";
-import { parseTemplateIntentDraft } from "@tooldi/agent-llm";
-import type { TemplateIntentDraft } from "@tooldi/agent-llm";
+import { parseTemplateSemanticBriefDraft } from "@tooldi/agent-llm";
+import type { TemplateSemanticBriefDraft } from "@tooldi/agent-llm";
 
 import { buildPlannerDraft } from "../phases/buildPlannerDraft.js";
 import { buildNormalizedIntent } from "../phases/buildNormalizedIntent.js";
@@ -104,16 +104,16 @@ export function registerPlanningNodes(
       if (!plannerDraft) {
         return {
           resolvedPlannerMode: plannerResolution.plannerMode,
-          normalizedIntentDraftRef: null,
+          semanticBriefDraftRef: null,
           cooperativeStopRequested,
         };
       }
 
-      const normalizedIntentDraftRef = await persistArtifactTask(
-        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/normalized-intent-draft.json`,
+      const semanticBriefDraftRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/semantic-brief-draft.json`,
         plannerDraft,
         {
-          artifactKind: "normalized-intent-draft",
+          artifactKind: "semantic-brief-draft",
           runId: state.job.runId,
           traceId: state.job.traceId,
           attemptSeq: String(state.job.attemptSeq),
@@ -134,7 +134,7 @@ export function registerPlanningNodes(
 
       return {
         resolvedPlannerMode: plannerResolution.plannerMode,
-        normalizedIntentDraftRef,
+        semanticBriefDraftRef,
         cooperativeStopRequested,
       };
     })
@@ -144,12 +144,12 @@ export function registerPlanningNodes(
       }
 
       let cooperativeStopRequested = state.cooperativeStopRequested;
-      const persistedPlannerDraft = state.normalizedIntentDraftRef
-        ? await readWorkerJsonArtifact<TemplateIntentDraft>(
+      const persistedPlannerDraft = state.semanticBriefDraftRef
+        ? await readWorkerJsonArtifact<TemplateSemanticBriefDraft>(
             dependencies.objectStore,
             dependencies.env.objectStoreBucket,
-            state.normalizedIntentDraftRef,
-            parseTemplateIntentDraft,
+            state.semanticBriefDraftRef,
+            parseTemplateSemanticBriefDraft,
           )
         : null;
       const normalizedIntent = await buildNormalizedIntent(
@@ -164,7 +164,7 @@ export function registerPlanningNodes(
       );
       const {
         intent,
-        normalizedIntentDraft,
+        semanticBriefDraft,
         intentNormalizationReport,
       } = normalizedIntent;
 
@@ -180,22 +180,22 @@ export function registerPlanningNodes(
       });
       cooperativeStopRequested ||= intentEvent.cancelRequested;
 
-      const intentNormalizationReportRef = await persistArtifactTask(
-        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/intent-normalization-report.json`,
+      const briefCompilationReportRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/brief-compilation-report.json`,
         intentNormalizationReport,
         {
-          artifactKind: "intent-normalization-report",
+          artifactKind: "brief-compilation-report",
           runId: state.job.runId,
           traceId: state.job.traceId,
           attemptSeq: String(state.job.attemptSeq),
         },
       );
 
-      const normalizedIntentRef = await persistArtifactTask(
-        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/normalized-intent.json`,
+      const canonicalDesignBriefRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/canonical-design-brief.json`,
         intent,
         {
-          artifactKind: "normalized-intent",
+          artifactKind: "canonical-design-brief",
           runId: state.job.runId,
           traceId: state.job.traceId,
           attemptSeq: String(state.job.attemptSeq),
@@ -204,20 +204,20 @@ export function registerPlanningNodes(
       const canonicalIntent = await readWorkerJsonArtifact(
         dependencies.objectStore,
         dependencies.env.objectStoreBucket,
-        normalizedIntentRef,
+        canonicalDesignBriefRef,
       );
 
       return {
-        normalizedIntentDraft,
+        semanticBriefDraft: semanticBriefDraft,
         intentNormalizationReport,
-        intentNormalizationReportRef,
+        briefCompilationReportRef,
         intent: canonicalIntent,
-        normalizedIntentRef,
+        canonicalDesignBriefRef,
         cooperativeStopRequested,
       };
     })
     .addNode("gate_scope", async (state) => {
-      if (!state.hydrated || !state.intent || !state.normalizedIntentRef) {
+      if (!state.hydrated || !state.intent || !state.canonicalDesignBriefRef) {
         throw new Error("gate_scope requires normalized intent state");
       }
 
@@ -254,7 +254,7 @@ export function registerPlanningNodes(
 
       const finalizeDraft = await finalizeRun(state.hydrated, [], null, {
         cooperativeStopRequested,
-        normalizedIntentRef: state.normalizedIntentRef,
+        canonicalDesignBriefRef: state.canonicalDesignBriefRef,
         overrideResult: {
           finalStatus: "failed",
           errorSummary: {

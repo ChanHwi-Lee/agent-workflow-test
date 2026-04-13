@@ -6,9 +6,9 @@ import type {
 
 export type MaterializationInput = {
   draftId: string;
-  normalizedIntentRef: string;
-  normalizedIntentDraftRef: string | null;
-  intentNormalizationReportRef: string | null;
+  canonicalDesignBriefRef: string;
+  semanticBriefDraftRef: string | null;
+  briefCompilationReportRef: string | null;
   copyPlanRef: string | null;
   copyPlanNormalizationReportRef: string | null;
   abstractLayoutPlanRef: string | null;
@@ -72,7 +72,7 @@ export function normalizeFinalizeInput(
   if (
     !request ||
     !request.draftId ||
-    !request.normalizedIntentRef ||
+    !request.canonicalDesignBriefRef ||
     !request.executablePlanRef ||
     !request.sourceMutationRange
   ) {
@@ -86,9 +86,9 @@ export function normalizeFinalizeInput(
     result,
     materialization: {
       draftId: request.draftId,
-      normalizedIntentRef: request.normalizedIntentRef,
-      normalizedIntentDraftRef: request.normalizedIntentDraftRef ?? null,
-      intentNormalizationReportRef: request.intentNormalizationReportRef ?? null,
+      canonicalDesignBriefRef: request.canonicalDesignBriefRef,
+      semanticBriefDraftRef: request.semanticBriefDraftRef ?? null,
+      briefCompilationReportRef: request.briefCompilationReportRef ?? null,
       copyPlanRef: request.copyPlanRef ?? null,
       copyPlanNormalizationReportRef:
         request.copyPlanNormalizationReportRef ?? null,

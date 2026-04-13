@@ -593,14 +593,14 @@ test("processRunJob persists the raw planner draft before normalized intent", as
     templatePlanner,
   });
 
-  const normalizedIntentDraftRef =
-    `runs/${testRun.runId}/attempts/1/normalized-intent-draft.json`;
+  const semanticBriefDraftRef =
+    `runs/${testRun.runId}/attempts/1/semantic-brief-draft.json`;
   const persistedDraft = JSON.parse(
     new TextDecoder().decode(
       (
         await objectStore.getObject({
           bucket: env.objectStoreBucket,
-          key: normalizedIntentDraftRef,
+          key: semanticBriefDraftRef,
         })
       ).body,
     ),
@@ -610,7 +610,7 @@ test("processRunJob persists the raw planner draft before normalized intent", as
       (
         await objectStore.getObject({
           bucket: env.objectStoreBucket,
-          key: result.artifactRefs.normalizedIntentRef,
+          key: result.artifactRefs.canonicalDesignBriefRef,
         })
       ).body,
     ),
@@ -619,14 +619,14 @@ test("processRunJob persists the raw planner draft before normalized intent", as
     goalSummary: string;
     layoutIntent: string;
   };
-  const intentNormalizationReportRef =
-    `runs/${testRun.runId}/attempts/1/intent-normalization-report.json`;
+  const briefCompilationReportRef =
+    `runs/${testRun.runId}/attempts/1/brief-compilation-report.json`;
   const persistedNormalizationReport = JSON.parse(
     new TextDecoder().decode(
       (
         await objectStore.getObject({
           bucket: env.objectStoreBucket,
-          key: intentNormalizationReportRef,
+          key: briefCompilationReportRef,
         })
       ).body,
     ),
@@ -647,10 +647,10 @@ test("processRunJob persists the raw planner draft before normalized intent", as
   assert.equal(persistedIntent.plannerMode, "langchain");
   assert.equal(persistedIntent.goalSummary, plannerDraft.goalSummary);
   assert.equal(persistedIntent.layoutIntent, plannerDraft.layoutIntent);
-  assert.equal(result.artifactRefs.normalizedIntentDraftRef, normalizedIntentDraftRef);
+  assert.equal(result.artifactRefs.semanticBriefDraftRef, semanticBriefDraftRef);
   assert.equal(
-    result.artifactRefs.intentNormalizationReportRef,
-    intentNormalizationReportRef,
+    result.artifactRefs.briefCompilationReportRef,
+    briefCompilationReportRef,
   );
   assert.ok(result.intentNormalizationReport);
   assert.equal(persistedNormalizationReport.draftAvailable, true);
@@ -667,12 +667,12 @@ test("processRunJob persists the raw planner draft before normalized intent", as
     result.intent.normalizationNotes,
   );
   assert.ok(
-    objectStore.putKeys.indexOf(normalizedIntentDraftRef) <
-      objectStore.putKeys.indexOf(result.artifactRefs.normalizedIntentRef),
+    objectStore.putKeys.indexOf(semanticBriefDraftRef) <
+      objectStore.putKeys.indexOf(result.artifactRefs.canonicalDesignBriefRef),
   );
   assert.ok(
-    objectStore.putKeys.indexOf(intentNormalizationReportRef) <
-      objectStore.putKeys.indexOf(result.artifactRefs.normalizedIntentRef),
+    objectStore.putKeys.indexOf(briefCompilationReportRef) <
+      objectStore.putKeys.indexOf(result.artifactRefs.canonicalDesignBriefRef),
   );
 });
 
@@ -712,7 +712,7 @@ test("processRunJob normalizes from the persisted planner draft artifact", async
   };
   const rewrittenGoalSummary = "persisted draft goal";
   objectStore.rewritePutObject = (request) => {
-    if (!request.key.endsWith("/normalized-intent-draft.json")) {
+    if (!request.key.endsWith("/semantic-brief-draft.json")) {
       return request;
     }
 
@@ -769,7 +769,7 @@ test("processRunJob normalizes from the persisted planner draft artifact", async
   });
 
   const persistedDraftRef =
-    `runs/${testRun.runId}/attempts/1/normalized-intent-draft.json`;
+    `runs/${testRun.runId}/attempts/1/semantic-brief-draft.json`;
   const persistedDraft = JSON.parse(
     new TextDecoder().decode(
       (
@@ -785,7 +785,7 @@ test("processRunJob normalizes from the persisted planner draft artifact", async
       (
         await objectStore.getObject({
           bucket: env.objectStoreBucket,
-          key: result.artifactRefs.normalizedIntentRef,
+          key: result.artifactRefs.canonicalDesignBriefRef,
         })
       ).body,
     ),
@@ -797,7 +797,7 @@ test("processRunJob normalizes from the persisted planner draft artifact", async
   assert.equal(persistedDraft.goalSummary, rewrittenGoalSummary);
   assert.equal(persistedIntent.goalSummary, rewrittenGoalSummary);
   assert.equal(
-    result.normalizedIntentDraft?.draft.goalSummary,
+    result.semanticBriefDraft?.draft.goalSummary,
     rewrittenGoalSummary,
   );
 });
@@ -844,7 +844,7 @@ test("processRunJob uses the persisted normalized intent artifact as downstream 
   };
 
   objectStore.rewritePutObject = (request) => {
-    if (!request.key.endsWith("/normalized-intent.json")) {
+    if (!request.key.endsWith("/canonical-design-brief.json")) {
       return request;
     }
 
@@ -909,7 +909,7 @@ test("processRunJob uses the persisted normalized intent artifact as downstream 
       (
         await objectStore.getObject({
           bucket: env.objectStoreBucket,
-          key: result.artifactRefs.normalizedIntentRef,
+          key: result.artifactRefs.canonicalDesignBriefRef,
         })
       ).body,
     ),
@@ -998,7 +998,7 @@ test("processRunJob uses the persisted normalized intent artifact as downstream 
   assert.equal(persistedSearchProfile.photo.queries[0]?.keyword, "콜드브루");
   assert.equal(persistedSearchProfile.photo.queries[0]?.theme, null);
   assert.equal(persistedSearchProfile.photo.queries[0]?.format, "square");
-  assert.ok(objectStore.getKeys.includes(result.artifactRefs.normalizedIntentRef));
+  assert.ok(objectStore.getKeys.includes(result.artifactRefs.canonicalDesignBriefRef));
 });
 
 test("processRunJob는 잘못된 플래너 초안이면 휴리스틱 초안을 저장하고 계속 진행한다", async () => {
@@ -1058,14 +1058,14 @@ test("processRunJob는 잘못된 플래너 초안이면 휴리스틱 초안을 �
     canvasPreset: "square_1080",
     palette: testRun.snapshot.brandContext.palette,
   });
-  const normalizedIntentDraftRef =
-    `runs/${testRun.runId}/attempts/1/normalized-intent-draft.json`;
+  const semanticBriefDraftRef =
+    `runs/${testRun.runId}/attempts/1/semantic-brief-draft.json`;
   const persistedDraft = JSON.parse(
     new TextDecoder().decode(
       (
         await objectStore.getObject({
           bucket: env.objectStoreBucket,
-          key: normalizedIntentDraftRef,
+          key: semanticBriefDraftRef,
         })
       ).body,
     ),
@@ -1073,8 +1073,8 @@ test("processRunJob는 잘못된 플래너 초안이면 휴리스틱 초안을 �
 
   assert.deepEqual(persistedDraft, expectedFallbackDraft);
   assert.equal(result.intent.plannerMode, "heuristic");
-  assert.equal(result.normalizedIntentDraft?.plannerMode, "heuristic");
-  assert.equal(result.artifactRefs.normalizedIntentDraftRef, normalizedIntentDraftRef);
+  assert.equal(result.semanticBriefDraft?.plannerMode, "heuristic");
+  assert.equal(result.artifactRefs.semanticBriefDraftRef, semanticBriefDraftRef);
   assert.ok(result.intentNormalizationReport);
   assert.equal(result.intentNormalizationReport.draftAvailable, true);
   assert.equal(
@@ -1165,7 +1165,7 @@ test("processRunJob keeps structured and legacy asset-policy inputs compatible t
         (
           await objectStore.getObject({
             bucket,
-            key: result.artifactRefs.normalizedIntentDraftRef!,
+            key: result.artifactRefs.semanticBriefDraftRef!,
           })
         ).body,
       ),
@@ -1177,7 +1177,7 @@ test("processRunJob keeps structured and legacy asset-policy inputs compatible t
         (
           await objectStore.getObject({
             bucket,
-            key: result.artifactRefs.normalizedIntentRef,
+            key: result.artifactRefs.canonicalDesignBriefRef,
           })
         ).body,
       ),
@@ -1508,9 +1508,9 @@ test(
       testRun.runId,
       testRun.job.attemptSeq,
       [
-        "normalized-intent-draft.json",
-        "intent-normalization-report.json",
-        "normalized-intent.json",
+        "semantic-brief-draft.json",
+        "brief-compilation-report.json",
+        "canonical-design-brief.json",
         "copy-plan.json",
         "copy-plan-normalization-report.json",
         "layout-plan-abstract.json",
@@ -1535,12 +1535,12 @@ test(
         "refine-decision-refine-1.json",
       ],
     );
-    const normalizedIntentDraftRef =
-      artifactRefsByFileName["normalized-intent-draft.json"]!;
-    const intentNormalizationReportRef =
-      artifactRefsByFileName["intent-normalization-report.json"]!;
-    const normalizedIntentRef =
-      artifactRefsByFileName["normalized-intent.json"]!;
+    const semanticBriefDraftRef =
+      artifactRefsByFileName["semantic-brief-draft.json"]!;
+    const briefCompilationReportRef =
+      artifactRefsByFileName["brief-compilation-report.json"]!;
+    const canonicalDesignBriefRef =
+      artifactRefsByFileName["canonical-design-brief.json"]!;
     const copyPlanRef = artifactRefsByFileName["copy-plan.json"]!;
     const copyPlanNormalizationReportRef =
       artifactRefsByFileName["copy-plan-normalization-report.json"]!;
@@ -1574,9 +1574,9 @@ test(
       artifactRefsByFileName["refine-decision-refine-1.json"]!;
 
     assert.deepEqual(result.artifactRefs, {
-      normalizedIntentRef,
-      normalizedIntentDraftRef,
-      intentNormalizationReportRef,
+      canonicalDesignBriefRef,
+      semanticBriefDraftRef,
+      briefCompilationReportRef,
       copyPlanRef,
       copyPlanNormalizationReportRef,
       abstractLayoutPlanRef,
@@ -1599,11 +1599,11 @@ test(
     assert.equal(callbackClient.finalizations.length, 1);
     assert.deepEqual(
       {
-        normalizedIntentDraftRef:
-          callbackClient.finalizations[0]?.normalizedIntentDraftRef,
-        intentNormalizationReportRef:
-          callbackClient.finalizations[0]?.intentNormalizationReportRef,
-        normalizedIntentRef: callbackClient.finalizations[0]?.normalizedIntentRef,
+        semanticBriefDraftRef:
+          callbackClient.finalizations[0]?.semanticBriefDraftRef,
+        briefCompilationReportRef:
+          callbackClient.finalizations[0]?.briefCompilationReportRef,
+        canonicalDesignBriefRef: callbackClient.finalizations[0]?.canonicalDesignBriefRef,
         copyPlanRef: callbackClient.finalizations[0]?.copyPlanRef,
         copyPlanNormalizationReportRef:
           callbackClient.finalizations[0]?.copyPlanNormalizationReportRef,
@@ -1629,9 +1629,9 @@ test(
         refineDecisionRef: callbackClient.finalizations[0]?.refineDecisionRef,
       },
       {
-        normalizedIntentDraftRef,
-        intentNormalizationReportRef,
-        normalizedIntentRef,
+        semanticBriefDraftRef,
+        briefCompilationReportRef,
+        canonicalDesignBriefRef,
         copyPlanRef,
         copyPlanNormalizationReportRef,
         abstractLayoutPlanRef,
@@ -1653,12 +1653,12 @@ test(
       },
     );
     assert.ok(
-      findObjectStoreOperationIndex(objectStore, "get", normalizedIntentDraftRef) >
-        findObjectStoreOperationIndex(objectStore, "put", normalizedIntentDraftRef),
+      findObjectStoreOperationIndex(objectStore, "get", semanticBriefDraftRef) >
+        findObjectStoreOperationIndex(objectStore, "put", semanticBriefDraftRef),
     );
     assert.ok(
-      findObjectStoreOperationIndex(objectStore, "get", normalizedIntentRef) >
-        findObjectStoreOperationIndex(objectStore, "put", normalizedIntentRef),
+      findObjectStoreOperationIndex(objectStore, "get", canonicalDesignBriefRef) >
+        findObjectStoreOperationIndex(objectStore, "put", canonicalDesignBriefRef),
     );
     assert.ok(result.intentNormalizationReport);
     assert.equal(result.intentNormalizationReport.draftAvailable, true);
@@ -1732,9 +1732,9 @@ test(
         templatePlanner,
       });
 
-      const draftRef = `runs/${testRun.runId}/attempts/1/normalized-intent-draft.json`;
+      const draftRef = `runs/${testRun.runId}/attempts/1/semantic-brief-draft.json`;
       const reportRef =
-        `runs/${testRun.runId}/attempts/1/intent-normalization-report.json`;
+        `runs/${testRun.runId}/attempts/1/brief-compilation-report.json`;
       const draftPutIndex = findObjectStoreOperationIndex(objectStore, "put", draftRef);
       const draftGetIndex = findObjectStoreOperationIndex(objectStore, "get", draftRef);
       const reportPutIndex = findObjectStoreOperationIndex(
@@ -1745,7 +1745,7 @@ test(
       const normalizedIntentPutIndex = findObjectStoreOperationIndex(
         objectStore,
         "put",
-        result.artifactRefs.normalizedIntentRef,
+        result.artifactRefs.canonicalDesignBriefRef,
       );
 
       assert.ok(draftPutIndex >= 0);
@@ -1753,10 +1753,10 @@ test(
       assert.ok(reportPutIndex > draftGetIndex);
       assert.ok(normalizedIntentPutIndex > draftGetIndex);
       assert.equal(result.intent.plannerMode, "langchain");
-      assert.equal(result.normalizedIntentDraft?.plannerMode, "langchain");
+      assert.equal(result.semanticBriefDraft?.plannerMode, "langchain");
       assert.ok(result.intentNormalizationReport);
       assert.equal(result.intentNormalizationReport.draftAvailable, true);
-      assert.equal(result.artifactRefs.normalizedIntentDraftRef, draftRef);
+      assert.equal(result.artifactRefs.semanticBriefDraftRef, draftRef);
     });
 
     await t.test("heuristic fallback path remains valid", async () => {
@@ -1804,13 +1804,13 @@ test(
         canvasPreset: "square_1080",
         palette: testRun.snapshot.brandContext.palette,
       });
-      const draftRef = `runs/${testRun.runId}/attempts/1/normalized-intent-draft.json`;
+      const draftRef = `runs/${testRun.runId}/attempts/1/semantic-brief-draft.json`;
       const draftPutIndex = findObjectStoreOperationIndex(objectStore, "put", draftRef);
       const draftGetIndex = findObjectStoreOperationIndex(objectStore, "get", draftRef);
       const normalizedIntentPutIndex = findObjectStoreOperationIndex(
         objectStore,
         "put",
-        result.artifactRefs.normalizedIntentRef,
+        result.artifactRefs.canonicalDesignBriefRef,
       );
       const persistedDraft = JSON.parse(
         new TextDecoder().decode(
@@ -1828,10 +1828,10 @@ test(
       assert.ok(normalizedIntentPutIndex > draftGetIndex);
       assert.deepEqual(persistedDraft, expectedFallbackDraft);
       assert.equal(result.intent.plannerMode, "heuristic");
-      assert.equal(result.normalizedIntentDraft?.plannerMode, "heuristic");
+      assert.equal(result.semanticBriefDraft?.plannerMode, "heuristic");
       assert.ok(result.intentNormalizationReport);
       assert.equal(result.intentNormalizationReport.draftAvailable, true);
-      assert.equal(result.artifactRefs.normalizedIntentDraftRef, draftRef);
+      assert.equal(result.artifactRefs.semanticBriefDraftRef, draftRef);
     });
   },
 );
@@ -2032,8 +2032,8 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     callbackClient.ackWaits.length,
   );
   assert.equal(
-    callbackClient.finalizations[0]?.normalizedIntentRef,
-    `runs/${testRun.runId}/attempts/1/normalized-intent.json`,
+    callbackClient.finalizations[0]?.canonicalDesignBriefRef,
+    `runs/${testRun.runId}/attempts/1/canonical-design-brief.json`,
   );
   assert.equal(
     callbackClient.finalizations[0]?.templatePriorSummaryRef,
@@ -2077,12 +2077,12 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     `runs/${testRun.runId}/attempts/1/search-profile.json`,
   );
   assert.equal(
-    result.artifactRefs.normalizedIntentDraftRef,
-    `runs/${testRun.runId}/attempts/1/normalized-intent-draft.json`,
+    result.artifactRefs.semanticBriefDraftRef,
+    `runs/${testRun.runId}/attempts/1/semantic-brief-draft.json`,
   );
   assert.equal(
-    result.artifactRefs.intentNormalizationReportRef,
-    `runs/${testRun.runId}/attempts/1/intent-normalization-report.json`,
+    result.artifactRefs.briefCompilationReportRef,
+    `runs/${testRun.runId}/attempts/1/brief-compilation-report.json`,
   );
   assert.equal(
     result.artifactRefs.templatePriorSummaryRef,
@@ -2384,8 +2384,8 @@ test("processRunJob covers taxonomy-grounded general, cafe, and fashion create-t
     assert.ok(result.plan);
     assert.equal(result.finalizeDraft.request.finalStatus, "completed_with_warning");
 
-    assert.ok(result.artifactRefs.normalizedIntentRef);
-    assert.ok(result.artifactRefs.intentNormalizationReportRef);
+    assert.ok(result.artifactRefs.canonicalDesignBriefRef);
+    assert.ok(result.artifactRefs.briefCompilationReportRef);
     assert.ok(result.artifactRefs.templatePriorSummaryRef);
     assert.ok(result.artifactRefs.searchProfileRef);
     assert.ok(result.artifactRefs.selectionDecisionRef);
@@ -2397,7 +2397,7 @@ test("processRunJob covers taxonomy-grounded general, cafe, and fashion create-t
         (
           await objectStore.getObject({
             bucket: `${env.objectStoreBucket}-${scenario.expectedDomain}`,
-            key: result.artifactRefs.normalizedIntentRef!,
+            key: result.artifactRefs.canonicalDesignBriefRef!,
           })
         ).body,
       ),
@@ -2425,7 +2425,7 @@ test("processRunJob covers taxonomy-grounded general, cafe, and fashion create-t
         (
           await objectStore.getObject({
             bucket: `${env.objectStoreBucket}-${scenario.expectedDomain}`,
-            key: result.artifactRefs.intentNormalizationReportRef!,
+            key: result.artifactRefs.briefCompilationReportRef!,
           })
         ).body,
       ),

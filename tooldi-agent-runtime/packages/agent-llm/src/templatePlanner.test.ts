@@ -29,13 +29,8 @@ test("heuristic template planner keeps current safe spring defaults", async () =
     result.assetPolicy,
     normalizeTemplateAssetPolicy("graphic_allowed_photo_optional"),
   );
-  assert.deepEqual(result.searchKeywords, [
-    "봄",
-    "프로모션",
-    "세일",
-    "이벤트",
-    "배너",
-  ]);
+  assert.equal(result.subjectBinding, "subjectless");
+  assert.equal(result.offerIntent, "sale");
   assert.equal(result.facets.seasonality, "spring");
 });
 
@@ -55,15 +50,15 @@ test("langchain template planner normalizes structured output from the model", a
               domain: "restaurant",
               audience: "walk_in_customers",
               campaignGoal: "menu_discovery",
+              subjectBinding: "product_anchored",
+              offerIntent: "launch",
               layoutIntent: "hero_focused",
               tone: "bright_playful",
               assetPolicy: "photo_preferred_graphic_allowed",
-              searchKeywords: ["메뉴"],
               typographyHint: "고딕",
               facets: {
                 seasonality: "spring",
                 menuType: "food_menu",
-                promotionStyle: "seasonal_menu_launch",
                 offerSpecificity: "single_product",
               },
             });
@@ -88,7 +83,8 @@ test("langchain template planner normalizes structured output from the model", a
     result.assetPolicy,
     normalizeTemplateAssetPolicy("photo_preferred_graphic_allowed"),
   );
-  assert.deepEqual(result.searchKeywords, ["봄", "메뉴"]);
+  assert.equal(result.subjectBinding, "product_anchored");
+  assert.equal(result.offerIntent, "launch");
   assert.equal(result.typographyHint, "고딕");
   assert.equal(result.facets.menuType, "food_menu");
 });
@@ -100,15 +96,15 @@ test("template planner asset policy boundary keeps legacy strings readable", () 
     domain: "general_marketing",
     audience: "general_consumers",
     campaignGoal: "sale_conversion",
+    subjectBinding: "subjectless",
+    offerIntent: "sale",
     layoutIntent: "copy_focused",
     tone: "bright_playful",
     assetPolicy: "graphic_allowed_photo_optional",
-    searchKeywords: ["봄", "세일"],
     typographyHint: null,
     facets: {
       seasonality: "spring",
       menuType: null,
-      promotionStyle: "sale_campaign",
       offerSpecificity: "multi_item",
     },
   });
@@ -132,6 +128,8 @@ test("template planner asset policy boundary accepts structured policies", () =>
     domain: "cafe",
     audience: "local_visitors",
     campaignGoal: "product_trial",
+    subjectBinding: "product_anchored",
+    offerIntent: "launch",
     layoutIntent: "hero_focused",
     tone: "bright_playful",
     assetPolicy: {
@@ -140,12 +138,10 @@ test("template planner asset policy boundary accepts structured policies", () =>
       primaryVisualPolicy: "photo_preferred",
       avoidFamilies: [],
     },
-    searchKeywords: ["봄", "카페", "음료"],
     typographyHint: "고딕",
     facets: {
       seasonality: "spring",
       menuType: "drink_menu",
-      promotionStyle: "seasonal_menu_launch",
       offerSpecificity: "single_product",
     },
   });
@@ -168,17 +164,17 @@ test("자산 정책 구조 필드가 일부만 와도 안전한 기본값으로 
     domain: "cafe",
     audience: "local_visitors",
     campaignGoal: "product_trial",
+    subjectBinding: "product_anchored",
+    offerIntent: "launch",
     layoutIntent: "hero_focused",
     tone: "bright_playful",
     assetPolicy: {
       primaryVisualPolicy: "photo_preferred",
     },
-    searchKeywords: ["봄", "카페", "음료"],
     typographyHint: null,
     facets: {
       seasonality: "spring",
       menuType: "drink_menu",
-      promotionStyle: "new_product_promo",
       offerSpecificity: "single_product",
     },
   });

@@ -1,5 +1,9 @@
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
-import type { TemplatePlanner } from "@tooldi/agent-llm";
+import type {
+  TemplateAbstractLayoutGenerator,
+  TemplateCopyPlanGenerator,
+  TemplatePlanner,
+} from "@tooldi/agent-llm";
 import type { Logger } from "@tooldi/agent-observability";
 import type { ObjectStoreClient } from "@tooldi/agent-persistence";
 import type {
@@ -27,4 +31,6 @@ export interface RunJobGraphDependencies {
   tooldiCatalogSourceClient?: TooldiCatalogSourceClient;
   langGraphCheckpointer?: BaseCheckpointSaver;
   templatePlanner?: TemplatePlanner;
+  templateCopyPlanGenerator?: TemplateCopyPlanGenerator;
+  templateAbstractLayoutGenerator?: TemplateAbstractLayoutGenerator;
 }

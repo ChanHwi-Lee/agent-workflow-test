@@ -190,10 +190,10 @@ const LastKnownGoodCheckpointSchema = Type.Object(
       {
         requestRef: IdentifierSchema,
         snapshotRef: IdentifierSchema,
-        normalizedIntentDraftRef: Type.Optional(
+        semanticBriefDraftRef: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),
         ),
-        intentNormalizationReportRef: Type.Optional(
+        briefCompilationReportRef: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),
         ),
         copyPlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
@@ -210,7 +210,7 @@ const LastKnownGoodCheckpointSchema = Type.Object(
         concreteLayoutPlanRef: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),
         ),
-        normalizedIntentRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+        canonicalDesignBriefRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         templatePriorSummaryRef: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),
         ),

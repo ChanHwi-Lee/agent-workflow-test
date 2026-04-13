@@ -27,6 +27,8 @@ function createIntent(
     domain: "general_marketing",
     audience: "general_consumers",
     campaignGoal: "sale_conversion",
+    subjectBinding: "subjectless",
+    offerIntent: "sale",
     canvasPreset: "wide_1200x628",
     layoutIntent: "copy_focused",
     tone: "bright_playful",
@@ -38,6 +40,7 @@ function createIntent(
       avoidFamilies: [],
     }),
     searchKeywords: ["봄", "세일"],
+    primaryVisualPolicy: "graphic_preferred",
     facets: {
       seasonality: "spring",
       menuType: null,

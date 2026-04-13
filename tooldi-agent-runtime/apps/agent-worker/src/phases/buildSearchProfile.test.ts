@@ -30,6 +30,8 @@ function createIntent(overrides: Partial<NormalizedIntent> = {}): NormalizedInte
     domain: "cafe",
     audience: "local_visitors",
     campaignGoal: "product_trial",
+    subjectBinding: "product_anchored",
+    offerIntent: "launch",
     canvasPreset: "wide_1200x628",
     layoutIntent: "hero_focused",
     tone: "bright_playful",
@@ -44,6 +46,7 @@ function createIntent(overrides: Partial<NormalizedIntent> = {}): NormalizedInte
       "photo_preferred_graphic_allowed",
     ),
     searchKeywords: ["봄", "카페", "신메뉴", "프로모션"],
+    primaryVisualPolicy: "photo_preferred",
     facets: {
       seasonality: "spring",
       menuType: "drink_menu",

@@ -1,7 +1,7 @@
 import { createRequestId } from "@tooldi/agent-domain";
 import {
   normalizeTemplateAssetPolicy,
-  type TemplateIntentDraft,
+  type TemplateSemanticBriefDraft,
 } from "@tooldi/agent-llm";
 
 import type {
@@ -36,8 +36,8 @@ export function repairTemplateIntentDraft(input: {
   plannerMode: NormalizedIntent["plannerMode"];
   operationFamily: NormalizedIntent["operationFamily"];
   canvasPreset: NormalizedIntent["canvasPreset"];
-  plannerDraft: TemplateIntentDraft;
-  heuristicDraft: TemplateIntentDraft;
+  plannerDraft: TemplateSemanticBriefDraft;
+  heuristicDraft: TemplateSemanticBriefDraft;
   prompt: string;
   palette: string[];
 }): RepairTemplateIntentDraftResult {
@@ -209,13 +209,20 @@ export function repairTemplateIntentDraft(input: {
     menuType = expectedMenuType;
   }
 
+  const heuristicPromotionStyle = derivePromotionStyleFromOfferIntent(
+    heuristicDraft.offerIntent,
+    menuType,
+  );
   const expectedPromotionStyle = deriveExpectedPromotionStyle(
     promptSignals,
     domain,
     menuType,
-    heuristicDraft.facets.promotionStyle,
+    heuristicPromotionStyle,
   );
-  let promotionStyle = plannerDraft.facets.promotionStyle;
+  let promotionStyle = derivePromotionStyleFromOfferIntent(
+    plannerDraft.offerIntent,
+    menuType,
+  );
   if (promotionStyle !== expectedPromotionStyle) {
     const reasonCode =
       promotionStyle === "seasonal_menu_launch" && domain === "fashion_retail"
@@ -223,7 +230,7 @@ export function repairTemplateIntentDraft(input: {
         : "promotion_style_prompt_repair";
     recordRepair(
       "facets.promotionStyle",
-      plannerDraft.facets.promotionStyle,
+      derivePromotionStyleFromOfferIntent(plannerDraft.offerIntent, menuType),
       expectedPromotionStyle,
       reasonCode,
       `Prompt-aligned promotion semantics normalized promotionStyle to ${expectedPromotionStyle}.`,
@@ -376,36 +383,70 @@ export function repairTemplateIntentDraft(input: {
     );
   }
 
-  const normalizedKeywords = buildNormalizedKeywords(
-    plannerDraft.searchKeywords,
-    heuristicDraft.searchKeywords,
+  const expectedOfferIntent: NonNullable<TemplateSemanticBriefDraft["offerIntent"]> =
+    deriveOfferIntentFromPromotionStyle(promotionStyle);
+  let offerIntent: NonNullable<TemplateSemanticBriefDraft["offerIntent"]> =
+    (plannerDraft.offerIntent ?? expectedOfferIntent)!;
+  if (offerIntent !== expectedOfferIntent) {
+    recordRepair(
+      "offerIntent",
+      plannerDraft.offerIntent,
+      expectedOfferIntent,
+      "offer_intent_rederived",
+      `Offer intent was re-derived from repaired promotion semantics as ${expectedOfferIntent}.`,
+    );
+    offerIntent = expectedOfferIntent;
+  }
+
+  const expectedSubjectBinding: NonNullable<
+    TemplateSemanticBriefDraft["subjectBinding"]
+  > = deriveSubjectBinding(
+    prompt,
     domain,
     menuType,
     genericPromoStructureFocus,
   );
-  if (stableStringify(plannerDraft.searchKeywords) !== stableStringify(normalizedKeywords)) {
-    const removedKeywords = plannerDraft.searchKeywords.filter(
-      (keyword) => !normalizedKeywords.includes(keyword.trim().replace(/[^\p{L}\p{N}]/gu, "")),
+  let subjectBinding: NonNullable<TemplateSemanticBriefDraft["subjectBinding"]> =
+    (plannerDraft.subjectBinding ?? expectedSubjectBinding)!;
+  if (subjectBinding !== expectedSubjectBinding) {
+    recordRepair(
+      "subjectBinding",
+      plannerDraft.subjectBinding,
+      expectedSubjectBinding,
+      "subject_binding_rederived",
+      `Subject binding was normalized to ${expectedSubjectBinding} from repaired domain/menu semantics.`,
     );
+    subjectBinding = expectedSubjectBinding;
+  }
+
+  const normalizedKeywords = buildNormalizedKeywords(
+    prompt,
+    domain,
+    menuType,
+    genericPromoStructureFocus,
+    offerIntent,
+  );
+  if (
+    plannerDraft.searchKeywords &&
+    stableStringify(plannerDraft.searchKeywords) !== stableStringify(normalizedKeywords)
+  ) {
     recordRepair(
       "searchKeywords",
       plannerDraft.searchKeywords,
       normalizedKeywords,
-      removedKeywords.length > 0
-        ? "search_keyword_subject_drift"
-        : "search_keywords_completed",
-      removedKeywords.length > 0
-        ? `Conflicting search keywords (${removedKeywords.join(", ")}) were replaced with prompt-grounded taxonomy keywords.`
-        : "Search keywords were completed with deterministic prompt-grounded keywords.",
-      removedKeywords.length > 0
-        ? {
-            code: "search_keyword_subject_drift",
-            severity: "warning",
-            message:
-              "Planner draft search keywords drifted away from the repaired subject/domain semantics.",
-            fields: ["searchKeywords", "domain", "facets.menuType"],
-          }
-        : undefined,
+      "search_keyword_subject_drift",
+      "Planner draft search keywords drifted away from the repaired subject/domain semantics.",
+      {
+        code: "search_keyword_subject_drift",
+        severity: "warning",
+        message:
+          "Planner draft search keywords drifted away from the repaired subject/domain semantics.",
+        fields: ["searchKeywords", "domain", "facets.menuType"],
+      },
+    );
+  } else {
+    normalizationNotes.push(
+      "Search keywords were deterministically compiled from the canonical design brief semantics.",
     );
   }
 
@@ -446,6 +487,8 @@ export function repairTemplateIntentDraft(input: {
     domain,
     audience,
     campaignGoal,
+    subjectBinding,
+    offerIntent,
     canvasPreset,
     layoutIntent,
     tone: plannerDraft.tone,
@@ -459,6 +502,7 @@ export function repairTemplateIntentDraft(input: {
     ],
     assetPolicy: normalizedAssetPolicy,
     searchKeywords: normalizedKeywords,
+    primaryVisualPolicy: normalizedAssetPolicy.primaryVisualPolicy,
     facets: {
       seasonality,
       menuType,
@@ -484,4 +528,61 @@ export function repairTemplateIntentDraft(input: {
     intent,
     repairs,
   };
+}
+
+function derivePromotionStyleFromOfferIntent(
+  offerIntent: TemplateSemanticBriefDraft["offerIntent"] | undefined,
+  menuType: NormalizedIntent["facets"]["menuType"],
+): NormalizedIntent["facets"]["promotionStyle"] {
+  if (offerIntent === undefined) {
+    return menuType === null ? "general_campaign" : "seasonal_menu_launch";
+  }
+  if (offerIntent === "sale") {
+    return "sale_campaign";
+  }
+  if (offerIntent === "launch") {
+    return menuType === null ? "new_product_promo" : "seasonal_menu_launch";
+  }
+  if (offerIntent === "announcement") {
+    return "general_campaign";
+  }
+  return "general_campaign";
+}
+
+function deriveOfferIntentFromPromotionStyle(
+  promotionStyle: NormalizedIntent["facets"]["promotionStyle"],
+): NonNullable<TemplateSemanticBriefDraft["offerIntent"]> {
+  switch (promotionStyle) {
+    case "sale_campaign":
+      return "sale";
+    case "seasonal_menu_launch":
+    case "new_product_promo":
+      return "launch";
+    case "general_campaign":
+      return "announcement";
+  }
+  return "announcement";
+}
+
+function deriveSubjectBinding(
+  prompt: string,
+  domain: NormalizedIntent["domain"],
+  menuType: NormalizedIntent["facets"]["menuType"],
+  genericPromoStructureFocus: boolean,
+): NonNullable<TemplateSemanticBriefDraft["subjectBinding"]> {
+  if (genericPromoStructureFocus || (domain === "general_marketing" && menuType === null)) {
+    return "subjectless";
+  }
+  if (menuType !== null) {
+    return "product_anchored";
+  }
+  if (
+    prompt.includes("매장") ||
+    prompt.includes("방문") ||
+    prompt.includes("식당") ||
+    prompt.includes("카페")
+  ) {
+    return "venue_anchored";
+  }
+  return "domain_anchored";
 }

@@ -26,8 +26,8 @@ type SourceSearchPhoto = SourceSearchSummary["photo"];
 type SourceSearchFont = SourceSearchSummary["font"];
 
 const OPTIONAL_ARTIFACT_REF_KEYS = [
-  "normalizedIntentDraftRef",
-  "intentNormalizationReportRef",
+  "semanticBriefDraftRef",
+  "briefCompilationReportRef",
   "copyPlanRef",
   "copyPlanNormalizationReportRef",
   "abstractLayoutPlanRef",
@@ -51,7 +51,7 @@ const OPTIONAL_ARTIFACT_REF_KEYS = [
 type ArtifactRefKey = (typeof OPTIONAL_ARTIFACT_REF_KEYS)[number];
 
 type ArtifactRefState = {
-  normalizedIntentRef: string | null;
+  canonicalDesignBriefRef: string | null;
   ruleJudgeVerdict: RuleJudgeVerdict | null;
   judgePlan: JudgePlan | null;
   sourceSearchSummary: SourceSearchSummary | null;
@@ -217,8 +217,8 @@ export function buildFinalizeOptions(
 
   const base = {
     cooperativeStopRequested,
-    ...(state.normalizedIntentRef
-      ? { normalizedIntentRef: state.normalizedIntentRef }
+    ...(state.canonicalDesignBriefRef
+      ? { canonicalDesignBriefRef: state.canonicalDesignBriefRef }
       : {}),
     ...pickDefinedStringRefs(state, OPTIONAL_ARTIFACT_REF_KEYS),
     ...(buildCombinedWarningSummary(state).length > 0
@@ -264,12 +264,12 @@ function buildCombinedWarningSummary(state: ArtifactRefState) {
 export function buildArtifactRefs(
   state: ArtifactRefState,
 ): ProcessRunJobResult["artifactRefs"] {
-  if (!state.normalizedIntentRef) {
-    throw new Error("LangGraph run completed without normalized intent artifact");
+  if (!state.canonicalDesignBriefRef) {
+    throw new Error("LangGraph run completed without canonical design brief artifact");
   }
 
   return {
-    normalizedIntentRef: state.normalizedIntentRef,
+    canonicalDesignBriefRef: state.canonicalDesignBriefRef,
     ...pickDefinedStringRefs(state, OPTIONAL_ARTIFACT_REF_KEYS),
   };
 }

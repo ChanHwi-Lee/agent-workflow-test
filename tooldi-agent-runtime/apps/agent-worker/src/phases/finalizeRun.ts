@@ -11,9 +11,9 @@ export async function finalizeRun(
   lastMutationAck: WaitMutationAckResponse | null,
   options: {
     cooperativeStopRequested?: boolean;
-    normalizedIntentRef?: string;
-    normalizedIntentDraftRef?: string;
-    intentNormalizationReportRef?: string;
+    canonicalDesignBriefRef?: string;
+    semanticBriefDraftRef?: string;
+    briefCompilationReportRef?: string;
     copyPlanRef?: string;
     copyPlanNormalizationReportRef?: string;
     abstractLayoutPlanRef?: string;
@@ -139,14 +139,14 @@ export async function finalizeRun(
       lastAckedSeq,
       latestSaveReceiptId: null,
       outputTemplateCode: null,
-      ...(options.normalizedIntentRef
-        ? { normalizedIntentRef: options.normalizedIntentRef }
+      ...(options.canonicalDesignBriefRef
+        ? { canonicalDesignBriefRef: options.canonicalDesignBriefRef }
         : {}),
-      ...(options.normalizedIntentDraftRef
-        ? { normalizedIntentDraftRef: options.normalizedIntentDraftRef }
+      ...(options.semanticBriefDraftRef
+        ? { semanticBriefDraftRef: options.semanticBriefDraftRef }
         : {}),
-      ...(options.intentNormalizationReportRef
-        ? { intentNormalizationReportRef: options.intentNormalizationReportRef }
+      ...(options.briefCompilationReportRef
+        ? { briefCompilationReportRef: options.briefCompilationReportRef }
         : {}),
       ...(options.copyPlanRef ? { copyPlanRef: options.copyPlanRef } : {}),
       ...(options.copyPlanNormalizationReportRef

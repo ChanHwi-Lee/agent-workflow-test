@@ -1,21 +1,21 @@
 import { ChatAnthropic } from "@langchain/anthropic";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ChatOpenAI } from "@langchain/openai";
+import { z } from "zod";
 
-import { ensurePlanningDraftSubplans } from "./heuristicTemplatePlanner.js";
 import { normalizeTemplateAssetPolicy } from "./templatePlannerAssetPolicy.js";
 import type {
   StructuredOutputModel,
   TemplatePlanner,
   TemplatePlannerProvider,
 } from "./templatePlannerSchemas.js";
-import { TemplateIntentDraftSchema } from "./templatePlannerSchemas.js";
+import { TemplateSemanticBriefDraftSchema } from "./templatePlannerSchemas.js";
 
 export function createLangChainTemplatePlanner(config: {
   provider: TemplatePlannerProvider;
   modelName: string;
   temperature: number;
-  modelOverride?: StructuredOutputModel<typeof TemplateIntentDraftSchema>;
+  modelOverride?: StructuredOutputModel<typeof TemplateSemanticBriefDraftSchema>;
 }): TemplatePlanner {
   const model =
     config.modelOverride ??
@@ -24,7 +24,9 @@ export function createLangChainTemplatePlanner(config: {
       config.modelName,
       config.temperature,
     );
-  const structuredModel = model.withStructuredOutput(TemplateIntentDraftSchema);
+  const structuredModel = model.withStructuredOutput(
+    TemplateSemanticBriefDraftSchema,
+  );
 
   return {
     mode: "langchain",
@@ -33,12 +35,12 @@ export function createLangChainTemplatePlanner(config: {
         {
           role: "system",
           content:
-            "You are a template-planning assistant for Tooldi's current create-template slice. " +
-            "Return a concise Korean design brief. " +
+            "You are a semantic design-brief planner for Tooldi's current create-template slice. " +
+            "Return only the semantic brief draft, not copy text, not layout subplans, and not retrieval keywords. " +
             "Choose only supported enum values. " +
             "Choose a solid backgroundColorHex that fits the overall design context. " +
-            "Until generic retrieval lands, include '봄' in searchKeywords. " +
-            "Assume the rollout focuses on Korean marketing banners for restaurant, cafe, and fashion retail prompts.",
+            "Model the prompt using subjectBinding and offerIntent rather than direct search keywords. " +
+            "Assume the rollout focuses on Korean marketing banners for restaurant, cafe, fashion retail, and generic promotional prompts.",
         },
         {
           role: "user",
@@ -46,44 +48,41 @@ export function createLangChainTemplatePlanner(config: {
             `Prompt: ${input.prompt}\n` +
             `Canvas preset: ${input.canvasPreset}\n` +
             `Brand palette: ${input.palette.join(", ") || "none"}\n` +
-            "Return a structured planning draft for the current spring template workflow.",
+            "Return a structured semantic brief draft for the current create-template workflow.",
         },
       ]);
 
-      const normalizedDraft = {
+      return {
         ...result,
         assetPolicy: normalizeTemplateAssetPolicy(result.assetPolicy),
-        searchKeywords: result.searchKeywords.includes("봄")
-          ? result.searchKeywords
-          : ["봄", ...result.searchKeywords].slice(0, 5),
       };
-
-      return ensurePlanningDraftSubplans(input.prompt, normalizedDraft);
     },
   };
 }
 
-function createStructuredOutputModel(
+export function createStructuredOutputModel<
+  TSchema extends z.ZodTypeAny,
+>(
   provider: TemplatePlannerProvider,
   modelName: string,
   temperature: number,
-): StructuredOutputModel<typeof TemplateIntentDraftSchema> {
+): StructuredOutputModel<TSchema> {
   if (provider === "openai") {
     return new ChatOpenAI({
       model: modelName,
       temperature,
-    }) as StructuredOutputModel<typeof TemplateIntentDraftSchema>;
+    }) as StructuredOutputModel<TSchema>;
   }
 
   if (provider === "anthropic") {
     return new ChatAnthropic({
       model: modelName,
       temperature,
-    }) as StructuredOutputModel<typeof TemplateIntentDraftSchema>;
+    }) as StructuredOutputModel<TSchema>;
   }
 
   return new ChatGoogleGenerativeAI({
     model: modelName,
     temperature,
-  }) as StructuredOutputModel<typeof TemplateIntentDraftSchema>;
+  }) as StructuredOutputModel<TSchema>;
 }

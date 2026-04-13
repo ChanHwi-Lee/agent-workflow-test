@@ -1,6 +1,6 @@
 import {
   normalizeTemplateAssetPolicy,
-  type TemplateIntentDraft,
+  type TemplateSemanticBriefDraft,
 } from "@tooldi/agent-llm";
 
 import type { NormalizedIntent } from "../types.js";
@@ -62,7 +62,7 @@ export function deriveExplicitDomain(
 
 export function shouldPreferGraphicPromoStructure(
   promptSignals: ReturnType<typeof extractPromptSignals>,
-  plannerDraft: TemplateIntentDraft,
+  plannerDraft: TemplateSemanticBriefDraft,
 ): boolean {
   const noExplicitBusinessDomain =
     !promptSignals.restaurant && !promptSignals.cafe && !promptSignals.fashion;
@@ -71,8 +71,9 @@ export function shouldPreferGraphicPromoStructure(
   const promoLanguagePresent =
     promptSignals.sale ||
     promptSignals.event ||
-    plannerDraft.facets.promotionStyle === "sale_campaign" ||
-    plannerDraft.facets.promotionStyle === "general_campaign";
+    plannerDraft.offerIntent === "sale" ||
+    plannerDraft.offerIntent === "announcement" ||
+    plannerDraft.offerIntent === "evergreen";
 
   return noExplicitBusinessDomain && noConcretePhotoSubject && promoLanguagePresent;
 }
@@ -146,11 +147,11 @@ export function deriveAudience(
 }
 
 export function buildNormalizedKeywords(
-  rawKeywords: string[],
-  fallbackKeywords: string[],
+  prompt: string,
   domain: NormalizedIntent["domain"],
   menuType: NormalizedIntent["facets"]["menuType"],
   genericPromoSubjectless: boolean,
+  offerIntent: "sale" | "launch" | "announcement" | "evergreen",
 ): string[] {
   const blockedKeywords = new Set<string>();
   if (domain === "fashion_retail") {
@@ -175,10 +176,54 @@ export function buildNormalizedKeywords(
     mergedKeywords.push(normalized);
   };
 
-  for (const keyword of rawKeywords) {
-    pushKeyword(keyword);
+  const promptHasNewness =
+    prompt.includes("신메뉴") ||
+    prompt.includes("신상") ||
+    prompt.includes("계절메뉴");
+  const promptHasBanner = prompt.includes("배너") || prompt.includes("웹배너");
+  const promptHasRetail =
+    prompt.includes("리테일") || prompt.includes("의류");
+
+  if (domain === "restaurant") {
+    pushKeyword("식당");
+  } else if (domain === "cafe") {
+    pushKeyword("카페");
   }
-  for (const keyword of fallbackKeywords) {
+
+  if (prompt.includes("봄")) {
+    pushKeyword("봄");
+  }
+
+  if (menuType === "food_menu") {
+    pushKeyword("메뉴");
+  }
+  if (menuType === "drink_menu") {
+    pushKeyword("음료");
+  }
+
+  if (promptHasNewness) {
+    pushKeyword("신메뉴");
+  }
+
+  if (domain === "fashion_retail") {
+    pushKeyword("패션");
+  }
+
+  if (offerIntent === "sale") {
+    pushKeyword("세일");
+  } else if (genericPromoSubjectless) {
+    pushKeyword("프로모션");
+  }
+
+  if (domain === "fashion_retail" && promptHasRetail) {
+    pushKeyword("리테일");
+  }
+
+  if (promptHasBanner) {
+    pushKeyword("배너");
+  }
+
+  for (const keyword of prompt.split(/\s+/)) {
     pushKeyword(keyword);
   }
 
@@ -207,25 +252,18 @@ export function normalizeKeyword(value: string): string {
 }
 
 export function collectFashionMenuPhotoContradictionFields(
-  draft: TemplateIntentDraft,
+  draft: TemplateSemanticBriefDraft,
 ): string[] {
   const fields: string[] = [];
 
-  if (
-    draft.searchKeywords.some((keyword) =>
-      menuDrivenPhotoSignalKeywords.has(normalizeKeyword(keyword)),
-    )
-  ) {
-    fields.push("searchKeywords");
-  }
   if (menuDrivenPhotoSignalPattern.test(draft.goalSummary)) {
     fields.push("goalSummary");
   }
   if (draft.campaignGoal === "menu_discovery") {
     fields.push("campaignGoal");
   }
-  if (draft.facets.promotionStyle === "seasonal_menu_launch") {
-    fields.push("facets.promotionStyle");
+  if (draft.offerIntent === "launch") {
+    fields.push("offerIntent");
   }
 
   return fields;
@@ -236,7 +274,7 @@ export function stableStringify(value: unknown): string {
 }
 
 export function didCanonicalAssetPolicyMeaningfullyChange(
-  original: TemplateIntentDraft["assetPolicy"],
+  original: TemplateSemanticBriefDraft["assetPolicy"],
   normalized: NormalizedIntent["assetPolicy"],
 ): boolean {
   if (typeof original === "string") {

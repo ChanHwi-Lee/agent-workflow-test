@@ -14,7 +14,8 @@ import type {
   TemplateAbstractLayoutDraft,
   TemplateAssetPolicy,
   TemplateCopyPlanDraft,
-  TemplateIntentDraft,
+  TemplateSemanticBriefContext,
+  TemplateSemanticBriefDraft,
 } from "@tooldi/agent-llm";
 import type {
   TemplateCandidateSet,
@@ -52,7 +53,7 @@ export interface IntentNormalizationRepair {
   note: string;
 }
 
-export interface NormalizedIntentDraftArtifact {
+export interface SemanticBriefDraftArtifact {
   draftId: string;
   runId: string;
   traceId: string;
@@ -61,7 +62,7 @@ export interface NormalizedIntentDraftArtifact {
   canvasPreset: "wide_1200x628" | "square_1080" | "story_1080x1920" | string;
   prompt: string;
   palette: string[];
-  draft: TemplateIntentDraft;
+  draft: TemplateSemanticBriefDraft;
 }
 
 export interface IntentNormalizationReport {
@@ -77,60 +78,22 @@ export interface IntentNormalizationReport {
   normalizationNotes: string[];
 }
 
-export interface NormalizedIntent {
+export interface CanonicalDesignBrief extends TemplateSemanticBriefContext {
   intentId: string;
   runId: string;
   traceId: string;
   plannerMode: "heuristic" | "langchain";
   operationFamily: IntentEnvelope["operationFamily"];
   artifactType: string;
-  goalSummary: string;
   requestedOutputCount: number;
-  templateKind: "promo_banner" | "seasonal_sale_banner";
-  domain:
-    | "restaurant"
-    | "cafe"
-    | "fashion_retail"
-    | "general_marketing";
-  audience:
-    | "walk_in_customers"
-    | "local_visitors"
-    | "sale_shoppers"
-    | "general_consumers";
-  campaignGoal:
-    | "menu_discovery"
-    | "product_trial"
-    | "sale_conversion"
-    | "promotion_awareness";
-  canvasPreset: "wide_1200x628" | "square_1080" | "story_1080x1920" | string;
-  layoutIntent: "copy_focused" | "hero_focused" | "badge_led";
-  tone: "bright_playful";
-  backgroundColorHex?: string | null;
-  requiredSlots: Array<
-    "background" | "headline" | "supporting_copy" | "cta" | "decoration"
-  >;
-  assetPolicy: TemplateAssetPolicy;
-  searchKeywords: string[];
-  facets: {
-    seasonality: "spring" | null;
-    menuType: "food_menu" | "drink_menu" | null;
-    promotionStyle:
-      | "seasonal_menu_launch"
-      | "new_product_promo"
-      | "sale_campaign"
-      | "general_campaign";
-    offerSpecificity: "single_product" | "multi_item" | "broad_offer";
-  };
-  brandConstraints: {
-    palette: string[];
-    typographyHint: string | null;
-    forbiddenStyles: string[];
-  };
   consistencyFlags: IntentConsistencyFlag[];
   normalizationNotes: string[];
   supportedInV1: boolean;
   futureCapableOperations: IntentEnvelope["futureCapableOperations"];
 }
+
+export type NormalizedIntent = CanonicalDesignBrief;
+export type NormalizedIntentDraftArtifact = SemanticBriefDraftArtifact;
 
 export type CopyPlanSlotKey =
   | "headline"
@@ -921,8 +884,8 @@ export interface FinalizeRunDraft {
 }
 
 export interface ProcessRunJobResult {
-  intent: NormalizedIntent;
-  normalizedIntentDraft?: NormalizedIntentDraftArtifact;
+  intent: CanonicalDesignBrief;
+  semanticBriefDraft?: SemanticBriefDraftArtifact;
   intentNormalizationReport?: IntentNormalizationReport;
   copyPlan?: CopyPlan;
   copyPlanNormalizationReport?: CopyPlanNormalizationReport;
@@ -945,9 +908,9 @@ export interface ProcessRunJobResult {
   emittedMutationIds: string[];
   finalizeDraft: FinalizeRunDraft;
   artifactRefs: {
-    normalizedIntentRef: string;
-    normalizedIntentDraftRef?: string;
-    intentNormalizationReportRef?: string;
+    canonicalDesignBriefRef: string;
+    semanticBriefDraftRef?: string;
+    briefCompilationReportRef?: string;
     copyPlanRef?: string;
     copyPlanNormalizationReportRef?: string;
     abstractLayoutPlanRef?: string;

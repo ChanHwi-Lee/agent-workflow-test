@@ -95,9 +95,9 @@ export const RunCompletionRecordSchema = Type.Object(
       {
         requestRef: IdentifierSchema,
         snapshotRef: IdentifierSchema,
-        normalizedIntentRef: IdentifierSchema,
-        normalizedIntentDraftRef: Type.Optional(IdentifierSchema),
-        intentNormalizationReportRef: Type.Optional(IdentifierSchema),
+        canonicalDesignBriefRef: IdentifierSchema,
+        semanticBriefDraftRef: Type.Optional(IdentifierSchema),
+        briefCompilationReportRef: Type.Optional(IdentifierSchema),
         copyPlanRef: Type.Optional(IdentifierSchema),
         copyPlanNormalizationReportRef: Type.Optional(IdentifierSchema),
         abstractLayoutPlanRef: Type.Optional(IdentifierSchema),

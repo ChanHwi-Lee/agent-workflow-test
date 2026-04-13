@@ -2,34 +2,34 @@ import { createRequestId } from "@tooldi/agent-domain";
 import {
   createHeuristicTemplatePlanner,
   normalizeTemplateAssetPolicy,
-  type TemplateIntentDraft,
+  type TemplateSemanticBriefDraft,
 } from "@tooldi/agent-llm";
 
 import type {
+  CanonicalDesignBrief,
   HydratedPlanningInput,
   IntentNormalizationReport,
-  NormalizedIntent,
-  NormalizedIntentDraftArtifact,
+  SemanticBriefDraftArtifact,
 } from "../types.js";
 import { createIntentNormalizationReport } from "./intentNormalizationReport.js";
 import { repairTemplateIntentDraft } from "./intentRepairPipeline.js";
 
 export interface NormalizeTemplateIntentResult {
-  intent: NormalizedIntent;
-  normalizedIntentDraft: NormalizedIntentDraftArtifact | null;
+  intent: CanonicalDesignBrief;
+  semanticBriefDraft: SemanticBriefDraftArtifact | null;
   intentNormalizationReport: IntentNormalizationReport;
 }
 
 export async function normalizeTemplateIntent(
   input: HydratedPlanningInput,
-  plannerMode: NormalizedIntent["plannerMode"],
-  operationFamily: NormalizedIntent["operationFamily"],
-  canvasPreset: NormalizedIntent["canvasPreset"],
-  plannerDraft: TemplateIntentDraft | null,
+  plannerMode: CanonicalDesignBrief["plannerMode"],
+  operationFamily: CanonicalDesignBrief["operationFamily"],
+  canvasPreset: CanonicalDesignBrief["canvasPreset"],
+  plannerDraft: TemplateSemanticBriefDraft | null,
 ): Promise<NormalizeTemplateIntentResult> {
   const prompt = input.request.userInput.prompt.trim();
   const palette = [...input.snapshot.brandContext.palette];
-  const normalizedIntentDraft =
+  const semanticBriefDraft =
     operationFamily === "create_template" && plannerDraft
       ? {
           draftId: createRequestId(),
@@ -48,7 +48,7 @@ export async function normalizeTemplateIntent(
     const normalizationNotes = [
       "No planner draft was available; normalized intent fell back to request defaults.",
     ];
-    const intent: NormalizedIntent = {
+    const intent: CanonicalDesignBrief = {
       intentId: createRequestId(),
       runId: input.job.runId,
       traceId: input.job.traceId,
@@ -61,6 +61,8 @@ export async function normalizeTemplateIntent(
       domain: "general_marketing",
       audience: "general_consumers",
       campaignGoal: "promotion_awareness",
+      subjectBinding: "subjectless",
+      offerIntent: "announcement",
       canvasPreset,
       layoutIntent: "copy_focused",
       tone: "bright_playful",
@@ -76,6 +78,7 @@ export async function normalizeTemplateIntent(
         "graphic_allowed_photo_optional",
       ),
       searchKeywords: ["봄"],
+      primaryVisualPolicy: "graphic_preferred",
       facets: {
         seasonality: prompt.includes("봄") ? "spring" : null,
         menuType: null,
@@ -99,7 +102,7 @@ export async function normalizeTemplateIntent(
 
     return {
       intent,
-      normalizedIntentDraft,
+      semanticBriefDraft,
       intentNormalizationReport: createIntentNormalizationReport({
         input,
         plannerMode,
@@ -129,7 +132,7 @@ export async function normalizeTemplateIntent(
 
   return {
     intent: repaired.intent,
-    normalizedIntentDraft,
+    semanticBriefDraft,
     intentNormalizationReport: createIntentNormalizationReport({
       input,
       plannerMode,

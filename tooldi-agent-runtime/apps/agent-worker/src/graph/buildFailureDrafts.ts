@@ -42,8 +42,8 @@ export async function buildSpringActivationFailureFinalizeDraft(
 
   const finalizeDraft = await finalizeRun(state.hydrated!, [], null, {
     cooperativeStopRequested,
-    ...(state.normalizedIntentRef
-      ? { normalizedIntentRef: state.normalizedIntentRef }
+    ...(state.canonicalDesignBriefRef
+      ? { canonicalDesignBriefRef: state.canonicalDesignBriefRef }
       : {}),
     overrideResult: {
       finalStatus: "failed",

@@ -69,7 +69,7 @@ function createFinalizeRequest(overrides: Partial<RunFinalizeRequest> = {}): Run
     },
     latestSaveReceiptId: "save-receipt-1",
     outputTemplateCode: "template_draft_run-1",
-    normalizedIntentRef: "runs/run-1/attempts/1/normalized-intent.json",
+    canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
     templatePriorSummaryRef: "runs/run-1/attempts/1/template-prior-summary.json",
     searchProfileRef: "runs/run-1/attempts/1/search-profile.json",
     executablePlanRef: "runs/run-1/attempts/1/executable-plan.json",
@@ -507,8 +507,8 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
     assert.equal(completion.completionRecordId, "completion_run-1");
     assert.equal(completion.latestSaveEvidence?.code, "template_draft_run-1");
     assert.equal(
-      completion.sourceRefs.normalizedIntentRef,
-      "runs/run-1/attempts/1/normalized-intent.json",
+      completion.sourceRefs.canonicalDesignBriefRef,
+      "runs/run-1/attempts/1/canonical-design-brief.json",
     );
     assert.equal(
       completion.sourceRefs.templatePriorSummaryRef,
