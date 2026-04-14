@@ -269,6 +269,74 @@ function isCreateLayerCommand(
   return command?.op === "createLayer";
 }
 
+function createExecutablePlanV2(): ExecutablePlan {
+  return {
+    ...createExecutablePlan(),
+    actions: [
+      {
+        ...createExecutablePlan().actions[0]!,
+        inputs: {
+          ...createExecutablePlan().actions[0]!.inputs,
+          executionMode: "v2_freeform",
+          includeBadge: false,
+          includeRibbon: false,
+          includeFrame: false,
+          badgeText: null,
+        },
+      },
+      {
+        ...createExecutablePlan().actions[1]!,
+        inputs: {
+          ...createExecutablePlan().actions[1]!.inputs,
+          executionMode: "v2_freeform",
+          freeformBlocks: [
+            {
+              blockId: "headline-v2",
+              stage: "copy",
+              layerType: "text",
+              slotKey: "headline",
+              executionSlotKey: "headline",
+              role: "headline",
+              variantKey: "text_display",
+              candidateId: "template-1",
+              bounds: { x: 700, y: 140, width: 360, height: 300 },
+              textContent: "봄 세일",
+              fontRole: "display",
+              fontSize: 72,
+              textAlign: "center",
+            },
+            {
+              blockId: "cta-v2",
+              stage: "copy",
+              layerType: "group",
+              slotKey: "cta",
+              executionSlotKey: "cta",
+              role: "cta",
+              variantKey: "reference_cta_band",
+              candidateId: "template-1",
+              bounds: { x: 60, y: 500, width: 700, height: 70 },
+              textContent: "혜택 보기",
+            },
+          ],
+        },
+      },
+      {
+        ...createExecutablePlan().actions[2]!,
+        inputs: {
+          ...createExecutablePlan().actions[2]!.inputs,
+          executionMode: "v2_freeform",
+          graphicRoleBindings: [],
+          ctaContainerExpected: false,
+          includeUnderline: false,
+          includeRibbon: false,
+          freeformBlocks: [],
+        },
+      },
+      createExecutablePlan().actions[3]!,
+    ],
+  };
+}
+
 test("emitSkeletonMutations uses copy slot text and concrete layout hints in mutation payloads", async () => {
   const batch = await emitSkeletonMutations(
     createHydratedPlanningInput(),
@@ -434,5 +502,51 @@ test("emitSkeletonMutations는 layoutGeometry 계산 결과와 같은 bounds를 
   assert.deepEqual(
     primaryAccentCommand.layerBlueprint.bounds,
     expectedPrimaryAccentBounds,
+  );
+});
+
+test("emitSkeletonMutations suppresses legacy foundation and polish emission for retrieval_prior_v2 execution", async () => {
+  const batch = await emitSkeletonMutations(
+    createHydratedPlanningInput(),
+    createNormalizedIntent(),
+    createExecutablePlanV2(),
+    {
+      textLayoutHelper: {
+        estimate: async () => ({
+          width: 240,
+          height: 84,
+          estimatedLineCount: 1,
+        }),
+      },
+    },
+  );
+
+  const foundationProposal = batch.proposals.find((proposal) => proposal.stageLabel === "foundation");
+  const copyProposal = batch.proposals.find((proposal) => proposal.stageLabel === "copy");
+  const polishProposal = batch.proposals.find((proposal) => proposal.stageLabel === "polish");
+  assert.ok(foundationProposal);
+  assert.ok(copyProposal);
+  assert.ok(polishProposal);
+
+  assert.equal(
+    foundationProposal!.mutation.commands.some(
+      (command) =>
+        isCreateLayerCommand(command) &&
+        (command.layerBlueprint.metadata?.role === "badge" ||
+          command.layerBlueprint.metadata?.role === "ribbon_strip" ||
+          command.layerBlueprint.metadata?.role === "frame"),
+    ),
+    false,
+  );
+  assert.equal(copyProposal!.mutation.commands.length, 2);
+  assert.equal(
+    polishProposal!.mutation.commands.some(
+      (command) =>
+        isCreateLayerCommand(command) &&
+        ["primary_accent", "secondary_accent", "corner_accent", "badge_or_ribbon", "cta_container"].includes(
+          String(command.layerBlueprint.metadata?.role ?? ""),
+        ),
+    ),
+    false,
   );
 });

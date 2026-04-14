@@ -99,6 +99,20 @@ function createExecutablePlan(): ExecutablePlan {
   };
 }
 
+function createExecutablePlanV2(): ExecutablePlan {
+  return {
+    ...createExecutablePlan(),
+    actions: [
+      {
+        ...createExecutablePlan().actions[0]!,
+        inputs: {
+          executionMode: "v2_freeform",
+        },
+      },
+    ],
+  };
+}
+
 test("buildJudgePlan requests patch refinement for missing CTA container and dense spacing", async () => {
   const judgePlan = await buildJudgePlan(
     "run-1",
@@ -182,6 +196,28 @@ test("buildJudgePlan surfaces execution slot identity loss before materializatio
   );
   assert.equal(
     judgePlan.issues.some((issue) => issue.code === "slot_materialization_missing"),
+    false,
+  );
+});
+
+test("buildJudgePlan skips legacy cta container and badge expectations for retrieval_prior_v2 execution", async () => {
+  const judgePlan = await buildJudgePlan(
+    "run-1",
+    "trace-1",
+    0,
+    createCopyPlan(),
+    createConcreteLayoutPlan(),
+    createExecutionSceneSummary(),
+    createExecutablePlanV2(),
+    null,
+  );
+
+  assert.equal(
+    judgePlan.issues.some((issue) => issue.code === "cta_container_missing_after_execution"),
+    false,
+  );
+  assert.equal(
+    judgePlan.issues.some((issue) => issue.code === "badge_zone_mismatch"),
     false,
   );
 });

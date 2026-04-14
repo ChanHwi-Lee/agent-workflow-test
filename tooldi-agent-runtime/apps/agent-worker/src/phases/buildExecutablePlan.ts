@@ -7,8 +7,10 @@ import type {
   ConcreteLayoutPlan,
   CopyPlan,
   CopyPlanSlotKey,
+  FreeformLayoutPlan,
   HydratedPlanningInput,
   NormalizedIntent,
+  SceneBindingPlan,
   SelectionDecision,
   TypographyDecision,
 } from "../types.js";
@@ -25,6 +27,8 @@ export async function buildExecutablePlan(
   selectionDecision: SelectionDecision,
   concreteLayoutPlan: ConcreteLayoutPlan,
   typographyDecision: TypographyDecision,
+  freeformLayoutPlan: FreeformLayoutPlan | null | undefined,
+  sceneBindingPlan: SceneBindingPlan | null | undefined,
   dependencies: BuildExecutablePlanDependencies,
 ): Promise<ExecutablePlan> {
   const copySlotTexts = buildCopySlotTextMap(copyPlan);
@@ -62,8 +66,43 @@ export async function buildExecutablePlan(
     selectionDecision.decorationMode !== "promo_multi_graphic" &&
     !photoSelected;
   const includeRibbon =
+    sceneBindingPlan?.includeRibbon === true ||
     selectionDecision.decorationMode === "ribbon_badge" ||
     graphicRoleBindings.some((role) => role.role === "badge_or_ribbon");
+  const styleMetadata = sceneBindingPlan
+    ? {
+        backgroundColorHex: sceneBindingPlan.backgroundColorHex,
+        secondaryBackgroundColorHex: sceneBindingPlan.secondaryBackgroundColorHex,
+        primaryTextColorHex: sceneBindingPlan.primaryTextColorHex,
+        secondaryTextColorHex: sceneBindingPlan.secondaryTextColorHex,
+        accentTextColorHex: sceneBindingPlan.accentTextColorHex,
+        inverseTextColorHex: sceneBindingPlan.inverseTextColorHex,
+        ctaSurfaceColorHex: sceneBindingPlan.ctaSurfaceColorHex,
+        ctaTextColorHex: sceneBindingPlan.ctaTextColorHex,
+        ctaShapeLanguage: sceneBindingPlan.ctaShapeLanguage,
+        backgroundVisualMode: sceneBindingPlan.backgroundMode,
+      }
+    : null;
+  const v2FreeformCopyBlocks =
+    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2"
+      ? freeformLayoutPlan.copyBlocks
+      : [];
+  const v2FreeformPolishBlocks =
+    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2"
+      ? freeformLayoutPlan.polishBlocks
+      : [];
+  const executionMode =
+    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2"
+      ? "v2_freeform"
+      : "legacy_slots";
+
+  if (input.request.workflowVariant === "retrieval_prior_v2") {
+    if (!freeformLayoutPlan || executionMode !== "v2_freeform" || v2FreeformCopyBlocks.length === 0) {
+      throw new Error(
+        "retrieval_prior_v2 requires freeform layout execution truth; refusing to fall back to legacy slot execution",
+      );
+    }
+  }
 
   const actions: ExecutablePlan["actions"] = [
     {
@@ -83,6 +122,7 @@ export async function buildExecutablePlan(
         slotKey: "background",
       },
       inputs: {
+        executionMode,
         templateKind: normalizedIntent.templateKind,
         canvasPreset: normalizedIntent.canvasPreset,
         tone: normalizedIntent.tone,
@@ -96,11 +136,12 @@ export async function buildExecutablePlan(
         layoutMode: concreteLayoutPlan.resolvedLayoutMode,
         layoutProfile: concreteLayoutPlan.abstractLayoutFamily,
         primaryVisualFamily: assetPlan.primaryVisualFamily,
-        includeHeroPanel,
-        includeBadge,
-        includeRibbon,
-        includeFrame,
-        badgeText: copySlotTexts.badge_text ?? null,
+        includeHeroPanel: executionMode === "v2_freeform" ? false : includeHeroPanel,
+        includeBadge: executionMode === "v2_freeform" ? false : includeBadge,
+        includeRibbon: executionMode === "v2_freeform" ? false : includeRibbon,
+        includeFrame: executionMode === "v2_freeform" ? false : includeFrame,
+        badgeText: executionMode === "v2_freeform" ? null : copySlotTexts.badge_text ?? null,
+        ...(styleMetadata ? { styleMetadata } : {}),
         resolvedSlotBounds: JSON.parse(
           JSON.stringify(concreteLayoutPlan.resolvedSlotBounds),
         ),
@@ -130,6 +171,7 @@ export async function buildExecutablePlan(
         slotKey: "hero_image",
       },
       inputs: {
+        executionMode,
         selectedLayoutCandidateId: selectionDecision.selectedLayoutCandidateId,
         layoutMode: concreteLayoutPlan.resolvedLayoutMode,
         layoutProfile: concreteLayoutPlan.abstractLayoutFamily,
@@ -193,10 +235,12 @@ export async function buildExecutablePlan(
         clusterZones: JSON.parse(JSON.stringify(concreteLayoutPlan.clusterZones)),
         spacingIntent: concreteLayoutPlan.spacingIntent,
         headlineEstimatedHeight: concreteLayoutPlan.headlineEstimatedHeight,
+        freeformBlocks: JSON.parse(JSON.stringify(v2FreeformCopyBlocks)),
         layoutProfile: concreteLayoutPlan.abstractLayoutFamily,
         primaryVisualFamily: assetPlan.primaryVisualFamily,
-        includeHeroCaption,
-        includeBadge,
+        includeHeroCaption: executionMode === "v2_freeform" ? false : includeHeroCaption,
+        includeBadge: executionMode === "v2_freeform" ? false : includeBadge,
+        ...(styleMetadata ? { styleMetadata } : {}),
       },
       rollback: {
         strategy: "delete_created_layers",
@@ -219,20 +263,27 @@ export async function buildExecutablePlan(
         slotKey: "decoration",
       },
       inputs: {
+        executionMode,
         selectedDecorationCandidateId:
           selectionDecision.selectedDecorationCandidateId,
-        selectedDecorationAssetId: selectionDecision.selectedDecorationAssetId,
-        selectedDecorationSerial: selectionDecision.selectedDecorationSerial,
-        selectedDecorationCategory: selectionDecision.selectedDecorationCategory,
+        selectedDecorationAssetId:
+          executionMode === "v2_freeform" ? null : selectionDecision.selectedDecorationAssetId,
+        selectedDecorationSerial:
+          executionMode === "v2_freeform" ? null : selectionDecision.selectedDecorationSerial,
+        selectedDecorationCategory:
+          executionMode === "v2_freeform" ? null : selectionDecision.selectedDecorationCategory,
         decorationMode: selectionDecision.decorationMode,
         primaryVisualFamily: assetPlan.primaryVisualFamily,
         assetExecutionEligibility: JSON.parse(
           JSON.stringify(assetPlan.executionEligibility),
         ),
-        graphicCompositionSet: selectionDecision.graphicCompositionSet
+        graphicCompositionSet: executionMode === "v2_freeform"
+          ? null
+          : selectionDecision.graphicCompositionSet
           ? JSON.parse(JSON.stringify(selectionDecision.graphicCompositionSet))
           : null,
-        graphicRoleBindings: JSON.parse(JSON.stringify(graphicRoleBindings)),
+        graphicRoleBindings:
+          executionMode === "v2_freeform" ? [] : JSON.parse(JSON.stringify(graphicRoleBindings)),
         displayFontFamily: typographyDecision.display?.fontToken ?? null,
         displayFontWeight: typographyDecision.display?.fontWeight ?? null,
         bodyFontFamily: typographyDecision.body?.fontToken ?? null,
@@ -244,13 +295,16 @@ export async function buildExecutablePlan(
         graphicRolePlacementHints: JSON.parse(
           JSON.stringify(concreteLayoutPlan.graphicRolePlacementHints),
         ),
-        ctaContainerExpected: concreteLayoutPlan.ctaContainerExpected,
+        ctaContainerExpected:
+          executionMode === "v2_freeform" ? false : concreteLayoutPlan.ctaContainerExpected,
         spacingIntent: concreteLayoutPlan.spacingIntent,
+        freeformBlocks: JSON.parse(JSON.stringify(v2FreeformPolishBlocks)),
         executionStrategy: selectionDecision.executionStrategy,
         fallbackSummary: selectionDecision.fallbackSummary,
-        includeBadge,
-        includeUnderline,
-        includeRibbon,
+        includeBadge: executionMode === "v2_freeform" ? false : includeBadge,
+        includeUnderline: executionMode === "v2_freeform" ? false : includeUnderline,
+        includeRibbon: executionMode === "v2_freeform" ? false : includeRibbon,
+        ...(styleMetadata ? { styleMetadata } : {}),
       },
       rollback: {
         strategy: "delete_created_layers",

@@ -36,6 +36,12 @@ export async function buildRefineDecision(
 
   const operations: RefinementPatchOperation[] = [];
   const hasGenericPromoSafeHeadline = copyPlan.primaryMessage.trim().length > 0;
+  const isV2FreeformExecution = executablePlan.actions.some(
+    (action) =>
+      action.inputs &&
+      typeof action.inputs === "object" &&
+      action.inputs.executionMode === "v2_freeform",
+  );
 
   for (const issue of judgePlan.issues) {
     switch (issue.code) {
@@ -59,6 +65,9 @@ export async function buildRefineDecision(
       case "preflight_concrete_layout_slot_conflict":
       case "preflight_cta_copy_overlap_risk":
       case "topology_bounds_conflict":
+        if (isV2FreeformExecution) {
+          break;
+        }
         operations.push({
           kind: "move_copy_slot_anchor",
           slotKey: "cta",
@@ -71,12 +80,18 @@ export async function buildRefineDecision(
         break;
       case "preflight_excessive_empty_space":
       case "copy_stack_spacing_weak":
+        if (isV2FreeformExecution) {
+          break;
+        }
         operations.push({
           kind: "set_spacing_intent",
           spacingIntent: nextSpacingIntent(executablePlan),
         });
         break;
       case "cta_container_missing_after_execution":
+        if (isV2FreeformExecution) {
+          break;
+        }
         operations.push({
           kind: "ensure_cta_container_fallback",
         });

@@ -23,12 +23,21 @@ export async function buildJudgePlan(
   preflightVerdict: RuleJudgeVerdict | null,
 ): Promise<JudgePlan> {
   const issues: JudgePlanIssue[] = [];
+  const isV2FreeformExecution =
+    executablePlan.actions.some(
+      (action) =>
+        action.inputs &&
+        typeof action.inputs === "object" &&
+        action.inputs.executionMode === "v2_freeform",
+    );
 
   if (preflightVerdict) {
     issues.push(...mapPreflightIssues(preflightVerdict.issues, concreteLayoutPlan));
   }
 
-  const requiredCopyBindings = copyPlan.slots.filter((slot) => slot.required);
+  const requiredCopyBindings = isV2FreeformExecution
+    ? []
+    : copyPlan.slots.filter((slot) => slot.required);
   const missingIdentityBindings = requiredCopyBindings.filter((slot) => {
     const binding = executionSceneSummary.copyLayerBindings.find(
       (candidate) => candidate.executionSlotKey === slot.key,
@@ -77,6 +86,7 @@ export async function buildJudgePlan(
   }
 
   if (
+    !isV2FreeformExecution &&
     concreteLayoutPlan.ctaContainerExpected &&
     !executionSceneSummary.ctaContainerResolved
   ) {
@@ -90,6 +100,7 @@ export async function buildJudgePlan(
   }
 
   if (
+    !isV2FreeformExecution &&
     concreteLayoutPlan.spacingIntent === "dense" &&
     executionSceneSummary.copyLayerBindings.filter((binding) => binding.layerId !== null)
       .length >= 4
@@ -103,7 +114,7 @@ export async function buildJudgePlan(
     });
   }
 
-  const badgeSlotPresent = copyPlan.slots.some((slot) => slot.key === "badge_text");
+  const badgeSlotPresent = !isV2FreeformExecution && copyPlan.slots.some((slot) => slot.key === "badge_text");
   if (
     badgeSlotPresent &&
     !executionSceneSummary.copyLayerBindings.some(

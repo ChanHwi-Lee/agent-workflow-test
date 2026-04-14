@@ -58,6 +58,21 @@ function createExecutablePlan(): ExecutablePlan {
   };
 }
 
+function createExecutablePlanV2(): ExecutablePlan {
+  return {
+    ...createExecutablePlan(),
+    actions: [
+      {
+        ...createExecutablePlan().actions[0]!,
+        inputs: {
+          executionMode: "v2_freeform",
+          spacingIntent: "dense",
+        },
+      },
+    ],
+  };
+}
+
 function createJudgePlan(): JudgePlan {
   return {
     judgePlanId: "judge-1",
@@ -101,4 +116,19 @@ test("buildRefineDecision creates deterministic patch operations for patchable j
   assert.equal(decision.decision, "patch");
   assert.equal(decision.patchPlan?.operations.some((operation) => operation.kind === "set_spacing_intent"), true);
   assert.equal(decision.patchPlan?.operations.some((operation) => operation.kind === "ensure_cta_container_fallback"), true);
+});
+
+test("buildRefineDecision suppresses legacy fallback patches for retrieval_prior_v2 execution", async () => {
+  const decision = await buildRefineDecision(
+    "run-1",
+    "trace-1",
+    0,
+    createJudgePlan(),
+    createCopyPlan(),
+    createExecutablePlanV2(),
+    2,
+  );
+
+  assert.equal(decision.decision, "skip");
+  assert.equal(decision.patchPlan, null);
 });

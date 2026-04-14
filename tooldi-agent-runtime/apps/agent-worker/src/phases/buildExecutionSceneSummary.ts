@@ -4,6 +4,7 @@ import type {
   AssetPlan,
   ConcreteLayoutPlan,
   CopyPlan,
+  FreeformRenderableBlock,
   ExecutionSceneGraphicLayerBinding,
   ExecutionSceneSummary,
   ProcessRunJobResult,
@@ -20,19 +21,26 @@ export async function buildExecutionSceneSummary(
   plan: NonNullable<ProcessRunJobResult["plan"]>,
   stageAckHistory: StageAckRecord[],
 ): Promise<ExecutionSceneSummary> {
+  const copyAction = plan.actions.find((action) => action.operation === "place_copy_cluster");
+  const polishAction = plan.actions.find((action) => action.operation === "place_promo_polish");
+  const isV2FreeformExecution =
+    readExecutionMode(copyAction) === "v2_freeform" ||
+    readExecutionMode(polishAction) === "v2_freeform";
+
   const finalRevision =
     [...stageAckHistory]
       .reverse()
       .find((record) => record.resultingRevision !== null)?.resultingRevision ?? null;
 
-  const copyAction = plan.actions.find((action) => action.operation === "place_copy_cluster");
   const copySlotTexts = normalizeRecord(
     copyAction?.inputs && typeof copyAction.inputs === "object"
       ? (copyAction.inputs as Record<string, unknown>).copySlotTexts
       : null,
   );
 
-  const copyLayerBindings = copyPlan.slots.map((slot) => {
+  const copyLayerBindings = isV2FreeformExecution
+    ? buildV2CopyLayerBindings(copyAction, polishAction, stageAckHistory)
+    : copyPlan.slots.map((slot) => {
     const matchingCommand = findLatestCommandByExecutionSlot(stageAckHistory, slot.key);
     return {
       executionSlotKey: slot.key,
@@ -53,7 +61,9 @@ export async function buildExecutionSceneSummary(
   });
 
   const graphicLayerBindings: ExecutionSceneGraphicLayerBinding[] =
-    assetPlan.graphicRoleBindings.map((binding) => {
+    isV2FreeformExecution
+      ? buildV2GraphicLayerBindings(polishAction, stageAckHistory)
+      : assetPlan.graphicRoleBindings.map((binding) => {
       const matchingCommand = findLatestGraphicCommandByRole(stageAckHistory, binding.role);
       const placementHint = concreteLayoutPlan.graphicRolePlacementHints.find(
         (hint) => hint.role === binding.role,
@@ -98,7 +108,7 @@ export async function buildExecutionSceneSummary(
               concreteLayoutPlan.resolvedSlotBounds.hero_image ??
               null,
           },
-    ctaContainerResolved: graphicLayerBindings.some(
+    ctaContainerResolved: !isV2FreeformExecution && graphicLayerBindings.some(
       (binding) => binding.role === "cta_container" && binding.layerId !== null,
     ),
     summary:
@@ -109,8 +119,71 @@ export async function buildExecutionSceneSummary(
   };
 }
 
+function buildV2CopyLayerBindings(
+  copyAction: NonNullable<ProcessRunJobResult["plan"]>["actions"][number] | undefined,
+  polishAction: NonNullable<ProcessRunJobResult["plan"]>["actions"][number] | undefined,
+  stageAckHistory: StageAckRecord[],
+) {
+  const expectedBlocks = [
+    ...readFreeformBlocks(copyAction),
+    ...readFreeformBlocks(polishAction),
+  ].filter(
+    (block): block is FreeformRenderableBlock =>
+      block.executionSlotKey !== null,
+  );
+
+  return expectedBlocks.map((block) => {
+    const matchingCommand = findLatestCommandByExecutionSlot(stageAckHistory, block.executionSlotKey);
+    return {
+      executionSlotKey: block.executionSlotKey!,
+      identityObserved: matchingCommand !== null,
+      layerId: resolveCommandLayerId(matchingCommand),
+      text: block.textContent,
+      anchor: null,
+      plannedBounds: block.bounds,
+      resolvedBounds: matchingCommand?.proposedBounds ?? block.bounds,
+    };
+  });
+}
+
+function buildV2GraphicLayerBindings(
+  polishAction: NonNullable<ProcessRunJobResult["plan"]>["actions"][number] | undefined,
+  stageAckHistory: StageAckRecord[],
+): ExecutionSceneGraphicLayerBinding[] {
+  return readFreeformBlocks(polishAction)
+    .filter((block) => block.executionSlotKey === null && block.slotKey === "decoration")
+    .map((block) => {
+      const matchingCommand = findLatestGraphicCommandByRole(stageAckHistory, block.role);
+      return {
+        role: block.role as ExecutionSceneGraphicLayerBinding["role"],
+        layerId: resolveCommandLayerId(matchingCommand),
+        zone: block.clusterZone ?? null,
+        sourceAssetId: block.sourceAssetId ?? null,
+        sourceSerial: block.sourceSerial ?? null,
+      };
+    });
+}
+
 function normalizeRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+}
+
+function readExecutionMode(
+  action: NonNullable<ProcessRunJobResult["plan"]>["actions"][number] | undefined,
+): string | null {
+  if (!action?.inputs || typeof action.inputs !== "object") {
+    return null;
+  }
+  return typeof action.inputs.executionMode === "string" ? action.inputs.executionMode : null;
+}
+
+function readFreeformBlocks(
+  action: NonNullable<ProcessRunJobResult["plan"]>["actions"][number] | undefined,
+): FreeformRenderableBlock[] {
+  if (!action?.inputs || typeof action.inputs !== "object" || !Array.isArray(action.inputs.freeformBlocks)) {
+    return [];
+  }
+  return action.inputs.freeformBlocks as FreeformRenderableBlock[];
 }
 
 function findLatestCommandByExecutionSlot(
@@ -150,6 +223,7 @@ function findLatestGraphicCommandByRole(
   }
   return null;
 }
+
 
 function resolveCommandLayerId(
   command:

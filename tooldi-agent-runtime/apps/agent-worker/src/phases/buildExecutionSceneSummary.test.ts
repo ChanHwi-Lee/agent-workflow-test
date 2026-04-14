@@ -195,6 +195,72 @@ function createExecutablePlan(): ExecutablePlan {
   };
 }
 
+function createExecutablePlanV2(): ExecutablePlan {
+  return {
+    ...createExecutablePlan(),
+    actions: [
+      {
+        ...createExecutablePlan().actions[0]!,
+        inputs: {
+          ...createExecutablePlan().actions[0]!.inputs,
+          executionMode: "v2_freeform",
+          copySlotTexts: {
+            headline: "봄 세일",
+          },
+          freeformBlocks: [
+            {
+              blockId: "headline",
+              stage: "copy",
+              layerType: "text",
+              slotKey: "headline",
+              executionSlotKey: "headline",
+              role: "headline",
+              variantKey: "text_display",
+              candidateId: "template-1",
+              bounds: { x: 700, y: 150, width: 340, height: 320 },
+              textContent: "봄 세일",
+            },
+            {
+              blockId: "cta",
+              stage: "copy",
+              layerType: "group",
+              slotKey: "cta",
+              executionSlotKey: "cta",
+              role: "cta",
+              variantKey: "reference_cta_band",
+              candidateId: "template-1",
+              bounds: { x: 60, y: 511, width: 717, height: 70 },
+              textContent: "혜택 보기",
+            },
+          ],
+        },
+      },
+      {
+        actionId: "polish-v2",
+        kind: "canvas_mutation",
+        operation: "place_promo_polish",
+        toolName: "style-heuristic",
+        toolVersion: "1",
+        commitGroup: "group-1",
+        liveCommit: true,
+        idempotencyKey: "polish-v2",
+        dependsOn: ["copy"],
+        targetRef: {
+          documentId: "doc-1",
+          pageId: "page-1",
+          layerId: null,
+          slotKey: "decoration",
+        },
+        inputs: {
+          executionMode: "v2_freeform",
+          freeformBlocks: [],
+        },
+        rollback: { strategy: "delete_created_layers" },
+      },
+    ],
+  };
+}
+
 test("buildExecutionSceneSummary binds copy and graphic layers from ack history", async () => {
   const stageAckHistory: StageAckRecord[] = [
     {
@@ -414,4 +480,77 @@ test("buildExecutionSceneSummary binds hero_image from canonical executionSlotKe
     width: 320,
     height: 320,
   });
+});
+
+test("buildExecutionSceneSummary ignores legacy badge/decor expectations for retrieval_prior_v2 execution", async () => {
+  const summary = await buildExecutionSceneSummary(
+    "run-1",
+    "trace-1",
+    1,
+    createCopyPlan(),
+    createAssetPlan(),
+    createConcreteLayoutPlan(),
+    createExecutablePlanV2(),
+    [
+      {
+        stageLabel: "foundation",
+        mutationId: "foundation-v2",
+        seq: 1,
+        status: "acked",
+        resultingRevision: 1,
+        resolvedLayerIds: {
+          background_run: "layer-background",
+        },
+        commands: [
+          {
+            op: "createLayer",
+            slotKey: "background",
+            executionSlotKey: "background",
+            clientLayerKey: "background_run",
+            role: "background",
+            targetLayerId: null,
+            proposedBounds: { x: 0, y: 0, width: 1200, height: 628 },
+          },
+        ],
+      },
+      {
+        stageLabel: "copy",
+        mutationId: "copy-v2",
+        seq: 2,
+        status: "acked",
+        resultingRevision: 2,
+        resolvedLayerIds: {
+          headline_run: "layer-headline",
+          cta_run: "layer-cta",
+        },
+        commands: [
+          {
+            op: "createLayer",
+            slotKey: "headline",
+            executionSlotKey: "headline",
+            clientLayerKey: "headline_run",
+            role: "headline",
+            targetLayerId: null,
+            proposedBounds: { x: 700, y: 150, width: 340, height: 320 },
+          },
+          {
+            op: "createLayer",
+            slotKey: "cta",
+            executionSlotKey: "cta",
+            clientLayerKey: "cta_run",
+            role: "cta",
+            targetLayerId: null,
+            proposedBounds: { x: 60, y: 511, width: 717, height: 70 },
+          },
+        ],
+      },
+    ],
+  );
+
+  assert.deepEqual(
+    summary.copyLayerBindings.map((binding) => binding.executionSlotKey),
+    ["headline", "cta"],
+  );
+  assert.equal(summary.graphicLayerBindings.length, 0);
+  assert.equal(summary.ctaContainerResolved, false);
 });

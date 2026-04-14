@@ -7,6 +7,7 @@ import type { TextLayoutHelper } from "@tooldi/tool-adapters";
 
 import type {
   ConcreteLayoutClusterZone,
+  FreeformRenderableBlock,
   GraphicRoleBinding,
   GraphicCompositionRole,
   HydratedPlanningInput,
@@ -23,6 +24,7 @@ import {
 } from "./layoutGeometry.js";
 import {
   type PolishInputs,
+  type StyleMetadata,
   type TypographyMetadata,
   readCopyInputs,
   readFoundationInputs,
@@ -79,9 +81,20 @@ export async function emitSkeletonMutations(
     copyInputs.copySlotAnchors,
     copyInputs.resolvedSlotBounds,
   );
-  const readabilityPalette = resolveReadabilityPalette(
-    foundationInputs.backgroundColorHex,
+  const styleMetadata =
+    foundationInputs.styleMetadata ??
+    copyInputs.styleMetadata ??
+    polishInputs.styleMetadata;
+  const readabilityPalette = mergeReadabilityPalette(
+    resolveReadabilityPalette(foundationInputs.backgroundColorHex),
+    styleMetadata,
   );
+  const useFreeformCopyBlocks = copyInputs.freeformBlocks.length > 0;
+  const useFreeformPolishBlocks = polishInputs.freeformBlocks.length > 0;
+  const isV2FreeformExecution =
+    foundationInputs.executionMode === "v2_freeform" ||
+    copyInputs.executionMode === "v2_freeform" ||
+    polishInputs.executionMode === "v2_freeform";
 
   const commitGroup = plan.actions[0]?.commitGroup ?? createRequestId();
   const draftId = `draft_${input.job.runId}`;
@@ -146,11 +159,13 @@ export async function emitSkeletonMutations(
       sourceCategory: foundationInputs.selectedBackgroundCategory,
       styleTokens: {
         fillColor: foundationInputs.backgroundColorHex,
+        secondaryColor: foundationInputs.styleMetadata?.secondaryBackgroundColorHex ?? null,
+        backgroundVisualMode: foundationInputs.styleMetadata?.backgroundVisualMode ?? null,
       },
     }),
   ];
 
-  if (foundationInputs.includeHeroPanel) {
+  if (!isV2FreeformExecution && foundationInputs.includeHeroPanel) {
     foundationCommands.push(
         buildCreateLayerCommand(input.job.runId, "foundation", {
           slotKey:
@@ -170,7 +185,7 @@ export async function emitSkeletonMutations(
     );
   }
 
-  if (foundationInputs.includeBadge) {
+  if (!isV2FreeformExecution && foundationInputs.includeBadge) {
     foundationCommands.push(
       buildCreateLayerCommand(input.job.runId, "foundation", {
         slotKey: "badge",
@@ -191,7 +206,7 @@ export async function emitSkeletonMutations(
     );
   }
 
-  if (foundationInputs.includeRibbon) {
+  if (!isV2FreeformExecution && foundationInputs.includeRibbon) {
     foundationCommands.push(
       buildCreateLayerCommand(input.job.runId, "foundation", {
         slotKey: null,
@@ -202,11 +217,14 @@ export async function emitSkeletonMutations(
         role: "ribbon_strip",
         variantKey: polishInputs.decorationMode,
         candidateId: polishInputs.selectedDecorationCandidateId,
+        styleTokens: {
+          fillColor: readabilityPalette.accentTextColor,
+        },
       }),
     );
   }
 
-  if (foundationInputs.includeFrame) {
+  if (!isV2FreeformExecution && foundationInputs.includeFrame) {
     foundationCommands.push(
       buildCreateLayerCommand(input.job.runId, "foundation", {
         slotKey: null,
@@ -217,6 +235,9 @@ export async function emitSkeletonMutations(
         role: "frame",
         variantKey: copyInputs.layoutMode,
         candidateId: copyInputs.selectedLayoutCandidateId,
+        styleTokens: {
+          fillColor: readabilityPalette.accentTextColor,
+        },
       }),
     );
   }
@@ -248,58 +269,63 @@ export async function emitSkeletonMutations(
         ]
       : [];
 
-  const copyCommands: MutationProposalDraft["mutation"]["commands"] = [
-    buildCreateLayerCommand(input.job.runId, "copy", {
-      slotKey: "headline",
-      executionSlotKey: "headline",
-      clientLayerKey: `headline_${input.job.runId}`,
-      layerType: "text",
-      bounds: copySlotBounds.headline,
-      role: "headline",
-      variantKey: copyInputs.layoutMode,
-      candidateId: copyInputs.selectedLayoutCandidateId,
-      textContent: copyInputs.copySlotTexts.headline ?? normalizedIntent.goalSummary,
-      fontRole: "display",
-      typography,
-      styleTokens: {
-        fillColor: readabilityPalette.primaryTextColor,
-      },
-    }),
-    buildCreateLayerCommand(input.job.runId, "copy", {
-      slotKey: "supporting_copy",
-      executionSlotKey: "subheadline",
-      clientLayerKey: `supporting_copy_${input.job.runId}`,
-      layerType: "text",
-      bounds: copySlotBounds.subheadline,
-      role: "supporting_copy",
-      variantKey: copyInputs.layoutMode,
-      candidateId: copyInputs.selectedLayoutCandidateId,
-      textContent: copyInputs.copySlotTexts.subheadline ?? "지금 바로 확인하세요",
-      fontRole: "body",
-      typography,
-      styleTokens: {
-        fillColor: readabilityPalette.secondaryTextColor,
-      },
-    }),
-    buildCreateLayerCommand(input.job.runId, "copy", {
-      slotKey: null,
-      executionSlotKey: "offer_line",
-      clientLayerKey: `price_callout_${input.job.runId}`,
-      layerType: "text",
-      bounds: copySlotBounds.offer_line,
-      role: "price_callout",
-      variantKey: copyInputs.layoutMode,
-      candidateId: copyInputs.selectedLayoutCandidateId,
-      textContent: copyInputs.copySlotTexts.offer_line ?? "최대 50% OFF",
-      fontRole: "display",
-      typography,
-      styleTokens: {
-        fillColor: readabilityPalette.accentTextColor,
-      },
-    }),
-  ];
+  const copyCommands: MutationProposalDraft["mutation"]["commands"] =
+    isV2FreeformExecution
+      ? buildFreeformBlockCommands(input.job.runId, "copy", copyInputs.freeformBlocks, typography)
+      : useFreeformCopyBlocks
+      ? buildFreeformBlockCommands(input.job.runId, "copy", copyInputs.freeformBlocks, typography)
+      : [
+          buildCreateLayerCommand(input.job.runId, "copy", {
+            slotKey: "headline",
+            executionSlotKey: "headline",
+            clientLayerKey: `headline_${input.job.runId}`,
+            layerType: "text",
+            bounds: copySlotBounds.headline,
+            role: "headline",
+            variantKey: copyInputs.layoutMode,
+            candidateId: copyInputs.selectedLayoutCandidateId,
+            textContent: copyInputs.copySlotTexts.headline ?? normalizedIntent.goalSummary,
+            fontRole: "display",
+            typography,
+            styleTokens: {
+              fillColor: readabilityPalette.primaryTextColor,
+            },
+          }),
+          buildCreateLayerCommand(input.job.runId, "copy", {
+            slotKey: "supporting_copy",
+            executionSlotKey: "subheadline",
+            clientLayerKey: `supporting_copy_${input.job.runId}`,
+            layerType: "text",
+            bounds: copySlotBounds.subheadline,
+            role: "supporting_copy",
+            variantKey: copyInputs.layoutMode,
+            candidateId: copyInputs.selectedLayoutCandidateId,
+            textContent: copyInputs.copySlotTexts.subheadline ?? "지금 바로 확인하세요",
+            fontRole: "body",
+            typography,
+            styleTokens: {
+              fillColor: readabilityPalette.secondaryTextColor,
+            },
+          }),
+          buildCreateLayerCommand(input.job.runId, "copy", {
+            slotKey: null,
+            executionSlotKey: "offer_line",
+            clientLayerKey: `price_callout_${input.job.runId}`,
+            layerType: "text",
+            bounds: copySlotBounds.offer_line,
+            role: "price_callout",
+            variantKey: copyInputs.layoutMode,
+            candidateId: copyInputs.selectedLayoutCandidateId,
+            textContent: copyInputs.copySlotTexts.offer_line ?? "최대 50% OFF",
+            fontRole: "display",
+            typography,
+            styleTokens: {
+              fillColor: readabilityPalette.accentTextColor,
+            },
+          }),
+        ];
 
-  if (copyInputs.includeHeroCaption) {
+  if (!isV2FreeformExecution && !useFreeformCopyBlocks && copyInputs.includeHeroCaption) {
     copyCommands.push(
         buildCreateLayerCommand(input.job.runId, "copy", {
           slotKey: null,
@@ -320,36 +346,53 @@ export async function emitSkeletonMutations(
     );
   }
 
-  const polishCommands: MutationProposalDraft["mutation"]["commands"] = [
-    buildCreateLayerCommand(input.job.runId, "polish", {
-      slotKey: "cta",
-      executionSlotKey: "cta",
-      clientLayerKey: `cta_${input.job.runId}`,
-      layerType: "group",
-      bounds: copySlotBounds.cta,
-      role: "cta",
-      variantKey: polishInputs.decorationMode,
-      candidateId: polishInputs.selectedDecorationCandidateId,
-      sourceAssetId: polishInputs.selectedDecorationAssetId,
-      sourceSerial: polishInputs.selectedDecorationSerial,
-      sourceCategory: polishInputs.selectedDecorationCategory,
-      textContent: copyInputs.copySlotTexts.cta ?? "자세히 보기",
-      fontRole: "display",
-      typography,
-      styleTokens: {
-        surfaceColor: readabilityPalette.ctaSurfaceColor,
-        textColor: readabilityPalette.ctaTextColor,
-      },
-    }),
-    ...buildGraphicRoleCommands(
-      input.job.runId,
-      polishInputs,
-      geometryPresets,
-      copySlotBounds,
-    ),
-  ];
+  const polishCommands: MutationProposalDraft["mutation"]["commands"] =
+    isV2FreeformExecution
+      ? buildFreeformBlockCommands(
+          input.job.runId,
+          "polish",
+          polishInputs.freeformBlocks,
+          typography,
+        )
+      : useFreeformPolishBlocks
+      ? buildFreeformBlockCommands(
+          input.job.runId,
+          "polish",
+          polishInputs.freeformBlocks,
+          typography,
+        )
+      : [
+          buildCreateLayerCommand(input.job.runId, "polish", {
+            slotKey: "cta",
+            executionSlotKey: "cta",
+            clientLayerKey: `cta_${input.job.runId}`,
+            layerType: "group",
+            bounds: copySlotBounds.cta,
+            role: "cta",
+            variantKey: polishInputs.decorationMode,
+            candidateId: polishInputs.selectedDecorationCandidateId,
+            sourceAssetId: polishInputs.selectedDecorationAssetId,
+            sourceSerial: polishInputs.selectedDecorationSerial,
+            sourceCategory: polishInputs.selectedDecorationCategory,
+            textContent: copyInputs.copySlotTexts.cta ?? "자세히 보기",
+            fontRole: "display",
+            typography,
+            styleTokens: {
+              surfaceColor: readabilityPalette.ctaSurfaceColor,
+              textColor: readabilityPalette.ctaTextColor,
+              ctaShapeLanguage: polishInputs.styleMetadata?.ctaShapeLanguage ?? null,
+            },
+          }),
+          ...buildGraphicRoleCommands(
+            input.job.runId,
+            polishInputs,
+            geometryPresets,
+            copySlotBounds,
+            readabilityPalette,
+          ),
+        ];
 
-  if (polishInputs.includeUnderline) {
+  if (!isV2FreeformExecution && !useFreeformPolishBlocks && polishInputs.includeUnderline) {
     polishCommands.push(
       buildCreateLayerCommand(input.job.runId, "polish", {
         slotKey: null,
@@ -360,11 +403,14 @@ export async function emitSkeletonMutations(
         role: "underline_bar",
         variantKey: polishInputs.decorationMode,
         candidateId: polishInputs.selectedDecorationCandidateId,
+        styleTokens: {
+          fillColor: readabilityPalette.accentTextColor,
+        },
       }),
     );
   }
 
-  if (!foundationInputs.includeRibbon && polishInputs.includeRibbon) {
+  if (!isV2FreeformExecution && !useFreeformPolishBlocks && !foundationInputs.includeRibbon && polishInputs.includeRibbon) {
     polishCommands.push(
       buildCreateLayerCommand(input.job.runId, "polish", {
         slotKey: null,
@@ -375,28 +421,33 @@ export async function emitSkeletonMutations(
         role: "ribbon_strip",
         variantKey: polishInputs.decorationMode,
         candidateId: polishInputs.selectedDecorationCandidateId,
+        styleTokens: {
+          fillColor: readabilityPalette.accentTextColor,
+        },
       }),
     );
   }
 
-  polishCommands.push(
-    buildCreateLayerCommand(input.job.runId, "polish", {
-      slotKey: null,
-      executionSlotKey: "footer_note",
-      clientLayerKey: `footer_note_${input.job.runId}`,
-      layerType: "text",
-      bounds: copySlotBounds.footer_note,
-      role: "footer_note",
-      variantKey: foundationInputs.backgroundMode,
-      candidateId: foundationInputs.selectedBackgroundCandidateId,
-      textContent: copyInputs.copySlotTexts.footer_note ?? "이벤트 기간 내 혜택 적용",
-      fontRole: "body",
-      typography,
-      styleTokens: {
-        fillColor: readabilityPalette.secondaryTextColor,
-      },
-    }),
-  );
+  if (!isV2FreeformExecution && !useFreeformPolishBlocks) {
+    polishCommands.push(
+      buildCreateLayerCommand(input.job.runId, "polish", {
+        slotKey: null,
+        executionSlotKey: "footer_note",
+        clientLayerKey: `footer_note_${input.job.runId}`,
+        layerType: "text",
+        bounds: copySlotBounds.footer_note,
+        role: "footer_note",
+        variantKey: foundationInputs.backgroundMode,
+        candidateId: foundationInputs.selectedBackgroundCandidateId,
+        textContent: copyInputs.copySlotTexts.footer_note ?? "이벤트 기간 내 혜택 적용",
+        fontRole: "body",
+        typography,
+        styleTokens: {
+          fillColor: readabilityPalette.secondaryTextColor,
+        },
+      }),
+    );
+  }
 
   return {
     commitGroup,
@@ -482,6 +533,7 @@ function buildGraphicRoleCommands(
   polishInputs: PolishInputs,
   geometryPresets: ReturnType<typeof createGeometryPresets>,
   copySlotBounds: ReturnType<typeof resolveCopySlotBounds>,
+  readabilityPalette: ReturnType<typeof resolveReadabilityPalette>,
 ): MutationProposalDraft["mutation"]["commands"] {
   const roleGeometryMap = createClusterZoneBounds(
     geometryPresets,
@@ -507,8 +559,13 @@ function buildGraphicRoleCommands(
 
   const roleCommands =
     bindingPool
-      .map((binding) =>
-        buildCreateLayerCommand(runId, "polish", {
+      .map((binding) => {
+        const styleTokens = resolveGraphicRoleStyleTokens(
+          binding.role,
+          readabilityPalette,
+          polishInputs.styleMetadata,
+        );
+        const baseOptions = {
           slotKey:
             binding.role === "primary_accent"
               ? "decoration"
@@ -536,16 +593,28 @@ function buildGraphicRoleCommands(
               : null,
           clusterZone:
             placementHintMap.get(binding.role) ?? binding.zonePreference,
-        }),
-      );
+        } as const;
+
+        return styleTokens
+          ? buildCreateLayerCommand(runId, "polish", {
+              ...baseOptions,
+              styleTokens,
+            })
+          : buildCreateLayerCommand(runId, "polish", baseOptions);
+      });
 
   const hasBoundCtaContainer = bindingPool.some(
     (binding) => binding.role === "cta_container",
   );
   const ctaFallbackCommand =
     polishInputs.ctaContainerExpected && !hasBoundCtaContainer
-      ? [
-          buildCreateLayerCommand(runId, "polish", {
+      ? [(() => {
+          const styleTokens = resolveGraphicRoleStyleTokens(
+            "cta_container",
+            readabilityPalette,
+            polishInputs.styleMetadata,
+          );
+          const baseOptions = {
             slotKey: null,
             executionSlotKey: null,
             clientLayerKey: `cta_container_fallback_${runId}`,
@@ -560,8 +629,15 @@ function buildGraphicRoleCommands(
             variantKey: "fallback_cta_pill",
             candidateId: `${runId}_fallback_cta_container`,
             clusterZone: "bottom_strip",
-          }),
-        ]
+          } as const;
+
+          return styleTokens
+            ? buildCreateLayerCommand(runId, "polish", {
+                ...baseOptions,
+                styleTokens,
+              })
+            : buildCreateLayerCommand(runId, "polish", baseOptions);
+        })()]
       : [];
 
   if (roleCommands.length > 0 || ctaFallbackCommand.length > 0) {
@@ -589,9 +665,64 @@ function buildGraphicRoleCommands(
         polishInputs.selectedDecorationCategory
           ? "catalog_element"
           : null,
+      styleTokens: {
+        fillColor: readabilityPalette.accentTextColor,
+      },
       clusterZone: "right_cluster",
     }),
   ];
+}
+
+function mergeReadabilityPalette(
+  base: ReturnType<typeof resolveReadabilityPalette>,
+  styleMetadata: StyleMetadata | null,
+) {
+  if (!styleMetadata) {
+    return base;
+  }
+  return {
+    primaryTextColor:
+      styleMetadata.primaryTextColorHex ?? base.primaryTextColor,
+    secondaryTextColor:
+      styleMetadata.secondaryTextColorHex ?? base.secondaryTextColor,
+    accentTextColor:
+      styleMetadata.accentTextColorHex ?? base.accentTextColor,
+    inverseTextColor:
+      styleMetadata.inverseTextColorHex ?? base.inverseTextColor,
+    ctaSurfaceColor:
+      styleMetadata.ctaSurfaceColorHex ?? base.ctaSurfaceColor,
+    ctaTextColor:
+      styleMetadata.ctaTextColorHex ?? base.ctaTextColor,
+  };
+}
+
+function resolveGraphicRoleStyleTokens(
+  role: GraphicCompositionRole,
+  readabilityPalette: ReturnType<typeof resolveReadabilityPalette>,
+  styleMetadata: StyleMetadata | null,
+): Record<string, string | number | boolean | null> | undefined {
+  const ctaShapeLanguage = styleMetadata?.ctaShapeLanguage ?? null;
+  switch (role) {
+    case "cta_container":
+      return {
+        fillColor: readabilityPalette.ctaSurfaceColor,
+        textColor: readabilityPalette.ctaTextColor,
+        ctaShapeLanguage,
+      };
+    case "badge_or_ribbon":
+      return {
+        fillColor: readabilityPalette.accentTextColor,
+        textColor: readabilityPalette.inverseTextColor,
+      };
+    case "frame":
+      return {
+        fillColor: readabilityPalette.accentTextColor,
+      };
+    default:
+      return {
+        fillColor: readabilityPalette.accentTextColor,
+      };
+  }
 }
 
 function resolveLegacyRoleZone(
@@ -607,4 +738,42 @@ function resolveLegacyRoleZone(
     default:
       return "right_cluster";
   }
+}
+
+function buildFreeformBlockCommands(
+  runId: string,
+  stage: string,
+  blocks: FreeformRenderableBlock[],
+  typography: TypographyMetadata,
+): MutationProposalDraft["mutation"]["commands"] {
+  return blocks.map((block, index) =>
+    buildCreateLayerCommand(runId, stage, {
+      slotKey: block.slotKey,
+      executionSlotKey: block.executionSlotKey,
+      clientLayerKey: `${block.role}_${index}_${runId}`,
+      layerType: block.layerType,
+      bounds: block.bounds,
+      role: block.role,
+      variantKey: block.variantKey,
+      candidateId: block.candidateId,
+      sourceAssetId: block.sourceAssetId,
+      sourceSerial: block.sourceSerial,
+      sourceCategory: block.sourceCategory,
+      sourceUid: block.sourceUid,
+      sourceOriginUrl: block.sourceOriginUrl,
+      sourceWidth: block.sourceWidth,
+      sourceHeight: block.sourceHeight,
+      photoOrientation: block.photoOrientation,
+      fitMode: block.fitMode,
+      cropMode: block.cropMode,
+      renderPrimitive: block.renderPrimitive,
+      styleTokens: block.styleTokens,
+      fontRole: block.fontRole ?? undefined,
+      typography,
+      textContent: block.textContent,
+      clusterZone: block.clusterZone,
+      customFontSize: block.fontSize ?? undefined,
+      customTextAlign: block.textAlign ?? undefined,
+    }),
+  );
 }

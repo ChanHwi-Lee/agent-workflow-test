@@ -10,10 +10,13 @@ import type {
   ConcreteLayoutAnchorZone,
   ConcreteLayoutClusterZone,
   CopyPlanSlotKey,
+  FreeformRenderableBlock,
   GraphicCompositionRole,
   GraphicCompositionSet,
   GraphicRoleBinding,
   LayoutBounds,
+  SceneBindingPlan,
+  SceneCtaShapeLanguage,
 } from "../types.js";
 import type { DecorationMode, LayoutMode } from "./layoutGeometry.js";
 
@@ -48,7 +51,23 @@ export type GraphicRolePlacementHints = Array<{
   zone: ConcreteLayoutClusterZone;
 }>;
 
+export type StyleMetadata = {
+  backgroundColorHex: string;
+  secondaryBackgroundColorHex: string | null;
+  primaryTextColorHex: string | null;
+  secondaryTextColorHex: string | null;
+  accentTextColorHex: string | null;
+  inverseTextColorHex: string | null;
+  ctaSurfaceColorHex: string | null;
+  ctaTextColorHex: string | null;
+  ctaShapeLanguage: SceneCtaShapeLanguage | null;
+  backgroundVisualMode: SceneBindingPlan["backgroundMode"] | null;
+};
+
+export type ExecutionMode = "legacy_slots" | "v2_freeform";
+
 export type FoundationInputs = {
+  executionMode: ExecutionMode;
   backgroundMode:
     | "spring_pattern"
     | "pastel_gradient"
@@ -64,6 +83,7 @@ export type FoundationInputs = {
   includeRibbon: boolean;
   includeFrame: boolean;
   badgeText: string | null;
+  styleMetadata: StyleMetadata | null;
   resolvedSlotBounds: Partial<Record<ExecutionSlotKey, LayoutBounds>>;
   headlineEstimatedHeight: number | null;
 };
@@ -73,6 +93,7 @@ export type SaveInputs = {
 };
 
 export type CopyInputs = {
+  executionMode: ExecutionMode;
   layoutMode: LayoutMode;
   layoutProfile: AbstractLayoutFamily;
   primaryVisualFamily: "graphic" | "photo";
@@ -83,12 +104,14 @@ export type CopyInputs = {
   bodyFontWeight: number | null;
   includeHeroCaption: boolean;
   includeBadge: boolean;
+  styleMetadata: StyleMetadata | null;
   copySlotTexts: CopySlotTextMap;
   copySlotAnchors: CopySlotAnchorMap;
   resolvedSlotBounds: Partial<Record<ExecutionSlotKey, LayoutBounds>>;
   clusterZones: ConcreteLayoutClusterZone[];
   spacingIntent: AbstractLayoutDensity;
   headlineEstimatedHeight: number | null;
+  freeformBlocks: FreeformRenderableBlock[];
 };
 
 export type PhotoInputs = PhotoMetadata & {
@@ -97,6 +120,7 @@ export type PhotoInputs = PhotoMetadata & {
 };
 
 export type PolishInputs = {
+  executionMode: ExecutionMode;
   decorationMode: DecorationMode;
   layoutProfile: AbstractLayoutFamily;
   primaryVisualFamily: "graphic" | "photo";
@@ -113,12 +137,15 @@ export type PolishInputs = {
   graphicRolePlacementHints: GraphicRolePlacementHints;
   ctaContainerExpected: boolean;
   spacingIntent: AbstractLayoutDensity;
+  styleMetadata: StyleMetadata | null;
+  freeformBlocks: FreeformRenderableBlock[];
 };
 
 export function readFoundationInputs(
   inputs: PersistedPlanAction["inputs"],
 ): FoundationInputs {
   const record = inputs as {
+    executionMode?: ExecutionMode;
     backgroundMode?: FoundationInputs["backgroundMode"];
     selectedBackgroundCandidateId?: string;
     selectedBackgroundAssetId?: string | null;
@@ -130,11 +157,13 @@ export function readFoundationInputs(
     includeRibbon?: boolean;
     includeFrame?: boolean;
     badgeText?: string | null;
+    styleMetadata?: Partial<StyleMetadata> | null;
     resolvedSlotBounds?: Partial<Record<ExecutionSlotKey, LayoutBounds>>;
     headlineEstimatedHeight?: number;
   };
 
   return {
+    executionMode: record.executionMode ?? "legacy_slots",
     backgroundMode: record.backgroundMode ?? "spring_pattern",
     selectedBackgroundCandidateId:
       record.selectedBackgroundCandidateId ?? "background_unknown",
@@ -147,6 +176,7 @@ export function readFoundationInputs(
     includeRibbon: record.includeRibbon ?? false,
     includeFrame: record.includeFrame ?? false,
     badgeText: record.badgeText ?? null,
+    styleMetadata: normalizeStyleMetadata(record.styleMetadata),
     resolvedSlotBounds: normalizeBoundsRecord(record.resolvedSlotBounds),
     headlineEstimatedHeight: record.headlineEstimatedHeight ?? null,
   };
@@ -168,6 +198,7 @@ export function readCopyInputs(
   inputs: PersistedPlanAction["inputs"],
 ): CopyInputs {
   const record = inputs as {
+    executionMode?: ExecutionMode;
     layoutMode?: LayoutMode;
     layoutProfile?: AbstractLayoutFamily;
     primaryVisualFamily?: "graphic" | "photo";
@@ -178,15 +209,18 @@ export function readCopyInputs(
     bodyFontWeight?: number | null;
     includeHeroCaption?: boolean;
     includeBadge?: boolean;
+    styleMetadata?: Partial<StyleMetadata> | null;
     copySlotTexts?: CopySlotTextMap;
     copySlotAnchors?: CopySlotAnchorMap;
     resolvedSlotBounds?: Partial<Record<ExecutionSlotKey, LayoutBounds>>;
     clusterZones?: ConcreteLayoutClusterZone[];
     spacingIntent?: AbstractLayoutDensity;
     headlineEstimatedHeight?: number;
+    freeformBlocks?: FreeformRenderableBlock[];
   };
 
   return {
+    executionMode: record.executionMode ?? "legacy_slots",
     layoutMode: record.layoutMode ?? "copy_left_with_right_decoration",
     layoutProfile: record.layoutProfile ?? "promo_split",
     primaryVisualFamily: record.primaryVisualFamily ?? "graphic",
@@ -198,12 +232,14 @@ export function readCopyInputs(
     bodyFontWeight: record.bodyFontWeight ?? null,
     includeHeroCaption: record.includeHeroCaption ?? false,
     includeBadge: record.includeBadge ?? false,
+    styleMetadata: normalizeStyleMetadata(record.styleMetadata),
     copySlotTexts: record.copySlotTexts ?? {},
     copySlotAnchors: record.copySlotAnchors ?? {},
     resolvedSlotBounds: normalizeBoundsRecord(record.resolvedSlotBounds),
     clusterZones: record.clusterZones ?? [],
     spacingIntent: record.spacingIntent ?? "balanced",
     headlineEstimatedHeight: record.headlineEstimatedHeight ?? null,
+    freeformBlocks: normalizeFreeformBlocks(record.freeformBlocks),
   };
 }
 
@@ -247,6 +283,7 @@ export function readPolishInputs(
   inputs: PersistedPlanAction["inputs"],
 ): PolishInputs {
   const record = inputs as {
+    executionMode?: ExecutionMode;
     decorationMode?: DecorationMode;
     layoutProfile?: AbstractLayoutFamily;
     primaryVisualFamily?: "graphic" | "photo";
@@ -263,9 +300,12 @@ export function readPolishInputs(
     graphicRolePlacementHints?: GraphicRolePlacementHints;
     ctaContainerExpected?: boolean;
     spacingIntent?: AbstractLayoutDensity;
+    styleMetadata?: Partial<StyleMetadata> | null;
+    freeformBlocks?: FreeformRenderableBlock[];
   };
 
   return {
+    executionMode: record.executionMode ?? "legacy_slots",
     decorationMode: record.decorationMode ?? "graphic_cluster",
     layoutProfile: record.layoutProfile ?? "promo_split",
     primaryVisualFamily: record.primaryVisualFamily ?? "graphic",
@@ -288,7 +328,20 @@ export function readPolishInputs(
     graphicRolePlacementHints: record.graphicRolePlacementHints ?? [],
     ctaContainerExpected: record.ctaContainerExpected ?? false,
     spacingIntent: record.spacingIntent ?? "balanced",
+    styleMetadata: normalizeStyleMetadata(record.styleMetadata),
+    freeformBlocks: normalizeFreeformBlocks(record.freeformBlocks),
   };
+}
+
+function normalizeFreeformBlocks(
+  value: unknown,
+): FreeformRenderableBlock[] {
+  return Array.isArray(value)
+    ? value.filter(
+        (entry): entry is FreeformRenderableBlock =>
+          Boolean(entry) && typeof entry === "object",
+      )
+    : [];
 }
 
 function normalizeBoundsRecord(
@@ -318,4 +371,25 @@ function normalizeBoundsRecord(
   }
 
   return normalized;
+}
+
+function normalizeStyleMetadata(
+  value: Partial<StyleMetadata> | null | undefined,
+): StyleMetadata | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  return {
+    backgroundColorHex: value.backgroundColorHex ?? "#ffffff",
+    secondaryBackgroundColorHex: value.secondaryBackgroundColorHex ?? null,
+    primaryTextColorHex: value.primaryTextColorHex ?? null,
+    secondaryTextColorHex: value.secondaryTextColorHex ?? null,
+    accentTextColorHex: value.accentTextColorHex ?? null,
+    inverseTextColorHex: value.inverseTextColorHex ?? null,
+    ctaSurfaceColorHex: value.ctaSurfaceColorHex ?? null,
+    ctaTextColorHex: value.ctaTextColorHex ?? null,
+    ctaShapeLanguage: value.ctaShapeLanguage ?? null,
+    backgroundVisualMode: value.backgroundVisualMode ?? null,
+  };
 }
