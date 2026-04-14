@@ -20,6 +20,49 @@ export async function buildSearchProfile(
   intent: NormalizedIntent,
   templatePriorSummary?: TemplatePriorSummary | null,
 ): Promise<SearchProfileArtifact> {
+  const context = buildSearchProfileContext(intent, templatePriorSummary);
+  const shapeQueries = buildShapeQueries({
+    primaryKeyword: context.graphicKeyword,
+    subjectKeyword: context.subjectKeyword,
+    templatePriorKeyword: context.templatePriorKeyword,
+    seasonalKeyword: context.seasonKeyword ?? firstKeyword(intent),
+    theme: context.shapeTheme,
+    typePlan: context.shapeTypePlan,
+    method: context.shapeMethodResolution.value,
+    price: context.pricePreference,
+    ownerBias: context.ownerBias,
+    categoryName: context.graphicCategoryName,
+  });
+
+  return {
+    profileId: createRequestId(),
+    runId: intent.runId,
+    traceId: intent.traceId,
+    plannerMode: intent.plannerMode,
+    templateKind: intent.templateKind,
+    domain: intent.domain,
+    audience: intent.audience,
+    campaignGoal: intent.campaignGoal,
+    canvasPreset: intent.canvasPreset,
+    layoutIntent: intent.layoutIntent,
+    tone: intent.tone,
+    assetPolicy: context.assetPolicy,
+    searchKeywords: [...intent.searchKeywords],
+    facets: intent.facets,
+    summary: buildSearchProfileSummary(intent, context),
+    background: createGeneratedBackgroundProfile(intent),
+    graphic: buildGraphicSearchProfile(context, shapeQueries),
+    photo: buildPhotoSearchProfile(intent, context),
+    font: buildFontSearchProfile(intent, context),
+  };
+}
+
+type SearchProfileContext = ReturnType<typeof buildSearchProfileContext>;
+
+function buildSearchProfileContext(
+  intent: NormalizedIntent,
+  templatePriorSummary?: TemplatePriorSummary | null,
+) {
   const assetPolicy = normalizeTemplateAssetPolicy(intent.assetPolicy);
   const genericPromoIntent = isGenericPromoIntent(intent);
   const retailMenuContradiction = hasFashionRetailMenuContradiction(intent);
@@ -46,9 +89,7 @@ export async function buildSearchProfile(
   const fontWeightPlan = deriveFontWeightPlan(intent);
   const photoPreferred = templateAssetPolicyPrefersPhoto(assetPolicy);
   const photoEnabled = templateAssetPolicyAllowsFamily(assetPolicy, "photo");
-  const photoType = photoEnabled
-    ? derivePhotoType(intent)
-    : null;
+  const photoType = photoEnabled ? derivePhotoType(intent) : null;
   const graphicKeyword =
     promotionKeyword ??
     subjectKeyword ??
@@ -65,156 +106,183 @@ export async function buildSearchProfile(
     genericPromoIntent
       ? promotionKeyword ?? seasonKeyword ?? templatePriorKeyword ?? backgroundKeyword
       : retailMenuContradiction
-      ? photoPreferred
-        ? subjectKeyword ?? promotionKeyword ?? templatePriorKeyword ?? backgroundKeyword
-        : promotionKeyword ?? subjectKeyword ?? templatePriorKeyword ?? backgroundKeyword
-      : intent.facets.menuType !== null
-      ? subjectKeyword ?? promotionKeyword ?? templatePriorKeyword ?? backgroundKeyword
-      : photoPreferred
-      ? subjectKeyword ?? promotionKeyword ?? templatePriorKeyword ?? backgroundKeyword
-      : promotionKeyword ?? subjectKeyword ?? templatePriorKeyword ?? backgroundKeyword;
+        ? photoPreferred
+          ? subjectKeyword ?? promotionKeyword ?? templatePriorKeyword ?? backgroundKeyword
+          : promotionKeyword ?? subjectKeyword ?? templatePriorKeyword ?? backgroundKeyword
+        : intent.facets.menuType !== null
+          ? subjectKeyword ?? promotionKeyword ?? templatePriorKeyword ?? backgroundKeyword
+          : photoPreferred
+            ? subjectKeyword ?? promotionKeyword ?? templatePriorKeyword ?? backgroundKeyword
+            : promotionKeyword ?? subjectKeyword ?? templatePriorKeyword ?? backgroundKeyword;
   const pricePreference = derivePricePreference(intent, templatePriorSummary);
   const ownerBias = deriveOwnerBias(intent, templatePriorSummary);
   const graphicCategoryName = deriveGraphicCategoryName(intent, shapeTypePlan);
-  const shapeQueries = buildShapeQueries({
-    primaryKeyword: graphicKeyword,
-    subjectKeyword,
-    templatePriorKeyword,
-    seasonalKeyword: seasonKeyword ?? firstKeyword(intent),
-    theme: shapeTheme,
-    typePlan: shapeTypePlan,
-    method: shapeMethodResolution.value,
-    price: pricePreference,
-    ownerBias,
-    categoryName: graphicCategoryName,
-  });
 
   return {
-    profileId: createRequestId(),
-    runId: intent.runId,
-    traceId: intent.traceId,
-    plannerMode: intent.plannerMode,
-    templateKind: intent.templateKind,
-    domain: intent.domain,
-    audience: intent.audience,
-    campaignGoal: intent.campaignGoal,
-    canvasPreset: intent.canvasPreset,
-    layoutIntent: intent.layoutIntent,
-    tone: intent.tone,
     assetPolicy,
-    searchKeywords: [...intent.searchKeywords],
-    facets: intent.facets,
-    summary:
-      `${intent.domain} create-template search profile for ${intent.campaignGoal} ` +
-      `using ${intent.searchKeywords.join(", ")}` +
-      (templatePriorKeyword
-        ? `; template prior keyword=${templatePriorKeyword}`
-        : "") +
-      (retailMenuContradiction
-        ? "; retail/menu contradiction was repaired into fashion-weighted query cues before serialization"
+    genericPromoIntent,
+    retailMenuContradiction,
+    templatePriorKeyword,
+    seasonKeyword,
+    subjectKeyword,
+    promotionKeyword,
+    orientationHint,
+    photoFormat,
+    photoTheme,
+    shapeTheme,
+    shapeMethodResolution,
+    shapeTypePlan,
+    fontLanguage,
+    fontCategoryPlan,
+    fontWeightPlan,
+    photoPreferred,
+    photoEnabled,
+    photoType,
+    graphicKeyword,
+    backgroundKeyword,
+    photoKeyword,
+    pricePreference,
+    ownerBias,
+    graphicCategoryName,
+  };
+}
+
+function buildSearchProfileSummary(
+  intent: NormalizedIntent,
+  context: SearchProfileContext,
+): string {
+  return (
+    `${intent.domain} create-template search profile for ${intent.campaignGoal} ` +
+    `using ${intent.searchKeywords.join(", ")}` +
+    (context.templatePriorKeyword
+      ? `; template prior keyword=${context.templatePriorKeyword}`
+      : "") +
+    (context.retailMenuContradiction
+      ? "; retail/menu contradiction was repaired into fashion-weighted query cues before serialization"
+      : "")
+  );
+}
+
+function buildGraphicSearchProfile(
+  context: SearchProfileContext,
+  shapeQueries: SearchProfileArtifact["graphic"]["queries"],
+): SearchProfileArtifact["graphic"] {
+  return {
+    objective: "supporting_promotional_graphics",
+    rationale:
+      buildShapeRationale({
+        hasPromotionKeyword: context.promotionKeyword !== null,
+        shapeTheme: context.shapeTheme,
+        shapeMethod: context.shapeMethodResolution.value,
+        methodConflict: context.shapeMethodResolution.conflicted,
+        typePlan: context.shapeTypePlan,
+      }) +
+      (context.retailMenuContradiction
+        ? " Retail/menu contradiction was repaired before shape-query serialization, so fashion-retail promotional cues stay ahead of menu taxonomy."
         : ""),
-    background: createGeneratedBackgroundProfile(intent),
-    graphic: {
-      objective: "supporting_promotional_graphics",
-      rationale:
-        buildShapeRationale({
-          hasPromotionKeyword: promotionKeyword !== null,
-          shapeTheme,
-          shapeMethod: shapeMethodResolution.value,
-          methodConflict: shapeMethodResolution.conflicted,
-          typePlan: shapeTypePlan,
-        }) +
-        (retailMenuContradiction
-          ? " Retail/menu contradiction was repaired before shape-query serialization, so fashion-retail promotional cues stay ahead of menu taxonomy."
-          : ""),
-      queries: shapeQueries,
-    },
-    photo: {
-      enabled: photoEnabled,
-      objective: "hero_visual_candidate",
-      rationale:
-        (photoPreferred
-          ? "Photo is preferred for this intent when a safe hero candidate exists; real picture query fields stay aligned to Tooldi direct picture theme/type/format surfaces"
-          : photoEnabled
-            ? photoTheme !== null
-              ? "Photo remains optional and uses a grounded contents_theme serial on the direct picture transport when one exists."
-              : "Photo remains optional and should only win when it fits the composition safely; no grounded contents_theme serial is available for this profile."
-            : "Photo is currently de-emphasized by the asset policy and remains disabled for this profile") +
-        (retailMenuContradiction
-          ? " Retail/menu contradiction was repaired before picture-query serialization, so menu-taxonomy cues were demoted in favor of fashion-retail signals."
-          : ""),
-      orientationHint,
-      queries: photoEnabled
-        ? [
-            {
-              label: "photo_primary_keyword",
-              keyword: photoKeyword,
-              theme: photoTheme,
-              type: photoType,
-              format: photoFormat,
-              price: pricePreference,
-              ownerBias,
-              source: "search",
-              transportApplied: {
-                keyword: photoKeyword !== null,
-                theme: photoTheme !== null,
-                type: photoType !== null,
-                format: photoFormat !== null,
-                price: pricePreference !== null,
-                owner: ownerBias !== null,
-                source: true,
-              },
+    queries: shapeQueries,
+  };
+}
+
+function buildPhotoSearchProfile(
+  intent: NormalizedIntent,
+  context: SearchProfileContext,
+): SearchProfileArtifact["photo"] {
+  return {
+    enabled: context.photoEnabled,
+    objective: "hero_visual_candidate",
+    rationale:
+      (context.photoPreferred
+        ? "Photo is preferred for this intent when a safe hero candidate exists; real picture query fields stay aligned to Tooldi direct picture theme/type/format surfaces"
+        : context.photoEnabled
+          ? context.photoTheme !== null
+            ? "Photo remains optional and uses a grounded contents_theme serial on the direct picture transport when one exists."
+            : "Photo remains optional and should only win when it fits the composition safely; no grounded contents_theme serial is available for this profile."
+          : "Photo is currently de-emphasized by the asset policy and remains disabled for this profile") +
+      (context.retailMenuContradiction
+        ? " Retail/menu contradiction was repaired before picture-query serialization, so menu-taxonomy cues were demoted in favor of fashion-retail signals."
+        : ""),
+    orientationHint: context.orientationHint,
+    queries: context.photoEnabled
+      ? [
+          {
+            label: "photo_primary_keyword",
+            keyword: context.photoKeyword,
+            theme: context.photoTheme,
+            type: context.photoType,
+            format: context.photoFormat,
+            price: context.pricePreference,
+            ownerBias: context.ownerBias,
+            source: "search",
+            transportApplied: {
+              keyword: context.photoKeyword !== null,
+              theme: context.photoTheme !== null,
+              type: context.photoType !== null,
+              format: context.photoFormat !== null,
+              price: context.pricePreference !== null,
+              owner: context.ownerBias !== null,
+              source: true,
             },
-            {
-              label: "photo_seasonal_fallback",
-              keyword: seasonKeyword ?? firstKeyword(intent),
-              theme: null,
-              type: photoType,
-              format: photoFormat,
-              price: pricePreference,
-              ownerBias,
-              source: "search",
-              transportApplied: {
-                keyword: (seasonKeyword ?? firstKeyword(intent)) !== null,
-                theme: false,
-                type: photoType !== null,
-                format: photoFormat !== null,
-                price: pricePreference !== null,
-                owner: ownerBias !== null,
-                source: true,
-              },
+          },
+          {
+            label: "photo_seasonal_fallback",
+            keyword: context.seasonKeyword ?? firstKeyword(intent),
+            theme: null,
+            type: context.photoType,
+            format: context.photoFormat,
+            price: context.pricePreference,
+            ownerBias: context.ownerBias,
+            source: "search",
+            transportApplied: {
+              keyword: (context.seasonKeyword ?? firstKeyword(intent)) !== null,
+              theme: false,
+              type: context.photoType !== null,
+              format: context.photoFormat !== null,
+              price: context.pricePreference !== null,
+              owner: context.ownerBias !== null,
+              source: true,
             },
-            {
-              label: "photo_format_fallback",
-              keyword: null,
-              theme: null,
-              type: photoType,
-              format: photoFormat,
-              price: pricePreference,
-              ownerBias,
-              source: "initial_load",
-              transportApplied: {
-                keyword: false,
-                theme: false,
-                type: photoType !== null,
-                format: photoFormat !== null,
-                price: pricePreference !== null,
-                owner: ownerBias !== null,
-                source: true,
-              },
+          },
+          {
+            label: "photo_format_fallback",
+            keyword: null,
+            theme: null,
+            type: context.photoType,
+            format: context.photoFormat,
+            price: context.pricePreference,
+            ownerBias: context.ownerBias,
+            source: "initial_load",
+            transportApplied: {
+              keyword: false,
+              theme: false,
+              type: context.photoType !== null,
+              format: context.photoFormat !== null,
+              price: context.pricePreference !== null,
+              owner: context.ownerBias !== null,
+              source: true,
             },
-          ]
-        : [],
-    },
-    font: {
-      objective: "readable_korean_promotional_typography",
-      rationale: buildFontRationale(fontLanguage, fontCategoryPlan, fontWeightPlan),
-      sourceSurface: "Editor::loadFont",
-      typographyHint: intent.brandConstraints.typographyHint,
-      language: fontLanguage,
-      category: fontCategoryPlan,
-      weight: fontWeightPlan,
-    },
+          },
+        ]
+      : [],
+  };
+}
+
+function buildFontSearchProfile(
+  intent: NormalizedIntent,
+  context: SearchProfileContext,
+): SearchProfileArtifact["font"] {
+  return {
+    objective: "readable_korean_promotional_typography",
+    rationale: buildFontRationale(
+      context.fontLanguage,
+      context.fontCategoryPlan,
+      context.fontWeightPlan,
+    ),
+    sourceSurface: "Editor::loadFont",
+    typographyHint: intent.brandConstraints.typographyHint,
+    language: context.fontLanguage,
+    category: context.fontCategoryPlan,
+    weight: context.fontWeightPlan,
   };
 }
 
