@@ -4,10 +4,13 @@ export function registerRunJobGraphEdges(graph: any) {
     .addEdge("plan_intent_draft", "normalize_intent")
     .addEdge("normalize_intent", "gate_scope")
     .addConditionalEdges("gate_scope", (state: any) =>
-      state.finalizeDraft ? "send_finalize" : "build_copy_and_abstract_layout_plan",
+      state.finalizeDraft ? "send_finalize" : "build_template_prior_summary",
     )
-    .addEdge("build_copy_and_abstract_layout_plan", "build_template_prior_summary")
-    .addEdge("build_template_prior_summary", "build_search_profile")
+    .addEdge("build_template_prior_summary", "build_template_prior_bundle")
+    .addEdge("build_template_prior_bundle", "build_scene_plans")
+    .addEdge("build_scene_plans", "build_copy_and_abstract_layout_plan")
+    .addEdge("build_copy_and_abstract_layout_plan", "build_reference_composition_v2")
+    .addEdge("build_reference_composition_v2", "build_search_profile")
     .addEdge("build_search_profile", "compute_retrieval_policy")
     .addEdge("compute_retrieval_policy", "assemble_candidates")
     .addConditionalEdges("assemble_candidates", (state: any) =>

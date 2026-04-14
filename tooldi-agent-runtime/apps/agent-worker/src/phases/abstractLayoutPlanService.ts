@@ -8,6 +8,7 @@ import type {
   AbstractLayoutPlan,
   AbstractLayoutPlanNormalizationReport,
   NormalizedIntent,
+  SceneLayoutPlan,
 } from "../types.js";
 import {
   deriveGenericPromoAbstractLayoutSummary,
@@ -19,6 +20,8 @@ export async function buildAbstractLayoutPlanArtifacts(
   prompt: string,
   intent: NormalizedIntent,
   generator: TemplateAbstractLayoutGenerator,
+  priorContext?: string | null,
+  sceneLayoutPlan?: SceneLayoutPlan | null,
 ): Promise<{
   abstractLayoutPlan: AbstractLayoutPlan;
   abstractLayoutPlanNormalizationReport: AbstractLayoutPlanNormalizationReport;
@@ -28,12 +31,14 @@ export async function buildAbstractLayoutPlanArtifacts(
   const abstractLayoutDraft = await generator.generate({
     prompt,
     brief: intent,
+    ...(priorContext !== undefined ? { priorContext } : {}),
   });
   const abstractLayoutPlan = normalizeAbstractLayoutDraft(
     abstractLayoutDraft,
     intent,
     genericPromoIntent,
     layoutRepairs,
+    sceneLayoutPlan ?? null,
   );
 
   return {
@@ -58,6 +63,7 @@ function normalizeAbstractLayoutDraft(
   intent: NormalizedIntent,
   genericPromoIntent: boolean,
   notes: string[],
+  sceneLayoutPlan: SceneLayoutPlan | null,
 ): AbstractLayoutPlan {
   let layoutFamily = draft.layoutFamily;
   let copyAnchor = draft.copyAnchor;
@@ -122,6 +128,28 @@ function normalizeAbstractLayoutDraft(
     );
   }
 
+  if (sceneLayoutPlan) {
+    if (
+      layoutFamily !== sceneLayoutPlan.layoutFamily ||
+      copyAnchor !== sceneLayoutPlan.copyAnchor ||
+      visualAnchor !== sceneLayoutPlan.visualAnchor ||
+      ctaAnchor !== sceneLayoutPlan.ctaAnchor ||
+      density !== sceneLayoutPlan.density ||
+      slotTopology !== sceneLayoutPlan.slotTopology
+    ) {
+      notes.push(
+        "Applied scene-layout-plan as the primary structural authority for the experimental retrieval-prior path.",
+      );
+    }
+
+    layoutFamily = sceneLayoutPlan.layoutFamily;
+    copyAnchor = sceneLayoutPlan.copyAnchor;
+    visualAnchor = sceneLayoutPlan.visualAnchor;
+    ctaAnchor = sceneLayoutPlan.ctaAnchor;
+    density = sceneLayoutPlan.density;
+    slotTopology = sceneLayoutPlan.slotTopology;
+  }
+
   return {
     planId: createRequestId(),
     runId: intent.runId,
@@ -134,6 +162,8 @@ function normalizeAbstractLayoutDraft(
     ctaAnchor,
     density,
     slotTopology,
-    summary,
+    summary: sceneLayoutPlan
+      ? `${sceneLayoutPlan.summary} Downstream abstract layout was pinned to the selected scaffold.`
+      : summary,
   };
 }

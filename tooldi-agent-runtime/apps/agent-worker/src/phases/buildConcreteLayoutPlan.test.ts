@@ -6,6 +6,7 @@ import type {
   AssetPlan,
   CopyPlan,
   HydratedPlanningInput,
+  SceneBindingPlan,
   SelectionDecision,
 } from "../types.js";
 import { buildConcreteLayoutPlan } from "./buildConcreteLayoutPlan.js";
@@ -195,6 +196,38 @@ function createSelectionDecision(
   };
 }
 
+function createSceneBindingPlan(
+  overrides: Partial<SceneBindingPlan> = {},
+): SceneBindingPlan {
+  return {
+    planId: "binding-1",
+    runId: "run-1",
+    traceId: "trace-1",
+    workflowVariant: "retrieval_prior_v1",
+    selectedTemplateCode: "19046887349",
+    selectedTemplateTitle: "봄맞이 할인 이벤트 광고",
+    backgroundMode: "pastel_gradient",
+    backgroundColorHex: "#6c9b36",
+    secondaryBackgroundColorHex: "#81dc47",
+    primaryTextColorHex: "#ffffff",
+    secondaryTextColorHex: "#ffffff",
+    accentTextColorHex: "#6bd357",
+    inverseTextColorHex: "#ffffff",
+    ctaSurfaceColorHex: "#6bd357",
+    ctaTextColorHex: "#ffffff",
+    ctaShapeLanguage: "transparent_band",
+    preferredDecorationMode: "promo_multi_graphic",
+    preferredAccentDensity: "medium",
+    preferredBadgeProminence: "dominant",
+    preferredCtaTreatment: "framed",
+    motifTags: ["abstract"],
+    includeRibbon: true,
+    includeFrame: false,
+    summary: "binding",
+    ...overrides,
+  };
+}
+
 function createHydratedPlanningInput(): HydratedPlanningInput {
   return {
     job: {
@@ -229,6 +262,7 @@ test("buildConcreteLayoutPlan resolves promo topology from abstract layout and a
     createSelectionDecision({
       layoutMode: "left_copy_right_graphic",
     }),
+    null,
     {
       textLayoutHelper: {
         estimate: async () => ({ width: 240, height: 84, estimatedLineCount: 1 }),
@@ -276,6 +310,7 @@ test("buildConcreteLayoutPlan keeps subject hero only for photo primary", async 
       photoBranchMode: "photo_selected",
       executionStrategy: "photo_hero_shape_text_group",
     }),
+    null,
     {
       textLayoutHelper: {
         estimate: async () => ({ width: 240, height: 84, estimatedLineCount: 1 }),
@@ -288,4 +323,34 @@ test("buildConcreteLayoutPlan keeps subject hero only for photo primary", async 
   assert.equal(result.resolvedSlotTopology, "hero_headline_supporting_cta_footer");
   assert.ok(result.resolvedSlotBounds.hero_image);
   assert.ok(result.clusterZones.includes("hero_panel"));
+});
+
+test("buildConcreteLayoutPlan widens badge CTA into centered band and disables cta container expectation", async () => {
+  const result = await buildConcreteLayoutPlan(
+    createHydratedPlanningInput(),
+    createCopyPlan(true),
+    createAbstractLayoutPlan({
+      layoutFamily: "promo_badge",
+      copyAnchor: "left",
+      ctaAnchor: "below_copy",
+      slotTopology: "badge_headline_offer_cta_footer",
+    }),
+    createAssetPlan(),
+    createSelectionDecision({
+      layoutMode: "badge_promo_stack",
+    }),
+    createSceneBindingPlan(),
+    {
+      textLayoutHelper: {
+        estimate: async () => ({ width: 240, height: 84, estimatedLineCount: 1 }),
+      },
+    },
+  );
+
+  assert.equal(result.slotAnchors.cta, "bottom_center");
+  assert.equal(result.ctaContainerExpected, false);
+  assert.ok(result.resolvedSlotBounds.cta);
+  assert.equal(result.resolvedSlotBounds.cta?.width, 696);
+  assert.equal(result.resolvedSlotBounds.cta?.height, 72);
+  assert.equal(result.resolvedSlotBounds.cta?.x, 252);
 });

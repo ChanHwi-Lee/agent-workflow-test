@@ -214,6 +214,21 @@ const LastKnownGoodCheckpointSchema = Type.Object(
         templatePriorSummaryRef: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),
         ),
+        templatePriorBundleRef: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
+        sceneRolePlanRef: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
+        sceneLayoutPlanRef: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
+        sceneStylePlanRef: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
+        sceneBindingPlanRef: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
         searchProfileRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         executablePlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         candidateSetRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),

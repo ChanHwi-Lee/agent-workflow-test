@@ -101,6 +101,11 @@ export async function materializeRunArtifacts(
             concreteLayoutPlanRef: input.input.concreteLayoutPlanRef,
             canonicalDesignBriefRef: input.input.canonicalDesignBriefRef,
             templatePriorSummaryRef: input.input.templatePriorSummaryRef,
+            templatePriorBundleRef: input.input.templatePriorBundleRef,
+            sceneRolePlanRef: input.input.sceneRolePlanRef,
+            sceneLayoutPlanRef: input.input.sceneLayoutPlanRef,
+            sceneStylePlanRef: input.input.sceneStylePlanRef,
+            sceneBindingPlanRef: input.input.sceneBindingPlanRef,
             executablePlanRef: input.input.executablePlanRef,
             candidateSetRef: input.input.candidateSetRef,
             sourceSearchSummaryRef: input.input.sourceSearchSummaryRef,
@@ -323,6 +328,21 @@ export async function materializeRunArtifacts(
         : {}),
       ...(input.input.templatePriorSummaryRef
         ? { templatePriorSummaryRef: input.input.templatePriorSummaryRef }
+        : {}),
+      ...(input.input.templatePriorBundleRef
+        ? { templatePriorBundleRef: input.input.templatePriorBundleRef }
+        : {}),
+      ...(input.input.sceneRolePlanRef
+        ? { sceneRolePlanRef: input.input.sceneRolePlanRef }
+        : {}),
+      ...(input.input.sceneLayoutPlanRef
+        ? { sceneLayoutPlanRef: input.input.sceneLayoutPlanRef }
+        : {}),
+      ...(input.input.sceneStylePlanRef
+        ? { sceneStylePlanRef: input.input.sceneStylePlanRef }
+        : {}),
+      ...(input.input.sceneBindingPlanRef
+        ? { sceneBindingPlanRef: input.input.sceneBindingPlanRef }
         : {}),
       ...(input.input.searchProfileRef
         ? { searchProfileRef: input.input.searchProfileRef }

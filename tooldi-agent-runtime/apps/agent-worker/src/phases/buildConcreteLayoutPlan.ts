@@ -11,6 +11,7 @@ import type {
   CopyPlan,
   GraphicCompositionRole,
   LayoutBounds,
+  SceneBindingPlan,
   SelectionDecision,
   ConcreteLayoutPlan,
 } from "../types.js";
@@ -26,6 +27,7 @@ export async function buildConcreteLayoutPlan(
   abstractLayoutPlan: AbstractLayoutPlan,
   assetPlan: AssetPlan,
   selectionDecision: SelectionDecision,
+  sceneBindingPlan: SceneBindingPlan | null | undefined,
   dependencies: BuildConcreteLayoutPlanDependencies,
 ): Promise<ConcreteLayoutPlan> {
   const resolvedSlotTopology = resolveSlotTopology(
@@ -38,7 +40,14 @@ export async function buildConcreteLayoutPlan(
     assetPlan,
     selectionDecision,
   );
-  const slotAnchors = resolveSlotAnchors(abstractLayoutPlan, resolvedSlotTopology);
+  const wideBandCta = usesWideBandCta(sceneBindingPlan);
+  const baseSlotAnchors = resolveSlotAnchors(abstractLayoutPlan, resolvedSlotTopology);
+  const slotAnchors = wideBandCta
+    ? {
+        ...baseSlotAnchors,
+        cta: "bottom_center" as const,
+      }
+    : baseSlotAnchors;
   const clusterZones = resolveClusterZones(abstractLayoutPlan, assetPlan);
   const graphicRolePlacementHints = assetPlan.graphicRoleBindings.map((binding) => ({
     role: binding.role,
@@ -47,6 +56,7 @@ export async function buildConcreteLayoutPlan(
   const hasBadgeSlot = copyPlan.slots.some((slot) => slot.key === "badge_text");
   const ctaContainerExpected =
     copyPlan.slots.some((slot) => slot.key === "cta") &&
+    !wideBandCta &&
     (assetPlan.primaryVisualFamily === "graphic" ||
       assetPlan.graphicRoleBindings.some((binding) => binding.role === "cta_container"));
   const headlineText =
@@ -73,6 +83,7 @@ export async function buildConcreteLayoutPlan(
     geometryPresets,
     input.request.editorContext.canvasWidth,
     input.request.editorContext.canvasHeight,
+    wideBandCta,
   );
 
   return {
@@ -118,6 +129,7 @@ function buildResolvedSlotBounds(
   geometryPresets: ReturnType<typeof createGeometryPresets>,
   canvasWidth: number,
   canvasHeight: number,
+  wideBandCta: boolean,
 ): Partial<Record<ExecutionSlotKey, LayoutBounds>> {
   const bounds: Partial<Record<ExecutionSlotKey, LayoutBounds>> = {
     background: {
@@ -158,6 +170,10 @@ function buildResolvedSlotBounds(
 
   if (assetPlan.primaryVisualFamily === "photo" && assetPlan.photoBinding !== null) {
     bounds.hero_image = geometryPresets.current.heroPanel;
+  }
+
+  if (wideBandCta && bounds.cta) {
+    bounds.cta = createWideBandCtaBounds(bounds.cta, canvasWidth, canvasHeight);
   }
 
   return bounds;
@@ -300,4 +316,30 @@ function resolveLayoutMode(
         ? "copy_left_with_right_photo"
         : "left_copy_right_graphic";
   }
+}
+
+function usesWideBandCta(
+  sceneBindingPlan: SceneBindingPlan | null | undefined,
+): boolean {
+  return (
+    sceneBindingPlan?.ctaShapeLanguage === "band" ||
+    sceneBindingPlan?.ctaShapeLanguage === "transparent_band"
+  );
+}
+
+function createWideBandCtaBounds(
+  currentBounds: LayoutBounds,
+  canvasWidth: number,
+  canvasHeight: number,
+): LayoutBounds {
+  const width = Math.max(520, Math.min(760, Math.round(canvasWidth * 0.58)));
+  const height = 72;
+  const x = Math.max(0, Math.round((canvasWidth - width) / 2));
+  const y = Math.max(0, Math.min(canvasHeight - height, currentBounds.y - 12));
+  return {
+    x,
+    y,
+    width,
+    height,
+  };
 }

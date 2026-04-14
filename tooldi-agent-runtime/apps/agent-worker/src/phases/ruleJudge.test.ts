@@ -198,6 +198,8 @@ function createTypographyDecision(
       fontToken: "701_400",
       fontWeight: 400,
     },
+    matchedTemplateFontFamily: "Rounded Display",
+    appliedTone: "rounded",
     summary: "fonts selected",
     ...overrides,
   };

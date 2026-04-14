@@ -13,6 +13,7 @@ import type {
 import type {
   HydratedPlanningInput,
   NormalizedIntent,
+  SceneLayoutPlan,
   SearchProfileArtifact,
   SourceSearchFamilySummary,
   TemplateCandidateBundle,
@@ -31,6 +32,7 @@ export interface AssembleTemplateCandidatesDependencies {
   tooldiCatalogSourceClient: TooldiCatalogSourceClient;
   sourceMode: TooldiCatalogSourceMode;
   allowPhotoCandidates: boolean;
+  sceneLayoutPlan?: SceneLayoutPlan | null;
 }
 
 export interface AssembleTemplateCandidatesResult {
@@ -97,7 +99,7 @@ export async function assembleTemplateCandidates(
     return {
       candidates: {
         background: generatedBackgroundCandidates,
-        layout: createLayoutCandidateSet(input, intent),
+        layout: createLayoutCandidateSet(input, intent, dependencies.sceneLayoutPlan ?? null),
         decoration: {
           setId: `decoration_candidates_${createRequestId()}`,
           family: "decoration",
@@ -154,7 +156,7 @@ export async function assembleTemplateCandidates(
   return {
     candidates: {
       background: generatedBackgroundCandidates,
-      layout: createLayoutCandidateSet(input, intent),
+      layout: createLayoutCandidateSet(input, intent, dependencies.sceneLayoutPlan ?? null),
       decoration: {
         setId: `decoration_candidates_${createRequestId()}`,
         family: "decoration",

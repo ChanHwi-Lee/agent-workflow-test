@@ -7,6 +7,7 @@ import { normalizeTemplateAssetPolicy } from "@tooldi/agent-llm";
 import type {
   NormalizedIntent,
   RetrievalStageResult,
+  SceneBindingPlan,
   TemplateCandidateBundle,
   TemplateSelectionPolicy,
 } from "../types.js";
@@ -293,6 +294,38 @@ function createCandidateBundle(options?: {
   };
 }
 
+function createSceneBindingPlan(
+  overrides: Partial<SceneBindingPlan> = {},
+): SceneBindingPlan {
+  return {
+    planId: "binding-1",
+    runId: "run-1",
+    traceId: "trace-1",
+    workflowVariant: "retrieval_prior_v1",
+    selectedTemplateCode: "19046887349",
+    selectedTemplateTitle: "봄맞이 할인 이벤트 광고",
+    backgroundMode: "pastel_gradient",
+    backgroundColorHex: "#6c9b36",
+    secondaryBackgroundColorHex: "#81dc47",
+    primaryTextColorHex: "#ffffff",
+    secondaryTextColorHex: "#ffffff",
+    accentTextColorHex: "#6bd357",
+    inverseTextColorHex: "#ffffff",
+    ctaSurfaceColorHex: "#6bd357",
+    ctaTextColorHex: "#ffffff",
+    ctaShapeLanguage: "transparent_band",
+    preferredDecorationMode: "promo_multi_graphic",
+    preferredAccentDensity: "medium",
+    preferredBadgeProminence: "dominant",
+    preferredCtaTreatment: "framed",
+    motifTags: ["abstract"],
+    includeRibbon: true,
+    includeFrame: false,
+    summary: "binding",
+    ...overrides,
+  };
+}
+
 test("composition engine은 generic promo brief에서 3개의 내부 variant를 생성하고 top-1을 투영한다", async () => {
   const result = await buildCompositionSelection(
     createIntent(),
@@ -454,4 +487,26 @@ test("composition engine은 photo-friendly brief에서 photo family variant를 w
     result.selectionDecision.selectedLayoutCandidateId,
     "layout_copy_left_with_right_photo",
   );
+});
+
+test("composition engine suppresses structural cta_container and frame roles for wide-band CTA on badge layout", async () => {
+  const result = await buildCompositionSelection(
+    createIntent({
+      campaignGoal: "sale_conversion",
+      layoutIntent: "badge_led",
+    }),
+    createCandidateBundle({
+      layoutModes: ["badge_promo_stack", "center_stack_promo"],
+    }),
+    {
+      retrievalStage: createRetrievalStage(),
+      selectionPolicy: createSelectionPolicy(),
+      sceneBindingPlan: createSceneBindingPlan(),
+    },
+  );
+
+  const roles = result.selectionDecision.graphicCompositionSet?.roles.map((role) => role.role) ?? [];
+  assert.equal(roles.includes("cta_container"), false);
+  assert.equal(roles.includes("frame"), false);
+  assert.equal(roles.includes("primary_accent"), true);
 });

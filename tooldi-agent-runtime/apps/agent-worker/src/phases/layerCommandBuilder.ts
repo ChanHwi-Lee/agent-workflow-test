@@ -26,22 +26,24 @@ type CreateLayerCommandOptions = {
   role: string;
   variantKey: string;
   candidateId: string;
-  sourceAssetId?: string | null;
-  sourceSerial?: string | null;
-  sourceCategory?: string | null;
-  sourceUid?: string | null;
-  sourceOriginUrl?: string | null;
-  sourceWidth?: number | null;
-  sourceHeight?: number | null;
-  photoOrientation?: "portrait" | "landscape" | "square" | null;
-  fitMode?: "cover";
-  cropMode?: "centered_cover";
-  renderPrimitive?: string | null;
-  styleTokens?: Record<string, string | number | boolean | null>;
-  fontRole?: "display" | "body";
+  sourceAssetId?: string | null | undefined;
+  sourceSerial?: string | null | undefined;
+  sourceCategory?: string | null | undefined;
+  sourceUid?: string | null | undefined;
+  sourceOriginUrl?: string | null | undefined;
+  sourceWidth?: number | null | undefined;
+  sourceHeight?: number | null | undefined;
+  photoOrientation?: "portrait" | "landscape" | "square" | null | undefined;
+  fitMode?: "cover" | undefined;
+  cropMode?: "centered_cover" | undefined;
+  renderPrimitive?: string | null | undefined;
+  styleTokens?: Record<string, string | number | boolean | null> | undefined;
+  fontRole?: "display" | "body" | undefined;
   typography?: TypographyMetadata;
-  textContent?: string | null;
-  clusterZone?: ConcreteLayoutClusterZone | null;
+  textContent?: string | null | undefined;
+  clusterZone?: ConcreteLayoutClusterZone | null | undefined;
+  customFontSize?: number | undefined;
+  customTextAlign?: "left" | "center" | "right" | undefined;
 };
 
 export function buildCreateLayerCommand(
@@ -86,6 +88,12 @@ export function buildCreateLayerCommand(
     metadata.displayFontWeight = options.typography.displayFontWeight;
     metadata.bodyFontFamily = options.typography.bodyFontFamily;
     metadata.bodyFontWeight = options.typography.bodyFontWeight;
+  }
+  if (typeof options.customFontSize === "number") {
+    metadata.customFontSize = options.customFontSize;
+  }
+  if (options.customTextAlign) {
+    metadata.customTextAlign = options.customTextAlign;
   }
 
   return {

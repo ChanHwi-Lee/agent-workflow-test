@@ -6,6 +6,7 @@ import { normalizeTemplateAssetPolicy } from "@tooldi/agent-llm";
 
 import type {
   NormalizedIntent,
+  SceneBindingPlan,
   SearchProfileArtifact,
   SelectionDecision,
 } from "../types.js";
@@ -317,6 +318,38 @@ function createSelectionDecision(
   };
 }
 
+function createSceneBindingPlan(
+  overrides: Partial<SceneBindingPlan> = {},
+): SceneBindingPlan {
+  return {
+    planId: "binding-1",
+    runId: "run-1",
+    traceId: "trace-1",
+    workflowVariant: "retrieval_prior_v1",
+    selectedTemplateCode: "19046887349",
+    selectedTemplateTitle: "봄맞이 할인 이벤트 광고",
+    backgroundMode: "pastel_gradient",
+    backgroundColorHex: "#6c9b36",
+    secondaryBackgroundColorHex: "#81dc47",
+    primaryTextColorHex: "#ffffff",
+    secondaryTextColorHex: "#ffffff",
+    accentTextColorHex: "#6bd357",
+    inverseTextColorHex: "#ffffff",
+    ctaSurfaceColorHex: "#6bd357",
+    ctaTextColorHex: "#ffffff",
+    ctaShapeLanguage: "transparent_band",
+    preferredDecorationMode: "promo_multi_graphic",
+    preferredAccentDensity: "medium",
+    preferredBadgeProminence: "dominant",
+    preferredCtaTreatment: "framed",
+    motifTags: ["abstract"],
+    includeRibbon: true,
+    includeFrame: false,
+    summary: "binding",
+    ...overrides,
+  };
+}
+
 test("buildAssetPlan promotes graphic primary for generic promo and marks CTA fallback when missing", async () => {
   const result = await buildAssetPlan(
     createIntent(),
@@ -385,4 +418,36 @@ test("buildAssetPlan keeps photo binding for explicit subject photo branch", asy
   assert.ok(result.photoBinding);
   assert.equal(result.photoBinding?.candidateId, "photo-1");
   assert.equal(result.executionEligibility.canRender, true);
+});
+
+test("buildAssetPlan does not mark wide-band CTA as degraded when cta_container is intentionally omitted", async () => {
+  const result = await buildAssetPlan(
+    createIntent(),
+    createTemplatePriorSummary(),
+    createSearchProfile(),
+    createSelectionDecision({
+      graphicCompositionSet: {
+        density: "minimal",
+        summary: "graphic set",
+        roles: [
+          {
+            role: "primary_accent",
+            candidateId: "graphic-1",
+            sourceAssetId: "asset-graphic-1",
+            sourceSerial: "serial-graphic-1",
+            sourceCategory: "vector",
+            variantKey: "graphic_primary",
+            decorationMode: "promo_multi_graphic",
+          },
+        ],
+      },
+    }),
+    createSceneBindingPlan(),
+  );
+
+  assert.equal(result.executionEligibility.degraded, false);
+  assert.equal(
+    result.executionEligibility.reasons.includes("cta_container_missing_fallback_pill"),
+    false,
+  );
 });

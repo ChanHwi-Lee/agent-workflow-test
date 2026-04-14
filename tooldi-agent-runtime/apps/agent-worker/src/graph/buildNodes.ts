@@ -11,13 +11,21 @@ import {
 import { buildAssetPlan } from "../phases/buildAssetPlan.js";
 import { buildConcreteLayoutPlan } from "../phases/buildConcreteLayoutPlan.js";
 import { buildCopyAndAbstractLayoutPlan } from "../phases/buildCopyAndAbstractLayoutPlan.js";
+import { buildReferenceCompositionV2 } from "../phases/buildReferenceCompositionV2.js";
 import { buildSearchProfile } from "../phases/buildSearchProfile.js";
+import { buildScenePlans } from "../phases/buildScenePlans.js";
+import { buildSceneStylePlans } from "../phases/buildSceneStylePlans.js";
+import {
+  buildTemplatePriorBundle,
+  createGeminiTemplatePriorReranker,
+} from "../phases/buildTemplatePriorBundle.js";
 import { buildTemplatePriorSummary } from "../phases/buildTemplatePriorSummary.js";
 import { buildExecutablePlan } from "../phases/buildExecutablePlan.js";
 import { buildCompositionSelection } from "../phases/compositionEngine.js";
 import { runRetrievalStage } from "../phases/runRetrievalStage.js";
 import { ruleJudgeCreateTemplate } from "../phases/ruleJudge.js";
 import { selectTypography } from "../phases/selectTypography.js";
+import { deriveWorkflowVariant } from "../phases/planningContext.js";
 import {
   buildSelectionLogMessages,
   buildSourceSearchSummary,
@@ -45,6 +53,10 @@ export function registerBuildNodes(
   const templateAbstractLayoutGenerator =
     dependencies.templateAbstractLayoutGenerator ??
     createTemplateAbstractLayoutGenerator(dependencies.env, dependencies.logger);
+  const templatePriorReranker = createGeminiTemplatePriorReranker(
+    dependencies.env,
+    dependencies.logger,
+  );
 
   return graph
     .addNode("build_copy_and_abstract_layout_plan", async (state) => {
@@ -60,6 +72,11 @@ export function registerBuildNodes(
         {
           templateCopyPlanGenerator,
           templateAbstractLayoutGenerator,
+          templatePriorBundle: state.templatePriorBundle,
+          sceneRolePlan: state.sceneRolePlan,
+          sceneLayoutPlan: state.sceneLayoutPlan,
+          sceneStylePlan: state.sceneStylePlan,
+          sceneBindingPlan: state.sceneBindingPlan,
         },
       );
 
@@ -114,6 +131,121 @@ export function registerBuildNodes(
         abstractLayoutPlanNormalizationReport:
           planArtifacts.abstractLayoutPlanNormalizationReport,
         abstractLayoutPlanNormalizationReportRef,
+      };
+    })
+    .addNode("build_reference_composition_v2", async (state) => {
+      if (!state.hydrated) {
+        throw new Error("build_reference_composition_v2 requires hydrated state");
+      }
+
+      const v2Plans = buildReferenceCompositionV2(
+        state.hydrated,
+        state.templatePriorBundle,
+        state.copyPlan,
+        state.sceneStylePlan,
+        state.sceneBindingPlan,
+      );
+
+      const referenceCompositionGraphRef = v2Plans.referenceCompositionGraph
+        ? await persistArtifactTask(
+            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/reference-composition-graph.json`,
+            v2Plans.referenceCompositionGraph,
+            {
+              artifactKind: "reference-composition-graph",
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              attemptSeq: String(state.job.attemptSeq),
+            },
+          )
+        : null;
+      const referenceSupportEvidenceRef = v2Plans.referenceSupportEvidence
+        ? await persistArtifactTask(
+            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/reference-support-evidence.json`,
+            v2Plans.referenceSupportEvidence,
+            {
+              artifactKind: "reference-support-evidence",
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              attemptSeq: String(state.job.attemptSeq),
+            },
+          )
+        : null;
+      const copyAtomPlanRef = v2Plans.copyAtomPlan
+        ? await persistArtifactTask(
+            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/copy-atom-plan.json`,
+            v2Plans.copyAtomPlan,
+            {
+              artifactKind: "copy-atom-plan",
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              attemptSeq: String(state.job.attemptSeq),
+            },
+          )
+        : null;
+      const copyBindingPlanRef = v2Plans.copyBindingPlan
+        ? await persistArtifactTask(
+            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/copy-binding-plan.json`,
+            v2Plans.copyBindingPlan,
+            {
+              artifactKind: "copy-binding-plan",
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              attemptSeq: String(state.job.attemptSeq),
+            },
+          )
+        : null;
+      const templateRemixPlanRef = v2Plans.templateRemixPlan
+        ? await persistArtifactTask(
+            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/template-remix-plan.json`,
+            v2Plans.templateRemixPlan,
+            {
+              artifactKind: "template-remix-plan",
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              attemptSeq: String(state.job.attemptSeq),
+            },
+          )
+        : null;
+      const freeformLayoutPlanRef = v2Plans.freeformLayoutPlan
+        ? await persistArtifactTask(
+            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/freeform-layout-plan.json`,
+            v2Plans.freeformLayoutPlan,
+            {
+              artifactKind: "freeform-layout-plan",
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              attemptSeq: String(state.job.attemptSeq),
+            },
+          )
+        : null;
+      const styleDowngradeVerdictRef = v2Plans.styleDowngradeVerdict
+        ? await persistArtifactTask(
+            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/style-downgrade-verdict.json`,
+            v2Plans.styleDowngradeVerdict,
+            {
+              artifactKind: "style-downgrade-verdict",
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              attemptSeq: String(state.job.attemptSeq),
+            },
+          )
+        : null;
+
+      return {
+        referenceCompositionGraph: v2Plans.referenceCompositionGraph,
+        referenceCompositionGraphRef,
+        referenceSupportEvidence: v2Plans.referenceSupportEvidence,
+        referenceSupportEvidenceRef,
+        copyAtomPlan: v2Plans.copyAtomPlan,
+        copyAtomPlanRef,
+        copyBindingPlan: v2Plans.copyBindingPlan,
+        copyBindingPlanRef,
+        templateRemixPlan: v2Plans.templateRemixPlan,
+        templateRemixPlanRef,
+        freeformLayoutPlan: v2Plans.freeformLayoutPlan,
+        freeformLayoutPlanRef,
+        styleDowngradeVerdict: v2Plans.styleDowngradeVerdict,
+        styleDowngradeVerdictRef,
       };
     })
     .addNode("build_search_profile", async (state) => {
@@ -201,6 +333,148 @@ export function registerBuildNodes(
         cooperativeStopRequested,
       };
     })
+    .addNode("build_template_prior_bundle", async (state) => {
+      if (!state.hydrated || !state.intent) {
+        throw new Error(
+          "build_template_prior_bundle requires hydrated normalized intent state",
+        );
+      }
+
+      const workflowVariant = deriveWorkflowVariant(state.hydrated);
+      if (
+        workflowVariant !== "retrieval_prior_v1" &&
+        workflowVariant !== "retrieval_prior_v2"
+      ) {
+        return {
+          templatePriorBundle: null,
+          templatePriorBundleRef: null,
+        };
+      }
+
+      let cooperativeStopRequested = state.cooperativeStopRequested;
+      const templatePriorBundle = await buildTemplatePriorBundle(
+        state.hydrated,
+        state.intent,
+        tooldiCatalogSourceClient,
+        templatePriorReranker,
+      );
+
+      if (!templatePriorBundle) {
+        return {
+          templatePriorBundle: null,
+          templatePriorBundleRef: null,
+          cooperativeStopRequested,
+        };
+      }
+
+      const templatePriorBundleRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/template-prior-bundle.json`,
+        templatePriorBundle,
+        {
+          artifactKind: "template-prior-bundle",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      const priorLog = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: templatePriorBundle.usedFallbackToLegacy ? "warn" : "info",
+          message:
+            `[source/template-prior] retrieved=${templatePriorBundle.candidates.length} ` +
+            `selected=${templatePriorBundle.selectedTemplateCode ?? "n/a"} ` +
+            `layoutHint=${templatePriorBundle.selectedScaffold?.layoutModeHint ?? "n/a"} ` +
+            `fallback=${templatePriorBundle.usedFallbackToLegacy ? "legacy" : "none"}`,
+        },
+      });
+      cooperativeStopRequested ||= priorLog.cancelRequested;
+
+      return {
+        templatePriorBundle,
+        templatePriorBundleRef,
+        cooperativeStopRequested,
+      };
+    })
+    .addNode("build_scene_plans", async (state) => {
+      if (!state.intent) {
+        throw new Error("build_scene_plans requires normalized intent state");
+      }
+
+      const { sceneRolePlan, sceneLayoutPlan } = buildScenePlans(
+        state.intent,
+        state.templatePriorBundle,
+      );
+      const { sceneStylePlan, sceneBindingPlan } = buildSceneStylePlans(
+        state.intent,
+        state.templatePriorBundle,
+        sceneLayoutPlan,
+      );
+
+      const sceneRolePlanRef = sceneRolePlan
+        ? await persistArtifactTask(
+            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/scene-role-plan.json`,
+            sceneRolePlan,
+            {
+              artifactKind: "scene-role-plan",
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              attemptSeq: String(state.job.attemptSeq),
+            },
+          )
+        : null;
+      const sceneLayoutPlanRef = sceneLayoutPlan
+        ? await persistArtifactTask(
+            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/scene-layout-plan.json`,
+            sceneLayoutPlan,
+            {
+              artifactKind: "scene-layout-plan",
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              attemptSeq: String(state.job.attemptSeq),
+            },
+          )
+        : null;
+      const sceneStylePlanRef = sceneStylePlan
+        ? await persistArtifactTask(
+            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/scene-style-plan.json`,
+            sceneStylePlan,
+            {
+              artifactKind: "scene-style-plan",
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              attemptSeq: String(state.job.attemptSeq),
+            },
+          )
+        : null;
+      const sceneBindingPlanRef = sceneBindingPlan
+        ? await persistArtifactTask(
+            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/scene-binding-plan.json`,
+            sceneBindingPlan,
+            {
+              artifactKind: "scene-binding-plan",
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              attemptSeq: String(state.job.attemptSeq),
+            },
+          )
+        : null;
+
+      return {
+        sceneRolePlan,
+        sceneRolePlanRef,
+        sceneLayoutPlan,
+        sceneLayoutPlanRef,
+        sceneStylePlan,
+        sceneStylePlanRef,
+        sceneBindingPlan,
+        sceneBindingPlanRef,
+      };
+    })
     .addNode("compute_retrieval_policy", async (state) => {
       if (!state.hydrated || !state.intent) {
         throw new Error("compute_retrieval_policy requires hydrated intent state");
@@ -248,6 +522,7 @@ export function registerBuildNodes(
             tooldiCatalogSourceClient,
             sourceMode: dependencies.env.tooldiCatalogSourceMode,
             allowPhotoCandidates: state.selectionPolicy.allowPhotoCandidates,
+            sceneLayoutPlan: state.sceneLayoutPlan,
           },
         );
 
@@ -294,6 +569,8 @@ export function registerBuildNodes(
         {
           retrievalStage: state.retrievalStage,
           selectionPolicy: state.selectionPolicy,
+          templatePriorBundle: state.templatePriorBundle,
+          sceneBindingPlan: state.sceneBindingPlan,
         },
       );
       const compositionBriefRef = await persistArtifactTask(
@@ -366,6 +643,7 @@ export function registerBuildNodes(
         state.templatePriorSummary,
         state.searchProfile,
         state.selectionDecision,
+        state.sceneBindingPlan,
       );
       const assetPlanRef = await persistArtifactTask(
         `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/asset-plan.json`,
@@ -402,6 +680,7 @@ export function registerBuildNodes(
         state.abstractLayoutPlan,
         state.assetPlan,
         state.selectionDecision,
+        state.sceneBindingPlan,
         {
           textLayoutHelper: dependencies.textLayoutHelper,
         },
@@ -430,6 +709,7 @@ export function registerBuildNodes(
       const typographySelection = await selectTypography(state.hydrated, {
         sourceClient: tooldiCatalogSourceClient,
         sourceMode: dependencies.env.tooldiCatalogSourceMode,
+        sceneStylePlan: state.sceneStylePlan,
       });
       const typographyDecisionRef = await persistArtifactTask(
         `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/typography-decision.json`,
@@ -550,6 +830,8 @@ export function registerBuildNodes(
         state.selectionDecision,
         state.concreteLayoutPlan,
         state.typographyDecision,
+        state.freeformLayoutPlan,
+        state.sceneBindingPlan,
         {
           toolRegistry: dependencies.toolRegistry,
         },

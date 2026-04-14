@@ -5,11 +5,13 @@ import type { TemplateCandidateSet } from "@tooldi/tool-adapters";
 import type {
   HydratedPlanningInput,
   NormalizedIntent,
+  SceneLayoutPlan,
 } from "../types.js";
 
 export function createLayoutCandidateSet(
   input: HydratedPlanningInput,
   intent: NormalizedIntent,
+  sceneLayoutPlan?: SceneLayoutPlan | null,
 ): TemplateCandidateSet {
   const wideCanvas =
     input.request.editorContext.canvasWidth >= input.request.editorContext.canvasHeight;
@@ -18,10 +20,7 @@ export function createLayoutCandidateSet(
     assetPolicy.primaryVisualPolicy === "graphic_preferred";
   const badgeIntent = intent.layoutIntent === "badge_led";
 
-  return {
-    setId: `layout_candidates_${createRequestId()}`,
-    family: "layout",
-    candidates: [
+  const allCandidates: TemplateCandidateSet["candidates"] = [
       {
         candidateId: "layout_left_copy_right_graphic",
         family: "layout",
@@ -188,6 +187,24 @@ export function createLayoutCandidateSet(
           themeTokens: ["badge", "promo"],
         },
       },
-    ],
+    ];
+
+  const candidates = sceneLayoutPlan
+    ? allCandidates
+        .filter((candidate) => candidate.payload.layoutMode === sceneLayoutPlan.layoutMode)
+        .map((candidate) => ({
+          ...candidate,
+          fitScore: 1,
+          selectionReasons: [
+            `selected scaffold pins layoutMode=${sceneLayoutPlan.layoutMode}`,
+            ...candidate.selectionReasons,
+          ],
+        }))
+    : allCandidates;
+
+  return {
+    setId: `layout_candidates_${createRequestId()}`,
+    family: "layout",
+    candidates,
   };
 }

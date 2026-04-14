@@ -19,6 +19,7 @@ import type {
 } from "@tooldi/agent-llm";
 import type {
   TemplateCandidateSet,
+  TooldiTemplateDocument,
   TooldiCatalogSourceMode,
 } from "@tooldi/tool-adapters";
 
@@ -36,6 +37,93 @@ export interface HydratedPlanningInput {
   requestRef: string;
   snapshotRef: string;
   repairContext: RunRepairContext | null;
+}
+
+export type WorkflowVariant =
+  | "legacy"
+  | "retrieval_prior_v1"
+  | "retrieval_prior_v2";
+
+export type TemplateScaffoldLayoutMode =
+  | "copy_left_with_right_decoration"
+  | "copy_left_with_right_photo"
+  | "center_stack"
+  | "badge_led"
+  | "left_copy_right_graphic"
+  | "center_stack_promo"
+  | "badge_promo_stack"
+  | "framed_promo";
+
+export interface TemplatePriorScaffold {
+  scaffoldId: string;
+  sourceTemplateCode: string;
+  sourceTemplateSerial: string;
+  title: string;
+  canvasWidth: number | null;
+  canvasHeight: number | null;
+  backgroundMode: "image" | "color" | "pattern" | "gradient" | "unknown";
+  textObjectCount: number;
+  visualObjectCount: number;
+  groupObjectCount: number;
+  dominantObjectTypes: string[];
+  copyAnchor: "left" | "center";
+  visualAnchor: "right" | "center" | "background";
+  layoutFamilyHint:
+    | "promo_split"
+    | "promo_center"
+    | "promo_badge"
+    | "promo_frame"
+    | "subject_hero";
+  layoutModeHint: TemplateScaffoldLayoutMode;
+  primaryVisualFamilyHint: "graphic" | "photo";
+  summary: string;
+}
+
+export interface TemplatePriorCandidate {
+  rank: number;
+  score: number;
+  deterministicScore: number;
+  geminiScore: number | null;
+  keep: boolean;
+  keepReason: string;
+  rejectReason: string | null;
+  matchedQueryLabels: string[];
+  templateAssetId: string;
+  templateSerial: string;
+  templateCode: string;
+  title: string;
+  categoryName: string | null;
+  width: number | null;
+  height: number | null;
+  pages: number;
+  keywordTokens: string[];
+  thumbnailUrl: string | null;
+  traceId: string | null;
+  fetchedDocument: TooldiTemplateDocument | null;
+  scaffold: TemplatePriorScaffold | null;
+}
+
+export interface TemplatePriorBundle {
+  bundleId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v1" | "retrieval_prior_v2";
+  query: {
+    keyword: string;
+    canvas: "horizontal" | "vertical" | "square" | "";
+    requestedTopK: number;
+  };
+  queryPlan: Array<{
+    label: string;
+    keyword: string;
+  }>;
+  usedFallbackToLegacy: boolean;
+  fallbackReason: string | null;
+  selectedTemplateCode: string | null;
+  selectedTemplateTitle: string | null;
+  selectedScaffold: TemplatePriorScaffold | null;
+  candidates: TemplatePriorCandidate[];
+  summary: string;
 }
 
 export interface IntentConsistencyFlag {
@@ -186,6 +274,152 @@ export interface AbstractLayoutPlanNormalizationReport {
   normalizationNotes: string[];
 }
 
+export type SceneRoleKey =
+  | "background"
+  | "primaryMessage"
+  | "supportingMessage"
+  | "offerEmphasis"
+  | "cta"
+  | "heroVisual"
+  | "accentVisual"
+  | "legalNote"
+  | "badge";
+
+export type SceneRoleZone =
+  | "background"
+  | "copy_cluster"
+  | "visual_cluster"
+  | "footer"
+  | "badge";
+
+export interface SceneRolePlanEntry {
+  key: SceneRoleKey;
+  required: boolean;
+  preferredZone: SceneRoleZone;
+  mappedSlotKey: CopyPlanSlotKey | "background" | "hero_image" | "decoration";
+  priority: CopyPlanPriority;
+  maxLength: number | null;
+  toneHint: CopyPlanToneHint | null;
+  source: "intent" | "scaffold" | "hybrid";
+  summary: string;
+}
+
+export interface SceneRolePlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v1" | "retrieval_prior_v2";
+  selectedTemplateCode: string;
+  selectedTemplateTitle: string;
+  roles: SceneRolePlanEntry[];
+  summary: string;
+}
+
+export interface SceneLayoutPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v1" | "retrieval_prior_v2";
+  selectedTemplateCode: string;
+  selectedTemplateTitle: string;
+  layoutFamily: AbstractLayoutFamily;
+  layoutMode: SelectionDecision["layoutMode"];
+  copyAnchor: AbstractLayoutCopyAnchor;
+  visualAnchor: AbstractLayoutVisualAnchor;
+  ctaAnchor: AbstractLayoutCtaAnchor;
+  density: AbstractLayoutDensity;
+  slotTopology: AbstractLayoutSlotTopology;
+  primaryVisualFamily: "graphic" | "photo";
+  resolution: "scaffold" | "intent_override";
+  summary: string;
+}
+
+export type SceneTypographyCategoryHint = "고딕" | "명조" | "손글씨";
+export type SceneTypographyTone = "rounded" | "neutral" | "formal" | "playful";
+export type SceneMotifTag =
+  | "floral"
+  | "leaf"
+  | "coupon"
+  | "ribbon"
+  | "spark"
+  | "abstract"
+  | "geometric";
+export type SceneCtaShapeLanguage =
+  | "pill"
+  | "band"
+  | "soft_rect"
+  | "transparent_band";
+
+export interface ScenePalettePolicy {
+  backgroundColorHex: string;
+  secondaryBackgroundColorHex: string | null;
+  primaryTextColorHex: string | null;
+  secondaryTextColorHex: string | null;
+  accentColorHex: string | null;
+  ctaSurfaceColorHex: string | null;
+  ctaTextColorHex: string | null;
+}
+
+export interface SceneTypographyPolicy {
+  templateFontFamily: string | null;
+  categoryHints: SceneTypographyCategoryHint[];
+  tone: SceneTypographyTone;
+  displayWeightTarget: number;
+  bodyWeightTarget: number;
+  summary: string;
+}
+
+export interface SceneStylePlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v1" | "retrieval_prior_v2";
+  selectedTemplateCode: string;
+  selectedTemplateTitle: string;
+  backgroundKind: TemplatePriorScaffold["backgroundMode"];
+  palettePolicy: ScenePalettePolicy;
+  typographyPolicy: SceneTypographyPolicy;
+  motifTags: SceneMotifTag[];
+  ctaShapeLanguage: SceneCtaShapeLanguage;
+  badgeLikeTreatment: boolean;
+  summary: string;
+}
+
+export interface SceneBindingPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v1" | "retrieval_prior_v2";
+  selectedTemplateCode: string;
+  selectedTemplateTitle: string;
+  backgroundMode:
+    | "spring_pattern"
+    | "pastel_gradient"
+    | "spring_photo"
+    | "generated_solid";
+  backgroundColorHex: string;
+  secondaryBackgroundColorHex: string | null;
+  primaryTextColorHex: string | null;
+  secondaryTextColorHex: string | null;
+  accentTextColorHex: string | null;
+  inverseTextColorHex: string | null;
+  ctaSurfaceColorHex: string | null;
+  ctaTextColorHex: string | null;
+  ctaShapeLanguage: SceneCtaShapeLanguage;
+  preferredDecorationMode:
+    | "graphic_cluster"
+    | "ribbon_badge"
+    | "photo_support"
+    | "promo_multi_graphic";
+  preferredAccentDensity: "minimal" | "medium";
+  preferredBadgeProminence: "none" | "supporting" | "dominant";
+  preferredCtaTreatment: "standard" | "badge_forward" | "photo_support" | "framed";
+  motifTags: SceneMotifTag[];
+  includeRibbon: boolean;
+  includeFrame: boolean;
+  summary: string;
+}
+
 export interface LayoutBounds {
   x: number;
   y: number;
@@ -230,6 +464,196 @@ export interface ConcreteLayoutPlan {
     zone: ConcreteLayoutClusterZone;
   }>;
   spacingIntent: AbstractLayoutDensity;
+  summary: string;
+}
+
+export type ReferenceCompositionBlockKind =
+  | "display"
+  | "support"
+  | "detail"
+  | "promo_band"
+  | "cta"
+  | "decoration";
+
+export interface ReferenceCompanionSurface {
+  bounds: LayoutBounds;
+  fillColorHex: string | null;
+  opacity: number | null;
+  cornerRadius: number | null;
+}
+
+export interface ReferenceCompositionBlock {
+  blockId: string;
+  layerType: "text" | "shape" | "group" | "image";
+  kind: ReferenceCompositionBlockKind;
+  sourceObjectType: string;
+  sourceText: string | null;
+  prominence: number;
+  bounds: LayoutBounds;
+  fontSize: number | null;
+  textAlign: "left" | "center" | "right" | null;
+  fontRole: "display" | "body" | null;
+  fillColorHex: string | null;
+  clusterZone: ConcreteLayoutClusterZone | null;
+  companionSurface: ReferenceCompanionSurface | null;
+}
+
+export interface ReferenceCompositionRelation {
+  relationId: string;
+  fromBlockId: string;
+  toBlockId: string;
+  type: "stack_after" | "companion_surface" | "same_cluster";
+}
+
+export interface ReferenceCompositionGraph {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v2";
+  selectedTemplateCode: string;
+  selectedTemplateTitle: string;
+  sourceCanvasWidth: number;
+  sourceCanvasHeight: number;
+  compositionStatus: "stable" | "weak";
+  blocks: ReferenceCompositionBlock[];
+  relations: ReferenceCompositionRelation[];
+  summary: string;
+}
+
+export interface ReferenceSupportEvidenceItem {
+  templateCode: string;
+  title: string;
+  score: number;
+  keywordTokens: string[];
+  layoutModeHint: TemplateScaffoldLayoutMode | null;
+  backgroundMode: TemplatePriorScaffold["backgroundMode"] | null;
+}
+
+export interface ReferenceSupportEvidence {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v2";
+  primaryTemplateCode: string;
+  supportReferences: ReferenceSupportEvidenceItem[];
+  summary: string;
+}
+
+export type CopyAtomPreferredKind =
+  | "display"
+  | "support"
+  | "detail"
+  | "promo_band"
+  | "cta";
+
+export interface CopyAtom {
+  atomId: string;
+  sourceSlotKey: CopyPlanSlotKey | null;
+  text: string;
+  priority: CopyPlanPriority;
+  preferredKind: CopyAtomPreferredKind;
+  droppable: boolean;
+}
+
+export interface CopyAtomPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v2";
+  atoms: CopyAtom[];
+  summary: string;
+}
+
+export interface CopyBindingAssignment {
+  blockId: string;
+  atomIds: string[];
+  text: string | null;
+  bindingKind: "direct" | "split" | "merged" | "omitted";
+  executionSlotKey: ExecutionSlotKey | null;
+  role: string;
+}
+
+export interface CopyBindingPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v2";
+  assignments: CopyBindingAssignment[];
+  droppedAtomIds: string[];
+  summary: string;
+}
+
+export interface TemplateRemixDecision {
+  sourceObjectId: string;
+  sourceObjectType: string;
+  decision: "preserve" | "replace_text" | "remove";
+  role: string | null;
+  reason: string;
+}
+
+export interface TemplateRemixPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v2";
+  selectedTemplateCode: string;
+  selectedTemplateTitle: string;
+  decisions: TemplateRemixDecision[];
+  preservedCount: number;
+  removedCount: number;
+  replacedTextCount: number;
+  summary: string;
+}
+
+export interface FreeformRenderableBlock {
+  blockId: string;
+  stage: "copy" | "polish";
+  layerType: "shape" | "text" | "group" | "image";
+  slotKey: "background" | "headline" | "supporting_copy" | "cta" | "decoration" | "badge" | "hero_image" | null;
+  executionSlotKey: ExecutionSlotKey | null;
+  role: string;
+  variantKey: string;
+  candidateId: string;
+  bounds: LayoutBounds;
+  textContent: string | null;
+  fontRole?: "display" | "body" | null;
+  fontSize?: number | null;
+  textAlign?: "left" | "center" | "right" | null;
+  sourceAssetId?: string | null;
+  sourceSerial?: string | null;
+  sourceCategory?: string | null;
+  sourceUid?: string | null;
+  sourceOriginUrl?: string | null;
+  sourceWidth?: number | null;
+  sourceHeight?: number | null;
+  photoOrientation?: "portrait" | "landscape" | "square" | null;
+  fitMode?: "cover";
+  cropMode?: "centered_cover";
+  renderPrimitive?: string | null;
+  styleTokens?: Record<string, string | number | boolean | null>;
+  clusterZone?: ConcreteLayoutClusterZone | null;
+}
+
+export interface FreeformLayoutPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v2";
+  selectedTemplateCode: string;
+  selectedTemplateTitle: string;
+  compositionStatus: "stable" | "style_only";
+  copyBlocks: FreeformRenderableBlock[];
+  polishBlocks: FreeformRenderableBlock[];
+  summary: string;
+}
+
+export interface StyleDowngradeVerdict {
+  verdictId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v2";
+  applied: boolean;
+  reason: string | null;
   summary: string;
 }
 
@@ -382,6 +806,8 @@ export interface TypographyDecision {
   fallbackUsed: boolean;
   display: TypographyChoice | null;
   body: TypographyChoice | null;
+  matchedTemplateFontFamily: string | null;
+  appliedTone: SceneTypographyTone | null;
   summary: string;
 }
 
@@ -995,6 +1421,11 @@ export interface ProcessRunJobResult {
   intent: CanonicalDesignBrief;
   semanticBriefDraft?: SemanticBriefDraftArtifact;
   intentNormalizationReport?: IntentNormalizationReport;
+  templatePriorBundle?: TemplatePriorBundle;
+  sceneRolePlan?: SceneRolePlan;
+  sceneLayoutPlan?: SceneLayoutPlan;
+  sceneStylePlan?: SceneStylePlan;
+  sceneBindingPlan?: SceneBindingPlan;
   compositionBrief?: CompositionBrief;
   compositionVariantSet?: CompositionVariantSet;
   compositionRanking?: CompositionRanking;
@@ -1032,6 +1463,11 @@ export interface ProcessRunJobResult {
     assetPlanRef?: string;
     concreteLayoutPlanRef?: string;
     templatePriorSummaryRef?: string;
+    templatePriorBundleRef?: string;
+    sceneRolePlanRef?: string;
+    sceneLayoutPlanRef?: string;
+    sceneStylePlanRef?: string;
+    sceneBindingPlanRef?: string;
     searchProfileRef?: string;
     executablePlanRef?: string;
     candidateSetRef?: string;

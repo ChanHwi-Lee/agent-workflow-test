@@ -6,6 +6,7 @@ import type {
   ConcreteLayoutClusterZone,
   GraphicCompositionRole,
   NormalizedIntent,
+  SceneBindingPlan,
   SearchProfileArtifact,
   SelectionDecision,
 } from "../types.js";
@@ -15,7 +16,11 @@ export async function buildAssetPlan(
   templatePriorSummary: TemplatePriorSummary,
   searchProfile: SearchProfileArtifact,
   selectionDecision: SelectionDecision,
+  sceneBindingPlan?: SceneBindingPlan | null,
 ): Promise<AssetPlan> {
+  const wideBandCta =
+    sceneBindingPlan?.ctaShapeLanguage === "band" ||
+    sceneBindingPlan?.ctaShapeLanguage === "transparent_band";
   const primaryVisualFamily =
     selectionDecision.photoBranchMode === "photo_selected" &&
     selectionDecision.topPhotoCandidateId !== null
@@ -86,7 +91,7 @@ export async function buildAssetPlan(
     eligibilityReasons.push("primary_accent_missing");
   }
 
-  if (!hasCtaContainer) {
+  if (!hasCtaContainer && !wideBandCta) {
     degraded = true;
     eligibilityReasons.push("cta_container_missing_fallback_pill");
   }
@@ -97,6 +102,7 @@ export async function buildAssetPlan(
     searchProfile.photo.queries[0]?.keyword ??
     null;
   const backgroundColorHex =
+    sceneBindingPlan?.backgroundColorHex ??
     intent.backgroundColorHex ??
     selectionDecision.selectedBackgroundColorHex ??
     searchProfile.background.colorHex;
@@ -114,7 +120,7 @@ export async function buildAssetPlan(
       sourceSerial: selectionDecision.selectedBackgroundSerial,
       sourceCategory: selectionDecision.selectedBackgroundCategory,
       colorHex: backgroundColorHex,
-      backgroundMode: selectionDecision.backgroundMode,
+      backgroundMode: sceneBindingPlan?.backgroundMode ?? selectionDecision.backgroundMode,
     },
     graphicRoleBindings,
     photoBinding,
@@ -131,7 +137,8 @@ export async function buildAssetPlan(
     summary:
       `Asset plan promotes ${primaryVisualFamily} as the primary visual family` +
       (promotedKeyword ? ` using prior/query keyword "${promotedKeyword}"` : "") +
-      ` with ${graphicRoleBindings.length} graphic role bindings.`,
+      ` with ${graphicRoleBindings.length} graphic role bindings` +
+      (sceneBindingPlan ? ` and ${sceneBindingPlan.preferredDecorationMode} style binding.` : "."),
   };
 }
 

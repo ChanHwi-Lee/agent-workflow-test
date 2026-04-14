@@ -292,6 +292,7 @@ export interface TemplateCopyPlanGenerator {
   generate(input: {
     prompt: string;
     brief: TemplateSemanticBriefContext;
+    priorContext?: string | null;
   }): Promise<TemplateCopyPlanDraft>;
 }
 
@@ -300,6 +301,7 @@ export interface TemplateAbstractLayoutGenerator {
   generate(input: {
     prompt: string;
     brief: TemplateSemanticBriefContext;
+    priorContext?: string | null;
   }): Promise<TemplateAbstractLayoutDraft>;
 }
 

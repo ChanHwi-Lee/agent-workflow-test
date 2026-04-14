@@ -9,6 +9,7 @@ import type {
   CopyPlanNormalizationReport,
   CopyPlanSlot,
   NormalizedIntent,
+  SceneRolePlan,
 } from "../types.js";
 import {
   deriveGenericPromoCopySummary,
@@ -21,6 +22,8 @@ export async function buildCopyPlanArtifacts(
   prompt: string,
   intent: NormalizedIntent,
   generator: TemplateCopyPlanGenerator,
+  priorContext?: string | null,
+  sceneRolePlan?: SceneRolePlan | null,
 ): Promise<{
   copyPlan: CopyPlan;
   copyPlanNormalizationReport: CopyPlanNormalizationReport;
@@ -30,6 +33,7 @@ export async function buildCopyPlanArtifacts(
   const copyDraft = await generator.generate({
     prompt,
     brief: intent,
+    ...(priorContext !== undefined ? { priorContext } : {}),
   });
   const normalizedSlots = normalizeCopyPlanSlots(
     copyDraft,
@@ -37,6 +41,7 @@ export async function buildCopyPlanArtifacts(
     intent,
     genericPromoIntent,
     copyRepairs,
+    sceneRolePlan ?? null,
   );
 
   return {
@@ -77,6 +82,7 @@ function normalizeCopyPlanSlots(
   intent: NormalizedIntent,
   genericPromoIntent: boolean,
   notes: string[],
+  sceneRolePlan: SceneRolePlan | null,
 ): CopyPlanSlot[] {
   const slots: CopyPlanSlot[] = [];
   const genericPromoHeadline = genericPromoIntent
@@ -144,5 +150,82 @@ function normalizeCopyPlanSlots(
     intent.campaignGoal === "sale_conversion" ? "SALE" : "NEW",
   );
 
-  return slots;
+  return applySceneRolePlanToSlots(slots, sceneRolePlan, notes, genericPromoHeadline, genericPromoCta);
+}
+
+function applySceneRolePlanToSlots(
+  slots: CopyPlanSlot[],
+  sceneRolePlan: SceneRolePlan | null,
+  notes: string[],
+  headlineFallback: string,
+  ctaFallback: string,
+): CopyPlanSlot[] {
+  if (!sceneRolePlan) {
+    return slots;
+  }
+
+  const slotByKey = new Map(slots.map((slot) => [slot.key, slot] as const));
+  const allowedKeys = new Set(
+    sceneRolePlan.roles
+      .map((role) => role.mappedSlotKey)
+      .filter(
+        (slotKey): slotKey is CopyPlanSlot["key"] =>
+          slotKey !== "background" &&
+          slotKey !== "hero_image" &&
+          slotKey !== "decoration",
+      ),
+  );
+
+  const filtered = [...slotByKey.values()].filter((slot) => allowedKeys.has(slot.key));
+  const filteredByKey = new Map(filtered.map((slot) => [slot.key, slot] as const));
+
+  for (const role of sceneRolePlan.roles) {
+    if (
+      role.mappedSlotKey === "background" ||
+      role.mappedSlotKey === "hero_image" ||
+      role.mappedSlotKey === "decoration"
+    ) {
+      continue;
+    }
+    if (filteredByKey.has(role.mappedSlotKey)) {
+      continue;
+    }
+    if (!role.required) {
+      continue;
+    }
+
+    const fallbackText =
+      role.key === "primaryMessage"
+        ? headlineFallback
+        : role.key === "cta"
+          ? ctaFallback
+          : role.key === "offerEmphasis"
+            ? "최대 50% OFF"
+            : role.key === "badge"
+              ? "SALE"
+              : role.key === "legalNote"
+                ? "이벤트 기간 내 혜택 적용"
+                : "지금 확인하세요";
+    filtered.push({
+      key: role.mappedSlotKey,
+      text: fallbackText,
+      priority: role.priority,
+      required: role.required,
+      maxLength: role.maxLength ?? 36,
+      toneHint: role.toneHint,
+    });
+    notes.push(`Recovered required ${role.key} from scene-role-plan with fallback text.`);
+  }
+
+  const slotOrder: Array<CopyPlanSlot["key"]> = [
+    "badge_text",
+    "headline",
+    "subheadline",
+    "offer_line",
+    "cta",
+    "footer_note",
+  ];
+  return filtered.sort(
+    (left, right) => slotOrder.indexOf(left.key) - slotOrder.indexOf(right.key),
+  );
 }

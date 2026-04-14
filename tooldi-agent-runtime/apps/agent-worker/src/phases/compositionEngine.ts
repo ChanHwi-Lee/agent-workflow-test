@@ -10,8 +10,10 @@ import type {
   CompositionVariantSet,
   NormalizedIntent,
   RetrievalStageResult,
+  SceneBindingPlan,
   SelectionDecision,
   TemplateCandidateBundle,
+  TemplatePriorBundle,
   TemplateSelectionPolicy,
 } from "../types.js";
 import {
@@ -66,6 +68,8 @@ export async function buildCompositionSelection(
   dependencies: {
     retrievalStage: RetrievalStageResult;
     selectionPolicy: TemplateSelectionPolicy;
+    templatePriorBundle?: TemplatePriorBundle | null;
+    sceneBindingPlan?: SceneBindingPlan | null;
   },
 ): Promise<CompositionSelectionResult> {
   const commonSelections = resolveCommonSelections(
@@ -73,6 +77,7 @@ export async function buildCompositionSelection(
     candidates,
     dependencies.retrievalStage,
     dependencies.selectionPolicy,
+    dependencies.templatePriorBundle ?? null,
   );
   const compositionBrief = buildCompositionBrief(intent, commonSelections);
   const candidateVariants = generateVariantCandidates(
@@ -146,6 +151,7 @@ export async function buildCompositionSelection(
       commonSelections,
       winner,
       compositionVariantSet,
+      dependencies.sceneBindingPlan ?? null,
     ),
   };
 }
@@ -155,6 +161,7 @@ function resolveCommonSelections(
   candidates: TemplateCandidateBundle,
   retrievalStage: RetrievalStageResult,
   selectionPolicy: TemplateSelectionPolicy,
+  templatePriorBundle: TemplatePriorBundle | null,
 ): CompositionCommonSelections {
   const filteredBackground = filterCandidatesByPolicy(
     candidates.background.candidates,
@@ -177,9 +184,15 @@ function resolveCommonSelections(
   ]);
   const orderedDecorations = rankDecorationCandidates(filteredDecoration);
   const topPhotoCandidate = pickOptionalPhotoCandidate(filteredPhoto);
-  const preferredGraphicLayoutModes = resolvePreferredLayoutModes(intent).filter(
-    (layoutMode) => layoutMode !== "copy_left_with_right_photo",
-  );
+  const preferredGraphicLayoutModes = dedupeLayoutModes([
+    ...(templatePriorBundle?.selectedScaffold?.layoutModeHint &&
+    templatePriorBundle.selectedScaffold.layoutModeHint !== "copy_left_with_right_photo"
+      ? [templatePriorBundle.selectedScaffold.layoutModeHint]
+      : []),
+    ...resolvePreferredLayoutModes(intent).filter(
+      (layoutMode) => layoutMode !== "copy_left_with_right_photo",
+    ),
+  ]);
   const primaryGraphicLayout = pickPrimaryGraphicLayout(
     preferredGraphicLayoutModes,
     candidates.layout.candidates,

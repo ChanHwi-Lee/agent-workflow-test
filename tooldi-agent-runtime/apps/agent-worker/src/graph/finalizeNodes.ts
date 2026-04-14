@@ -235,6 +235,21 @@ export function registerFinalizeNodes(
           ...(state.intentNormalizationReport
             ? { intentNormalizationReport: state.intentNormalizationReport }
             : {}),
+          ...(state.templatePriorBundle
+            ? { templatePriorBundle: state.templatePriorBundle }
+            : {}),
+          ...(state.sceneRolePlan
+            ? { sceneRolePlan: state.sceneRolePlan }
+            : {}),
+          ...(state.sceneLayoutPlan
+            ? { sceneLayoutPlan: state.sceneLayoutPlan }
+            : {}),
+          ...(state.sceneStylePlan
+            ? { sceneStylePlan: state.sceneStylePlan }
+            : {}),
+          ...(state.sceneBindingPlan
+            ? { sceneBindingPlan: state.sceneBindingPlan }
+            : {}),
           ...(state.compositionBrief
             ? { compositionBrief: state.compositionBrief }
             : {}),

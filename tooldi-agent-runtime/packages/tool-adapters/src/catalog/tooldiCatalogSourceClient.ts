@@ -4,10 +4,12 @@ export {
 } from "./tooldiCatalogSourceTypes.js";
 export type {
   CreateTooldiApiCatalogSourceClientOptions,
+  GetTemplateDocumentQuery,
   ListFontAssetsQuery,
   SearchBackgroundAssetsQuery,
   SearchGraphicAssetsQuery,
   SearchPhotoAssetsQuery,
+  SearchTemplateAssetsQuery,
   TooldiBackgroundAsset,
   TooldiCatalogAssetBase,
   TooldiCatalogSearchResult,
@@ -21,31 +23,41 @@ export type {
   TooldiInsertMode,
   TooldiPhotoAsset,
   TooldiPriceType,
+  TooldiTemplateAsset,
+  TooldiTemplateDocument,
 } from "./tooldiCatalogSourceTypes.js";
 
 import type {
   CreateTooldiApiCatalogSourceClientOptions,
+  GetTemplateDocumentQuery,
   ListFontAssetsQuery,
   SearchBackgroundAssetsQuery,
   SearchGraphicAssetsQuery,
   SearchPhotoAssetsQuery,
+  SearchTemplateAssetsQuery,
   TooldiBackgroundAsset,
   TooldiCatalogSearchResult,
   TooldiCatalogSourceClient,
   TooldiFontAsset,
   TooldiGraphicAsset,
   TooldiPhotoAsset,
+  TooldiTemplateAsset,
+  TooldiTemplateDocument,
 } from "./tooldiCatalogSourceTypes.js";
 import { TooldiCatalogSourceError } from "./tooldiCatalogSourceTypes.js";
 
 import {
+  assertTemplateListResponse,
   assertDirectListResponse,
   assertListSuccessResponse,
   mapPriceToLegacyCode,
+  mapTemplatePriceToLegacyCode,
   normalizeBackgroundAsset,
   normalizeFontAsset,
   normalizeGraphicAsset,
   normalizePhotoAsset,
+  normalizeTemplateAsset,
+  normalizeTemplateDocument,
   toDirectPage,
   type ApiListSuccess,
   type BackgroundApiRow,
@@ -53,6 +65,8 @@ import {
   type FontApiRow,
   type PhotoApiRow,
   type ShapeApiRow,
+  type TemplateApiRow,
+  type TemplateDataApiResponse,
 } from "./tooldiCatalogAssetMapper.js";
 import { TooldiCatalogSourceHttpClient } from "./tooldiCatalogSourceHttp.js";
 
@@ -102,6 +116,47 @@ class PlaceholderTooldiCatalogSourceClient
       hasNextPage: false,
       traceId: null,
       assets: [],
+    };
+  }
+
+  async searchTemplateAssets(
+    query: SearchTemplateAssetsQuery,
+  ): Promise<TooldiCatalogSearchResult<TooldiTemplateAsset>> {
+    return {
+      sourceFamily: "template_source",
+      page: query.page,
+      hasNextPage: false,
+      traceId: null,
+      assets: [],
+    };
+  }
+
+  async getTemplateDocument(
+    query: GetTemplateDocumentQuery,
+  ): Promise<TooldiTemplateDocument> {
+    return {
+      code: query.templateCode,
+      metaData: {
+        code: query.templateCode,
+        innerCode: "",
+        title: "",
+        width: "0",
+        height: "0",
+        sizeUnit: "px",
+        isShare: false,
+        userId: "",
+        createdAt: "",
+        modifiedAt: "",
+        keyword: "",
+      },
+      canvas: {
+        serial: "",
+        title: "",
+        width: "0",
+        height: "0",
+        sizeUnit: "px",
+      },
+      pages: [],
     };
   }
 }
@@ -223,6 +278,52 @@ class TooldiApiCatalogSourceClient implements TooldiCatalogSourceClient {
       assets,
     };
   }
+
+  async searchTemplateAssets(
+    query: SearchTemplateAssetsQuery,
+  ): Promise<TooldiCatalogSearchResult<TooldiTemplateAsset>> {
+    const path = "/editor/get_templates";
+    const response = await this.httpClient.postJson<ApiListSuccess<TemplateApiRow>>(
+      path,
+      {
+        keyword: query.keyword,
+        page: query.page,
+        canvas: query.canvas ?? "",
+        ...(query.price
+          ? { price: mapTemplatePriceToLegacyCode(query.price) }
+          : {}),
+        follow: query.follow ?? false,
+        categorySerial: query.categorySerial ?? "",
+        ...(query.source ? { source: query.source } : {}),
+      },
+    );
+    assertTemplateListResponse(response, `${this.httpClient.baseUrl}${path}`);
+    return {
+      sourceFamily: "template_source",
+      page: response.page ?? query.page,
+      hasNextPage: response.hasNextPage ?? false,
+      traceId: response.trace_id ?? null,
+      assets: response.data.map((asset) => normalizeTemplateAsset(asset)),
+    };
+  }
+
+  async getTemplateDocument(
+    query: GetTemplateDocumentQuery,
+  ): Promise<TooldiTemplateDocument> {
+    const path = "/editor/get_template_data";
+    const encodedTemplateCode = isBase64Like(query.templateCode)
+      ? query.templateCode
+      : Buffer.from(query.templateCode, "utf8").toString("base64");
+    const response = await this.httpClient.getJson<TemplateDataApiResponse>(
+      `${path}?templateCode=${encodeURIComponent(encodedTemplateCode)}&isWorking=${query.isWorking === true ? "true" : "false"}`,
+    );
+
+    return normalizeTemplateDocument(
+      response,
+      { ...query, templateCode: query.templateCode },
+      `${this.httpClient.baseUrl}${path}`,
+    );
+  }
 }
 
 export function createPlaceholderTooldiCatalogSourceClient(): TooldiCatalogSourceClient {
@@ -233,4 +334,11 @@ export function createTooldiApiCatalogSourceClient(
   options: CreateTooldiApiCatalogSourceClientOptions,
 ): TooldiCatalogSourceClient {
   return new TooldiApiCatalogSourceClient(options);
+}
+
+function isBase64Like(value: string): boolean {
+  if (value.length === 0 || value.length % 4 !== 0) {
+    return false;
+  }
+  return /^[A-Za-z0-9+/=]+$/.test(value);
 }

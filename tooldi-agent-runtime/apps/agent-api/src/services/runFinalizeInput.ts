@@ -16,6 +16,11 @@ export type MaterializationInput = {
   assetPlanRef: string | null;
   concreteLayoutPlanRef: string | null;
   templatePriorSummaryRef: string | null;
+  templatePriorBundleRef: string | null;
+  sceneRolePlanRef: string | null;
+  sceneLayoutPlanRef: string | null;
+  sceneStylePlanRef: string | null;
+  sceneBindingPlanRef: string | null;
   searchProfileRef: string | null;
   executablePlanRef: string;
   candidateSetRef: string | null;
@@ -98,6 +103,11 @@ export function normalizeFinalizeInput(
       assetPlanRef: request.assetPlanRef ?? null,
       concreteLayoutPlanRef: request.concreteLayoutPlanRef ?? null,
       templatePriorSummaryRef: request.templatePriorSummaryRef ?? null,
+      templatePriorBundleRef: request.templatePriorBundleRef ?? null,
+      sceneRolePlanRef: request.sceneRolePlanRef ?? null,
+      sceneLayoutPlanRef: request.sceneLayoutPlanRef ?? null,
+      sceneStylePlanRef: request.sceneStylePlanRef ?? null,
+      sceneBindingPlanRef: request.sceneBindingPlanRef ?? null,
       searchProfileRef: request.searchProfileRef ?? null,
       executablePlanRef: request.executablePlanRef,
       candidateSetRef: request.candidateSetRef ?? null,

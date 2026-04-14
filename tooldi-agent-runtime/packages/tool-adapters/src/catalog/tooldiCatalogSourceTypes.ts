@@ -11,7 +11,8 @@ export type TooldiCatalogSourceFamily =
   | "background_source"
   | "graphic_source"
   | "photo_source"
-  | "font_source";
+  | "font_source"
+  | "template_source";
 
 export type TooldiInsertMode =
   | "page_background"
@@ -99,6 +100,51 @@ export interface TooldiFontAsset extends TooldiCatalogAssetBase {
   fontWeights: TooldiFontWeightAsset[];
 }
 
+export interface TooldiTemplateAsset extends TooldiCatalogAssetBase {
+  sourceFamily: "template_source";
+  contentType: "template";
+  insertMode: "page_background";
+  code: string;
+  pages: number;
+  categoryName: string | null;
+  price: number | null;
+  totalObjectPrice: number | null;
+  isPurchased: boolean;
+  thumbnails: string[];
+}
+
+export interface TooldiTemplateDocumentPage {
+  index: number;
+  raw: string;
+  pattern: Record<string, unknown> | null;
+  parsed: Record<string, unknown> | null;
+}
+
+export interface TooldiTemplateDocument {
+  code: string;
+  metaData: {
+    code: string;
+    innerCode: string;
+    title: string;
+    width: string;
+    height: string;
+    sizeUnit: "px" | "mm" | "cm" | "inch" | string;
+    isShare: boolean;
+    userId: string;
+    createdAt: string;
+    modifiedAt: string;
+    keyword: string;
+  };
+  canvas: {
+    serial: string;
+    title: string;
+    width: string;
+    height: string;
+    sizeUnit: "px" | "mm" | "cm" | "inch" | string;
+  };
+  pages: TooldiTemplateDocumentPage[];
+}
+
 export interface TooldiCatalogSearchResult<
   TAsset extends TooldiCatalogAssetBase,
 > {
@@ -144,6 +190,21 @@ export interface ListFontAssetsQuery {
   supportedLanguage?: "KOR" | "ENG" | "CHN" | "JPN";
 }
 
+export interface SearchTemplateAssetsQuery {
+  keyword: string;
+  page: number;
+  canvas?: "horizontal" | "vertical" | "square" | "";
+  price?: "free" | "paid" | "partialPaid";
+  follow?: boolean;
+  categorySerial?: string;
+  source?: "initial_load" | "search";
+}
+
+export interface GetTemplateDocumentQuery {
+  templateCode: string;
+  isWorking?: boolean;
+}
+
 export interface TooldiCatalogSourceClient {
   searchBackgroundAssets(
     query: SearchBackgroundAssetsQuery,
@@ -157,6 +218,12 @@ export interface TooldiCatalogSourceClient {
   listFontAssets(
     query?: ListFontAssetsQuery,
   ): Promise<TooldiCatalogSearchResult<TooldiFontAsset>>;
+  searchTemplateAssets(
+    query: SearchTemplateAssetsQuery,
+  ): Promise<TooldiCatalogSearchResult<TooldiTemplateAsset>>;
+  getTemplateDocument(
+    query: GetTemplateDocumentQuery,
+  ): Promise<TooldiTemplateDocument>;
 }
 
 export type TooldiCatalogSourceErrorCode =

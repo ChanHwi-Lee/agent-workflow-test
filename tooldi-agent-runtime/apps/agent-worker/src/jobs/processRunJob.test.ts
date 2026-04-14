@@ -518,6 +518,85 @@ class FakeTooldiCatalogSourceClient implements TooldiCatalogSourceClient {
       ],
     };
   }
+
+  async searchTemplateAssets() {
+    return {
+      sourceFamily: "template_source" as const,
+      page: 1,
+      hasNextPage: false,
+      traceId: "trace-template",
+      assets: [
+        {
+          assetId: "template:70079",
+          sourceFamily: "template_source" as const,
+          contentType: "template" as const,
+          serial: "70079",
+          uid: "74091534190",
+          title: "봄 세일 배너",
+          keywordTokens: ["봄", "세일", "배너"],
+          width: 1200,
+          height: 628,
+          thumbnailUrl: "https://thumb.test/template-70079.png",
+          originUrl: "https://thumb.test/template-70079.png",
+          priceType: "paid" as const,
+          isAi: false,
+          creatorSerial: "128344",
+          insertMode: "page_background" as const,
+          code: "74091534190",
+          pages: 1,
+          categoryName: "소셜미디어 광고",
+          price: 8000,
+          totalObjectPrice: 0,
+          isPurchased: false,
+          thumbnails: ["https://thumb.test/template-70079.png"],
+          sourcePayload: {},
+        },
+      ],
+    };
+  }
+
+  async getTemplateDocument() {
+    return {
+      code: "74091534190",
+      metaData: {
+        code: "74091534190",
+        innerCode: "717378421323",
+        title: "봄 세일 배너",
+        width: "1200",
+        height: "628",
+        sizeUnit: "px",
+        isShare: true,
+        userId: "128344",
+        createdAt: "2026-03-03",
+        modifiedAt: "2026-03-03",
+        keyword: "봄|:|세일|:|배너",
+      },
+      canvas: {
+        serial: "48",
+        title: "소셜미디어 광고",
+        width: "1200",
+        height: "628",
+        sizeUnit: "px",
+      },
+      pages: [
+        {
+          index: 0,
+          raw: "{}",
+          pattern: null,
+          parsed: {
+            backgroundType: "image",
+            width: 1200,
+            height: 628,
+            objects: [
+              { type: "text", left: 80, top: 110, width: 420, scaleX: 1 },
+              { type: "text", left: 80, top: 220, width: 320, scaleX: 1 },
+              { type: "illust", left: 760, top: 80, width: 280, scaleX: 1 },
+            ],
+          },
+        },
+      ],
+    };
+  }
 }
 
 test("processRunJob persists the raw planner draft before normalized intent", async () => {
@@ -2690,6 +2769,12 @@ test("processRunJob는 실소스 그래픽 후보가 비면 실패 finalize로 �
     async listFontAssets(query) {
       return baseSourceClient.listFontAssets();
     },
+    async searchTemplateAssets(query) {
+      return baseSourceClient.searchTemplateAssets();
+    },
+    async getTemplateDocument(query) {
+      return baseSourceClient.getTemplateDocument();
+    },
   };
 
   const result = await processRunJob(testRun.job, {
@@ -2772,6 +2857,8 @@ test("processRunJob can activate the photo hero execution path on the wide prese
       baseSourceClient.searchBackgroundAssets(),
     searchPhotoAssets: async (_query) => baseSourceClient.searchPhotoAssets(),
     listFontAssets: async (_query) => baseSourceClient.listFontAssets(),
+    searchTemplateAssets: async (_query) => baseSourceClient.searchTemplateAssets(),
+    getTemplateDocument: async (_query) => baseSourceClient.getTemplateDocument(),
     async searchGraphicAssets() {
       return {
         sourceFamily: "graphic_source" as const,
@@ -3001,6 +3088,8 @@ test("processRunJob keeps graphic path when top photo candidate is not executabl
       baseSourceClient.searchBackgroundAssets(),
     searchGraphicAssets: async (_query) => baseSourceClient.searchGraphicAssets(),
     listFontAssets: async (_query) => baseSourceClient.listFontAssets(),
+    searchTemplateAssets: async (_query) => baseSourceClient.searchTemplateAssets(),
+    getTemplateDocument: async (_query) => baseSourceClient.getTemplateDocument(),
     async searchPhotoAssets(_query) {
       return {
         sourceFamily: "photo_source" as const,
@@ -3251,6 +3340,8 @@ test("processRunJob retrieval seam disables photo candidates when photo catalog 
       return baseSourceClient.searchPhotoAssets();
     },
     listFontAssets: async (_query) => baseSourceClient.listFontAssets(),
+    searchTemplateAssets: async (_query) => baseSourceClient.searchTemplateAssets(),
+    getTemplateDocument: async (_query) => baseSourceClient.getTemplateDocument(),
   };
 
   const result = await processRunJob(testRun.job, {
@@ -3540,6 +3631,8 @@ test("processRunJob stops immediately after a rejected photo stage under fail-fa
       baseSourceClient.searchBackgroundAssets(),
     searchPhotoAssets: async (_query) => baseSourceClient.searchPhotoAssets(),
     listFontAssets: async (_query) => baseSourceClient.listFontAssets(),
+    searchTemplateAssets: async (_query) => baseSourceClient.searchTemplateAssets(),
+    getTemplateDocument: async (_query) => baseSourceClient.getTemplateDocument(),
     async searchGraphicAssets() {
       return {
         sourceFamily: "graphic_source" as const,

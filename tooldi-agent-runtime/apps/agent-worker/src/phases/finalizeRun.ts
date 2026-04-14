@@ -21,6 +21,11 @@ export async function finalizeRun(
     assetPlanRef?: string;
     concreteLayoutPlanRef?: string;
     templatePriorSummaryRef?: string;
+    templatePriorBundleRef?: string;
+    sceneRolePlanRef?: string;
+    sceneLayoutPlanRef?: string;
+    sceneStylePlanRef?: string;
+    sceneBindingPlanRef?: string;
     searchProfileRef?: string;
     executablePlanRef?: string;
     candidateSetRef?: string;
@@ -167,6 +172,21 @@ export async function finalizeRun(
         : {}),
       ...(options.templatePriorSummaryRef
         ? { templatePriorSummaryRef: options.templatePriorSummaryRef }
+        : {}),
+      ...(options.templatePriorBundleRef
+        ? { templatePriorBundleRef: options.templatePriorBundleRef }
+        : {}),
+      ...(options.sceneRolePlanRef
+        ? { sceneRolePlanRef: options.sceneRolePlanRef }
+        : {}),
+      ...(options.sceneLayoutPlanRef
+        ? { sceneLayoutPlanRef: options.sceneLayoutPlanRef }
+        : {}),
+      ...(options.sceneStylePlanRef
+        ? { sceneStylePlanRef: options.sceneStylePlanRef }
+        : {}),
+      ...(options.sceneBindingPlanRef
+        ? { sceneBindingPlanRef: options.sceneBindingPlanRef }
         : {}),
       ...(options.searchProfileRef
         ? { searchProfileRef: options.searchProfileRef }

@@ -1,10 +1,14 @@
 import type {
+  GetTemplateDocumentQuery,
+  SearchTemplateAssetsQuery,
   SearchBackgroundAssetsQuery,
   TooldiBackgroundAsset,
   TooldiFontAsset,
   TooldiGraphicAsset,
   TooldiPhotoAsset,
   TooldiPriceType,
+  TooldiTemplateAsset,
+  TooldiTemplateDocument,
 } from "./tooldiCatalogSourceTypes.js";
 import { TooldiCatalogSourceError } from "./tooldiCatalogSourceTypes.js";
 
@@ -90,6 +94,35 @@ export interface FontApiRow extends Record<string, unknown> {
   supportedLanguages: Array<"KOR" | "ENG" | "CHN" | "JPN">;
   thumbnail?: string;
   fontWeights: FontWeightApiRow[];
+}
+
+export interface TemplateApiRow extends Record<string, unknown> {
+  serial: string;
+  code: string;
+  title: string;
+  pages: number;
+  isLiked?: boolean;
+  username?: string;
+  userSerial?: string;
+  keywords?: string[];
+  thumbnail?: string | string[];
+  width?: number;
+  height?: number;
+  categoryName?: string;
+  price?: number;
+  priceType?: "free" | "paid" | "partialPaid";
+  isPurchased?: boolean;
+  totalObjectPrice?: number;
+}
+
+export interface TemplateDataApiResponse extends Record<string, unknown> {
+  result: boolean;
+  data?: {
+    templates: string[];
+    patterns: Array<Record<string, unknown>>;
+    metaData: TooldiTemplateDocument["metaData"];
+    canvas: TooldiTemplateDocument["canvas"];
+  };
 }
 
 export function normalizeBackgroundAsset(
@@ -210,6 +243,71 @@ export function normalizeFontAsset(asset: FontApiRow): TooldiFontAsset {
   };
 }
 
+export function normalizeTemplateAsset(
+  asset: TemplateApiRow,
+): TooldiTemplateAsset {
+  const thumbnails = Array.isArray(asset.thumbnail)
+    ? asset.thumbnail.filter((value): value is string => typeof value === "string")
+    : typeof asset.thumbnail === "string" && asset.thumbnail.length > 0
+      ? [asset.thumbnail]
+      : [];
+  const priceType = normalizeTemplatePriceType(asset.priceType);
+
+  return {
+    assetId: `template:${asset.serial}`,
+    sourceFamily: "template_source",
+    contentType: "template",
+    serial: asset.serial,
+    uid: asset.code,
+    title: asset.title,
+    keywordTokens: normalizeKeywords(asset.keywords),
+    width: numberOrNull(asset.width),
+    height: numberOrNull(asset.height),
+    thumbnailUrl: thumbnails[0] ?? null,
+    originUrl: thumbnails[0] ?? null,
+    priceType: priceType === "partialPaid" ? "paid" : priceType,
+    isAi: false,
+    creatorSerial: stringOrNull(asset.userSerial),
+    insertMode: "page_background",
+    code: asset.code,
+    pages: numberOrNull(asset.pages) ?? 1,
+    categoryName: stringOrNull(asset.categoryName),
+    price: numberOrNull(asset.price),
+    totalObjectPrice: numberOrNull(asset.totalObjectPrice),
+    isPurchased: Boolean(asset.isPurchased),
+    thumbnails,
+    sourcePayload: asset,
+  };
+}
+
+export function normalizeTemplateDocument(
+  response: TemplateDataApiResponse,
+  query: GetTemplateDocumentQuery,
+  url: string,
+): TooldiTemplateDocument {
+  if (!response.result || !response.data) {
+    throw new TooldiCatalogSourceError({
+      code: "invalid_response",
+      message: "Tooldi template data endpoint returned an invalid payload",
+      url,
+    });
+  }
+
+  const pages = response.data.templates.map((raw, index) => ({
+    index,
+    raw,
+    pattern: normalizeRecord(response.data?.patterns?.[index] ?? null),
+    parsed: safeParseRecord(raw),
+  }));
+
+  return {
+    code: query.templateCode,
+    metaData: response.data.metaData,
+    canvas: response.data.canvas,
+    pages,
+  };
+}
+
 export function assertListSuccessResponse<T>(
   response: ApiListSuccess<T>,
   url: string,
@@ -236,8 +334,36 @@ export function assertDirectListResponse<T>(
   }
 }
 
+export function assertTemplateListResponse(
+  response: ApiListSuccess<TemplateApiRow>,
+  url: string,
+): void {
+  if (response.result !== true || !Array.isArray(response.data)) {
+    throw new TooldiCatalogSourceError({
+      code: "invalid_response",
+      message: "Tooldi template list endpoint returned an invalid payload",
+      url,
+    });
+  }
+}
+
 export function mapPriceToLegacyCode(value: "free" | "paid"): "F" | "P" {
   return value === "free" ? "F" : "P";
+}
+
+export function mapTemplatePriceToLegacyCode(
+  value: SearchTemplateAssetsQuery["price"],
+): "F" | "P" | "S" | undefined {
+  if (value === "free") {
+    return "F";
+  }
+  if (value === "paid") {
+    return "P";
+  }
+  if (value === "partialPaid") {
+    return "S";
+  }
+  return undefined;
 }
 
 export function toDirectPage(page: number): number {
@@ -258,12 +384,28 @@ function normalizePriceType(value: unknown): TooldiPriceType {
   return null;
 }
 
+function normalizeTemplatePriceType(
+  value: unknown,
+): TooldiPriceType | "partialPaid" {
+  if (value === "free" || value === "paid" || value === "partialPaid") {
+    return value;
+  }
+  return null;
+}
+
 function stringOrNull(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
 function numberOrNull(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 }
 
 function createAssetTitle(
@@ -358,4 +500,17 @@ function inferExtension(imageUrl: unknown): string | null {
     return null;
   }
   return normalized.slice(index).toLowerCase();
+}
+
+function safeParseRecord(value: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return normalizeRecord(parsed);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
 }

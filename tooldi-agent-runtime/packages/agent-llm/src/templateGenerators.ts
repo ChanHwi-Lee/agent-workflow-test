@@ -65,6 +65,7 @@ export function createTemplateCopyPlanGenerator(
           content:
             `Prompt: ${input.prompt}\n` +
             `Semantic brief: ${JSON.stringify(input.brief)}\n` +
+            (input.priorContext ? `Retrieved scaffold prior: ${input.priorContext}\n` : "") +
             "Return a structured copy plan draft.",
         },
       ]);
@@ -121,6 +122,7 @@ export function createTemplateAbstractLayoutGenerator(
           content:
             `Prompt: ${input.prompt}\n` +
             `Semantic brief: ${JSON.stringify(input.brief)}\n` +
+            (input.priorContext ? `Retrieved scaffold prior: ${input.priorContext}\n` : "") +
             "Return a structured abstract layout draft.",
         },
       ]);

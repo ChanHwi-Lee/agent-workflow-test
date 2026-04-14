@@ -6,6 +6,7 @@ import type {
   GraphicCompositionEntry,
   GraphicCompositionSet,
   NormalizedIntent,
+  SceneBindingPlan,
   SelectionDecision,
   TemplateCandidateBundle,
 } from "../types.js";
@@ -29,6 +30,7 @@ export function projectWinningVariant(
   commonSelections: ProjectionSelections,
   winner: CompositionVariant,
   compositionVariantSet: CompositionVariantSet,
+  sceneBindingPlan: SceneBindingPlan | null,
 ): SelectionDecision {
   const selectedDecoration =
     commonSelections.orderedDecorations.find(
@@ -37,15 +39,15 @@ export function projectWinningVariant(
   const graphicCompositionSet =
     winner.familyKey === "copy_left_with_right_photo" &&
     winner.photoMode === "photo_selected"
-      ? buildPhotoSupportGraphicCompositionSet(selectedDecoration)
-      : buildGraphicCompositionSet(selectedDecoration, winner);
-  const decorationMode =
-    winner.familyKey === "copy_left_with_right_photo" &&
+      ? buildPhotoSupportGraphicCompositionSet(selectedDecoration, sceneBindingPlan)
+      : buildGraphicCompositionSet(selectedDecoration, winner, sceneBindingPlan);
+  const decorationMode = sceneBindingPlan?.preferredDecorationMode ??
+    (winner.familyKey === "copy_left_with_right_photo" &&
     winner.photoMode === "photo_selected"
       ? "photo_support"
       : graphicCompositionSet.roles.length >= 3
         ? "promo_multi_graphic"
-        : selectedDecoration?.payload.decorationMode ?? "graphic_cluster";
+        : selectedDecoration?.payload.decorationMode ?? "graphic_cluster");
 
   return {
     decisionId: createRequestId(),
@@ -71,10 +73,11 @@ export function projectWinningVariant(
     selectedBackgroundSerial: commonSelections.background.sourceSerial ?? null,
     selectedBackgroundCategory: commonSelections.background.sourceCategory ?? null,
     selectedBackgroundColorHex:
-      typeof commonSelections.background.payload.backgroundColorHex === "string" &&
+      sceneBindingPlan?.backgroundColorHex ??
+      (typeof commonSelections.background.payload.backgroundColorHex === "string" &&
       commonSelections.background.payload.backgroundColorHex.length > 0
         ? commonSelections.background.payload.backgroundColorHex
-        : "#ffffff",
+        : "#ffffff"),
     selectedDecorationAssetId: selectedDecoration?.sourceAssetId ?? null,
     selectedDecorationSerial: selectedDecoration?.sourceSerial ?? null,
     selectedDecorationCategory: selectedDecoration?.sourceCategory ?? null,
@@ -88,7 +91,9 @@ export function projectWinningVariant(
     topPhotoOrientation:
       commonSelections.topPhotoCandidate?.payload.photoOrientation ?? null,
     backgroundMode:
-      commonSelections.background.payload.backgroundMode ?? "generated_solid",
+      sceneBindingPlan?.backgroundMode ??
+      commonSelections.background.payload.backgroundMode ??
+      "generated_solid",
     layoutMode: winner.layoutMode,
     decorationMode,
     photoBranchMode: winner.photoMode,
@@ -102,7 +107,8 @@ export function projectWinningVariant(
     graphicCompositionSet,
     summary:
       `Selected ${winner.variantSignature} from ${compositionVariantSet.variants.length} ` +
-      `diverse composition variants for ${intent.domain} ${intent.campaignGoal}.`,
+      `diverse composition variants for ${intent.domain} ${intent.campaignGoal}` +
+      (sceneBindingPlan ? ` with ${sceneBindingPlan.preferredDecorationMode} style binding.` : "."),
     fallbackSummary:
       winner.familyKey === "copy_left_with_right_photo" &&
       winner.photoMode === "photo_selected"
@@ -114,6 +120,7 @@ export function projectWinningVariant(
 function buildGraphicCompositionSet(
   selectedDecoration: DecorationCandidate | null,
   variant: CompositionVariant,
+  sceneBindingPlan: SceneBindingPlan | null,
 ): GraphicCompositionSet {
   if (!selectedDecoration) {
     return {
@@ -123,24 +130,34 @@ function buildGraphicCompositionSet(
     };
   }
 
+  const accentDensity = sceneBindingPlan?.preferredAccentDensity ??
+    variant.accentDensity;
+  const badgeProminence = sceneBindingPlan?.preferredBadgeProminence ??
+    variant.badgeProminence;
+  const ctaTreatment = sceneBindingPlan?.preferredCtaTreatment ??
+    variant.ctaTreatment;
+  const structuralBandCta = usesWideBandCta(sceneBindingPlan);
   const roles: GraphicCompositionEntry[] = [
     buildGraphicRoleEntry("primary_accent", selectedDecoration),
-    buildGraphicRoleEntry("cta_container", selectedDecoration),
   ];
 
-  if (variant.accentDensity === "medium") {
+  if (!structuralBandCta) {
+    roles.push(buildGraphicRoleEntry("cta_container", selectedDecoration));
+  }
+
+  if (accentDensity === "medium") {
     roles.push(buildGraphicRoleEntry("secondary_accent", selectedDecoration));
   }
 
-  if (variant.accentDensity === "medium" || variant.negativeSpaceBias !== "tight") {
+  if (accentDensity === "medium" || variant.negativeSpaceBias !== "tight") {
     roles.push(buildGraphicRoleEntry("corner_accent", selectedDecoration));
   }
 
-  if (variant.badgeProminence !== "none") {
+  if (badgeProminence !== "none") {
     roles.push(buildGraphicRoleEntry("badge_or_ribbon", selectedDecoration));
   }
 
-  if (variant.ctaTreatment === "framed") {
+  if (ctaTreatment === "framed" && shouldIncludeFrameRole(variant, sceneBindingPlan)) {
     roles.push(buildGraphicRoleEntry("frame", selectedDecoration));
   }
 
@@ -156,6 +173,7 @@ function buildGraphicCompositionSet(
 
 function buildPhotoSupportGraphicCompositionSet(
   selectedDecoration: DecorationCandidate | null,
+  sceneBindingPlan: SceneBindingPlan | null,
 ): GraphicCompositionSet {
   if (!selectedDecoration) {
     return {
@@ -165,12 +183,22 @@ function buildPhotoSupportGraphicCompositionSet(
     };
   }
 
+  const roles: GraphicCompositionEntry[] = [
+    buildGraphicRoleEntry("corner_accent", selectedDecoration),
+  ];
+  if (!usesWideBandCta(sceneBindingPlan)) {
+    roles.unshift(buildGraphicRoleEntry("cta_container", selectedDecoration));
+  }
+  if (
+    sceneBindingPlan?.preferredBadgeProminence === "dominant" ||
+    sceneBindingPlan?.includeRibbon
+  ) {
+    roles.push(buildGraphicRoleEntry("badge_or_ribbon", selectedDecoration));
+  }
+
   return {
     density: "minimal",
-    roles: [
-      buildGraphicRoleEntry("cta_container", selectedDecoration),
-      buildGraphicRoleEntry("corner_accent", selectedDecoration),
-    ],
+    roles,
     summary:
       "Photo-support composition keeps a compact CTA container and corner accent set.",
   };
@@ -189,4 +217,21 @@ function buildGraphicRoleEntry(
     variantKey: decoration.payload.variantKey,
     decorationMode: decoration.payload.decorationMode ?? "graphic_cluster",
   };
+}
+
+function usesWideBandCta(sceneBindingPlan: SceneBindingPlan | null): boolean {
+  return (
+    sceneBindingPlan?.ctaShapeLanguage === "band" ||
+    sceneBindingPlan?.ctaShapeLanguage === "transparent_band"
+  );
+}
+
+function shouldIncludeFrameRole(
+  variant: CompositionVariant,
+  sceneBindingPlan: SceneBindingPlan | null,
+): boolean {
+  if (variant.familyKey === "framed_promo") {
+    return true;
+  }
+  return sceneBindingPlan?.includeFrame === true;
 }

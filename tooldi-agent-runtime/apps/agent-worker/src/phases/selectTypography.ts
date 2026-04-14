@@ -8,6 +8,7 @@ import type {
 
 import type {
   HydratedPlanningInput,
+  SceneStylePlan,
   SourceSearchFamilySummary,
   TypographyChoice,
   TypographyDecision,
@@ -16,6 +17,7 @@ import type {
 export interface SelectTypographyDependencies {
   sourceClient: TooldiCatalogSourceClient;
   sourceMode: TooldiCatalogSourceMode;
+  sceneStylePlan?: SceneStylePlan | null;
 }
 
 export interface SelectTypographyResult {
@@ -38,6 +40,8 @@ export async function selectTypography(
         fallbackUsed: true,
         display: null,
         body: null,
+        matchedTemplateFontFamily: dependencies.sceneStylePlan?.typographyPolicy.templateFontFamily ?? null,
+        appliedTone: dependencies.sceneStylePlan?.typographyPolicy.tone ?? null,
         summary: "Typography kept on editor fallback because real source mode is disabled",
       },
       summary: {
@@ -59,13 +63,23 @@ export async function selectTypography(
   const koreanFonts = fontInventory.assets.filter((asset) =>
     asset.supportedLanguages.includes("KOR"),
   );
+  const typographyPolicy = dependencies.sceneStylePlan?.typographyPolicy ?? null;
   const displayFont =
-    pickPreferredFont(koreanFonts, ["고딕"], 700) ?? null;
+    pickPreferredFont(
+      koreanFonts,
+      typographyPolicy?.categoryHints ?? ["고딕"],
+      typographyPolicy?.displayWeightTarget ?? 700,
+      typographyPolicy?.templateFontFamily ?? null,
+    ) ?? null;
   const bodyFont =
-    pickBodyFont(koreanFonts, displayFont) ?? null;
+    pickBodyFont(koreanFonts, displayFont, typographyPolicy) ?? null;
 
-  const displayChoice = displayFont ? mapTypographyChoice(displayFont, 700) : null;
-  const bodyChoice = bodyFont ? mapTypographyChoice(bodyFont, 400) : null;
+  const displayChoice = displayFont
+    ? mapTypographyChoice(displayFont, typographyPolicy?.displayWeightTarget ?? 700)
+    : null;
+  const bodyChoice = bodyFont
+    ? mapTypographyChoice(bodyFont, typographyPolicy?.bodyWeightTarget ?? 400)
+    : null;
   const fallbackUsed = displayChoice === null || bodyChoice === null;
 
   return {
@@ -78,6 +92,8 @@ export async function selectTypography(
       fallbackUsed,
       display: displayChoice,
       body: bodyChoice,
+      matchedTemplateFontFamily: typographyPolicy?.templateFontFamily ?? null,
+      appliedTone: typographyPolicy?.tone ?? null,
       summary:
         displayChoice && bodyChoice
           ? `Selected display ${displayChoice.fontToken} and body ${bodyChoice.fontToken}`
@@ -108,29 +124,19 @@ function pickPreferredFont(
   fonts: TooldiFontAsset[],
   preferredCategories: string[],
   desiredWeight: number,
+  templateFontFamily: string | null,
 ): TooldiFontAsset | null {
   const preferredPool = fonts.filter((font) =>
     preferredCategories.some((category) => font.fontCategory.includes(category)),
   );
   const pool = preferredPool.length > 0 ? preferredPool : fonts;
+  const normalizedTemplateFamily = templateFontFamily?.toLowerCase() ?? null;
+  const templateFontSerial = extractTemplateFontSerial(templateFontFamily);
 
   return (
     [...pool].sort((left, right) => {
-      const leftWeight = findClosestWeight(left.fontWeights, desiredWeight);
-      const rightWeight = findClosestWeight(right.fontWeights, desiredWeight);
-      if (leftWeight === null && rightWeight === null) {
-        return 0;
-      }
-      if (leftWeight === null) {
-        return 1;
-      }
-      if (rightWeight === null) {
-        return -1;
-      }
-      return (
-        Math.abs(leftWeight.fontWeight - desiredWeight) -
-        Math.abs(rightWeight.fontWeight - desiredWeight)
-      );
+      return scoreFontCandidate(right, desiredWeight, normalizedTemplateFamily, templateFontSerial) -
+        scoreFontCandidate(left, desiredWeight, normalizedTemplateFamily, templateFontSerial);
     })[0] ?? null
   );
 }
@@ -138,14 +144,21 @@ function pickPreferredFont(
 function pickBodyFont(
   fonts: TooldiFontAsset[],
   displayFont: TooldiFontAsset | null,
+  typographyPolicy: SceneStylePlan["typographyPolicy"] | null,
 ): TooldiFontAsset | null {
-  if (displayFont && findClosestWeight(displayFont.fontWeights, 400)) {
+  const desiredWeight = typographyPolicy?.bodyWeightTarget ?? 400;
+  if (displayFont && findClosestWeight(displayFont.fontWeights, desiredWeight)) {
     return displayFont;
   }
 
   return (
-    pickPreferredFont(fonts, ["고딕", "명조"], 400) ??
-    pickPreferredFont(fonts, [], 400)
+    pickPreferredFont(
+      fonts,
+      typographyPolicy?.categoryHints ?? ["고딕", "명조"],
+      desiredWeight,
+      typographyPolicy?.templateFontFamily ?? null,
+    ) ??
+    pickPreferredFont(fonts, [], desiredWeight, typographyPolicy?.templateFontFamily ?? null)
   );
 }
 
@@ -196,4 +209,36 @@ function findClosestWeight(
     }
     return right.fontWeight - left.fontWeight;
   })[0]!;
+}
+
+function scoreFontCandidate(
+  font: TooldiFontAsset,
+  desiredWeight: number,
+  normalizedTemplateFamily: string | null,
+  templateFontSerial: string | null,
+): number {
+  const closestWeight = findClosestWeight(font.fontWeights, desiredWeight);
+  const weightScore = closestWeight
+    ? 100 - Math.abs(closestWeight.fontWeight - desiredWeight)
+    : 0;
+  const serialScore =
+    templateFontSerial && font.serial === templateFontSerial ? 60 : 0;
+  const familyScore =
+    normalizedTemplateFamily &&
+    [font.fontName, font.fontFace, font.fontCategory]
+      .filter((value): value is string => typeof value === "string")
+      .some((value) => value.toLowerCase().includes(normalizedTemplateFamily))
+      ? 25
+      : 0;
+  return weightScore + familyScore + serialScore;
+}
+
+function extractTemplateFontSerial(
+  templateFontFamily: string | null,
+): string | null {
+  if (!templateFontFamily) {
+    return null;
+  }
+  const match = templateFontFamily.match(/^(\d+)_\d+$/);
+  return match?.[1] ?? null;
 }

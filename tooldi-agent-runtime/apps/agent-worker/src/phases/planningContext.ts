@@ -1,4 +1,8 @@
-import type { HydratedPlanningInput, NormalizedIntent } from "../types.js";
+import type {
+  HydratedPlanningInput,
+  NormalizedIntent,
+  WorkflowVariant,
+} from "../types.js";
 
 export function deriveOperationFamily(
   input: HydratedPlanningInput,
@@ -25,4 +29,10 @@ export function deriveCanvasPreset(
   }
 
   return `custom_${width}x${height}`;
+}
+
+export function deriveWorkflowVariant(
+  input: HydratedPlanningInput,
+): WorkflowVariant {
+  return input.request.workflowVariant ?? "legacy";
 }

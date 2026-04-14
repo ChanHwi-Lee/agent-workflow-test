@@ -252,6 +252,7 @@ export class RunBootstrapService {
     return [
       request.editorSessionId,
       "create_from_empty_canvas",
+      request.workflowVariant ?? "legacy",
       request.editorContext.documentId,
       request.editorContext.pageId,
       request.clientRequestId,

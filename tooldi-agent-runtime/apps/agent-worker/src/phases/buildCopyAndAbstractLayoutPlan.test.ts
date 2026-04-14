@@ -266,3 +266,102 @@ test("buildCopyAndAbstractLayoutPlan은 explicit subject copy를 유지한다", 
   ]);
   assert.equal(result.abstractLayoutPlan.layoutFamily, "subject_hero");
 });
+
+test("buildCopyAndAbstractLayoutPlan은 retrieval prior scaffold context를 생성기 입력에 전달한다", async () => {
+  const received: { copyPrior: string | null; layoutPrior: string | null } = {
+    copyPrior: null,
+    layoutPrior: null,
+  };
+
+  await buildCopyAndAbstractLayoutPlan(
+    createHydratedPlanningInput("봄 세일 배너를 만들어줘"),
+    createIntent(),
+    {
+      templateCopyPlanGenerator: {
+        mode: "langchain",
+        async generate(input) {
+          received.copyPrior = input.priorContext ?? null;
+          return {
+            headline: {
+              text: "봄 세일",
+              priority: "primary",
+              required: true,
+              maxLength: 20,
+              toneHint: "promotional",
+            },
+            subheadline: null,
+            offerLine: null,
+            cta: {
+              text: "자세히 보기",
+              priority: "supporting",
+              required: true,
+              maxLength: 18,
+              toneHint: "promotional",
+            },
+            footerNote: null,
+            badgeText: null,
+            summary: "copy",
+          };
+        },
+      },
+      templateAbstractLayoutGenerator: {
+        mode: "langchain",
+        async generate(input) {
+          received.layoutPrior = input.priorContext ?? null;
+          return {
+            layoutFamily: "promo_split",
+            copyAnchor: "left",
+            visualAnchor: "right",
+            ctaAnchor: "below_copy",
+            density: "balanced",
+            slotTopology: "headline_supporting_cta_footer",
+            summary: "layout",
+          };
+        },
+      },
+      templatePriorBundle: {
+        bundleId: "bundle-1",
+        runId: "run-1",
+        traceId: "trace-1",
+        workflowVariant: "retrieval_prior_v1",
+        query: {
+          keyword: "봄 세일 배너",
+          canvas: "horizontal",
+          requestedTopK: 3,
+        },
+        queryPlan: [
+          { label: "season_primary", keyword: "봄" },
+          { label: "offer_primary", keyword: "세일" },
+        ],
+        usedFallbackToLegacy: false,
+        fallbackReason: null,
+        selectedTemplateCode: "74091534190",
+        selectedTemplateTitle: "봄 세일 배너",
+        selectedScaffold: {
+          scaffoldId: "scaffold-1",
+          sourceTemplateCode: "74091534190",
+          sourceTemplateSerial: "70079",
+          title: "봄 세일 배너",
+          canvasWidth: 1200,
+          canvasHeight: 628,
+          backgroundMode: "image",
+          textObjectCount: 5,
+          visualObjectCount: 4,
+          groupObjectCount: 2,
+          dominantObjectTypes: ["text", "group"],
+          copyAnchor: "left",
+          visualAnchor: "right",
+          layoutFamilyHint: "subject_hero",
+          layoutModeHint: "left_copy_right_graphic",
+          primaryVisualFamilyHint: "graphic",
+          summary: "subject hero scaffold",
+        },
+        candidates: [],
+        summary: "bundle summary",
+      },
+    },
+  );
+
+  assert.match(received.copyPrior ?? "", /layoutFamilyHint=subject_hero/);
+  assert.match(received.layoutPrior ?? "", /templateCode=74091534190/);
+});

@@ -255,6 +255,133 @@ test("font inventory is normalized with weights and language filtering", async (
   assert.deepEqual(result.assets[0]?.supportedLanguages, ["KOR", "ENG"]);
 });
 
+test("template search serializes the editor search payload and normalizes response", async () => {
+  const client = createTooldiApiCatalogSourceClient({
+    baseUrl: "https://catalog.test",
+    fetchImpl: async (input, init) => {
+      assert.equal(String(input), "https://catalog.test/editor/get_templates");
+      assert.equal(init?.method, "POST");
+      assert.equal(
+        init?.body,
+        JSON.stringify({
+          keyword: "봄 세일 배너",
+          page: 1,
+          canvas: "horizontal",
+          price: "S",
+          follow: false,
+          categorySerial: "",
+          source: "search",
+        }),
+      );
+
+      return new Response(
+        JSON.stringify({
+          result: true,
+          page: 1,
+          hasNextPage: false,
+          trace_id: "trace-template-search",
+          data: [
+            {
+              serial: "70079",
+              code: "74091534190",
+              title: "봄맞이 세일 할인 프로모션 배너",
+              pages: 1,
+              username: "creator",
+              userSerial: "128344",
+              keywords: ["봄맞이", "세일", "배너"],
+              thumbnail: ["https://thumb.test/template-1.png"],
+              width: 1200,
+              height: 628,
+              categoryName: "소셜미디어 광고",
+              price: 8000,
+              priceType: "partialPaid",
+              isPurchased: false,
+              totalObjectPrice: 0,
+            },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    },
+  });
+
+  const result = await client.searchTemplateAssets({
+    keyword: "봄 세일 배너",
+    page: 1,
+    canvas: "horizontal",
+    price: "partialPaid",
+    source: "search",
+  });
+
+  assert.equal(result.sourceFamily, "template_source");
+  assert.equal(result.traceId, "trace-template-search");
+  assert.equal(result.assets[0]?.assetId, "template:70079");
+  assert.equal(result.assets[0]?.code, "74091534190");
+  assert.deepEqual(result.assets[0]?.thumbnails, ["https://thumb.test/template-1.png"]);
+  assert.equal(result.assets[0]?.priceType, "paid");
+});
+
+test("template document fetch decodes pages and patterns", async () => {
+  const client = createTooldiApiCatalogSourceClient({
+    baseUrl: "https://catalog.test",
+    fetchImpl: async (input, init) => {
+      assert.equal(
+        String(input),
+        "https://catalog.test/editor/get_template_data?templateCode=NzQwOTE1MzQxOTA%3D&isWorking=false",
+      );
+      assert.equal(init?.method, "GET");
+
+      return new Response(
+        JSON.stringify({
+          result: true,
+          data: {
+            templates: [
+              JSON.stringify({
+                backgroundType: "image",
+                width: 1200,
+                height: 628,
+                objects: [{ type: "text", left: 120, width: 400, scaleX: 1 }],
+              }),
+            ],
+            patterns: [{ background: "#ffffff" }],
+            metaData: {
+              code: "74091534190",
+              innerCode: "717378421323",
+              title: "봄 세일",
+              width: "1200",
+              height: "628",
+              sizeUnit: "px",
+              isShare: true,
+              userId: "creator",
+              createdAt: "2026-03-03",
+              modifiedAt: "2026-03-03",
+              keyword: "봄|:|세일",
+            },
+            canvas: {
+              serial: "48",
+              title: "소셜미디어 광고",
+              width: "1200",
+              height: "628",
+              sizeUnit: "px",
+            },
+          },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    },
+  });
+
+  const result = await client.getTemplateDocument({
+    templateCode: "74091534190",
+    isWorking: false,
+  });
+
+  assert.equal(result.code, "74091534190");
+  assert.equal(result.pages.length, 1);
+  assert.equal(result.pages[0]?.parsed?.backgroundType, "image");
+  assert.equal(Array.isArray(result.pages[0]?.parsed?.objects), true);
+});
+
 test("request timeout is mapped to a catalog source timeout error", async () => {
   const client = createTooldiApiCatalogSourceClient({
     baseUrl: "https://catalog.test",
