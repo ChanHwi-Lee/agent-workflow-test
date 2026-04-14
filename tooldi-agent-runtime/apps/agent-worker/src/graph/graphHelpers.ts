@@ -25,7 +25,7 @@ type SourceSearchGraphic = SourceSearchSummary["graphic"];
 type SourceSearchPhoto = SourceSearchSummary["photo"];
 type SourceSearchFont = SourceSearchSummary["font"];
 
-const OPTIONAL_ARTIFACT_REF_KEYS = [
+const FINALIZE_ARTIFACT_REF_KEYS = [
   "semanticBriefDraftRef",
   "briefCompilationReportRef",
   "copyPlanRef",
@@ -48,14 +48,26 @@ const OPTIONAL_ARTIFACT_REF_KEYS = [
   "refineDecisionRef",
 ] as const;
 
-type ArtifactRefKey = (typeof OPTIONAL_ARTIFACT_REF_KEYS)[number];
+const RESULT_ONLY_ARTIFACT_REF_KEYS = [
+  "compositionBriefRef",
+  "compositionVariantSetRef",
+  "compositionRankingRef",
+] as const;
+
+const RESULT_ARTIFACT_REF_KEYS = [
+  ...FINALIZE_ARTIFACT_REF_KEYS,
+  ...RESULT_ONLY_ARTIFACT_REF_KEYS,
+] as const;
+
+type FinalizeArtifactRefKey = (typeof FINALIZE_ARTIFACT_REF_KEYS)[number];
+type ResultArtifactRefKey = (typeof RESULT_ARTIFACT_REF_KEYS)[number];
 
 type ArtifactRefState = {
   canonicalDesignBriefRef: string | null;
   ruleJudgeVerdict: RuleJudgeVerdict | null;
   judgePlan: JudgePlan | null;
   sourceSearchSummary: SourceSearchSummary | null;
-} & Record<ArtifactRefKey, string | null>;
+} & Record<ResultArtifactRefKey, string | null>;
 
 export function buildHeartbeatBase(job: RunJobEnvelope) {
   return {
@@ -220,7 +232,7 @@ export function buildFinalizeOptions(
     ...(state.canonicalDesignBriefRef
       ? { canonicalDesignBriefRef: state.canonicalDesignBriefRef }
       : {}),
-    ...pickDefinedStringRefs(state, OPTIONAL_ARTIFACT_REF_KEYS),
+    ...pickDefinedStringRefs(state, FINALIZE_ARTIFACT_REF_KEYS),
     ...(buildCombinedWarningSummary(state).length > 0
       ? {
           warningSummary: buildCombinedWarningSummary(state),
@@ -270,7 +282,7 @@ export function buildArtifactRefs(
 
   return {
     canonicalDesignBriefRef: state.canonicalDesignBriefRef,
-    ...pickDefinedStringRefs(state, OPTIONAL_ARTIFACT_REF_KEYS),
+    ...pickDefinedStringRefs(state, RESULT_ARTIFACT_REF_KEYS),
   };
 }
 

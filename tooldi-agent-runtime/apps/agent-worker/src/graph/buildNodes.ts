@@ -14,10 +14,10 @@ import { buildCopyAndAbstractLayoutPlan } from "../phases/buildCopyAndAbstractLa
 import { buildSearchProfile } from "../phases/buildSearchProfile.js";
 import { buildTemplatePriorSummary } from "../phases/buildTemplatePriorSummary.js";
 import { buildExecutablePlan } from "../phases/buildExecutablePlan.js";
+import { buildCompositionSelection } from "../phases/compositionEngine.js";
 import { runRetrievalStage } from "../phases/runRetrievalStage.js";
 import { ruleJudgeCreateTemplate } from "../phases/ruleJudge.js";
 import { selectTypography } from "../phases/selectTypography.js";
-import { selectTemplateComposition } from "../phases/selectTemplateComposition.js";
 import {
   buildSelectionLogMessages,
   buildSourceSearchSummary,
@@ -288,7 +288,7 @@ export function registerBuildNodes(
         throw new Error("select_composition requires candidate and retrieval state");
       }
 
-      const selectionDecision = await selectTemplateComposition(
+      const compositionSelection = await buildCompositionSelection(
         state.intent,
         state.candidateSets,
         {
@@ -296,6 +296,37 @@ export function registerBuildNodes(
           selectionPolicy: state.selectionPolicy,
         },
       );
+      const compositionBriefRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/composition-brief.json`,
+        compositionSelection.compositionBrief,
+        {
+          artifactKind: "composition-brief",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+      const compositionVariantSetRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/composition-variants.json`,
+        compositionSelection.compositionVariantSet,
+        {
+          artifactKind: "composition-variants",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+      const compositionRankingRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/composition-ranking.json`,
+        compositionSelection.compositionRanking,
+        {
+          artifactKind: "composition-ranking",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+      const selectionDecision = compositionSelection.selectionDecision;
       const selectionDecisionRef = await persistArtifactTask(
         `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/selection-decision.json`,
         selectionDecision,
@@ -308,6 +339,12 @@ export function registerBuildNodes(
       );
 
       return {
+        compositionBrief: compositionSelection.compositionBrief,
+        compositionBriefRef,
+        compositionVariantSet: compositionSelection.compositionVariantSet,
+        compositionVariantSetRef,
+        compositionRanking: compositionSelection.compositionRanking,
+        compositionRankingRef,
         selectionDecision,
         selectionDecisionRef,
       };

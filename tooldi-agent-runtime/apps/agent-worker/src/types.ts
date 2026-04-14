@@ -402,6 +402,114 @@ export interface TemplateSelectionPolicy {
   retrievalMode: RetrievalStageResult["retrievalMode"];
 }
 
+export interface CompositionBrief {
+  briefId: string;
+  runId: string;
+  traceId: string;
+  canvasPreset: NormalizedIntent["canvasPreset"];
+  currentCanvasWidth: number;
+  currentCanvasHeight: number;
+  requestedVariantCount: 3;
+  subjectBinding: NormalizedIntent["subjectBinding"];
+  offerIntent: NormalizedIntent["offerIntent"];
+  layoutIntent: NormalizedIntent["layoutIntent"];
+  primaryVisualPolicy: NormalizedIntent["primaryVisualPolicy"];
+  preferredLayoutModes: SelectionDecision["layoutMode"][];
+  summary: string;
+}
+
+export type CompositionVariantCopyDensity = "sparse" | "balanced" | "dense";
+export type CompositionVariantHeadlineEmphasis = "restrained" | "dominant";
+export type CompositionVariantCtaWeight = "subtle" | "standard" | "strong";
+export type CompositionVariantCopyVisualRatio =
+  | "copy_heavy"
+  | "balanced"
+  | "visual_heavy";
+export type CompositionVariantNegativeSpaceBias =
+  | "tight"
+  | "balanced"
+  | "airy";
+export type CompositionVariantBadgeProminence =
+  | "none"
+  | "supporting"
+  | "dominant";
+export type CompositionVariantCopyExpressionProfile =
+  | "headline_first"
+  | "offer_first"
+  | "cta_first";
+
+export interface CompositionVariant {
+  variantId: string;
+  familyKey: SelectionDecision["layoutMode"];
+  layoutMode: SelectionDecision["layoutMode"];
+  variantSignature: string;
+  layoutCandidateId: string;
+  backgroundCandidateId: string;
+  decorationCandidateId: string | null;
+  photoCandidateId: string | null;
+  familyRank: number;
+  familyVariantRank: number;
+  layoutFitScore: number;
+  spacingIntent: AbstractLayoutDensity;
+  accentDensity: GraphicCompositionSet["density"];
+  ctaTreatment: "standard" | "badge_forward" | "photo_support" | "framed";
+  copyDensity: CompositionVariantCopyDensity;
+  headlineEmphasis: CompositionVariantHeadlineEmphasis;
+  ctaWeight: CompositionVariantCtaWeight;
+  copyVisualRatio: CompositionVariantCopyVisualRatio;
+  negativeSpaceBias: CompositionVariantNegativeSpaceBias;
+  badgeProminence: CompositionVariantBadgeProminence;
+  copyExpressionProfile: CompositionVariantCopyExpressionProfile;
+  photoMode: SelectionDecision["photoBranchMode"];
+  executionStrategy: SelectionDecision["executionStrategy"];
+  validation: {
+    status: "valid" | "invalid";
+    reasons: string[];
+  };
+  summary: string;
+}
+
+export interface CompositionVariantSet {
+  setId: string;
+  runId: string;
+  traceId: string;
+  briefId: string;
+  variants: CompositionVariant[];
+  summary: string;
+}
+
+export interface CompositionVariantScore {
+  variantId: string;
+  familyKey: SelectionDecision["layoutMode"];
+  variantSignature: string;
+  totalScore: number;
+  briefAlignmentScore: number;
+  canvasFitScore: number;
+  executionSafetyScore: number;
+  visualBalanceScore: number;
+  copyRhythmFitScore: number;
+  intraFamilyNoveltyScore: number;
+  summary: string;
+}
+
+export interface CompositionRanking {
+  rankingId: string;
+  runId: string;
+  traceId: string;
+  winnerVariantId: string;
+  winnerFamilyKey: SelectionDecision["layoutMode"];
+  scores: CompositionVariantScore[];
+  rankingCriteria: Array<
+    | "brief_alignment"
+    | "canvas_fit"
+    | "execution_safety"
+    | "visual_balance"
+    | "copy_rhythm_fit"
+    | "intra_family_novelty"
+  >;
+  summary: string;
+}
+
 export interface SearchProfileArtifact {
   profileId: string;
   runId: string;
@@ -887,6 +995,9 @@ export interface ProcessRunJobResult {
   intent: CanonicalDesignBrief;
   semanticBriefDraft?: SemanticBriefDraftArtifact;
   intentNormalizationReport?: IntentNormalizationReport;
+  compositionBrief?: CompositionBrief;
+  compositionVariantSet?: CompositionVariantSet;
+  compositionRanking?: CompositionRanking;
   copyPlan?: CopyPlan;
   copyPlanNormalizationReport?: CopyPlanNormalizationReport;
   abstractLayoutPlan?: AbstractLayoutPlan;
@@ -911,6 +1022,9 @@ export interface ProcessRunJobResult {
     canonicalDesignBriefRef: string;
     semanticBriefDraftRef?: string;
     briefCompilationReportRef?: string;
+    compositionBriefRef?: string;
+    compositionVariantSetRef?: string;
+    compositionRankingRef?: string;
     copyPlanRef?: string;
     copyPlanNormalizationReportRef?: string;
     abstractLayoutPlanRef?: string;

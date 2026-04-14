@@ -8,6 +8,9 @@ test("graphHelpers는 정의된 artifact ref만 노출한다", () => {
     canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
     semanticBriefDraftRef: null,
     briefCompilationReportRef: "runs/run-1/attempts/1/brief-compilation-report.json",
+    compositionBriefRef: "runs/run-1/attempts/1/composition-brief.json",
+    compositionVariantSetRef: null,
+    compositionRankingRef: "runs/run-1/attempts/1/composition-ranking.json",
     copyPlanRef: null,
     copyPlanNormalizationReportRef: null,
     abstractLayoutPlanRef: null,
@@ -35,6 +38,8 @@ test("graphHelpers는 정의된 artifact ref만 노출한다", () => {
     canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
     briefCompilationReportRef:
       "runs/run-1/attempts/1/brief-compilation-report.json",
+    compositionBriefRef: "runs/run-1/attempts/1/composition-brief.json",
+    compositionRankingRef: "runs/run-1/attempts/1/composition-ranking.json",
     assetPlanRef: "runs/run-1/attempts/1/asset-plan.json",
     executablePlanRef: "runs/run-1/attempts/1/executable-plan.json",
     executionSceneSummaryRef:
@@ -48,6 +53,9 @@ test("graphHelpers는 judge warning을 finalize option에 투영한다", () => {
       canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
       semanticBriefDraftRef: null,
       briefCompilationReportRef: null,
+      compositionBriefRef: null,
+      compositionVariantSetRef: null,
+      compositionRankingRef: null,
       copyPlanRef: null,
       copyPlanNormalizationReportRef: null,
       abstractLayoutPlanRef: null,

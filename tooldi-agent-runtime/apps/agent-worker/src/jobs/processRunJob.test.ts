@@ -1519,6 +1519,9 @@ test(
         "search-profile.json",
         "retrieval-stage.json",
         "template-candidate-set.json",
+        "composition-brief.json",
+        "composition-variants.json",
+        "composition-ranking.json",
         "selection-decision.json",
         "asset-plan.json",
         "layout-plan-concrete.json",
@@ -1554,6 +1557,12 @@ test(
     const retrievalStageRef = artifactRefsByFileName["retrieval-stage.json"]!;
     const candidateSetRef =
       artifactRefsByFileName["template-candidate-set.json"]!;
+    const compositionBriefRef =
+      artifactRefsByFileName["composition-brief.json"]!;
+    const compositionVariantSetRef =
+      artifactRefsByFileName["composition-variants.json"]!;
+    const compositionRankingRef =
+      artifactRefsByFileName["composition-ranking.json"]!;
     const selectionDecisionRef =
       artifactRefsByFileName["selection-decision.json"]!;
     const assetPlanRef = artifactRefsByFileName["asset-plan.json"]!;
@@ -1587,6 +1596,9 @@ test(
       searchProfileRef,
       executablePlanRef,
       candidateSetRef,
+      compositionBriefRef,
+      compositionVariantSetRef,
+      compositionRankingRef,
       sourceSearchSummaryRef,
       retrievalStageRef,
       selectionDecisionRef,

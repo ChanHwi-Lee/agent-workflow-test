@@ -235,6 +235,15 @@ export function registerFinalizeNodes(
           ...(state.intentNormalizationReport
             ? { intentNormalizationReport: state.intentNormalizationReport }
             : {}),
+          ...(state.compositionBrief
+            ? { compositionBrief: state.compositionBrief }
+            : {}),
+          ...(state.compositionVariantSet
+            ? { compositionVariantSet: state.compositionVariantSet }
+            : {}),
+          ...(state.compositionRanking
+            ? { compositionRanking: state.compositionRanking }
+            : {}),
           ...(state.copyPlan ? { copyPlan: state.copyPlan } : {}),
           ...(state.copyPlanNormalizationReport
             ? { copyPlanNormalizationReport: state.copyPlanNormalizationReport }
