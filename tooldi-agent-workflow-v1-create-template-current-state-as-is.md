@@ -79,6 +79,7 @@
 2. FE는 run 생성 요청을 backend로 보낸다.
 3. backend는 BullMQ queue에 `RunJobEnvelope` 를 넣고 SSE stream을 연다.
 4. worker는 LangGraph graph를 통해 `NormalizedIntent`, `CopyPlan`, `LayoutPlan`, `AssetPlan`, `SearchProfile`, candidate set, selection, judge, final plan을 만든다.
+   - experimental `workflowVariant=retrieval_prior_v1` path는 searchable template prior bundle을 먼저 조회하고, selected scaffold 요약을 copy/layout generation context에 주입한다.
 5. worker는 staged mutation을 FE에 제안하고 ack를 수집한다.
 6. worker는 ack 결과로 `ExecutionSceneSummary -> JudgePlan -> RefineDecision` 을 만들고 필요 시 1회 patch-only refine mutation을 추가로 보낸다.
 7. backend는 finalize를 materialize 하고 terminal outcome을 남긴다.
@@ -89,6 +90,9 @@
 
 - 시스템은 현재 `heuristic` 또는 `langchain` planner mode를 지원한다.
 - local 기준 현재 planner는 `langchain + google` 로 설정할 수 있고 실제로 동작한다.
+- 시스템은 optional `workflowVariant` 를 지원한다.
+  - 기본값: `legacy`
+  - experimental: `retrieval_prior_v1`
 - planner는 현재 최소 아래 값을 만든다.
   - `templateKind`
   - `domain`
@@ -118,6 +122,8 @@
 - 시스템은 `candidate set -> selection decision` 구조를 artifact로 남긴다.
 - 시스템은 typography selection을 별도 artifact로 남긴다.
 - photo branch는 `photo_selected` 또는 `graphic_preferred` reasoning을 artifact와 `run.log`에 남긴다.
+- `retrieval_prior_v1` path는 searchable template top-k 결과와 fetched template JSON으로 `template-prior-bundle` artifact를 남긴다.
+- `retrieval_prior_v1` path는 selected template scaffold의 layout/copy anchor 힌트를 copy/layout/composition 단계에 반영한다.
 
 ### 6.4 judge / terminal semantics
 
@@ -135,6 +141,7 @@
 
 - 시스템은 현재 최소 아래 artifact를 남긴다.
   - `normalized-intent.json`
+  - `template-prior-bundle.json` (`retrieval_prior_v1` only)
   - `copy-plan.json`
   - `layout-plan-abstract.json`
   - `asset-plan.json`
