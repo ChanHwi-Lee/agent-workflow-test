@@ -84,19 +84,26 @@ export async function buildExecutablePlan(
       }
     : null;
   const v2FreeformCopyBlocks =
-    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2"
+    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2" ||
+    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset"
       ? freeformLayoutPlan.copyBlocks
       : [];
   const v2FreeformPolishBlocks =
-    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2"
+    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2" ||
+    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset"
       ? freeformLayoutPlan.polishBlocks
       : [];
   const executionMode =
-    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2"
+    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2" ||
+    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset"
       ? "v2_freeform"
       : "legacy_slots";
 
-  if (input.request.workflowVariant === "retrieval_prior_v2") {
+  const requestedWorkflowVariant = String(input.request.workflowVariant ?? "legacy");
+  if (
+    requestedWorkflowVariant === "retrieval_prior_v2" ||
+    requestedWorkflowVariant === "retrieval_prior_v2_reset"
+  ) {
     if (!freeformLayoutPlan || executionMode !== "v2_freeform" || v2FreeformCopyBlocks.length === 0) {
       throw new Error(
         "retrieval_prior_v2 requires freeform layout execution truth; refusing to fall back to legacy slot execution",

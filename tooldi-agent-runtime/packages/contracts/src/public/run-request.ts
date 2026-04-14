@@ -42,6 +42,7 @@ export const StartAgentWorkflowRunRequestSchema = Type.Object(
         Type.Literal("legacy"),
         Type.Literal("retrieval_prior_v1"),
         Type.Literal("retrieval_prior_v2"),
+        Type.Literal("retrieval_prior_v2_reset"),
       ]),
     ),
     userInput: Type.Object(

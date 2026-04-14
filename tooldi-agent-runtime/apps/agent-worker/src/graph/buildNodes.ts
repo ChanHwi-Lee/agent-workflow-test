@@ -12,6 +12,7 @@ import { buildAssetPlan } from "../phases/buildAssetPlan.js";
 import { buildConcreteLayoutPlan } from "../phases/buildConcreteLayoutPlan.js";
 import { buildCopyAndAbstractLayoutPlan } from "../phases/buildCopyAndAbstractLayoutPlan.js";
 import { buildReferenceCompositionV2 } from "../phases/buildReferenceCompositionV2.js";
+import { buildReferenceResetPath } from "../phases/buildReferenceResetPath.js";
 import { buildSearchProfile } from "../phases/buildSearchProfile.js";
 import { buildScenePlans } from "../phases/buildScenePlans.js";
 import { buildSceneStylePlans } from "../phases/buildSceneStylePlans.js";
@@ -138,6 +139,126 @@ export function registerBuildNodes(
         throw new Error("build_reference_composition_v2 requires hydrated state");
       }
 
+      if (deriveWorkflowVariant(state.hydrated) === "retrieval_prior_v2_reset") {
+        const resetPlans = buildReferenceResetPath(
+          state.hydrated,
+          state.templatePriorBundle,
+          state.copyPlan,
+          state.sceneStylePlan,
+          state.sceneBindingPlan,
+        );
+
+        const referenceBlockGraphRef = resetPlans.referenceBlockGraph
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/reference-block-graph.json`,
+              resetPlans.referenceBlockGraph,
+              {
+                artifactKind: "reference-block-graph",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const messageAtomPlanRef = resetPlans.messageAtomPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/message-atom-plan.json`,
+              resetPlans.messageAtomPlan,
+              {
+                artifactKind: "message-atom-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const blockBindingPlanRef = resetPlans.blockBindingPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/block-binding-plan.json`,
+              resetPlans.blockBindingPlan,
+              {
+                artifactKind: "block-binding-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const editableBlockPlanRef = resetPlans.editableBlockPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/editable-block-plan.json`,
+              resetPlans.editableBlockPlan,
+              {
+                artifactKind: "editable-block-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const freeformLayoutPlanRef = resetPlans.freeformLayoutPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/freeform-layout-plan.json`,
+              resetPlans.freeformLayoutPlan,
+              {
+                artifactKind: "freeform-layout-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const qualityEvalSummaryRef = resetPlans.qualityEvalSummary
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/quality-eval-summary.json`,
+              resetPlans.qualityEvalSummary,
+              {
+                artifactKind: "quality-eval-summary",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const styleDowngradeVerdictRef = resetPlans.styleDowngradeVerdict
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/style-downgrade-verdict.json`,
+              resetPlans.styleDowngradeVerdict,
+              {
+                artifactKind: "style-downgrade-verdict",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+
+        return {
+          referenceCompositionGraph: null,
+          referenceCompositionGraphRef: null,
+          referenceSupportEvidence: null,
+          referenceSupportEvidenceRef: null,
+          copyAtomPlan: null,
+          copyAtomPlanRef: null,
+          copyBindingPlan: null,
+          copyBindingPlanRef: null,
+          templateRemixPlan: null,
+          templateRemixPlanRef: null,
+          referenceBlockGraph: resetPlans.referenceBlockGraph,
+          referenceBlockGraphRef,
+          messageAtomPlan: resetPlans.messageAtomPlan,
+          messageAtomPlanRef,
+          editableBlockPlan: resetPlans.editableBlockPlan,
+          editableBlockPlanRef,
+          qualityEvalSummary: resetPlans.qualityEvalSummary,
+          qualityEvalSummaryRef,
+          freeformLayoutPlan: resetPlans.freeformLayoutPlan,
+          freeformLayoutPlanRef,
+          styleDowngradeVerdict: resetPlans.styleDowngradeVerdict,
+          styleDowngradeVerdictRef,
+        };
+      }
+
       const v2Plans = buildReferenceCompositionV2(
         state.hydrated,
         state.templatePriorBundle,
@@ -246,6 +367,14 @@ export function registerBuildNodes(
         freeformLayoutPlanRef,
         styleDowngradeVerdict: v2Plans.styleDowngradeVerdict,
         styleDowngradeVerdictRef,
+        referenceBlockGraph: null,
+        referenceBlockGraphRef: null,
+        messageAtomPlan: null,
+        messageAtomPlanRef: null,
+        editableBlockPlan: null,
+        editableBlockPlanRef: null,
+        qualityEvalSummary: null,
+        qualityEvalSummaryRef: null,
       };
     })
     .addNode("build_search_profile", async (state) => {
@@ -343,7 +472,8 @@ export function registerBuildNodes(
       const workflowVariant = deriveWorkflowVariant(state.hydrated);
       if (
         workflowVariant !== "retrieval_prior_v1" &&
-        workflowVariant !== "retrieval_prior_v2"
+        workflowVariant !== "retrieval_prior_v2" &&
+        workflowVariant !== "retrieval_prior_v2_reset"
       ) {
         return {
           templatePriorBundle: null,

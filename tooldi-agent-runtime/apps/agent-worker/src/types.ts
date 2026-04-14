@@ -42,7 +42,8 @@ export interface HydratedPlanningInput {
 export type WorkflowVariant =
   | "legacy"
   | "retrieval_prior_v1"
-  | "retrieval_prior_v2";
+  | "retrieval_prior_v2"
+  | "retrieval_prior_v2_reset";
 
 export type TemplateScaffoldLayoutMode =
   | "copy_left_with_right_decoration"
@@ -107,7 +108,10 @@ export interface TemplatePriorBundle {
   bundleId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v1" | "retrieval_prior_v2";
+  workflowVariant:
+    | "retrieval_prior_v1"
+    | "retrieval_prior_v2"
+    | "retrieval_prior_v2_reset";
   query: {
     keyword: string;
     canvas: "horizontal" | "vertical" | "square" | "";
@@ -308,7 +312,10 @@ export interface SceneRolePlan {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v1" | "retrieval_prior_v2";
+  workflowVariant:
+    | "retrieval_prior_v1"
+    | "retrieval_prior_v2"
+    | "retrieval_prior_v2_reset";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   roles: SceneRolePlanEntry[];
@@ -319,7 +326,10 @@ export interface SceneLayoutPlan {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v1" | "retrieval_prior_v2";
+  workflowVariant:
+    | "retrieval_prior_v1"
+    | "retrieval_prior_v2"
+    | "retrieval_prior_v2_reset";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   layoutFamily: AbstractLayoutFamily;
@@ -373,7 +383,10 @@ export interface SceneStylePlan {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v1" | "retrieval_prior_v2";
+  workflowVariant:
+    | "retrieval_prior_v1"
+    | "retrieval_prior_v2"
+    | "retrieval_prior_v2_reset";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   backgroundKind: TemplatePriorScaffold["backgroundMode"];
@@ -389,7 +402,10 @@ export interface SceneBindingPlan {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v1" | "retrieval_prior_v2";
+  workflowVariant:
+    | "retrieval_prior_v1"
+    | "retrieval_prior_v2"
+    | "retrieval_prior_v2_reset";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   backgroundMode:
@@ -638,7 +654,7 @@ export interface FreeformLayoutPlan {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2";
+  workflowVariant: "retrieval_prior_v2" | "retrieval_prior_v2_reset";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   compositionStatus: "stable" | "style_only";
@@ -651,9 +667,116 @@ export interface StyleDowngradeVerdict {
   verdictId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2";
+  workflowVariant: "retrieval_prior_v2" | "retrieval_prior_v2_reset";
   applied: boolean;
   reason: string | null;
+  summary: string;
+}
+
+export type ReferenceBlockKind =
+  | "background"
+  | "display_text"
+  | "support_text"
+  | "detail_text"
+  | "promo_surface"
+  | "action_surface"
+  | "decor_cluster";
+
+export interface ReferenceBlock {
+  blockId: string;
+  kind: ReferenceBlockKind;
+  layerType: "text" | "shape" | "group" | "image";
+  bounds: LayoutBounds;
+  sourceObjectType: string;
+  sourceObjectId: string | null;
+  sourceText: string | null;
+  fillColorHex: string | null;
+  fontSize: number | null;
+  prominence: number;
+  clusterZone: ConcreteLayoutClusterZone | null;
+  textAlign: "left" | "center" | "right" | null;
+  sourceOriginUrl: string | null;
+  sourceWidth: number | null;
+  sourceHeight: number | null;
+}
+
+export interface ReferenceBlockGraph {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v2_reset";
+  selectedTemplateCode: string;
+  selectedTemplateTitle: string;
+  sourceCanvasWidth: number;
+  sourceCanvasHeight: number;
+  blocks: ReferenceBlock[];
+  summary: string;
+}
+
+export type MessageAtomKind =
+  | "primary"
+  | "support"
+  | "offer"
+  | "cta"
+  | "detail"
+  | "meta";
+
+export interface MessageAtom {
+  atomId: string;
+  kind: MessageAtomKind;
+  text: string;
+  optional: boolean;
+}
+
+export interface MessageAtomPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v2_reset";
+  atoms: MessageAtom[];
+  summary: string;
+}
+
+export interface BlockBindingAssignment {
+  blockId: string;
+  atomId: string | null;
+  text: string | null;
+  executionSlotKey: ExecutionSlotKey | null;
+  role: string;
+}
+
+export interface BlockBindingPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v2_reset";
+  assignments: BlockBindingAssignment[];
+  droppedAtomIds: string[];
+  summary: string;
+}
+
+export interface EditableBlockPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v2_reset";
+  selectedTemplateCode: string;
+  selectedTemplateTitle: string;
+  compositionStatus: "stable" | "style_only";
+  blocks: FreeformRenderableBlock[];
+  summary: string;
+}
+
+export interface QualityEvalSummary {
+  summaryId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "retrieval_prior_v2_reset";
+  selectedTemplateCode: string;
+  selectedTemplateTitle: string;
+  warnings: string[];
+  retainedReferenceBlockCount: number;
+  emittedBlockCount: number;
   summary: string;
 }
 

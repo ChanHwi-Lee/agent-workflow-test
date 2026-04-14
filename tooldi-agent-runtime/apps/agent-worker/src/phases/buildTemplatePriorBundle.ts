@@ -159,7 +159,8 @@ export async function buildTemplatePriorBundle(
   const workflowVariant = deriveWorkflowVariant(input);
   if (
     workflowVariant !== "retrieval_prior_v1" &&
-    workflowVariant !== "retrieval_prior_v2"
+    workflowVariant !== "retrieval_prior_v2" &&
+    workflowVariant !== "retrieval_prior_v2_reset"
   ) {
     return null;
   }
