@@ -24,7 +24,7 @@ export async function buildJudgePlan(
 ): Promise<JudgePlan> {
   const issues: JudgePlanIssue[] = [];
   const isV2FreeformExecution =
-    executablePlan.actions.some(
+    _executablePlan.actions.some(
       (action) =>
         action.inputs &&
         typeof action.inputs === "object" &&

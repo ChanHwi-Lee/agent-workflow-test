@@ -4,6 +4,7 @@ import type {
   AssetPlan,
   ConcreteLayoutPlan,
   CopyPlan,
+  CopyPlanSlotKey,
   FreeformRenderableBlock,
   ExecutionSceneGraphicLayerBinding,
   ExecutionSceneSummary,
@@ -128,8 +129,8 @@ function buildV2CopyLayerBindings(
     ...readFreeformBlocks(copyAction),
     ...readFreeformBlocks(polishAction),
   ].filter(
-    (block): block is FreeformRenderableBlock =>
-      block.executionSlotKey !== null,
+    (block): block is FreeformRenderableBlock & { executionSlotKey: CopyPlanSlotKey } =>
+      isCopyPlanSlotKey(block.executionSlotKey),
   );
 
   return expectedBlocks.map((block) => {
@@ -183,7 +184,18 @@ function readFreeformBlocks(
   if (!action?.inputs || typeof action.inputs !== "object" || !Array.isArray(action.inputs.freeformBlocks)) {
     return [];
   }
-  return action.inputs.freeformBlocks as FreeformRenderableBlock[];
+  return action.inputs.freeformBlocks as unknown as FreeformRenderableBlock[];
+}
+
+function isCopyPlanSlotKey(value: unknown): value is CopyPlanSlotKey {
+  return (
+    value === "headline" ||
+    value === "subheadline" ||
+    value === "offer_line" ||
+    value === "cta" ||
+    value === "footer_note" ||
+    value === "badge_text"
+  );
 }
 
 function findLatestCommandByExecutionSlot(
