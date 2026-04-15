@@ -235,12 +235,14 @@ export class TooldiCatalogSourceError extends Error {
   readonly code: TooldiCatalogSourceErrorCode;
   readonly url: string;
   readonly status: number | null;
+  readonly responsePreview: string | null;
 
   constructor(input: {
     code: TooldiCatalogSourceErrorCode;
     message: string;
     url: string;
     status?: number | null;
+    responsePreview?: string | null;
     cause?: unknown;
   }) {
     super(input.message, input.cause ? { cause: input.cause } : undefined);
@@ -248,6 +250,7 @@ export class TooldiCatalogSourceError extends Error {
     this.code = input.code;
     this.url = input.url;
     this.status = input.status ?? null;
+    this.responsePreview = input.responsePreview ?? null;
   }
 }
 

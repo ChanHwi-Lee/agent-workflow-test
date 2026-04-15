@@ -59,6 +59,8 @@ export class TooldiCatalogSourceHttpClient {
         init.body = body;
       }
       const response = await this.fetchImpl(url, init);
+      const responseText = await response.text();
+      const responsePreview = buildResponsePreview(responseText);
 
       if (!response.ok) {
         throw new TooldiCatalogSourceError({
@@ -66,17 +68,19 @@ export class TooldiCatalogSourceHttpClient {
           message: `Tooldi catalog request failed: ${response.status}`,
           url,
           status: response.status,
+          responsePreview,
         });
       }
 
       try {
-        return (await response.json()) as T;
+        return JSON.parse(responseText) as T;
       } catch (error) {
         throw new TooldiCatalogSourceError({
           code: "invalid_response",
           message: "Tooldi catalog response body is not valid JSON",
           url,
           status: response.status,
+          responsePreview,
           cause: error,
         });
       }
@@ -113,4 +117,14 @@ function isTimeoutError(error: unknown): boolean {
     "name" in error &&
     (error.name === "AbortError" || error.name === "TimeoutError")
   );
+}
+
+function buildResponsePreview(value: string): string | null {
+  const normalized = value.trim();
+  if (normalized.length === 0) {
+    return null;
+  }
+  return normalized.length <= 400
+    ? normalized
+    : `${normalized.slice(0, 400)}...`;
 }

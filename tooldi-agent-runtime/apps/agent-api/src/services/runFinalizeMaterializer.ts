@@ -58,7 +58,13 @@ export async function materializeRunArtifacts(
   const completionRecordId = `completion_${input.run.runId}`;
   const parentMutationRangeRef = `mutation_range_${input.run.runId}_${input.input.sourceMutationRange.firstSeq}_${input.input.sourceMutationRange.lastSeq}`;
   const latestSaveEvidence = canonicalResult.latestSaveEvidence;
-  const latestSaveReceipt = null;
+  const latestSaveReceipt =
+    input.input.latestSaveReceipt ??
+    _buildLatestSaveReceiptCompat(
+      input.commandContext.at,
+      canonicalResult,
+      latestSaveEvidence,
+    );
   const checkpointId = latestSaveEvidence
     ? `checkpoint_${input.run.runId}_latest_saved`
     : null;
@@ -116,7 +122,7 @@ export async function materializeRunArtifacts(
             executionSceneSummaryRef: input.input.executionSceneSummaryRef,
             judgePlanRef: input.input.judgePlanRef,
             refineDecisionRef: input.input.refineDecisionRef,
-            latestSaveReceiptId: null,
+            latestSaveReceiptId: latestSaveReceipt?.saveReceiptId ?? null,
             bundleRef,
           },
           ledgerBoundary: {
@@ -190,6 +196,11 @@ export async function materializeRunArtifacts(
     pageId: input.run.pageId,
     commitMode: "apply_immediately",
     requiredSlots: [...REQUIRED_SLOTS],
+    ...(input.ledgerProjection.requiredExecutionSlots.length > 0
+      ? {
+          requiredExecutionSlots: [...input.ledgerProjection.requiredExecutionSlots],
+        }
+      : {}),
     firstRenderableSeq: input.input.sourceMutationRange.firstSeq,
     reconciledThroughSeq: input.input.sourceMutationRange.reconciledThroughSeq,
     mutations: input.ledgerProjection.rangedRecords.map((record) => record.mutation),
@@ -385,11 +396,25 @@ export async function materializeRunArtifacts(
 }
 
 function _buildLatestSaveReceiptCompat(
-  _finalizedAt: string,
-  _result: AgentRunResultSummary,
-  _evidence: TemplateSaveEvidence | null,
+  finalizedAt: string,
+  result: AgentRunResultSummary,
+  evidence: TemplateSaveEvidence | null,
 ): TemplateSaveReceipt | null {
-  return null;
+  if (
+    !evidence ||
+    result.latestSaveReceiptId === null ||
+    result.finalRevision === null
+  ) {
+    return null;
+  }
+
+  return {
+    saveReceiptId: result.latestSaveReceiptId,
+    outputTemplateCode: evidence.code,
+    savedRevision: result.finalRevision,
+    savedAt: evidence.modified || finalizedAt,
+    reason: "run_completed",
+  };
 }
 
 function enforceMinimumDraft(

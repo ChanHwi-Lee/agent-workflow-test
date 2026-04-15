@@ -1,5 +1,7 @@
 import type {
+  ExecutionSlotKey,
   TemplateSaveEvidence,
+  TemplateSaveReceipt,
   WaitMutationAckResponse,
 } from "@tooldi/agent-contracts";
 
@@ -117,18 +119,24 @@ export async function finalizeRun(
     finalStatus === "completed" || finalStatus === "completed_with_warning"
       ? extractSaveEvidence(lastMutationAck)
       : null;
+  const latestSaveReceipt =
+    finalStatus === "completed" || finalStatus === "completed_with_warning"
+      ? extractSaveReceipt(lastMutationAck)
+      : null;
+  const requiredExecutionSlots = deriveRequiredExecutionSlots(
+    input.request.workflowVariant,
+  );
 
   if (
     (finalStatus === "completed" || finalStatus === "completed_with_warning") &&
-    latestSaveEvidence === null
+    (latestSaveEvidence === null || latestSaveReceipt === null)
   ) {
     finalStatus = "save_failed_after_apply";
     fallbackCount = Math.max(fallbackCount, 1);
-    errorSummary ??= {
-      code: "save_evidence_missing",
-      message:
-        "Worker could not confirm canonical save evidence after the saveTemplate stage completed",
-    };
+    errorSummary ??= buildSaveTruthErrorSummary(
+      latestSaveEvidence,
+      latestSaveReceipt,
+    );
   }
 
   return {
@@ -141,9 +149,13 @@ export async function finalizeRun(
       draftId,
       finalRevision: lastMutationAck?.resultingRevision ?? null,
       latestSaveEvidence,
+      latestSaveReceipt,
       lastAckedSeq,
-      latestSaveReceiptId: null,
-      outputTemplateCode: null,
+      latestSaveReceiptId: latestSaveReceipt?.saveReceiptId ?? null,
+      outputTemplateCode: latestSaveReceipt?.outputTemplateCode ?? null,
+      ...(requiredExecutionSlots.length > 0
+        ? { requiredExecutionSlots }
+        : {}),
       ...(options.canonicalDesignBriefRef
         ? { canonicalDesignBriefRef: options.canonicalDesignBriefRef }
         : {}),
@@ -236,6 +248,15 @@ export async function finalizeRun(
   };
 }
 
+function deriveRequiredExecutionSlots(
+  workflowVariant: HydratedPlanningInput["request"]["workflowVariant"],
+): ExecutionSlotKey[] {
+  if (workflowVariant === "object_native_v1") {
+    return ["background", "headline", "offer_line", "cta"];
+  }
+  return [];
+}
+
 function extractSaveEvidence(
   lastMutationAck: WaitMutationAckResponse | null,
 ): TemplateSaveEvidence | null {
@@ -246,6 +267,45 @@ function extractSaveEvidence(
         commandResult.saveEvidence !== undefined,
     )?.saveEvidence ?? null
   );
+}
+
+function extractSaveReceipt(
+  lastMutationAck: WaitMutationAckResponse | null,
+): TemplateSaveReceipt | null {
+  return (
+    lastMutationAck?.commandResults?.find(
+      (commandResult) =>
+        commandResult.op === "saveTemplate" &&
+        commandResult.saveReceipt !== undefined,
+    )?.saveReceipt ?? null
+  );
+}
+
+function buildSaveTruthErrorSummary(
+  latestSaveEvidence: TemplateSaveEvidence | null,
+  latestSaveReceipt: TemplateSaveReceipt | null,
+): NonNullable<FinalizeRunDraft["request"]["errorSummary"]> {
+  if (latestSaveEvidence === null && latestSaveReceipt === null) {
+    return {
+      code: "save_truth_missing",
+      message:
+        "Worker could not confirm canonical save evidence or save receipt after the saveTemplate stage completed",
+    };
+  }
+
+  if (latestSaveEvidence === null) {
+    return {
+      code: "save_evidence_missing",
+      message:
+        "Worker could not confirm canonical save evidence after the saveTemplate stage completed",
+    };
+  }
+
+  return {
+    code: "save_receipt_missing",
+    message:
+      "Worker could not confirm canonical save receipt after the saveTemplate stage completed",
+  };
 }
 
 function deriveCompletionState(

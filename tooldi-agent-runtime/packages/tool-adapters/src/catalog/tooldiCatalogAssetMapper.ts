@@ -65,6 +65,14 @@ export interface ApiListSuccess<T> {
   trace_id?: string;
 }
 
+export interface TemplateListApiResponse {
+  result: boolean;
+  page?: number;
+  hasNextPage?: boolean;
+  data?: TemplateApiRow[];
+  trace_id?: string;
+}
+
 export interface DirectListSuccess<T> {
   list: T[];
   page?: number;
@@ -290,6 +298,7 @@ export function normalizeTemplateDocument(
       code: "invalid_response",
       message: "Tooldi template data endpoint returned an invalid payload",
       url,
+      responsePreview: previewPayload(response),
     });
   }
 
@@ -317,6 +326,7 @@ export function assertListSuccessResponse<T>(
       code: "invalid_response",
       message: "Tooldi catalog list endpoint returned an invalid payload",
       url,
+      responsePreview: previewPayload(response),
     });
   }
 }
@@ -330,21 +340,53 @@ export function assertDirectListResponse<T>(
       code: "invalid_response",
       message: "Tooldi direct catalog endpoint returned an invalid payload",
       url,
+      responsePreview: previewPayload(response),
     });
   }
 }
 
-export function assertTemplateListResponse(
-  response: ApiListSuccess<TemplateApiRow>,
+export function normalizeTemplateListResponse(
+  response: TemplateListApiResponse,
   url: string,
-): void {
+): ApiListSuccess<TemplateApiRow> {
+  if (response.result === false && response.data === undefined) {
+    const normalized: ApiListSuccess<TemplateApiRow> = {
+      result: true,
+      data: [],
+    };
+    if (response.page !== undefined) {
+      normalized.page = response.page;
+    }
+    normalized.hasNextPage = false;
+    if (response.trace_id !== undefined) {
+      normalized.trace_id = response.trace_id;
+    }
+    return normalized;
+  }
+
   if (response.result !== true || !Array.isArray(response.data)) {
     throw new TooldiCatalogSourceError({
       code: "invalid_response",
       message: "Tooldi template list endpoint returned an invalid payload",
       url,
+      responsePreview: previewPayload(response),
     });
   }
+
+  const normalized: ApiListSuccess<TemplateApiRow> = {
+    result: true,
+    data: response.data,
+  };
+  if (response.page !== undefined) {
+    normalized.page = response.page;
+  }
+  if (response.hasNextPage !== undefined) {
+    normalized.hasNextPage = response.hasNextPage;
+  }
+  if (response.trace_id !== undefined) {
+    normalized.trace_id = response.trace_id;
+  }
+  return normalized;
 }
 
 export function mapPriceToLegacyCode(value: "free" | "paid"): "F" | "P" {
@@ -382,6 +424,20 @@ function normalizePriceType(value: unknown): TooldiPriceType {
     return value;
   }
   return null;
+}
+
+function previewPayload(value: unknown): string | null {
+  try {
+    const serialized = JSON.stringify(value);
+    if (!serialized) {
+      return null;
+    }
+    return serialized.length <= 400
+      ? serialized
+      : `${serialized.slice(0, 400)}...`;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeTemplatePriceType(

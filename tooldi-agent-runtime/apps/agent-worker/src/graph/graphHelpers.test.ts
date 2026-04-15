@@ -120,6 +120,122 @@ test("graphHelpers는 judge warning을 finalize option에 투영한다", () => {
   assert.equal(options.judgePlanRef, "runs/run-1/attempts/1/judge-plan.json");
 });
 
+test("graphHelpers는 object-native workflow에서 representative degraded warning을 finalize option에 투영하지 않는다", () => {
+  const options = buildFinalizeOptions(
+    {
+      canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
+      workflowVariant: "object_native_v1",
+      semanticBriefDraftRef: null,
+      briefCompilationReportRef: null,
+      compositionBriefRef: null,
+      compositionVariantSetRef: null,
+      compositionRankingRef: null,
+      copyPlanRef: null,
+      copyPlanNormalizationReportRef: null,
+      abstractLayoutPlanRef: null,
+      abstractLayoutPlanNormalizationReportRef: null,
+      assetPlanRef: null,
+      concreteLayoutPlanRef: null,
+      templatePriorSummaryRef: null,
+      templatePriorBundleRef: null,
+      sceneRolePlanRef: null,
+      sceneLayoutPlanRef: null,
+      sceneStylePlanRef: null,
+      sceneBindingPlanRef: null,
+      searchProfileRef: null,
+      executablePlanRef: null,
+      candidateSetRef: null,
+      sourceSearchSummaryRef: null,
+      retrievalStageRef: null,
+      selectionDecisionRef: null,
+      typographyDecisionRef: null,
+      ruleJudgeVerdictRef: null,
+      executionSceneSummaryRef: null,
+      judgePlanRef: null,
+      refineDecisionRef: null,
+      ruleJudgeVerdict: null,
+      judgePlan: null,
+      sourceSearchSummary: {
+        summaryId: "source-1",
+        runId: "run-1",
+        traceId: "trace-1",
+        sourceMode: "tooldi_api",
+        background: {
+          family: "background",
+          queryAttempts: [],
+          returnedCount: 1,
+          filteredCount: 1,
+          fallbackUsed: false,
+          selectedAssetId: null,
+          selectedSerial: null,
+          selectedCategory: null,
+        },
+        graphic: {
+          family: "graphic",
+          queryAttempts: [],
+          returnedCount: 1,
+          filteredCount: 1,
+          fallbackUsed: false,
+          selectedAssetId: "graphic:1",
+          selectedSerial: "1",
+          selectedCategory: "illust",
+        },
+        photo: {
+          family: "photo",
+          queryAttempts: [],
+          returnedCount: 0,
+          filteredCount: 0,
+          fallbackUsed: true,
+          selectedAssetId: null,
+          selectedSerial: null,
+          selectedCategory: null,
+        },
+        font: {
+          family: "font",
+          queryAttempts: [],
+          returnedCount: 1,
+          filteredCount: 1,
+          fallbackUsed: false,
+          selectedAssetId: "font:1",
+          selectedSerial: "701",
+          selectedCategory: "gothic",
+        },
+        representativeReadiness: {
+          path: "generic_promo_phase6",
+          overallStatus: "degraded",
+          background: {
+            status: "not_applicable",
+            mode: "generated_solid",
+            colorHex: "#dff2ff",
+            reasonCodes: [],
+          },
+          graphic: {
+            status: "degraded",
+            targetRequired: 2,
+            minimumRequired: 1,
+            materializedRealCount: 1,
+            reasonCodes: ["graphic_real_target_not_met"],
+          },
+          font: {
+            status: "target_met",
+            targetRequired: "display_and_body",
+            minimumRequired: 1,
+            displayRealSelected: true,
+            bodyRealSelected: true,
+            realSelectionCount: 2,
+            reasonCodes: [],
+          },
+        },
+      },
+    },
+    false,
+    [1, 2, 3],
+  );
+
+  assert.equal("warningSummary" in options, false);
+  assert.equal("overrideResult" in options, false);
+});
+
 test("graphHelpers는 ack와 proposal을 stage record로 보존한다", () => {
   const record = buildStageAckRecord(
     {

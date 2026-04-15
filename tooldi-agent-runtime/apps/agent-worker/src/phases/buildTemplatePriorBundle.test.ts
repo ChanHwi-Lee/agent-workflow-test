@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createTestRun } from "@tooldi/agent-testkit";
-import type { TooldiCatalogSourceClient } from "@tooldi/tool-adapters";
+import {
+  TooldiCatalogSourceError,
+  type TooldiCatalogSourceClient,
+} from "@tooldi/tool-adapters";
 
 import { buildTemplatePriorBundle } from "./buildTemplatePriorBundle.js";
 import type { HydratedPlanningInput, NormalizedIntent } from "../types.js";
@@ -221,4 +224,42 @@ test("buildTemplatePriorBundle uses searchable templates and extracts a scaffold
   assert.equal(bundle?.selectedScaffold?.layoutFamilyHint, "promo_split");
   assert.equal(bundle?.selectedScaffold?.copyAnchor, "left");
   assert.equal(bundle?.selectedScaffold?.visualAnchor, "right");
+  assert.equal(bundle?.diagnostics?.failedQueryCount, 0);
+  assert.equal(bundle?.diagnostics?.successfulQueryCount, 4);
+});
+
+test("buildTemplatePriorBundle degrades to fallback bundle when template search payloads are invalid", async () => {
+  let callCount = 0;
+  const failingSourceClient: TooldiCatalogSourceClient = {
+    ...sourceClient,
+    async searchTemplateAssets() {
+      callCount += 1;
+      throw new TooldiCatalogSourceError({
+        code: "invalid_response",
+        message: "Tooldi template list endpoint returned an invalid payload",
+        url: "https://catalog.test/editor/get_templates",
+        responsePreview: "{\"result\":false,\"data\":null}",
+      });
+    },
+  };
+
+  const bundle = await buildTemplatePriorBundle(
+    createHydratedPlanningInput(),
+    createIntent(),
+    failingSourceClient,
+  );
+
+  assert.ok(bundle);
+  assert.equal(callCount, 4);
+  assert.equal(bundle?.usedFallbackToLegacy, true);
+  assert.equal(bundle?.selectedTemplateCode, null);
+  assert.equal(bundle?.candidates.length, 0);
+  assert.equal(bundle?.diagnostics?.failedQueryCount, 4);
+  assert.equal(bundle?.diagnostics?.successfulQueryCount, 0);
+  assert.equal(bundle?.diagnostics?.queryDiagnostics[0]?.errorCode, "invalid_response");
+  assert.equal(
+    bundle?.diagnostics?.queryDiagnostics[0]?.responsePreview,
+    "{\"result\":false,\"data\":null}",
+  );
+  assert.match(bundle?.fallbackReason ?? "", /source contract boundary/);
 });

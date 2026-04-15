@@ -69,6 +69,7 @@ type ResultArtifactRefKey = (typeof RESULT_ARTIFACT_REF_KEYS)[number];
 
 type ArtifactRefState = {
   canonicalDesignBriefRef: string | null;
+  workflowVariant?: string | null;
   ruleJudgeVerdict: RuleJudgeVerdict | null;
   judgePlan: JudgePlan | null;
   sourceSearchSummary: SourceSearchSummary | null;
@@ -220,7 +221,9 @@ export function buildFinalizeOptions(
     errorSummary?: FinalizeRunDraft["request"]["errorSummary"];
   },
 ) {
+  const objectNativeWorkflow = state.workflowVariant === "object_native_v1";
   const representativeFailureOverride =
+    !objectNativeWorkflow &&
     state.sourceSearchSummary?.representativeReadiness.overallStatus === "failed"
       ? {
           finalStatus: "failed" as const,
@@ -268,6 +271,7 @@ function buildCombinedWarningSummary(state: ArtifactRefState) {
           }))
         : [];
   const representativeWarnings =
+    state.workflowVariant !== "object_native_v1" &&
     state.sourceSearchSummary?.representativeReadiness.overallStatus ===
     "degraded"
       ? buildRepresentativeReadinessWarnings(
@@ -345,6 +349,12 @@ export function buildStageAckRecord(
             commandResult.commandId === command.commandId &&
             commandResult.saveEvidence !== undefined,
         )?.saveEvidence ?? null,
+      saveReceipt:
+        ack.commandResults?.find(
+          (commandResult) =>
+            commandResult.commandId === command.commandId &&
+            commandResult.saveReceipt !== undefined,
+        )?.saveReceipt ?? null,
     })),
   };
 }

@@ -1,11 +1,13 @@
 import { spawn } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:net";
 
 import {
+  buildMutationAckRequest,
+  createStartRunRequest,
   isListenPermissionError,
   runTransportSmokeInProcess,
 } from "./smoke-in-process.mjs";
@@ -19,6 +21,8 @@ const queueName = `agent-workflow-interactive-smoke-${Date.now()}`;
 const objectStoreRootDir = await mkdtemp(
   join(tmpdir(), "tooldi-agent-runtime-smoke-"),
 );
+const objectStoreBucket = "tooldi-agent-runtime-smoke";
+const objectStorePrefix = "agent-runtime-smoke";
 
 const processes = [];
 
@@ -39,8 +43,8 @@ try {
         BULLMQ_QUEUE_NAME: queueName,
         OBJECT_STORE_MODE: "filesystem",
         OBJECT_STORE_ROOT_DIR: objectStoreRootDir,
-        OBJECT_STORE_BUCKET: "tooldi-agent-runtime-smoke",
-        OBJECT_STORE_PREFIX: "agent-runtime-smoke",
+        OBJECT_STORE_BUCKET: objectStoreBucket,
+        OBJECT_STORE_PREFIX: objectStorePrefix,
         LANGGRAPH_CHECKPOINTER_MODE: "memory",
         API_HOST: "127.0.0.1",
         API_PORT: String(apiPort),
@@ -62,8 +66,8 @@ try {
         BULLMQ_QUEUE_NAME: queueName,
         OBJECT_STORE_MODE: "filesystem",
         OBJECT_STORE_ROOT_DIR: objectStoreRootDir,
-        OBJECT_STORE_BUCKET: "tooldi-agent-runtime-smoke",
-        OBJECT_STORE_PREFIX: "agent-runtime-smoke",
+        OBJECT_STORE_BUCKET: objectStoreBucket,
+        OBJECT_STORE_PREFIX: objectStorePrefix,
         WORKER_CONCURRENCY: "1",
         WORKER_HEARTBEAT_INTERVAL_MS: "5000",
         WORKER_LEASE_TTL_MS: "30000",
@@ -81,6 +85,7 @@ try {
     );
 
     await driveRunStream(accepted);
+    await assertCompletedBundleHasSaveReceipt(accepted.runId);
 
     console.log("[smoke] transport pipeline completed successfully");
   } catch (error) {
@@ -196,54 +201,17 @@ function parseSseChunk(chunk) {
 }
 
 async function postMutationAck(accepted, payload, currentRevision) {
-  const mutation = payload.mutation;
-  const isSaveOnlyMutation = mutation.commands.every(
-    (command) => command.op === "saveTemplate",
+  const { request, resultingRevision } = buildMutationAckRequest(
+    accepted,
+    payload,
+    currentRevision,
   );
-  const resultingRevision = isSaveOnlyMutation
-    ? currentRevision
-    : currentRevision + 1;
-  const observedAt = new Date().toISOString();
   const response = await fetch(accepted.mutationAckUrl, {
     method: "POST",
     headers: {
       "content-type": "application/json",
     },
-    body: JSON.stringify({
-      runId: accepted.runId,
-      traceId: accepted.traceId,
-      mutationId: mutation.mutationId,
-      seq: payload.seq,
-      status: "applied",
-      targetPageId: mutation.pageId,
-      baseRevision: currentRevision,
-      resultingRevision,
-      resolvedLayerIds: Object.fromEntries(
-        mutation.commands
-          .filter((command) => command.targetRef.clientLayerKey)
-          .map((command) => [
-            command.targetRef.clientLayerKey,
-            command.targetRef.clientLayerKey,
-          ]),
-      ),
-      commandResults: mutation.commands.map((command) => ({
-        commandId: command.commandId,
-        op: command.op,
-        status: "applied",
-        resolvedLayerId: command.targetRef.clientLayerKey ?? "resolved-layer-1",
-        ...(command.op === "saveTemplate"
-          ? {
-              saveEvidence: {
-                code: `template_${accepted.runId}`,
-                serial: 198008,
-                modified: observedAt,
-                version: "2",
-              },
-            }
-          : {}),
-      })),
-      clientObservedAt: observedAt,
-    }),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {
@@ -261,57 +229,7 @@ async function startRun(apiBaseUrl) {
     headers: {
       "content-type": "application/json",
     },
-    body: JSON.stringify({
-      clientRequestId: `smoke-client-request-${Date.now()}`,
-      editorSessionId: "smoke-editor-session",
-      surface: "toolditor",
-      userInput: {
-        prompt: "봄 세일 배너를 만들어줘",
-        locale: "ko-KR",
-        timezone: "Asia/Seoul",
-      },
-      editorContext: {
-        documentId: "smoke-document-1",
-        pageId: "smoke-page-1",
-        canvasState: "empty",
-        canvasWidth: 1080,
-        canvasHeight: 1080,
-        sizeSerial: "1080x1080@1",
-        workingTemplateCode: null,
-        canvasSnapshotRef: null,
-        selectedLayerIds: [],
-      },
-      brandContext: {
-        brandName: null,
-        palette: [],
-        logoAssetId: null,
-      },
-      referenceAssets: [],
-      runPolicy: {
-        mode: "live_commit",
-        approvalMode: "none",
-        timeBudgetMs: 120000,
-        milestoneTargetsMs: {
-          firstVisible: 1000,
-          editableMinimum: 3000,
-          saveStarted: 5000,
-        },
-        milestoneDeadlinesMs: {
-          planValidated: 1000,
-          firstVisible: 2000,
-          editableMinimum: 5000,
-          mutationCutoff: 10000,
-          hardDeadline: 120000,
-        },
-        requestedOutputCount: 1,
-        allowInternalAiPrimitives: true,
-      },
-      clientInfo: {
-        pagePath: "/editor",
-        viewportWidth: 1440,
-        viewportHeight: 900,
-      },
-    }),
+    body: JSON.stringify(createStartRunRequest("smoke")),
   });
 
   if (!response.ok) {
@@ -321,6 +239,41 @@ async function startRun(apiBaseUrl) {
   }
 
   return response.json();
+}
+
+async function assertCompletedBundleHasSaveReceipt(runId) {
+  const bundle = JSON.parse(
+    await readFile(
+      resolve(
+        objectStoreRootDir,
+        objectStoreBucket,
+        objectStorePrefix,
+        `runs/${runId}/artifacts/bundle_${runId}.json`,
+      ),
+      "utf8",
+    ),
+  );
+  const latestSaveReceipt = bundle?.saveMetadata?.latestSaveReceipt;
+  if (!latestSaveReceipt) {
+    throw new Error("Transport smoke finished without latestSaveReceipt in the bundle");
+  }
+  if (
+    !String(latestSaveReceipt.saveReceiptId ?? "").startsWith(
+      `save_receipt_${runId}_`,
+    )
+  ) {
+    throw new Error(
+      `Unexpected latestSaveReceiptId in transport smoke bundle: ${latestSaveReceipt.saveReceiptId}`,
+    );
+  }
+  if (
+    bundle?.mutationLedger?.checkpoints?.[0]?.sourceRefs?.latestSaveReceiptId !==
+    latestSaveReceipt.saveReceiptId
+  ) {
+    throw new Error(
+      "Transport smoke bundle checkpoint did not retain latestSaveReceiptId",
+    );
+  }
 }
 
 async function startProcess({ name, entrypoint, env, readyPattern }) {

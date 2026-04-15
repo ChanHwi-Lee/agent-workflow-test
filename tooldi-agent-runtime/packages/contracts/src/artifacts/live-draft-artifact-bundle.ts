@@ -97,6 +97,9 @@ const EditableBannerDraftCommitPayloadSchema = Type.Object(
     pageId: IdentifierSchema,
     commitMode: Type.Literal("apply_immediately"),
     requiredSlots: Type.Array(RequiredSlotSchema, { minItems: 1 }),
+    requiredExecutionSlots: Type.Optional(
+      Type.Array(ExecutionSlotKeySchema, { minItems: 1 }),
+    ),
     firstRenderableSeq: Type.Integer({ minimum: 1 }),
     reconciledThroughSeq: Type.Integer({ minimum: 0 }),
     mutations: Type.Array(CanvasMutationEnvelopeSchema, { minItems: 1 }),
@@ -142,6 +145,9 @@ const MutationLedgerEntrySchema = Type.Object(
     ackRevision: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
     saveEvidence: Type.Optional(
       Type.Union([TemplateSaveEvidenceSchema, Type.Null()]),
+    ),
+    saveReceipt: Type.Optional(
+      Type.Union([TemplateSaveReceiptSchema, Type.Null()]),
     ),
     applyStatus: Type.Union(
       ["pending", "applied", "compensated", "failed"].map((value) =>

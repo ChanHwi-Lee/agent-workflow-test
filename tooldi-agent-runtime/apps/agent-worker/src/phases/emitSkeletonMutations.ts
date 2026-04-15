@@ -94,7 +94,10 @@ export async function emitSkeletonMutations(
   const isV2FreeformExecution =
     foundationInputs.executionMode === "v2_freeform" ||
     copyInputs.executionMode === "v2_freeform" ||
-    polishInputs.executionMode === "v2_freeform";
+    polishInputs.executionMode === "v2_freeform" ||
+    foundationInputs.executionMode === "object_native_freeform" ||
+    copyInputs.executionMode === "object_native_freeform" ||
+    polishInputs.executionMode === "object_native_freeform";
 
   const commitGroup = plan.actions[0]?.commitGroup ?? createRequestId();
   const draftId = `draft_${input.job.runId}`;
@@ -500,7 +503,9 @@ export async function emitSkeletonMutations(
       }),
     );
 
-    return proposals;
+    return proposals.filter(
+      (proposal) => proposal.mutation.commands.length > 0,
+    );
   }
 }
 

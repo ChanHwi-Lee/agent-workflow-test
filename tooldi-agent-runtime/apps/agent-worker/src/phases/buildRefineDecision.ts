@@ -37,11 +37,12 @@ export async function buildRefineDecision(
   const operations: RefinementPatchOperation[] = [];
   const hasGenericPromoSafeHeadline = copyPlan.primaryMessage.trim().length > 0;
   const isV2FreeformExecution = executablePlan.actions.some(
-    (action) =>
-      action.inputs &&
-      typeof action.inputs === "object" &&
-      action.inputs.executionMode === "v2_freeform",
-  );
+      (action) =>
+        action.inputs &&
+        typeof action.inputs === "object" &&
+        (action.inputs.executionMode === "v2_freeform" ||
+          action.inputs.executionMode === "object_native_freeform"),
+    );
 
   for (const issue of judgePlan.issues) {
     switch (issue.code) {

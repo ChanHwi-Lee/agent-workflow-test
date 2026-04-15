@@ -919,6 +919,81 @@ test("ruleJudgeCreateTemplate refuses invalid photo execution contracts", async 
   );
 });
 
+test("ruleJudgeCreateTemplate skips legacy graphic promo completeness for object-native freeform execution", async () => {
+  const intent = createIntent({
+    domain: "general_marketing",
+    campaignGoal: "sale_conversion",
+    assetPolicy: normalizeTemplateAssetPolicy("graphic_allowed_photo_optional"),
+    primaryVisualPolicy: "graphic_preferred",
+    facets: {
+      seasonality: "spring",
+      menuType: null,
+      promotionStyle: "general_campaign",
+      offerSpecificity: "broad_offer",
+    },
+  });
+  const searchProfile = await buildSearchProfile(intent);
+  const verdict = await ruleJudgeCreateTemplate(
+    intent,
+    searchProfile,
+    createSelectionDecision({
+      executionStrategy: "graphic_first_shape_text_group",
+      graphicCompositionSet: {
+        density: "medium",
+        roles: [
+          {
+            role: "primary_accent",
+            candidateId: "graphic-1",
+            sourceAssetId: "graphic:1",
+            sourceSerial: "2",
+            sourceCategory: "illust",
+            variantKey: "graphic_primary",
+            decorationMode: "promo_multi_graphic",
+          },
+          {
+            role: "corner_accent",
+            candidateId: "graphic-3",
+            sourceAssetId: "graphic:3",
+            sourceSerial: "23",
+            sourceCategory: "bitmap",
+            variantKey: "graphic_corner",
+            decorationMode: "promo_multi_graphic",
+          },
+        ],
+        summary: "object native freeform skips graphic-role completeness",
+      },
+    }),
+    createTypographyDecision(),
+    createSourceSearchSummary(),
+    createPlan({
+      actions: [
+        {
+          ...createPlan().actions[0]!,
+          inputs: {
+            executionMode: "object_native_freeform",
+          },
+        },
+        {
+          ...createPlan().actions[1]!,
+          inputs: {
+            executionMode: "object_native_freeform",
+            freeformBlocks: [],
+          },
+        },
+      ],
+    }),
+    null,
+    createCopyPlan(),
+    createAbstractLayoutPlan(),
+    createConcreteLayoutPlan(),
+  );
+
+  assert.equal(
+    verdict.issues.some((issue) => issue.code === "promo_structure_incomplete"),
+    false,
+  );
+});
+
 test("ruleJudgeCreateTemplate still evaluates legacy asset policy callers against the structured policy checks", async () => {
   const intent = createIntent({
     assetPolicy:

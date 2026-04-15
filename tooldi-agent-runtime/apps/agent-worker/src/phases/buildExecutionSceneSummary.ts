@@ -26,7 +26,9 @@ export async function buildExecutionSceneSummary(
   const polishAction = plan.actions.find((action) => action.operation === "place_promo_polish");
   const isV2FreeformExecution =
     readExecutionMode(copyAction) === "v2_freeform" ||
-    readExecutionMode(polishAction) === "v2_freeform";
+    readExecutionMode(polishAction) === "v2_freeform" ||
+    readExecutionMode(copyAction) === "object_native_freeform" ||
+    readExecutionMode(polishAction) === "object_native_freeform";
 
   const finalRevision =
     [...stageAckHistory]

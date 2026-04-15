@@ -168,6 +168,13 @@ class RecordingBackendCallbackClient implements BackendCallbackClient {
                 modified: "2026-04-10T02:42:19.000Z",
                 version: "2",
               },
+              saveReceipt: {
+                saveReceiptId: `save_receipt_${_runId}_${currentSeq}_${command.commandId}`,
+                outputTemplateCode: `template_draft_${_runId}`,
+                savedRevision: currentSeq,
+                savedAt: "2026-04-10T02:42:19.000Z",
+                reason: command.reason,
+              },
             }))
         : [];
     return {
@@ -2161,6 +2168,12 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   assert.equal(
     callbackClient.finalizations[0]?.latestSaveEvidence?.code,
     `template_draft_${testRun.runId}`,
+  );
+  assert.equal(
+    String(callbackClient.finalizations[0]?.latestSaveReceipt?.saveReceiptId ?? "").startsWith(
+      `save_receipt_${testRun.runId}_`,
+    ),
+    true,
   );
   assert.ok((callbackClient.finalizations[0]?.warnings?.length ?? 0) > 0);
   assert.equal(

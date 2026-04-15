@@ -191,7 +191,10 @@ export function registerFinalizeNodes(
           .map((record) => record.mutationId),
         state.lastMutationAck,
         buildFinalizeOptions(
-          state,
+          {
+            ...state,
+            workflowVariant: state.hydrated.request.workflowVariant ?? null,
+          },
           cooperativeStopRequested,
           state.assignedSeqs,
           state.ruleJudgeVerdict?.recommendation === "refuse"

@@ -65,6 +65,9 @@ function toAgentRunResultSummary(request: RunFinalizeRequest): AgentRunResultSum
         ]
       : []);
 
+  const latestSaveReceiptId =
+    request.latestSaveReceiptId ?? request.latestSaveReceipt?.saveReceiptId ?? null;
+
   return {
     finalStatus: request.finalStatus,
     draftId: request.draftId ?? null,
@@ -73,8 +76,9 @@ function toAgentRunResultSummary(request: RunFinalizeRequest): AgentRunResultSum
     durabilityState: deriveDurabilityState(
       request.finalStatus,
       request.latestSaveEvidence ?? null,
+      latestSaveReceiptId,
     ),
-    latestSaveReceiptId: request.latestSaveReceiptId ?? null,
+    latestSaveReceiptId,
     warningCount: warnings.length,
     fallbackCount: request.fallbackCount,
     warnings,
@@ -85,8 +89,9 @@ function toAgentRunResultSummary(request: RunFinalizeRequest): AgentRunResultSum
 function deriveDurabilityState(
   finalStatus: RunFinalizeRequest["finalStatus"],
   latestSaveEvidence: AgentRunResultSummary["latestSaveEvidence"],
+  latestSaveReceiptId: AgentRunResultSummary["latestSaveReceiptId"],
 ): AgentRunResultSummary["durabilityState"] {
-  if (latestSaveEvidence) {
+  if (latestSaveEvidence && latestSaveReceiptId) {
     if (finalStatus === "completed" || finalStatus === "completed_with_warning") {
       return "final_saved";
     }

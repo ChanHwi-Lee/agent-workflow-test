@@ -59,6 +59,33 @@
 - real save evidence 는 아직 synthetic finalize placeholder 에 의존한다.
 - `retrieval_prior_v2_reset` 까지의 safety hardening만으로는 브라우저 visible quality가 충분히 올라가지 않았고, 다음 단계는 semantic-slot hybrid 를 더 미세 조정하는 것이 아니라 object-native reference execution 으로 전환하는 것이다.
 
+## 2026-04-15 현재 구현 추가
+
+- experimental `workflowVariant=object_native_v1` 경로를 추가했다.
+  - `retrieval_prior_v2_reset` 은 baseline 으로 유지한다.
+  - 새 경로는 top-k prior candidate에 대해 object-native audit / reselection / renderability report artifact를 남긴다.
+- 현재 object-native 경로는 top-k candidate를 audit하고, stable-capable candidate가 실제로 생겼을 때만 reselection을 의미 있게 다룬다.
+- fallback-only 후보끼리의 reselection heuristics는 architecture 전환 신호를 왜곡할 수 있어 runtime truth로 채택하지 않는다.
+- `object_native_v1` 는 이제 첫 native stable slice를 가진다.
+  - 지원 cluster family: `big_text`, `promo_band`, `cta`, `optional microtext/decor`
+  - 이 slice는 `buildReferenceResetPath` stable contract 대신 object-native renderability guard로 stable을 판정한다.
+- object-native artifact는 이제 `failureStage` (`semantic_gate_failure`, `binding_failure`, `renderability_guard_failure`) 를 남긴다.
+  - candidate audit / selection / renderability report는 `missingClusterFamilies`, `textBearingClusterCount`, `contentClusterCount`, `bindingCoverage`, `renderabilityMetrics`, `semanticGateReason` 를 함께 남긴다.
+- `template-prior-bundle` 는 이제 query-level diagnostics 를 남긴다.
+  - `successfulQueryCount`, `failedQueryCount`, `queryDiagnostics[]`
+  - real Tooldi template search가 `result=false` 와 `trace_id` 만 돌려주는 empty-result payload는 invalid response가 아니라 empty result set으로 normalize 한다.
+  - real source query 하나가 실패해도 run 전체를 transport failure로 종료하지 않고 legacy fallback 판단까지 계속 간다.
+- `pnpm smoke:object-native` 는 representative fixture에서 `template-stable` reselection과 `status=stable` 을 검증한다.
+- worker 는 아래 artifact family를 새로 남긴다.
+  - `object-native-reference-audit`
+  - `object-native-candidate-selection`
+  - `object-native-renderability-report`
+  - `object-native-cluster-graph`
+- toolditor spike panel은 `experimental v3 생성` 버튼을 가지며 object-native audit/selection/renderability log를 따로 노출한다.
+- FE `saveTemplate` ack 는 이제 `saveEvidence` 뿐 아니라 canonical `saveReceipt` 도 함께 보낸다.
+- backend finalizer 는 `latestSaveReceiptId` 뿐 아니라 `LiveDraftArtifactBundle.saveMetadata.latestSaveReceipt` 를 실제 payload로 materialize 한다.
+  - completed 계열 finalize는 이제 `saveEvidence + saveReceipt + finalRevision` 이 모두 있어야 통과하고, 하나라도 빠지면 `save_failed_after_apply` 로 강등한다.
+
 ## 범위
 
 - 이 저장소에는 Tooldi agent workflow v1 문서들과 `tooldi-agent-runtime/` backend workspace만 포함했다.
@@ -158,6 +185,15 @@ npm test
 cd tooldi-agent-runtime
 pnpm smoke:transport
 ```
+
+- real-source object-native evaluation harness:
+
+```bash
+cd tooldi-agent-runtime
+pnpm local:toolditor:eval:object-native:real
+```
+
+- 위 명령은 이미 떠 있는 `local:toolditor:stack:real` 에 붙어서 여러 `workflowVariant=object_native_v1` run을 실행하고, prompt별 `candidateCount / reselectionApplied / failureStage / semanticGateReason / compositionStatus / saveReceipt / saveEvidence` 분포와 `save truth` aggregate를 JSON report로 요약한다.
 
 - pickup-timeout retry smoke:
 

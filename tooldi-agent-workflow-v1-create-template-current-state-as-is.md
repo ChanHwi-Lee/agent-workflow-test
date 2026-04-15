@@ -51,7 +51,35 @@
 - vision model judge
 - public multi-turn memory
 - editor canonical picture seam 정렬
-- actual editor save evidence 완전 연동
+
+### 3.3 2026-04-15 추가 current truth
+
+- optional `workflowVariant` 는 현재 아래를 지원한다.
+  - `legacy`
+  - `retrieval_prior_v1`
+  - `retrieval_prior_v2`
+  - `retrieval_prior_v2_reset`
+  - `object_native_v1`
+- `object_native_v1` 는 `retrieval_prior_v2_reset` 을 덮어쓰지 않는 별도 experimental path다.
+- `object_native_v1` 는 top-k template prior 후보를 대상으로 아래 artifact를 남긴다.
+  - `object-native-reference-audit`
+  - `object-native-candidate-selection`
+  - `object-native-renderability-report`
+  - `object-native-cluster-graph`
+- `template-prior-bundle` 는 query-level diagnostics 를 남긴다.
+  - `successfulQueryCount`, `failedQueryCount`, `queryDiagnostics[]`
+  - real Tooldi template search가 `result=false` 와 `trace_id` 만 돌려주는 empty-result payload는 empty result set으로 normalize 한다.
+  - query 일부가 source-contract boundary에서 실패해도 run 전체를 transport failure로 닫지 않고 fallback 판단까지 계속 간다.
+- 현재 object-native path는 top-k candidate audit과 candidate-selection artifact를 남기지만, stable-capable candidate가 실제로 없으면 fallback-only reselection을 runtime truth로 승격하지 않는다.
+- fallback-only 후보끼리의 reselection heuristics는 v2 시절의 fallback tuning 착시를 재발시킬 수 있으므로 현재 기준선에서는 금지한다.
+- 현재 object-native path는 첫 native stable slice를 가진다.
+  - 지원 cluster family: `big_text`, `promo_band`, `cta`, `optional microtext/decor`
+  - stable 판정은 reset semantic subset이 아니라 object-native renderability guard로 닫는다.
+- object-native artifact는 이제 `failureStage` (`semantic_gate_failure`, `binding_failure`, `renderability_guard_failure`) 를 남겨 style-only 원인을 구조적으로 분리한다.
+  - candidate audit / selection / renderability report는 `missingClusterFamilies`, `textBearingClusterCount`, `contentClusterCount`, `bindingCoverage`, `renderabilityMetrics`, `semanticGateReason` 를 함께 남긴다.
+- FE `saveTemplate` ack 는 이제 `saveEvidence` 와 함께 canonical `saveReceipt` 를 보낸다.
+- backend finalization/materialization 은 더 이상 `latestSaveReceiptId`/`outputTemplateCode` 를 null placeholder로만 두지 않고, `latestSaveReceipt` payload를 `LiveDraftArtifactBundle.saveMetadata` 에 실어 남긴다.
+  - completed 계열 finalize는 이제 `saveEvidence + saveReceipt + finalRevision` 이 모두 있어야 통과하고, 하나라도 빠지면 `save_failed_after_apply` 로 강등한다.
 
 ## 4. 액터 및 전제조건
 
@@ -92,7 +120,7 @@
 - local 기준 현재 planner는 `langchain + google` 로 설정할 수 있고 실제로 동작한다.
 - 시스템은 optional `workflowVariant` 를 지원한다.
   - 기본값: `legacy`
-  - experimental: `retrieval_prior_v1`
+  - experimental: `retrieval_prior_v1`, `retrieval_prior_v2`, `retrieval_prior_v2_reset`, `object_native_v1`
 - planner는 현재 최소 아래 값을 만든다.
   - `templateKind`
   - `domain`
@@ -124,6 +152,7 @@
 - photo branch는 `photo_selected` 또는 `graphic_preferred` reasoning을 artifact와 `run.log`에 남긴다.
 - `retrieval_prior_v1` path는 searchable template top-k 결과와 fetched template JSON으로 `template-prior-bundle` artifact를 남긴다.
 - `retrieval_prior_v1` path는 selected template scaffold의 layout/copy anchor 힌트를 copy/layout/composition 단계에 반영한다.
+- `object_native_v1` path는 top-k template prior 후보에 대해 object-native audit/reselection/renderability artifact를 남기고, first native stable slice에서 stable-capable candidate가 생기면 original selected template 교체를 의미 있게 다룬다.
 
 ### 6.4 judge / terminal semantics
 
@@ -156,6 +185,11 @@
   - `judge-plan.json`
   - `refine-decision.json`
   - `executable-plan.json`
+- `object_native_v1` 가 켜지면 아래 artifact도 추가로 남긴다.
+  - `object-native-reference-audit.json`
+  - `object-native-candidate-selection.json`
+  - `object-native-renderability-report.json`
+  - `object-native-cluster-graph.json`
 - refine가 실제로 돌면 `executable-plan-refine-1.json`, `execution-scene-summary-refine-1.json`, `judge-plan-refine-1.json`, `refine-decision-refine-1.json` 도 남는다.
 - finalize/completion chain은 이제 `copyPlanRef`, `assetPlanRef`, `concreteLayoutPlanRef`, `executionSceneSummaryRef`, `judgePlanRef`, `refineDecisionRef` 까지 포함한다.
 
@@ -227,6 +261,15 @@
 cd tooldi-agent-runtime
 pnpm run local:toolditor:stack:real
 ```
+
+- real-source object-native evaluation harness:
+
+```bash
+cd tooldi-agent-runtime
+pnpm local:toolditor:eval:object-native:real
+```
+
+- 이 harness는 이미 떠 있는 `local:toolditor:stack:real` 기준으로 여러 `workflowVariant=object_native_v1` run을 실행하고, prompt별 `template-prior` diversity, `object-native` artifact, `semanticGateReason`, `saveReceipt/saveEvidence`, `save truth` aggregate를 요약한다.
 
 - 브라우저 entry:
   - `http://localhost:3010/editor`

@@ -5,6 +5,7 @@ import type {
   MutationLedgerEntry,
   RunFinalizeRequest,
   TemplateSaveEvidence,
+  TemplateSaveReceipt,
 } from "@tooldi/agent-contracts";
 
 import type { MutationLedgerRecord } from "../repositories/mutationLedgerRepository.js";
@@ -23,6 +24,7 @@ export interface RunLedgerProjection {
   slotBindings: DraftManifest["slotBindings"];
   rootLayerIds: string[];
   editableLayerIds: string[];
+  requiredExecutionSlots: ExecutionSlotKey[];
   minimumDraftSatisfied: boolean;
   maxMutationEventSequence: number;
 }
@@ -38,6 +40,9 @@ export function selectMutationRangeRecords(
 
 export function buildRunLedgerProjection(
   rangedRecords: MutationLedgerRecord[],
+  options: {
+    requiredExecutionSlots?: ExecutionSlotKey[];
+  } = {},
 ): RunLedgerProjection {
   const orderedEntries = buildMutationLedgerEntries(rangedRecords);
   const slotBindings = buildSlotBindings(rangedRecords);
@@ -45,6 +50,9 @@ export function buildRunLedgerProjection(
   const editableLayerIds = slotBindings
     .filter((binding) => binding.editable)
     .flatMap((binding) => binding.layerIds);
+  const requiredExecutionSlots = normalizeRequiredExecutionSlots(
+    options.requiredExecutionSlots ?? [],
+  );
 
   return {
     rangedRecords,
@@ -52,7 +60,11 @@ export function buildRunLedgerProjection(
     slotBindings,
     rootLayerIds,
     editableLayerIds,
-    minimumDraftSatisfied: hasMinimumRequiredSlots(rangedRecords),
+    requiredExecutionSlots,
+    minimumDraftSatisfied:
+      requiredExecutionSlots.length > 0
+        ? hasRequiredExecutionSlots(rangedRecords, requiredExecutionSlots)
+        : hasMinimumRequiredCompatSlots(rangedRecords),
     maxMutationEventSequence: Math.max(
       ...rangedRecords.map((record) => record.seq),
     ),
@@ -83,6 +95,7 @@ function buildMutationLedgerEntries(
     baseRevision: record.mutation.expectedBaseRevision,
     ackRevision: record.ackRecord?.resultingRevision ?? null,
     saveEvidence: findSaveEvidence(record.ackRecord?.commandResults),
+    saveReceipt: findSaveReceipt(record.ackRecord?.commandResults),
     applyStatus: toApplyStatus(record.ackStatus),
     rollbackGroupId: record.rollbackGroupId,
     emittedAt: record.proposedAt,
@@ -92,7 +105,11 @@ function buildMutationLedgerEntries(
 
 function findSaveEvidence(
   commandResults:
-    | Array<{ op: string; saveEvidence?: TemplateSaveEvidence }>
+    | Array<{
+        op: string;
+        saveEvidence?: TemplateSaveEvidence;
+        saveReceipt?: TemplateSaveReceipt;
+      }>
     | undefined,
 ): TemplateSaveEvidence | null {
   return (
@@ -101,6 +118,24 @@ function findSaveEvidence(
         commandResult.op === "saveTemplate" &&
         commandResult.saveEvidence !== undefined,
     )?.saveEvidence ?? null
+  );
+}
+
+function findSaveReceipt(
+  commandResults:
+    | Array<{
+        op: string;
+        saveEvidence?: TemplateSaveEvidence;
+        saveReceipt?: TemplateSaveReceipt;
+      }>
+    | undefined,
+): TemplateSaveReceipt | null {
+  return (
+    commandResults?.find(
+      (commandResult) =>
+        commandResult.op === "saveTemplate" &&
+        commandResult.saveReceipt !== undefined,
+    )?.saveReceipt ?? null
   );
 }
 
@@ -155,7 +190,7 @@ function resolvePrimaryLayerId(
   return clientLayerKey;
 }
 
-function hasMinimumRequiredSlots(records: MutationLedgerRecord[]): boolean {
+function hasMinimumRequiredCompatSlots(records: MutationLedgerRecord[]): boolean {
   const seen = new Set<string>();
   for (const record of records) {
     for (const command of record.mutation.commands) {
@@ -170,6 +205,33 @@ function hasMinimumRequiredSlots(records: MutationLedgerRecord[]): boolean {
     }
   }
   return REQUIRED_SLOTS.every((slot) => seen.has(slot));
+}
+
+function hasRequiredExecutionSlots(
+  records: MutationLedgerRecord[],
+  requiredExecutionSlots: ExecutionSlotKey[],
+): boolean {
+  const seen = new Set<ExecutionSlotKey>();
+  for (const record of records) {
+    for (const command of record.mutation.commands) {
+      if (command.op !== "createLayer") {
+        continue;
+      }
+
+      const executionSlotKey = resolveExecutionSlotKey(command);
+      if (executionSlotKey) {
+        seen.add(executionSlotKey);
+      }
+    }
+  }
+
+  return requiredExecutionSlots.every((slot) => seen.has(slot));
+}
+
+function normalizeRequiredExecutionSlots(
+  slots: ExecutionSlotKey[],
+): ExecutionSlotKey[] {
+  return [...new Set(slots)];
 }
 
 function resolveExecutionSlotKey(

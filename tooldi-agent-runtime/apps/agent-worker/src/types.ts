@@ -19,6 +19,7 @@ import type {
 } from "@tooldi/agent-llm";
 import type {
   TemplateCandidateSet,
+  TooldiCatalogSourceErrorCode,
   TooldiTemplateDocument,
   TooldiCatalogSourceMode,
 } from "@tooldi/tool-adapters";
@@ -43,7 +44,8 @@ export type WorkflowVariant =
   | "legacy"
   | "retrieval_prior_v1"
   | "retrieval_prior_v2"
-  | "retrieval_prior_v2_reset";
+  | "retrieval_prior_v2_reset"
+  | "object_native_v1";
 
 export type TemplateScaffoldLayoutMode =
   | "copy_left_with_right_decoration"
@@ -111,7 +113,8 @@ export interface TemplatePriorBundle {
   workflowVariant:
     | "retrieval_prior_v1"
     | "retrieval_prior_v2"
-    | "retrieval_prior_v2_reset";
+    | "retrieval_prior_v2_reset"
+    | "object_native_v1";
   query: {
     keyword: string;
     canvas: "horizontal" | "vertical" | "square" | "";
@@ -127,7 +130,32 @@ export interface TemplatePriorBundle {
   selectedTemplateTitle: string | null;
   selectedScaffold: TemplatePriorScaffold | null;
   candidates: TemplatePriorCandidate[];
+  diagnostics?: TemplatePriorDiagnostics;
   summary: string;
+}
+
+export interface TemplatePriorQueryDiagnostic {
+  label: string;
+  keyword: string;
+  page: number;
+  status: "ok" | "error";
+  retrievedAssetCount: number;
+  traceId: string | null;
+  errorCode: TooldiCatalogSourceErrorCode | null;
+  errorMessage: string | null;
+  errorUrl: string | null;
+  errorStatus: number | null;
+  responsePreview: string | null;
+}
+
+export interface TemplatePriorDiagnostics {
+  totalQueryCount: number;
+  successfulQueryCount: number;
+  failedQueryCount: number;
+  mergedCandidateCount: number;
+  keptCandidateCount: number;
+  rerankedCandidateCount: number;
+  queryDiagnostics: TemplatePriorQueryDiagnostic[];
 }
 
 export interface IntentConsistencyFlag {
@@ -315,7 +343,8 @@ export interface SceneRolePlan {
   workflowVariant:
     | "retrieval_prior_v1"
     | "retrieval_prior_v2"
-    | "retrieval_prior_v2_reset";
+    | "retrieval_prior_v2_reset"
+    | "object_native_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   roles: SceneRolePlanEntry[];
@@ -329,7 +358,8 @@ export interface SceneLayoutPlan {
   workflowVariant:
     | "retrieval_prior_v1"
     | "retrieval_prior_v2"
-    | "retrieval_prior_v2_reset";
+    | "retrieval_prior_v2_reset"
+    | "object_native_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   layoutFamily: AbstractLayoutFamily;
@@ -386,7 +416,8 @@ export interface SceneStylePlan {
   workflowVariant:
     | "retrieval_prior_v1"
     | "retrieval_prior_v2"
-    | "retrieval_prior_v2_reset";
+    | "retrieval_prior_v2_reset"
+    | "object_native_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   backgroundKind: TemplatePriorScaffold["backgroundMode"];
@@ -407,7 +438,8 @@ export interface SceneBindingPlan {
   workflowVariant:
     | "retrieval_prior_v1"
     | "retrieval_prior_v2"
-    | "retrieval_prior_v2_reset";
+    | "retrieval_prior_v2_reset"
+    | "object_native_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   backgroundMode:
@@ -659,7 +691,10 @@ export interface FreeformLayoutPlan {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2" | "retrieval_prior_v2_reset";
+  workflowVariant:
+    | "retrieval_prior_v2"
+    | "retrieval_prior_v2_reset"
+    | "object_native_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   compositionStatus: "stable" | "style_only";
@@ -672,7 +707,10 @@ export interface StyleDowngradeVerdict {
   verdictId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2" | "retrieval_prior_v2_reset";
+  workflowVariant:
+    | "retrieval_prior_v2"
+    | "retrieval_prior_v2_reset"
+    | "object_native_v1";
   applied: boolean;
   reason: string | null;
   summary: string;
@@ -709,7 +747,7 @@ export interface ReferenceBlockGraph {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2_reset";
+  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   sourceCanvasWidth: number;
@@ -737,7 +775,7 @@ export interface MessageAtomPlan {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2_reset";
+  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1";
   atoms: MessageAtom[];
   summary: string;
 }
@@ -754,7 +792,7 @@ export interface BlockBindingPlan {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2_reset";
+  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1";
   assignments: BlockBindingAssignment[];
   droppedAtomIds: string[];
   summary: string;
@@ -764,7 +802,7 @@ export interface EditableBlockPlan {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2_reset";
+  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   compositionStatus: "stable" | "style_only";
@@ -776,12 +814,117 @@ export interface QualityEvalSummary {
   summaryId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2_reset";
+  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   warnings: string[];
   retainedReferenceBlockCount: number;
   emittedBlockCount: number;
+  summary: string;
+}
+
+export type ObjectNativeClusterFamily = "big_text" | "promo_band" | "cta";
+
+export type ObjectNativeSemanticGateReason =
+  | "none"
+  | "missing_cluster_family"
+  | "detection_miss"
+  | "insufficient_content_bearing_clusters";
+
+export interface ObjectNativeBindingCoverage {
+  requiredAtomCount: number;
+  boundRequiredAtomCount: number;
+  optionalAtomCount: number;
+  boundOptionalAtomCount: number;
+  missingRequiredAtomKinds: Array<"primary" | "offer" | "cta">;
+}
+
+export interface ObjectNativeRenderabilityMetrics {
+  evaluated: boolean;
+  copyBlockCount: number;
+  polishBlockCount: number;
+  contentBoundsCount: number;
+  offCanvasBlockCount: number;
+  overlappingClusterPairCount: number;
+  decorOcclusionCount: number;
+  warnings: string[];
+}
+
+export interface ObjectNativeReadinessDiagnostics {
+  missingClusterFamilies: ObjectNativeClusterFamily[];
+  textBearingClusterCount: number;
+  contentClusterCount: number;
+  bindingCoverage: ObjectNativeBindingCoverage;
+  renderabilityMetrics: ObjectNativeRenderabilityMetrics;
+  semanticGateReason: ObjectNativeSemanticGateReason;
+}
+
+export type ObjectNativeFailureStage =
+  | "none"
+  | "precondition_failure"
+  | "semantic_gate_failure"
+  | "binding_failure"
+  | "renderability_guard_failure";
+
+export interface ObjectNativeAuditEntry {
+  templateCode: string;
+  templateTitle: string;
+  rank: number;
+  originalSelected: boolean;
+  readiness: "stable_capable" | "fallback_only" | "unusable";
+  failureStage: ObjectNativeFailureStage;
+  compositionStatus: "stable" | "style_only" | "none";
+  score: number;
+  retainedReferenceBlockCount: number;
+  emittedBlockCount: number;
+  diagnostics: ObjectNativeReadinessDiagnostics;
+  reason: string;
+  warnings: string[];
+}
+
+export interface ObjectNativeReferenceAudit {
+  auditId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "object_native_v1";
+  previousSelectedTemplateCode: string | null;
+  previousSelectedTemplateTitle: string | null;
+  nextSelectedTemplateCode: string | null;
+  nextSelectedTemplateTitle: string | null;
+  entries: ObjectNativeAuditEntry[];
+  summary: string;
+}
+
+export interface ObjectNativeCandidateSelection {
+  selectionId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "object_native_v1";
+  previousSelectedTemplateCode: string | null;
+  previousSelectedTemplateTitle: string | null;
+  nextSelectedTemplateCode: string | null;
+  nextSelectedTemplateTitle: string | null;
+  reselectionApplied: boolean;
+  selectedReadiness: "stable_capable" | "fallback_only" | "unusable" | null;
+  selectedFailureStage: ObjectNativeFailureStage;
+  selectedDiagnostics: ObjectNativeReadinessDiagnostics | null;
+  reason: string;
+  summary: string;
+}
+
+export interface ObjectNativeRenderabilityReport {
+  reportId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "object_native_v1";
+  selectedTemplateCode: string | null;
+  selectedTemplateTitle: string | null;
+  passed: boolean;
+  failureStage: ObjectNativeFailureStage;
+  compositionStatus: "stable" | "style_only" | "none";
+  selectedDiagnostics: ObjectNativeReadinessDiagnostics | null;
+  reason: string;
+  warnings: string[];
   summary: string;
 }
 
@@ -1372,6 +1515,13 @@ export interface StageAckRecordCommand {
     serial: number;
     modified: string;
     version: string;
+  } | null;
+  saveReceipt?: {
+    saveReceiptId: string;
+    outputTemplateCode: string;
+    savedRevision: number;
+    savedAt: string;
+    reason: string;
   } | null;
   targetLayerId: string | null;
   proposedBounds: LayoutBounds | null;

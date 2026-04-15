@@ -25,6 +25,29 @@ import { deriveWorkflowVariant } from "./planningContext.js";
 
 type CanvasObject = Record<string, unknown>;
 
+interface ExtractionAnalysisResult {
+  referenceBlockGraph: ReferenceBlockGraph;
+  warnings: string[];
+}
+
+interface RawReferenceCandidates {
+  textBlocks: ReferenceBlock[];
+  explicitSurfaces: ReferenceBlock[];
+  inferredSurfaces: ReferenceBlock[];
+  decorations: ReferenceBlock[];
+}
+
+interface CanonicalDisplaySelection {
+  block: ReferenceBlock | null;
+  foundCandidate: boolean;
+  rejectedDecorativeCandidate: boolean;
+}
+
+interface CanonicalSurfaceSelection {
+  block: ReferenceBlock | null;
+  source: "explicit" | "implicit" | null;
+}
+
 interface BuildReferenceResetPathResult {
   referenceBlockGraph: ReferenceBlockGraph | null;
   messageAtomPlan: MessageAtomPlan | null;
@@ -86,13 +109,14 @@ export function buildReferenceResetPath(
     );
   }
 
-  const referenceBlockGraph = extractReferenceBlockGraph(
+  const extractionAnalysis = extractReferenceBlockGraph(
     input.job.runId,
     input.job.traceId,
     selectedTemplateCode,
     selectedTemplateTitle,
     page,
   );
+  const referenceBlockGraph = extractionAnalysis.referenceBlockGraph;
   const referenceGate = evaluateStrongReferenceGate(referenceBlockGraph);
   if (!referenceGate.passed) {
     return buildStyleOnlyResult(
@@ -104,6 +128,10 @@ export function buildReferenceResetPath(
       sceneBindingPlan,
       referenceGate.reason ?? "Primary reference was too weak for reset composition mode.",
       referenceBlockGraph,
+      [
+        ...extractionAnalysis.warnings,
+        ...(referenceGate.reasonCode ? [referenceGate.reasonCode] : []),
+      ],
     );
   }
   const blockBindingPlan = bindMessageAtomsToReferenceBlocks(
@@ -160,6 +188,7 @@ export function buildReferenceResetPath(
     blockBindingPlan,
     freeformLayoutPlan,
     sceneBindingPlan,
+    extractionAnalysis.warnings,
   );
 
   return {
@@ -223,6 +252,12 @@ function buildStyleOnlyResult(
     sceneStylePlan,
     sceneBindingPlan,
   );
+  const warnings = collectStyleOnlyQualityWarnings(
+    editableBlockPlan,
+    sceneBindingPlan,
+    reason,
+    extraWarnings,
+  );
   return {
     referenceBlockGraph,
     messageAtomPlan,
@@ -247,7 +282,7 @@ function buildStyleOnlyResult(
       workflowVariant: "retrieval_prior_v2_reset",
       selectedTemplateCode,
       selectedTemplateTitle,
-      warnings: [...new Set([reason, ...extraWarnings])],
+      warnings,
       retainedReferenceBlockCount: referenceBlockGraph?.blocks.length ?? 0,
       emittedBlockCount: editableBlockPlan.blocks.length,
       summary: reason,
@@ -261,7 +296,40 @@ function buildStyleOnlyResult(
   };
 }
 
-function buildMessageAtomPlan(
+function collectStyleOnlyQualityWarnings(
+  editableBlockPlan: EditableBlockPlan,
+  sceneBindingPlan: SceneBindingPlan | null,
+  reason: string,
+  extraWarnings: string[],
+): string[] {
+  const warnings = [reason, ...extraWarnings];
+  const promoTextBlock = editableBlockPlan.blocks.find(
+    (block) => block.executionSlotKey === "offer_line",
+  );
+  if (promoTextBlock?.styleTokens?.widthExpanded === true) {
+    warnings.push("promo_band_width_expanded");
+  }
+  if (
+    typeof promoTextBlock?.styleTokens?.wrappedLines === "number" &&
+    Number(promoTextBlock.styleTokens.wrappedLines) > 1
+  ) {
+    warnings.push("promo_wrapped_to_two_lines");
+  }
+  warnings.push("style_only_simple_readable_layout_applied");
+  warnings.push("safe_decor_skipped_due_to_style_only");
+  if (sceneBindingPlan?.promoTextColorSource === "contrast_fallback") {
+    warnings.push("promo_contrast_fallback_applied");
+  }
+  const headlineBlock = editableBlockPlan.blocks.find(
+    (block) => block.executionSlotKey === "headline",
+  );
+  if (headlineBlock?.styleTokens?.styleOnlyHeadlineShrunk === true) {
+    warnings.push("style_only_headline_shrunk_to_fit");
+  }
+  return [...new Set(warnings)];
+}
+
+export function buildMessageAtomPlan(
   prompt: string,
   copyPlan: CopyPlan | null,
   runId: string,
@@ -311,60 +379,59 @@ function buildMessageAtomPlan(
   };
 }
 
-function extractReferenceBlockGraph(
+export function extractReferenceBlockGraph(
   runId: string,
   traceId: string,
   selectedTemplateCode: string,
   selectedTemplateTitle: string,
   page: Record<string, unknown>,
-): ReferenceBlockGraph {
+): ExtractionAnalysisResult {
   const canvasWidth = asNumber(page.width) ?? 1200;
   const canvasHeight = asNumber(page.height) ?? 628;
-  const objects = flattenObjects(readObjectArray(page.objects));
-  const blocks: ReferenceBlock[] = [];
-  const textBlocks = objects
-    .filter(isTextLikeObject)
-    .map((object) => classifyTextBlock(object, canvasWidth, canvasHeight))
-    .filter((block): block is ReferenceBlock => block !== null);
-  const explicitSurfaces = objects
-    .filter((object) => !isTextLikeObject(object))
-    .map((object) => classifySurfaceBlock(object, canvasWidth, canvasHeight))
-    .filter((block): block is ReferenceBlock => block !== null);
-  const inferredSurfaces = inferImplicitSurfaceBlocks(textBlocks, canvasWidth, canvasHeight);
-  const surfaces = [...explicitSurfaces];
-  if (!surfaces.some((block) => block.kind === "promo_surface")) {
-    const inferredPromo = inferredSurfaces.find((block) => block.kind === "promo_surface");
-    if (inferredPromo) {
-      surfaces.push(inferredPromo);
-    }
-  }
-  if (!surfaces.some((block) => block.kind === "action_surface")) {
-    const inferredAction = inferredSurfaces.find((block) => block.kind === "action_surface");
-    if (inferredAction) {
-      surfaces.push(inferredAction);
-    }
-  }
-  const decorations = objects
-    .filter((object) => !isTextLikeObject(object))
-    .map((object) => classifyDecorationBlock(object, canvasWidth, canvasHeight))
-    .filter((block): block is ReferenceBlock => block !== null)
-    .sort((left, right) => scoreDecorationBlock(right) - scoreDecorationBlock(left));
+  const warnings: string[] = [];
+  const rawCandidates = extractRawReferenceCandidates(page, canvasWidth, canvasHeight);
+  const canonicalDisplay = selectCanonicalDisplay(rawCandidates.textBlocks, canvasWidth, canvasHeight);
+  const promoSurface = selectCanonicalSurface(
+    rawCandidates.explicitSurfaces,
+    rawCandidates.inferredSurfaces,
+    rawCandidates.textBlocks,
+    canvasWidth,
+    canvasHeight,
+    "promo_surface",
+  );
+  const actionSurface = selectCanonicalSurface(
+    rawCandidates.explicitSurfaces,
+    rawCandidates.inferredSurfaces,
+    rawCandidates.textBlocks,
+    canvasWidth,
+    canvasHeight,
+    "action_surface",
+  );
+  const detailText = selectCanonicalDetailText(rawCandidates.textBlocks);
+  const decorations = selectCanonicalDecorations(
+    rawCandidates.decorations,
+    canvasWidth,
+    canvasHeight,
+  );
 
-  const primaryDisplay = selectSafePrimaryDisplay(textBlocks, canvasWidth, canvasHeight);
-  const supportText = [...textBlocks]
-    .filter((block) => block.kind === "support_text")
-    .sort((left, right) => right.prominence - left.prominence)[0] ?? null;
-  const detailText = [...textBlocks]
-    .filter((block) => block.kind === "detail_text")
-    .sort((left, right) => right.prominence - left.prominence)[0] ?? null;
-  const promoSurface = [...surfaces]
-    .filter((block) => block.kind === "promo_surface")
-    .sort((left, right) => right.prominence - left.prominence)[0] ?? null;
-  const actionSurface = [...surfaces]
-    .filter((block) => block.kind === "action_surface")
-    .sort((left, right) => right.prominence - left.prominence)[0] ?? null;
+  if (canonicalDisplay.foundCandidate) {
+    warnings.push("reference_display_candidate_found");
+  }
+  if (canonicalDisplay.rejectedDecorativeCandidate) {
+    warnings.push("reference_display_candidate_rejected_as_decorative");
+  }
+  if (promoSurface.source === "explicit") {
+    warnings.push("explicit_promo_surface_matched");
+  } else if (promoSurface.source === "implicit") {
+    warnings.push("implicit_promo_surface_inferred");
+  }
+  if (actionSurface.source === "explicit") {
+    warnings.push("explicit_cta_surface_matched");
+  } else if (actionSurface.source === "implicit") {
+    warnings.push("implicit_cta_surface_inferred");
+  }
 
-  blocks.push({
+  const blocks: ReferenceBlock[] = [{
     blockId: createRequestId(),
     kind: "background",
     layerType: "shape",
@@ -380,13 +447,12 @@ function extractReferenceBlockGraph(
     sourceOriginUrl: null,
     sourceWidth: null,
     sourceHeight: null,
-  });
-  if (primaryDisplay) blocks.push(primaryDisplay);
-  if (supportText) blocks.push(supportText);
+  }];
+  if (canonicalDisplay.block) blocks.push(canonicalDisplay.block);
   if (detailText) blocks.push(detailText);
-  if (promoSurface) blocks.push(promoSurface);
-  if (actionSurface) blocks.push(actionSurface);
-  blocks.push(...decorations.slice(0, 2));
+  if (promoSurface.block) blocks.push(promoSurface.block);
+  if (actionSurface.block) blocks.push(actionSurface.block);
+  blocks.push(...decorations);
   const sanitizedBlocks = sanitizeReferenceBlocksForExecution(
     blocks,
     canvasWidth,
@@ -394,17 +460,49 @@ function extractReferenceBlockGraph(
   );
 
   return {
-    planId: createRequestId(),
-    runId,
-    traceId,
-    workflowVariant: "retrieval_prior_v2_reset",
-    selectedTemplateCode,
-    selectedTemplateTitle,
-    sourceCanvasWidth: canvasWidth,
-    sourceCanvasHeight: canvasHeight,
-    blocks: sanitizedBlocks,
-    summary:
-      "Reset reference block graph keeps one dominant display, semantic surfaces, and only safe edge decorations that can survive editable execution.",
+    referenceBlockGraph: {
+      planId: createRequestId(),
+      runId,
+      traceId,
+      workflowVariant: "retrieval_prior_v2_reset",
+      selectedTemplateCode,
+      selectedTemplateTitle,
+      sourceCanvasWidth: canvasWidth,
+      sourceCanvasHeight: canvasHeight,
+      blocks: sanitizedBlocks,
+      summary:
+        "Reset reference block graph keeps one dominant display, semantic surfaces, and only safe edge decorations that can survive editable execution.",
+    },
+    warnings,
+  };
+}
+
+function extractRawReferenceCandidates(
+  page: Record<string, unknown>,
+  canvasWidth: number,
+  canvasHeight: number,
+): RawReferenceCandidates {
+  const objects = flattenObjects(readObjectArray(page.objects));
+  const textBlocks = objects
+    .filter(isTextLikeObject)
+    .map((object) => classifyTextBlock(object, canvasWidth, canvasHeight))
+    .filter((block): block is ReferenceBlock => block !== null);
+  const explicitSurfaces = objects
+    .filter((object) => !isTextLikeObject(object))
+    .map((object) => classifySurfaceBlock(object, canvasWidth, canvasHeight))
+    .filter((block): block is ReferenceBlock => block !== null);
+  const inferredSurfaces = inferImplicitSurfaceBlocks(textBlocks, canvasWidth, canvasHeight);
+  const decorations = objects
+    .filter((object) => !isTextLikeObject(object))
+    .map((object) => classifyDecorationBlock(object, canvasWidth, canvasHeight))
+    .filter((block): block is ReferenceBlock => block !== null)
+    .sort((left, right) => scoreDecorationBlock(right) - scoreDecorationBlock(left));
+
+  return {
+    textBlocks,
+    explicitSurfaces,
+    inferredSurfaces,
+    decorations,
   };
 }
 
@@ -441,7 +539,6 @@ function bindMessageAtomsToReferenceBlocks(
   };
 
   bind(findBlock("display_text"), atomByKind.get("primary"), "headline", "headline");
-  bind(findBlock("support_text"), atomByKind.get("support"), "subheadline", "supporting_copy");
   bind(findBlock("promo_surface"), atomByKind.get("offer"), "offer_line", "price_callout");
   bind(findBlock("action_surface"), atomByKind.get("cta"), "cta", "cta");
   bind(findBlock("detail_text"), atomByKind.get("detail"), "footer_note", "footer_note");
@@ -462,6 +559,85 @@ function bindMessageAtomsToReferenceBlocks(
     summary:
       "Reset block binding uses reference blocks as structure truth and only binds message atoms into retained semantic areas.",
   };
+}
+
+function selectCanonicalDisplay(
+  textBlocks: ReferenceBlock[],
+  canvasWidth: number,
+  canvasHeight: number,
+): CanonicalDisplaySelection {
+  const potentialHeadlineCandidates = textBlocks.filter((block) =>
+    isPotentialHeadlineCandidate(block, canvasWidth, canvasHeight),
+  );
+  const headlineCandidates = potentialHeadlineCandidates.filter((block) =>
+    isCanonicalHeadlineCandidate(block, textBlocks, canvasWidth, canvasHeight),
+  );
+  const foundCandidate = potentialHeadlineCandidates.length > 0;
+  const safeCandidates = headlineCandidates
+    .filter((block) => isExecutionSafeDisplayBlock(block, canvasWidth, canvasHeight))
+    .sort(
+      (left, right) =>
+        scoreDisplayCandidate(right, canvasWidth, canvasHeight) -
+        scoreDisplayCandidate(left, canvasWidth, canvasHeight),
+    );
+  const block = safeCandidates[0] ? { ...safeCandidates[0], kind: "display_text" as const } : null;
+  const rejectedDecorativeCandidate = potentialHeadlineCandidates.some((entry) =>
+    looksDecorativeDisplayCue(entry),
+  );
+  return {
+    block,
+    foundCandidate,
+    rejectedDecorativeCandidate,
+  };
+}
+
+function selectCanonicalSurface(
+  explicitSurfaces: ReferenceBlock[],
+  inferredSurfaces: ReferenceBlock[],
+  textBlocks: ReferenceBlock[],
+  canvasWidth: number,
+  canvasHeight: number,
+  kind: "promo_surface" | "action_surface",
+): CanonicalSurfaceSelection {
+  const cue = kind === "promo_surface"
+    ? selectPromoCueBlock(textBlocks, canvasWidth, canvasHeight)
+    : selectActionCueBlock(textBlocks, canvasWidth, canvasHeight);
+  const explicitCandidates = explicitSurfaces
+    .filter((block) => block.kind === kind)
+    .filter((block) => isCanonicalSurfaceCandidate(block, canvasHeight, kind))
+    .sort(
+      (left, right) =>
+        scoreSurfaceCandidate(right, cue, canvasWidth, canvasHeight, kind) -
+        scoreSurfaceCandidate(left, cue, canvasWidth, canvasHeight, kind),
+    );
+  if (explicitCandidates[0]) {
+    return { block: explicitCandidates[0], source: "explicit" };
+  }
+  const inferredCandidates = inferredSurfaces
+    .filter((block) => block.kind === kind)
+    .sort((left, right) => right.prominence - left.prominence);
+  if (inferredCandidates[0]) {
+    return { block: inferredCandidates[0], source: "implicit" };
+  }
+  return { block: null, source: null };
+}
+
+function selectCanonicalDetailText(textBlocks: ReferenceBlock[]): ReferenceBlock | null {
+  return (
+    [...textBlocks]
+      .filter((block) => block.kind === "detail_text")
+      .sort((left, right) => right.prominence - left.prominence)[0] ?? null
+  );
+}
+
+function selectCanonicalDecorations(
+  decorations: ReferenceBlock[],
+  canvasWidth: number,
+  canvasHeight: number,
+): ReferenceBlock[] {
+  return decorations
+    .filter((block) => isExecutionSafeScaledBounds(block.bounds, canvasWidth, canvasHeight, block.kind))
+    .slice(0, 1);
 }
 
 function buildEditableBlockPlan(
@@ -1088,7 +1264,7 @@ function fitStyleOnlyHeadlineBlock(
   };
 }
 
-function buildTextBlock(
+export function buildTextBlock(
   candidateId: string,
   block: ReferenceBlock,
   assignment: BlockBindingAssignment,
@@ -1165,7 +1341,7 @@ function fitTextBounds(
   };
 }
 
-function fitBandBounds(
+export function fitBandBounds(
   bounds: LayoutBounds,
   text: string,
   kind: "promo" | "cta",
@@ -1183,7 +1359,7 @@ function fitBandBounds(
   };
 }
 
-function fitPromoBandContent(
+export function fitPromoBandContent(
   surfaceBounds: LayoutBounds,
   text: string,
   canvasWidth: number,
@@ -1287,8 +1463,9 @@ function collectQualityWarnings(
   blockBindingPlan: BlockBindingPlan,
   freeformLayoutPlan: FreeformLayoutPlan,
   sceneBindingPlan: SceneBindingPlan | null,
+  extractionWarnings: string[] = [],
 ): string[] {
-  const warnings: string[] = [];
+  const warnings: string[] = [...extractionWarnings];
   if (!graph.blocks.some((block) => block.kind === "display_text")) {
     warnings.push("reference graph retained no dominant display block");
   }
@@ -1330,10 +1507,10 @@ function collectQualityWarnings(
   if (headlineBlock?.styleTokens?.styleOnlyHeadlineShrunk === true) {
     warnings.push("style_only_headline_shrunk_to_fit");
   }
-  return warnings;
+  return [...new Set(warnings)];
 }
 
-function readFirstParsedPage(
+export function readFirstParsedPage(
   document: NonNullable<TemplatePriorBundle["candidates"][number]["fetchedDocument"]> | null,
 ): Record<string, unknown> | null {
   const page = document?.pages[0]?.parsed;
@@ -1787,7 +1964,7 @@ function asNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function scaleBounds(
+export function scaleBounds(
   bounds: LayoutBounds,
   sourceCanvasWidth: number,
   sourceCanvasHeight: number,
@@ -1804,16 +1981,133 @@ function scaleBounds(
   };
 }
 
-function selectSafePrimaryDisplay(
+function isPotentialHeadlineCandidate(
+  block: ReferenceBlock,
+  canvasWidth: number,
+  canvasHeight: number,
+): boolean {
+  if (block.kind === "detail_text") {
+    return false;
+  }
+  if (
+    !block.sourceText ||
+    isPromoCueBlock(block, canvasWidth, canvasHeight) ||
+    isActionCueBlock(block, canvasWidth, canvasHeight)
+  ) {
+    return false;
+  }
+  const fontSize = block.fontSize ?? 0;
+  const areaRatio =
+    (block.bounds.width * block.bounds.height) /
+    Math.max(canvasWidth * canvasHeight, 1);
+  const lineLikeWidth = block.bounds.width >= canvasWidth * 0.22;
+  const readableHeight = block.bounds.height >= canvasHeight * 0.08;
+  return fontSize >= 36 || areaRatio >= 0.035 || (lineLikeWidth && readableHeight);
+}
+
+function isCanonicalHeadlineCandidate(
+  block: ReferenceBlock,
+  textBlocks: ReferenceBlock[],
+  canvasWidth: number,
+  canvasHeight: number,
+): boolean {
+  if (!isPotentialHeadlineCandidate(block, canvasWidth, canvasHeight)) {
+    return false;
+  }
+  if (looksDecorativeDisplayCue(block)) {
+    return false;
+  }
+  const otherTextOverlap = textBlocks.some(
+    (other) => other.blockId !== block.blockId && overlapRatio(other.bounds, block.bounds) > 0.34,
+  );
+  return !otherTextOverlap;
+}
+
+function looksDecorativeDisplayCue(block: ReferenceBlock): boolean {
+  const text = block.sourceText?.trim() ?? "";
+  const normalized = text.replace(/\s+/g, "");
+  const fontSize = block.fontSize ?? 0;
+  const aspectRatio = block.bounds.width / Math.max(block.bounds.height, 1);
+  const compactWordmark = aspectRatio <= 1.35;
+  const hasPromotionalHeadlineCue =
+    /(할인|세일|특가|오픈|신상|혜택|이벤트|SALE|OPEN|OFF|NEW)/iu.test(normalized);
+
+  if (hasPromotionalHeadlineCue) {
+    return false;
+  }
+  if (normalized.length <= 2 && block.bounds.height >= 160 && compactWordmark) {
+    return true;
+  }
+  if (
+    normalized.length <= 3 &&
+    fontSize >= 96 &&
+    block.bounds.height >= 180 &&
+    compactWordmark
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function selectPromoCueBlock(
   textBlocks: ReferenceBlock[],
   canvasWidth: number,
   canvasHeight: number,
 ): ReferenceBlock | null {
-  const candidates = textBlocks
-    .filter((block) => block.kind === "display_text")
-    .filter((block) => isExecutionSafeDisplayBlock(block, canvasWidth, canvasHeight))
-    .sort((left, right) => scoreDisplayCandidate(right, canvasWidth, canvasHeight) - scoreDisplayCandidate(left, canvasWidth, canvasHeight));
-  return candidates[0] ?? null;
+  return (
+    textBlocks
+      .filter((block) => isPromoCueBlock(block, canvasWidth, canvasHeight))
+      .sort((left, right) => right.prominence - left.prominence)[0] ?? null
+  );
+}
+
+function selectActionCueBlock(
+  textBlocks: ReferenceBlock[],
+  canvasWidth: number,
+  canvasHeight: number,
+): ReferenceBlock | null {
+  return (
+    textBlocks
+      .filter((block) => isActionCueBlock(block, canvasWidth, canvasHeight))
+      .sort((left, right) => right.prominence - left.prominence)[0] ?? null
+  );
+}
+
+function isCanonicalSurfaceCandidate(
+  block: ReferenceBlock,
+  canvasHeight: number,
+  kind: "promo_surface" | "action_surface",
+): boolean {
+  if (kind === "promo_surface") {
+    return isPromoZoneRenderable(block.bounds, canvasHeight);
+  }
+  return isCtaZoneRenderable(block.bounds, canvasHeight);
+}
+
+function scoreSurfaceCandidate(
+  block: ReferenceBlock,
+  cue: ReferenceBlock | null,
+  canvasWidth: number,
+  canvasHeight: number,
+  kind: "promo_surface" | "action_surface",
+): number {
+  let score = block.prominence;
+  if (kind === "promo_surface") {
+    score += Math.max(0, canvasHeight * 0.3 - block.bounds.y) * 8;
+  } else {
+    score += Math.max(0, block.bounds.y - canvasHeight * 0.62) * 6;
+  }
+  if (cue) {
+    const cueCenterX = cue.bounds.x + cue.bounds.width / 2;
+    const blockCenterX = block.bounds.x + block.bounds.width / 2;
+    const centerPenalty = Math.abs(cueCenterX - blockCenterX);
+    const containsCue = isContainedWithin(cue.bounds, block.bounds, 24) ? 8000 : 0;
+    score += containsCue - centerPenalty * 12;
+  } else {
+    const centerPenalty = Math.abs(block.bounds.x + block.bounds.width / 2 - canvasWidth / 2);
+    score -= centerPenalty * 6;
+  }
+  return score;
 }
 
 function isExecutionSafeDisplayBlock(
@@ -1828,11 +2122,24 @@ function isExecutionSafeDisplayBlock(
   const leftBleed = Math.max(0, -block.bounds.x);
   const rightBleed = Math.max(0, block.bounds.x + block.bounds.width - canvasWidth);
   const areaRatio = (block.bounds.width * block.bounds.height) / Math.max(canvasWidth * canvasHeight, 1);
+  const visibleWidth =
+    Math.max(0, Math.min(block.bounds.x + block.bounds.width, canvasWidth) - Math.max(block.bounds.x, 0));
+  const visibleWidthRatio = visibleWidth / Math.max(block.bounds.width, 1);
+  const singleSidedHorizontalBleed =
+    (leftBleed > 0 && rightBleed === 0) || (rightBleed > 0 && leftBleed === 0);
+  const allowsHeadlineSpillover =
+    !isSingleWordGlyph &&
+    singleSidedHorizontalBleed &&
+    visibleWidthRatio >= 0.22 &&
+    topBleed <= canvasHeight * 0.06;
 
   if (topBleed > canvasHeight * 0.08) {
     return false;
   }
-  if (leftBleed > canvasWidth * 0.12 || rightBleed > canvasWidth * 0.12) {
+  if (
+    (leftBleed > canvasWidth * 0.12 || rightBleed > canvasWidth * 0.12) &&
+    !allowsHeadlineSpillover
+  ) {
     return false;
   }
   if (areaRatio > 0.22) {
@@ -1876,7 +2183,7 @@ function sanitizeReferenceBlocksForExecution(
   });
 }
 
-function isExecutionSafeScaledBounds(
+export function isExecutionSafeScaledBounds(
   bounds: LayoutBounds,
   canvasWidth: number,
   canvasHeight: number,
@@ -1938,7 +2245,7 @@ function createDowngradeVerdict(
 
 function evaluateStrongReferenceGate(
   graph: ReferenceBlockGraph,
-): { passed: boolean; reason: string | null } {
+): { passed: boolean; reason: string | null; reasonCode: string | null } {
   const retainedBlocks = graph.blocks.filter((block) => block.kind !== "background");
   const textBlocks = retainedBlocks.filter(
     (block) =>
@@ -1954,27 +2261,31 @@ function evaluateStrongReferenceGate(
     return {
       passed: false,
       reason: "Reference had no safe dominant display block; reset path downgraded to style-only.",
+      reasonCode: "downgraded_due_to_no_canonical_headline",
     };
   }
   if (textBlocks.length < 1) {
     return {
       passed: false,
       reason: "Reference retained no bindable text blocks; reset path downgraded to style-only.",
+      reasonCode: "downgraded_due_to_no_canonical_headline",
     };
   }
   if (semanticSurfaces.length < 1) {
     return {
       passed: false,
       reason: "Reference retained no semantic promo/CTA surface; reset path downgraded to style-only.",
+      reasonCode: "downgraded_due_to_missing_semantic_pair",
     };
   }
   if (retainedBlocks.length < 3) {
     return {
       passed: false,
       reason: "Reference retained too few safe blocks for composition mode; reset path downgraded to style-only.",
+      reasonCode: "downgraded_due_to_missing_semantic_pair",
     };
   }
-  return { passed: true, reason: null };
+  return { passed: true, reason: null, reasonCode: null };
 }
 
 function normalizePromptForMessageAtoms(prompt: string): string {
@@ -2070,7 +2381,7 @@ function scoreDecorationBlock(block: ReferenceBlock): number {
   return score;
 }
 
-function overlapRatio(a: LayoutBounds, b: LayoutBounds): number {
+export function overlapRatio(a: LayoutBounds, b: LayoutBounds): number {
   const overlapWidth = Math.max(
     0,
     Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x),

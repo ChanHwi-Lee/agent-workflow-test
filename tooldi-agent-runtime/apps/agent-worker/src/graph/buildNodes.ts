@@ -11,6 +11,7 @@ import {
 import { buildAssetPlan } from "../phases/buildAssetPlan.js";
 import { buildConcreteLayoutPlan } from "../phases/buildConcreteLayoutPlan.js";
 import { buildCopyAndAbstractLayoutPlan } from "../phases/buildCopyAndAbstractLayoutPlan.js";
+import { buildObjectNativePath } from "../phases/buildObjectNativePath.js";
 import { buildReferenceCompositionV2 } from "../phases/buildReferenceCompositionV2.js";
 import { buildReferenceResetPath } from "../phases/buildReferenceResetPath.js";
 import { buildSearchProfile } from "../phases/buildSearchProfile.js";
@@ -139,6 +140,213 @@ export function registerBuildNodes(
         throw new Error("build_reference_composition_v2 requires hydrated state");
       }
 
+      if (deriveWorkflowVariant(state.hydrated) === "object_native_v1") {
+        let cooperativeStopRequested = state.cooperativeStopRequested;
+        const objectNativePlans = buildObjectNativePath(
+          state.hydrated,
+          state.templatePriorBundle,
+          state.copyPlan,
+          state.sceneStylePlan,
+          state.sceneBindingPlan,
+        );
+
+        const objectNativeReferenceAuditRef = await persistArtifactTask(
+          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/object-native-reference-audit.json`,
+          objectNativePlans.objectNativeReferenceAudit,
+          {
+            artifactKind: "object-native-reference-audit",
+            runId: state.job.runId,
+            traceId: state.job.traceId,
+            attemptSeq: String(state.job.attemptSeq),
+          },
+        );
+        const objectNativeCandidateSelectionRef = await persistArtifactTask(
+          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/object-native-candidate-selection.json`,
+          objectNativePlans.objectNativeCandidateSelection,
+          {
+            artifactKind: "object-native-candidate-selection",
+            runId: state.job.runId,
+            traceId: state.job.traceId,
+            attemptSeq: String(state.job.attemptSeq),
+          },
+        );
+        const objectNativeRenderabilityReportRef = await persistArtifactTask(
+          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/object-native-renderability-report.json`,
+          objectNativePlans.objectNativeRenderabilityReport,
+          {
+            artifactKind: "object-native-renderability-report",
+            runId: state.job.runId,
+            traceId: state.job.traceId,
+            attemptSeq: String(state.job.attemptSeq),
+          },
+        );
+        const referenceBlockGraphRef = objectNativePlans.referenceBlockGraph
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/object-native-cluster-graph.json`,
+              objectNativePlans.referenceBlockGraph,
+              {
+                artifactKind: "object-native-cluster-graph",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const messageAtomPlanRef = objectNativePlans.messageAtomPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/object-native-message-atom-plan.json`,
+              objectNativePlans.messageAtomPlan,
+              {
+                artifactKind: "object-native-message-atom-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const blockBindingPlanRef = objectNativePlans.blockBindingPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/object-native-block-binding-plan.json`,
+              objectNativePlans.blockBindingPlan,
+              {
+                artifactKind: "object-native-block-binding-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const editableBlockPlanRef = objectNativePlans.editableBlockPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/object-native-editable-block-plan.json`,
+              objectNativePlans.editableBlockPlan,
+              {
+                artifactKind: "object-native-editable-block-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const freeformLayoutPlanRef = objectNativePlans.freeformLayoutPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/object-native-freeform-layout-plan.json`,
+              objectNativePlans.freeformLayoutPlan,
+              {
+                artifactKind: "object-native-freeform-layout-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const qualityEvalSummaryRef = objectNativePlans.qualityEvalSummary
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/object-native-quality-eval-summary.json`,
+              objectNativePlans.qualityEvalSummary,
+              {
+                artifactKind: "object-native-quality-eval-summary",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const styleDowngradeVerdictRef = objectNativePlans.styleDowngradeVerdict
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/object-native-style-downgrade-verdict.json`,
+              objectNativePlans.styleDowngradeVerdict,
+              {
+                artifactKind: "object-native-style-downgrade-verdict",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+
+        const auditLog = await appendEventTask(state.job.runId, {
+          traceId: state.job.traceId,
+          attempt: state.job.attemptSeq,
+          queueJobId: state.job.queueJobId,
+          event: {
+            type: "log",
+            level:
+              objectNativePlans.objectNativeRenderabilityReport.passed ? "info" : "warn",
+            message:
+              `[source/object-native-audit] candidates=${objectNativePlans.objectNativeReferenceAudit.entries.length} ` +
+              `stableCapable=${objectNativePlans.objectNativeReferenceAudit.entries.filter((entry) => entry.readiness === "stable_capable").length} ` +
+              `selected=${objectNativePlans.objectNativeReferenceAudit.nextSelectedTemplateCode ?? "n/a"}`,
+          },
+        });
+        cooperativeStopRequested ||= auditLog.cancelRequested;
+        const selectionLog = await appendEventTask(state.job.runId, {
+          traceId: state.job.traceId,
+          attempt: state.job.attemptSeq,
+          queueJobId: state.job.queueJobId,
+          event: {
+            type: "log",
+            level:
+              objectNativePlans.objectNativeCandidateSelection.reselectionApplied ? "info" : "warn",
+            message:
+              `[source/object-native-selection] previous=${objectNativePlans.objectNativeCandidateSelection.previousSelectedTemplateCode ?? "n/a"} ` +
+              `selected=${objectNativePlans.objectNativeCandidateSelection.nextSelectedTemplateCode ?? "n/a"} ` +
+              `reselected=${objectNativePlans.objectNativeCandidateSelection.reselectionApplied ? "yes" : "no"} ` +
+              `readiness=${objectNativePlans.objectNativeCandidateSelection.selectedReadiness ?? "n/a"} ` +
+              `failureStage=${objectNativePlans.objectNativeCandidateSelection.selectedFailureStage}`,
+          },
+        });
+        cooperativeStopRequested ||= selectionLog.cancelRequested;
+        const renderabilityLog = await appendEventTask(state.job.runId, {
+          traceId: state.job.traceId,
+          attempt: state.job.attemptSeq,
+          queueJobId: state.job.queueJobId,
+          event: {
+            type: "log",
+            level:
+              objectNativePlans.objectNativeRenderabilityReport.passed ? "info" : "warn",
+            message:
+              `[source/object-native-renderability] passed=${objectNativePlans.objectNativeRenderabilityReport.passed ? "yes" : "no"} ` +
+              `status=${objectNativePlans.objectNativeRenderabilityReport.compositionStatus} ` +
+              `failureStage=${objectNativePlans.objectNativeRenderabilityReport.failureStage} ` +
+              `reason=${objectNativePlans.objectNativeRenderabilityReport.reason}`,
+          },
+        });
+        cooperativeStopRequested ||= renderabilityLog.cancelRequested;
+
+        return {
+          cooperativeStopRequested,
+          referenceCompositionGraph: null,
+          referenceCompositionGraphRef: null,
+          referenceSupportEvidence: null,
+          referenceSupportEvidenceRef: null,
+          copyAtomPlan: null,
+          copyAtomPlanRef: null,
+          copyBindingPlan: null,
+          copyBindingPlanRef: null,
+          templateRemixPlan: null,
+          templateRemixPlanRef: null,
+          objectNativeReferenceAudit: objectNativePlans.objectNativeReferenceAudit,
+          objectNativeReferenceAuditRef,
+          objectNativeCandidateSelection: objectNativePlans.objectNativeCandidateSelection,
+          objectNativeCandidateSelectionRef,
+          objectNativeRenderabilityReport: objectNativePlans.objectNativeRenderabilityReport,
+          objectNativeRenderabilityReportRef,
+          referenceBlockGraph: objectNativePlans.referenceBlockGraph,
+          referenceBlockGraphRef,
+          messageAtomPlan: objectNativePlans.messageAtomPlan,
+          messageAtomPlanRef,
+          editableBlockPlan: objectNativePlans.editableBlockPlan,
+          editableBlockPlanRef,
+          qualityEvalSummary: objectNativePlans.qualityEvalSummary,
+          qualityEvalSummaryRef,
+          freeformLayoutPlan: objectNativePlans.freeformLayoutPlan,
+          freeformLayoutPlanRef,
+          styleDowngradeVerdict: objectNativePlans.styleDowngradeVerdict,
+          styleDowngradeVerdictRef,
+        };
+      }
+
       if (deriveWorkflowVariant(state.hydrated) === "retrieval_prior_v2_reset") {
         const resetPlans = buildReferenceResetPath(
           state.hydrated,
@@ -244,6 +452,12 @@ export function registerBuildNodes(
           copyBindingPlanRef: null,
           templateRemixPlan: null,
           templateRemixPlanRef: null,
+          objectNativeReferenceAudit: null,
+          objectNativeReferenceAuditRef: null,
+          objectNativeCandidateSelection: null,
+          objectNativeCandidateSelectionRef: null,
+          objectNativeRenderabilityReport: null,
+          objectNativeRenderabilityReportRef: null,
           referenceBlockGraph: resetPlans.referenceBlockGraph,
           referenceBlockGraphRef,
           messageAtomPlan: resetPlans.messageAtomPlan,
@@ -363,6 +577,12 @@ export function registerBuildNodes(
         copyBindingPlanRef,
         templateRemixPlan: v2Plans.templateRemixPlan,
         templateRemixPlanRef,
+        objectNativeReferenceAudit: null,
+        objectNativeReferenceAuditRef: null,
+        objectNativeCandidateSelection: null,
+        objectNativeCandidateSelectionRef: null,
+        objectNativeRenderabilityReport: null,
+        objectNativeRenderabilityReportRef: null,
         freeformLayoutPlan: v2Plans.freeformLayoutPlan,
         freeformLayoutPlanRef,
         styleDowngradeVerdict: v2Plans.styleDowngradeVerdict,
@@ -473,7 +693,8 @@ export function registerBuildNodes(
       if (
         workflowVariant !== "retrieval_prior_v1" &&
         workflowVariant !== "retrieval_prior_v2" &&
-        workflowVariant !== "retrieval_prior_v2_reset"
+        workflowVariant !== "retrieval_prior_v2_reset" &&
+        workflowVariant !== "object_native_v1"
       ) {
         return {
           templatePriorBundle: null,
@@ -517,6 +738,8 @@ export function registerBuildNodes(
           level: templatePriorBundle.usedFallbackToLegacy ? "warn" : "info",
           message:
             `[source/template-prior] retrieved=${templatePriorBundle.candidates.length} ` +
+            `queries=${templatePriorBundle.diagnostics?.successfulQueryCount ?? 0}/${templatePriorBundle.diagnostics?.totalQueryCount ?? 0} ` +
+            `queryErrors=${templatePriorBundle.diagnostics?.failedQueryCount ?? 0} ` +
             `selected=${templatePriorBundle.selectedTemplateCode ?? "n/a"} ` +
             `layoutHint=${templatePriorBundle.selectedScaffold?.layoutModeHint ?? "n/a"} ` +
             `fallback=${templatePriorBundle.usedFallbackToLegacy ? "legacy" : "none"}`,

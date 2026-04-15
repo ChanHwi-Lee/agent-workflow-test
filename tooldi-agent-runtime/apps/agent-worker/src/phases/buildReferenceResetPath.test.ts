@@ -173,6 +173,20 @@ function createRealLikeTemplatePriorBundle(): TemplatePriorBundle {
   return bundle;
 }
 
+function createDecorativeOnlyTemplatePriorBundle(): TemplatePriorBundle {
+  const bundle = createRealLikeTemplatePriorBundle();
+  const primaryCandidate = bundle.candidates[0];
+  assert.ok(primaryCandidate);
+  (primaryCandidate.fetchedDocument as any).pages[0].parsed.objects = [
+    { id: "offer-text", type: "textbox", text: "전제품 최대 30%", left: -136.74815363626868, top: -121.89064342718689, width: 386.4766271402143, height: 54.239999999999995, originX: "center", originY: "top", textAlign: "center", fill: "#0f7035", fontSize: 48 },
+    { id: "display-secondary", type: "textbox", text: "봄", left: 298.1038449594805, top: -162.2450399924603, width: 341.79041220414024, height: 357.08, originX: "center", originY: "top", textAlign: "center", fill: "#ffffff", fontSize: 316 },
+    { id: "cta-text", type: "textbox", text: "지금 바로 확인하러 가기 ▶", left: -138.9143617283997, top: 213.20321358801493, width: 406.7703726421612, height: 41.809999999999995, originX: "center", originY: "top", textAlign: "center", fill: "#0f7035", fontSize: 37 },
+    { id: "footer-1", type: "textbox", text: "이벤트 기간 내 혜택 적용", left: 40, top: 292, width: 420, height: 24, originX: "left", originY: "top", textAlign: "center", fill: "#ffffff", fontSize: 16 },
+    { id: "decor-dot", type: "rect", left: -383.07943396883456, top: -134.0536990119939, width: 100, height: 100, originX: "left", originY: "top", fill: "rgba(255, 245, 156, 255)" },
+  ];
+  return bundle;
+}
+
 function createSafeCueTemplatePriorBundle(): TemplatePriorBundle {
   const bundle = createRealLikeTemplatePriorBundle();
   const primaryCandidate = bundle.candidates[0];
@@ -184,6 +198,24 @@ function createSafeCueTemplatePriorBundle(): TemplatePriorBundle {
     { id: "footer-1", type: "textbox", text: "이벤트 기간 내 혜택 적용", left: 395, top: 740, width: 420, height: 24, originX: "center", originY: "top", textAlign: "center", fill: "#ffffff" },
     { id: "decor-dot", type: "rect", left: 655, top: 66, width: 90, height: 90, originX: "left", originY: "top", fill: "rgba(255, 245, 156, 255)" },
   ];
+  return bundle;
+}
+
+function createPromotableHeadlineTemplatePriorBundle(): TemplatePriorBundle {
+  const bundle = createTemplatePriorBundle();
+  const primaryCandidate = bundle.candidates[0];
+  assert.ok(primaryCandidate);
+  (primaryCandidate.fetchedDocument as any).pages[0].parsed = {
+    width: 1200,
+    height: 628,
+    objects: [
+      { id: "promo-surface", type: "rect", left: 160, top: 112, width: 420, height: 72, fill: "#d9f99d", rx: 36, ry: 36 },
+      { id: "headline-support", type: "textbox", text: "설레는 봄 특별 세일", left: 84, top: 216, width: 560, height: 112, originX: "left", originY: "top", textAlign: "left", fill: "#ffffff", fontSize: 44 },
+      { id: "cta-surface", type: "rect", left: 252, top: 490, width: 696, height: 72, fill: "#8be46d", rx: 18, ry: 18 },
+      { id: "footer-1", type: "textbox", text: "이벤트 기간 내 혜택 적용", left: 600, top: 584, width: 420, height: 24, originX: "center", originY: "top", textAlign: "center", fill: "#ffffff", fontSize: 16 },
+      { id: "decor-1", type: "rect", left: 1012, top: 84, width: 72, height: 72, fill: "#fef08a", rx: 36, ry: 36 },
+    ],
+  };
   return bundle;
 }
 
@@ -316,7 +348,7 @@ test("buildReferenceResetPath records promo contrast fallback in quality summary
 test("buildReferenceResetPath expands or wraps long promo text without overflowing in style-only mode", () => {
   const result = buildReferenceResetPath(
     createHydratedInput(),
-    createRealLikeTemplatePriorBundle(),
+    createDecorativeOnlyTemplatePriorBundle(),
     createLongOfferCopyPlan(),
     null,
     createSceneBindingPlan(),
@@ -350,7 +382,7 @@ test("buildReferenceResetPath expands or wraps long promo text without overflowi
 test("buildReferenceResetPath keeps promo surface driven by final text box in style-only mode", () => {
   const result = buildReferenceResetPath(
     createHydratedInput(),
-    createRealLikeTemplatePriorBundle(),
+    createDecorativeOnlyTemplatePriorBundle(),
     createLongOfferCopyPlan(),
     null,
     createSceneBindingPlan(),
@@ -373,7 +405,7 @@ test("buildReferenceResetPath keeps promo surface driven by final text box in st
 test("buildReferenceResetPath uses a non-overlapping vertical stack in style-only mode", () => {
   const result = buildReferenceResetPath(
     createHydratedInput(),
-    createRealLikeTemplatePriorBundle(),
+    createDecorativeOnlyTemplatePriorBundle(),
     createLongOfferCopyPlan(),
     null,
     createSceneBindingPlan(),
@@ -407,10 +439,10 @@ test("buildReferenceResetPath uses a non-overlapping vertical stack in style-onl
   assert.ok((headline?.fontSize ?? 0) < 96);
 });
 
-test("buildReferenceResetPath downgrades to style-only when only unsafe display candidates survive", () => {
+test("buildReferenceResetPath downgrades to style-only when only decorative display candidates survive", () => {
   const result = buildReferenceResetPath(
     createHydratedInput(),
-    createRealLikeTemplatePriorBundle(),
+    createDecorativeOnlyTemplatePriorBundle(),
     createCopyPlan(),
     null,
     createSceneBindingPlan(),
@@ -419,6 +451,32 @@ test("buildReferenceResetPath downgrades to style-only when only unsafe display 
   assert.equal(result.freeformLayoutPlan?.compositionStatus, "style_only");
   assert.equal(result.styleDowngradeVerdict?.applied, true);
   assert.match(result.styleDowngradeVerdict?.reason ?? "", /safe dominant display/);
+  assert.ok(
+    result.qualityEvalSummary?.warnings.includes("downgraded_due_to_no_canonical_headline"),
+  );
+});
+
+test("buildReferenceResetPath retains a wide short promo headline beside a decorative glyph", () => {
+  const result = buildReferenceResetPath(
+    createHydratedInput(),
+    createRealLikeTemplatePriorBundle(),
+    createCopyPlan(),
+    null,
+    createSceneBindingPlan(),
+  );
+
+  assert.equal(result.referenceBlockGraph?.blocks.some(
+    (block) => block.kind === "display_text" && block.sourceText === "할인해",
+  ), true);
+  assert.ok(
+    result.referenceBlockGraph?.blocks.some(
+      (block) => block.kind === "action_surface" && block.sourceText === "지금 바로 확인하러 가기 ▶",
+    ),
+  );
+  assert.match(
+    result.styleDowngradeVerdict?.reason ?? "",
+    /off-canvas bounds/,
+  );
 });
 
 test("buildReferenceResetPath keeps stable composition when text-only semantic cues exist with a safe display target", () => {
@@ -447,9 +505,15 @@ test("buildReferenceResetPath keeps stable composition when text-only semantic c
       (block) => block.bounds.x >= 0 && block.bounds.y >= 0,
     ),
   );
+  assert.ok(
+    result.qualityEvalSummary?.warnings.includes("implicit_promo_surface_inferred"),
+  );
+  assert.ok(
+    result.qualityEvalSummary?.warnings.includes("implicit_cta_surface_inferred"),
+  );
 });
 
-test("buildReferenceResetPath keeps at most two safe decor blocks in stable mode", () => {
+test("buildReferenceResetPath keeps at most one safe decor block in stable mode", () => {
   const result = buildReferenceResetPath(
     createHydratedInput(),
     createDecorHeavyTemplatePriorBundle(),
@@ -459,7 +523,7 @@ test("buildReferenceResetPath keeps at most two safe decor blocks in stable mode
   );
 
   assert.equal(result.freeformLayoutPlan?.compositionStatus, "stable");
-  assert.ok((result.freeformLayoutPlan?.polishBlocks.length ?? 0) <= 2);
+  assert.ok((result.freeformLayoutPlan?.polishBlocks.length ?? 0) <= 1);
 });
 
 test("buildReferenceResetPath downgrades unsafe stable candidates after renderability guard", () => {
@@ -503,4 +567,25 @@ test("buildReferenceResetPath keeps safe stable candidates after renderability g
     ),
     false,
   );
+});
+
+test("buildReferenceResetPath can promote a readable support-sized headline candidate into stable mode", () => {
+  const result = buildReferenceResetPath(
+    createHydratedInput(),
+    createPromotableHeadlineTemplatePriorBundle(),
+    createCopyPlan(),
+    null,
+    createSceneBindingPlan(),
+  );
+
+  assert.equal(result.freeformLayoutPlan?.compositionStatus, "stable");
+  assert.equal(result.styleDowngradeVerdict?.applied, false);
+  assert.ok(
+    result.qualityEvalSummary?.warnings.includes("reference_display_candidate_found"),
+  );
+  const headline = result.freeformLayoutPlan?.copyBlocks.find(
+    (block) => block.executionSlotKey === "headline",
+  );
+  assert.ok(headline);
+  assert.ok((headline?.bounds.y ?? 0) >= 0);
 });

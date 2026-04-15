@@ -255,6 +255,36 @@ test("font inventory is normalized with weights and language filtering", async (
   assert.deepEqual(result.assets[0]?.supportedLanguages, ["KOR", "ENG"]);
 });
 
+test("template search invalid payload preserves response preview in source error", async () => {
+  const client = createTooldiApiCatalogSourceClient({
+    baseUrl: "https://catalog.test",
+    fetchImpl: async () =>
+      new Response(
+        JSON.stringify({
+          result: true,
+          message: "bad payload",
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+  });
+
+  let capturedError: unknown = null;
+  try {
+    await client.searchTemplateAssets({
+      keyword: "봄 세일",
+      page: 1,
+      canvas: "horizontal",
+      source: "search",
+    });
+  } catch (error) {
+    capturedError = error;
+  }
+
+  assert.ok(capturedError instanceof TooldiCatalogSourceError);
+  assert.equal(capturedError.code, "invalid_response");
+  assert.match(capturedError.responsePreview ?? "", /bad payload/);
+});
+
 test("template search serializes the editor search payload and normalizes response", async () => {
   const client = createTooldiApiCatalogSourceClient({
     baseUrl: "https://catalog.test",
@@ -319,6 +349,31 @@ test("template search serializes the editor search payload and normalizes respon
   assert.equal(result.assets[0]?.code, "74091534190");
   assert.deepEqual(result.assets[0]?.thumbnails, ["https://thumb.test/template-1.png"]);
   assert.equal(result.assets[0]?.priceType, "paid");
+});
+
+test("template search treats result=false without data as an empty result set", async () => {
+  const client = createTooldiApiCatalogSourceClient({
+    baseUrl: "https://catalog.test",
+    fetchImpl: async () =>
+      new Response(
+        JSON.stringify({
+          result: false,
+          trace_id: "trace-template-empty",
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+  });
+
+  const result = await client.searchTemplateAssets({
+    keyword: "신상품",
+    page: 1,
+    canvas: "horizontal",
+    source: "search",
+  });
+
+  assert.equal(result.traceId, "trace-template-empty");
+  assert.equal(result.assets.length, 0);
+  assert.equal(result.hasNextPage, false);
 });
 
 test("template document fetch decodes pages and patterns", async () => {

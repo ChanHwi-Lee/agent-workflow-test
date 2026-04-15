@@ -15,6 +15,7 @@ import { MutationLedgerRepository } from "../repositories/mutationLedgerReposito
 import { RunAttemptRepository } from "../repositories/runAttemptRepository.js";
 import { RunRepository } from "../repositories/runRepository.js";
 import { RunEventService } from "./runEventService.js";
+import { normalizeFinalizeInput } from "./runFinalizeInput.js";
 import { RunFinalizeService } from "./runFinalizeService.js";
 
 class RecordingLogger implements Logger {
@@ -66,6 +67,13 @@ function createFinalizeRequest(overrides: Partial<RunFinalizeRequest> = {}): Run
       serial: 198008,
       modified: "2026-04-10T02:42:19.000Z",
       version: "2",
+    },
+    latestSaveReceipt: {
+      saveReceiptId: "save-receipt-1",
+      outputTemplateCode: "template_draft_run-1",
+      savedRevision: 1,
+      savedAt: "2026-04-10T02:42:19.000Z",
+      reason: "run_completed",
     },
     latestSaveReceiptId: "save-receipt-1",
     outputTemplateCode: "template_draft_run-1",
@@ -459,7 +467,13 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
     assert.ok(bundle);
     assert.equal(bundle.payload.saveMetadata.latestSaveEvidence?.code, "template_draft_run-1");
     assert.equal(bundle.payload.saveMetadata.latestSaveEvidence?.serial, 198008);
-    assert.equal(bundle.payload.saveMetadata.latestSaveReceipt, null);
+    assert.deepEqual(bundle.payload.saveMetadata.latestSaveReceipt, {
+      saveReceiptId: "save-receipt-1",
+      outputTemplateCode: "template_draft_run-1",
+      savedRevision: 1,
+      savedAt: "2026-04-10T02:42:19.000Z",
+      reason: "run_completed",
+    });
     assert.equal(bundle.payload.editableCanvasState.commitPayload.requiredSlots.length, 5);
     assert.equal(bundle.payload.mutationLedger.lastKnownGoodCheckpointId, "checkpoint_run-1_latest_saved");
     assert.equal(
@@ -557,6 +571,343 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
     assert.equal(
       completion.sourceRefs.refineDecisionRef,
       "runs/run-1/attempts/1/refine-decision.json",
+    );
+  } finally {
+    await db.end();
+  }
+});
+
+test("normalizeFinalizeInput downgrades completed runs when save receipt is missing", () => {
+  const normalized = normalizeFinalizeInput({
+    request: createFinalizeRequest({
+      latestSaveReceipt: null,
+      latestSaveReceiptId: null,
+    }),
+    result: {
+      finalStatus: "completed",
+      draftId: "draft_run-1",
+      finalRevision: 1,
+      durabilityState: "final_saved",
+      latestSaveEvidence: {
+        code: "template_draft_run-1",
+        serial: 198008,
+        modified: "2026-04-10T02:42:19.000Z",
+        version: "2",
+      },
+      latestSaveReceiptId: null,
+      warningCount: 0,
+      fallbackCount: 0,
+      warnings: [],
+      errorSummary: null,
+    },
+  });
+
+  assert.equal(normalized.result.finalStatus, "save_failed_after_apply");
+  assert.equal(normalized.result.durabilityState, "save_uncertain");
+  assert.equal(normalized.result.latestSaveEvidence, null);
+  assert.equal(normalized.result.latestSaveReceiptId, null);
+  assert.equal(
+    normalized.result.errorSummary?.code,
+    "save_evidence_incomplete",
+  );
+});
+
+test("RunFinalizeService accepts object-native execution-slot minimum draft without legacy supporting or decoration slots", async () => {
+  const db = createPgClient({
+    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
+  });
+  await db.connect();
+
+  try {
+    const runRepository = new RunRepository(db);
+    const runAttemptRepository = new RunAttemptRepository(db);
+    const mutationLedgerRepository = new MutationLedgerRepository(db);
+    const costSummaryRepository = new CostSummaryRepository(db);
+    const draftBundleRepository = new DraftBundleRepository(db);
+    const completionRepository = new CompletionRepository(db);
+    const runEventService = new RunEventService(
+      new InMemoryRunEventRepository() as never,
+      new SilentSseHub() as never,
+      new RecordingLogger(),
+    );
+    const objectStore = createObjectStoreClient({
+      bucket: "finalize-service-test-object-native",
+      mode: "memory",
+    });
+    const service = new RunFinalizeService(
+      runRepository,
+      runAttemptRepository,
+      mutationLedgerRepository,
+      costSummaryRepository,
+      draftBundleRepository,
+      completionRepository,
+      objectStore,
+      runEventService,
+      new RecordingLogger(),
+    );
+
+    const now = new Date().toISOString();
+    await runRepository.create({
+      runId: "run-object-native",
+      traceId: "trace-object-native",
+      requestId: "request-object-native",
+      documentId: "document-1",
+      pageId: "page-1",
+      status: "finalizing",
+      statusReasonCode: null,
+      attemptSeq: 1,
+      queueJobId: "run-object-native__attempt_1",
+      requestRef: "request_ref_request-object-native",
+      snapshotRef: "snapshot_ref_run-object-native",
+      deadlineAt: new Date(Date.now() + 60000).toISOString(),
+      lastAckedSeq: 1,
+      pageLockToken: "page-lock-object-native",
+      cancelRequestedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await runAttemptRepository.create({
+      attemptId: "attempt-object-native",
+      runId: "run-object-native",
+      traceId: "trace-object-native",
+      attemptSeq: 1,
+      retryOfAttemptSeq: null,
+      queueJobId: "run-object-native__attempt_1",
+      acceptedHttpRequestId: "http-object-native",
+      attemptState: "finalizing",
+      statusReasonCode: null,
+      workerId: "worker-1",
+      startedAt: now,
+      leaseRecognizedAt: now,
+      lastHeartbeatAt: now,
+      createdAt: now,
+    });
+
+    await mutationLedgerRepository.recordProposal({
+      runId: "run-object-native",
+      traceId: "trace-object-native",
+      attemptSeq: 1,
+      queueJobId: "run-object-native__attempt_1",
+      event: {
+        type: "mutation.proposed",
+        mutationId: "mutation-object-native-1",
+        rollbackGroupId: "plan-step-object-native-1",
+        expectedBaseRevision: 0,
+        mutation: {
+          mutationId: "mutation-object-native-1",
+          mutationVersion: "v1",
+          traceId: "trace-object-native",
+          runId: "run-object-native",
+          draftId: "draft_run-object-native",
+          documentId: "document-1",
+          pageId: "page-1",
+          seq: 1,
+          commitGroup: "plan-step-object-native-1",
+          idempotencyKey: "mutation-object-native-1",
+          expectedBaseRevision: 0,
+          ownershipScope: "draft_only",
+          commands: [
+            {
+              commandId: "command-background",
+              op: "createLayer",
+              slotKey: "background",
+              executionSlotKey: "background",
+              clientLayerKey: "background-layer",
+              targetRef: {
+                layerId: null,
+                clientLayerKey: "background-layer",
+                slotKey: "background",
+              },
+              targetLayerVersion: null,
+              parentRef: { position: "append" },
+              expectedLayerType: null,
+              allowNoop: false,
+              metadataTags: {},
+              layerBlueprint: {
+                layerType: "shape",
+                bounds: { x: 0, y: 0, width: 1200, height: 628 },
+                metadata: {},
+              },
+              editable: true,
+            },
+            {
+              commandId: "command-headline",
+              op: "createLayer",
+              slotKey: "headline",
+              executionSlotKey: "headline",
+              clientLayerKey: "headline-layer",
+              targetRef: {
+                layerId: null,
+                clientLayerKey: "headline-layer",
+                slotKey: "headline",
+              },
+              targetLayerVersion: null,
+              parentRef: { position: "append" },
+              expectedLayerType: null,
+              allowNoop: false,
+              metadataTags: {},
+              layerBlueprint: {
+                layerType: "text",
+                bounds: { x: 24, y: 232, width: 822, height: 155 },
+                metadata: {},
+              },
+              editable: true,
+            },
+            {
+              commandId: "command-offer",
+              op: "createLayer",
+              slotKey: null,
+              executionSlotKey: "offer_line",
+              clientLayerKey: "offer-layer",
+              targetRef: {
+                layerId: null,
+                clientLayerKey: "offer-layer",
+              },
+              targetLayerVersion: null,
+              parentRef: { position: "append" },
+              expectedLayerType: null,
+              allowNoop: false,
+              metadataTags: {},
+              layerBlueprint: {
+                layerType: "text",
+                bounds: { x: 101, y: 100, width: 639, height: 96 },
+                metadata: {
+                  role: "promo_band_cluster",
+                },
+              },
+              editable: true,
+            },
+            {
+              commandId: "command-cta",
+              op: "createLayer",
+              slotKey: "cta",
+              executionSlotKey: "cta",
+              clientLayerKey: "cta-layer",
+              targetRef: {
+                layerId: null,
+                clientLayerKey: "cta-layer",
+                slotKey: "cta",
+              },
+              targetLayerVersion: null,
+              parentRef: { position: "append" },
+              expectedLayerType: null,
+              allowNoop: false,
+              metadataTags: {},
+              layerBlueprint: {
+                layerType: "group",
+                bounds: { x: 235, y: 452, width: 420, height: 60 },
+                metadata: {},
+              },
+              editable: true,
+            },
+          ],
+          rollbackHint: {
+            rollbackGroupId: "plan-step-object-native-1",
+            strategy: "delete_created_layers",
+          },
+          emittedAt: now,
+          deliveryDeadlineAt: new Date(Date.now() + 10000).toISOString(),
+        },
+      },
+    });
+
+    await mutationLedgerRepository.recordAck({
+      runId: "run-object-native",
+      traceId: "trace-object-native",
+      mutationId: "mutation-object-native-1",
+      seq: 1,
+      status: "applied",
+      targetPageId: "page-1",
+      baseRevision: 0,
+      resultingRevision: 1,
+      resolvedLayerIds: {
+        "background-layer": "background-layer",
+        "headline-layer": "headline-layer",
+        "offer-layer": "offer-layer",
+        "cta-layer": "cta-layer",
+      },
+      commandResults: [
+        {
+          commandId: "command-headline",
+          op: "createLayer",
+          status: "applied",
+          resolvedLayerId: "headline-layer",
+        },
+      ],
+      clientObservedAt: now,
+    } satisfies MutationApplyAckRequest);
+
+    const request = createFinalizeRequest({
+      traceId: "trace-object-native",
+      queueJobId: "run-object-native__attempt_1",
+      draftId: "draft_run-object-native",
+      canonicalDesignBriefRef:
+        "runs/run-object-native/attempts/1/canonical-design-brief.json",
+      executablePlanRef: "runs/run-object-native/attempts/1/executable-plan.json",
+      requiredExecutionSlots: ["background", "headline", "offer_line", "cta"],
+    });
+    const result = await service.finalizeRun({
+      runId: "run-object-native",
+      traceId: "trace-object-native",
+      attemptSeq: 1,
+      queueJobId: "run-object-native__attempt_1",
+      result: {
+        finalStatus: "completed",
+        draftId: "draft_run-object-native",
+        finalRevision: 1,
+        durabilityState: "final_saved",
+        latestSaveEvidence: {
+          code: "template_draft_run-object-native",
+          serial: 198068,
+          modified: "2026-04-15T07:35:58.000Z",
+          version: "2",
+        },
+        latestSaveReceiptId: "save-receipt-object-native-1",
+        warningCount: 0,
+        fallbackCount: 0,
+        warnings: [],
+        errorSummary: null,
+      },
+      request: {
+        ...request,
+        latestSaveEvidence: {
+          code: "template_draft_run-object-native",
+          serial: 198068,
+          modified: "2026-04-15T07:35:58.000Z",
+          version: "2",
+        },
+        latestSaveReceipt: {
+          saveReceiptId: "save-receipt-object-native-1",
+          outputTemplateCode: "template_draft_run-object-native",
+          savedRevision: 1,
+          savedAt: "2026-04-15T07:35:58.000Z",
+          reason: "run_completed",
+        },
+        latestSaveReceiptId: "save-receipt-object-native-1",
+        outputTemplateCode: "template_draft_run-object-native",
+      },
+      at: now,
+    });
+
+    assert.equal(result.runStatus, "completed");
+
+    const bundle = await draftBundleRepository.findByRunId("run-object-native");
+    assert.ok(bundle);
+    assert.deepEqual(
+      bundle.payload.editableCanvasState.commitPayload.requiredExecutionSlots,
+      ["background", "headline", "offer_line", "cta"],
+    );
+    assert.equal(
+      bundle.payload.saveMetadata.completionSnapshot.minimumDraftSatisfied,
+      true,
+    );
+    assert.equal(
+      bundle.payload.saveMetadata.latestSaveEvidence?.code,
+      "template_draft_run-object-native",
+    );
+    assert.equal(
+      bundle.payload.editableCanvasState.commitPayload.requiredSlots.length,
+      5,
     );
   } finally {
     await db.end();

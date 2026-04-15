@@ -7,6 +7,7 @@ import { CanvasMutationEnvelopeSchema } from "../canvas/canvas-mutation.js";
 import { MutationCommandResultSchema } from "../canvas/mutation-ack.js";
 import {
   CompletionStateSchema,
+  ExecutionSlotKeySchema,
   ErrorSummarySchema,
   IdentifierSchema,
   IsoDateTimeSchema,
@@ -14,7 +15,10 @@ import {
   TerminalRunStatusSchema,
   WarningItemSchema,
 } from "../common.js";
-import { TemplateSaveEvidenceSchema } from "../canvas/template-save-receipt.js";
+import {
+  TemplateSaveEvidenceSchema,
+  TemplateSaveReceiptSchema,
+} from "../canvas/template-save-receipt.js";
 
 const WorkerPhaseSchema = Type.Union(
   ["planning", "executing", "applying", "saving"].map((value) =>
@@ -192,10 +196,16 @@ export const RunFinalizeRequestSchema = Type.Object(
     latestSaveEvidence: Type.Optional(
       Type.Union([TemplateSaveEvidenceSchema, Type.Null()]),
     ),
+    latestSaveReceipt: Type.Optional(
+      Type.Union([TemplateSaveReceiptSchema, Type.Null()]),
+    ),
     lastAckedSeq: Type.Integer({ minimum: 0 }),
     latestSaveReceiptId: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
     outputTemplateCode: Type.Optional(
       Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
+    ),
+    requiredExecutionSlots: Type.Optional(
+      Type.Array(ExecutionSlotKeySchema, { minItems: 1 }),
     ),
     canonicalDesignBriefRef: Type.Optional(IdentifierSchema),
     semanticBriefDraftRef: Type.Optional(IdentifierSchema),

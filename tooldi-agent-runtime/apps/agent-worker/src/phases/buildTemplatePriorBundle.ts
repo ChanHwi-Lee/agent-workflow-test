@@ -3,7 +3,10 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
 import { createRequestId } from "@tooldi/agent-domain";
 import type { Logger } from "@tooldi/agent-observability";
-import type { TooldiCatalogSourceClient } from "@tooldi/tool-adapters";
+import {
+  TooldiCatalogSourceError,
+  type TooldiCatalogSourceClient,
+} from "@tooldi/tool-adapters";
 import { z } from "zod";
 
 import type {
@@ -11,6 +14,8 @@ import type {
   NormalizedIntent,
   TemplatePriorBundle,
   TemplatePriorCandidate,
+  TemplatePriorDiagnostics,
+  TemplatePriorQueryDiagnostic,
   TemplatePriorScaffold,
 } from "../types.js";
 import {
@@ -160,7 +165,8 @@ export async function buildTemplatePriorBundle(
   if (
     workflowVariant !== "retrieval_prior_v1" &&
     workflowVariant !== "retrieval_prior_v2" &&
-    workflowVariant !== "retrieval_prior_v2_reset"
+    workflowVariant !== "retrieval_prior_v2_reset" &&
+    workflowVariant !== "object_native_v1"
   ) {
     return null;
   }
@@ -180,16 +186,19 @@ export async function buildTemplatePriorBundle(
   const searchResults = await Promise.all(
     queryPlan.map(async (plannedQuery) => ({
       plannedQuery,
-      result: await sourceClient.searchTemplateAssets({
-        keyword: plannedQuery.keyword,
-        canvas: query.canvas,
-        page: 1,
-        source: "search",
-      }),
+      ...(await searchTemplatePriorQuery(
+        sourceClient,
+        plannedQuery,
+        query.canvas,
+      )),
     })),
   );
 
-  const merged = mergeTemplateSearchResults(searchResults);
+  const successfulSearchResults = searchResults.filter(
+    (entry): entry is TemplatePriorSearchSuccess => entry.result !== null,
+  );
+  const merged = mergeTemplateSearchResults(successfulSearchResults);
+  const queryDiagnostics = buildTemplatePriorQueryDiagnostics(searchResults);
   const scoredCandidates = merged
     .map((candidate) => {
       const evaluation = evaluateTemplateCandidate(
@@ -209,6 +218,13 @@ export async function buildTemplatePriorBundle(
     .sort((left, right) => right.deterministicScore - left.deterministicScore);
 
   if (scoredCandidates.length === 0) {
+    const sourceFailureCount = queryDiagnostics.filter(
+      (entry) => entry.status === "error",
+    ).length;
+    const fallbackReason =
+      sourceFailureCount > 0
+        ? `Template prior stayed unavailable because ${sourceFailureCount}/${queryDiagnostics.length} template search queries failed at the source contract boundary.`
+        : "No template prior candidate survived the strong filter.";
     return {
       bundleId: createRequestId(),
       runId: intent.runId,
@@ -217,7 +233,7 @@ export async function buildTemplatePriorBundle(
       query,
       queryPlan,
       usedFallbackToLegacy: true,
-      fallbackReason: "No template prior candidate survived the strong filter.",
+      fallbackReason,
       selectedTemplateCode: null,
       selectedTemplateTitle: null,
       selectedScaffold: null,
@@ -244,8 +260,16 @@ export async function buildTemplatePriorBundle(
         fetchedDocument: null,
         scaffold: null,
       })),
+      diagnostics: buildTemplatePriorDiagnostics({
+        queryDiagnostics,
+        mergedCandidateCount: merged.length,
+        keptCandidateCount: 0,
+        rerankedCandidateCount: 0,
+      }),
       summary:
-        `No usable template prior survived strong filtering; ${workflowVariant} has no stable primary reference.`,
+        sourceFailureCount > 0
+          ? `Template prior degraded to legacy because source-contract errors blocked template search breadth; ${workflowVariant} has no stable primary reference.`
+          : `No usable template prior survived strong filtering; ${workflowVariant} has no stable primary reference.`,
     };
   }
 
@@ -347,7 +371,7 @@ export async function buildTemplatePriorBundle(
     bundleId: createRequestId(),
     runId: intent.runId,
     traceId: intent.traceId,
-      workflowVariant,
+    workflowVariant,
     query,
     queryPlan,
     usedFallbackToLegacy: selectedCandidate === null,
@@ -359,10 +383,112 @@ export async function buildTemplatePriorBundle(
     selectedTemplateTitle: selectedCandidate?.title ?? null,
     selectedScaffold: selectedCandidate?.scaffold ?? null,
     candidates: finalCandidates.length > 0 ? finalCandidates : fetchedCandidates,
+    diagnostics: buildTemplatePriorDiagnostics({
+      queryDiagnostics,
+      mergedCandidateCount: merged.length,
+      keptCandidateCount: scoredCandidates.length,
+      rerankedCandidateCount:
+        finalCandidates.length > 0
+          ? finalCandidates.length
+          : fetchedCandidates.length,
+    }),
     summary:
       selectedCandidate !== null
         ? `Selected ${selectedCandidate.templateCode} as the template scaffold prior after strong filter and rerank.`
         : `No searchable template prior remained after rerank; ${workflowVariant} has no stable primary reference.`,
+  };
+}
+
+interface TemplatePriorSearchSuccess {
+  plannedQuery: { label: string; keyword: string };
+  result: Awaited<ReturnType<TooldiCatalogSourceClient["searchTemplateAssets"]>>;
+  error: null;
+}
+
+interface TemplatePriorSearchFailure {
+  plannedQuery: { label: string; keyword: string };
+  result: null;
+  error: TooldiCatalogSourceError;
+}
+
+async function searchTemplatePriorQuery(
+  sourceClient: TooldiCatalogSourceClient,
+  plannedQuery: { label: string; keyword: string },
+  canvas: "horizontal" | "vertical" | "square" | "",
+): Promise<
+  | Pick<TemplatePriorSearchSuccess, "result" | "error">
+  | Pick<TemplatePriorSearchFailure, "result" | "error">
+> {
+  try {
+    return {
+      result: await sourceClient.searchTemplateAssets({
+        keyword: plannedQuery.keyword,
+        canvas,
+        page: 1,
+        source: "search",
+      }),
+      error: null,
+    };
+  } catch (error) {
+    return {
+      result: null,
+      error: normalizeTemplatePriorSourceError(error, plannedQuery),
+    };
+  }
+}
+
+function normalizeTemplatePriorSourceError(
+  error: unknown,
+  plannedQuery: { label: string; keyword: string },
+): TooldiCatalogSourceError {
+  if (error instanceof TooldiCatalogSourceError) {
+    return error;
+  }
+  return new TooldiCatalogSourceError({
+    code: "request_failed",
+    message:
+      `Template prior query '${plannedQuery.label}' failed before a Tooldi catalog response was classified.`,
+    url: "unknown",
+    cause: error,
+  });
+}
+
+function buildTemplatePriorQueryDiagnostics(
+  searchResults: Array<TemplatePriorSearchSuccess | TemplatePriorSearchFailure>,
+): TemplatePriorQueryDiagnostic[] {
+  return searchResults.map(({ plannedQuery, result, error }) => ({
+    label: plannedQuery.label,
+    keyword: plannedQuery.keyword,
+    page: 1,
+    status: result ? "ok" : "error",
+    retrievedAssetCount: result?.assets.length ?? 0,
+    traceId: result?.traceId ?? null,
+    errorCode: error?.code ?? null,
+    errorMessage: error?.message ?? null,
+    errorUrl: error?.url ?? null,
+    errorStatus: error?.status ?? null,
+    responsePreview: error?.responsePreview ?? null,
+  }));
+}
+
+function buildTemplatePriorDiagnostics(input: {
+  queryDiagnostics: TemplatePriorQueryDiagnostic[];
+  mergedCandidateCount: number;
+  keptCandidateCount: number;
+  rerankedCandidateCount: number;
+}): TemplatePriorDiagnostics {
+  return {
+    totalQueryCount: input.queryDiagnostics.length,
+    successfulQueryCount: input.queryDiagnostics.filter(
+      (entry) => entry.status === "ok",
+    ).length,
+    failedQueryCount: input.queryDiagnostics.filter(
+      (entry) => entry.status === "error",
+    ).length,
+    mergedCandidateCount: input.mergedCandidateCount,
+    keptCandidateCount: input.keptCandidateCount,
+    rerankedCandidateCount: input.rerankedCandidateCount,
+    queryDiagnostics: input.queryDiagnostics,
   };
 }
 

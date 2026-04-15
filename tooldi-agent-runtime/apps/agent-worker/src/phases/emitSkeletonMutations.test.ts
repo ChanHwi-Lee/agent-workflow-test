@@ -337,6 +337,36 @@ function createExecutablePlanV2(): ExecutablePlan {
   };
 }
 
+function createExecutablePlanObjectNative(): ExecutablePlan {
+  return {
+    ...createExecutablePlanV2(),
+    actions: [
+      {
+        ...createExecutablePlanV2().actions[0]!,
+        inputs: {
+          ...createExecutablePlanV2().actions[0]!.inputs,
+          executionMode: "object_native_freeform",
+        },
+      },
+      {
+        ...createExecutablePlanV2().actions[1]!,
+        inputs: {
+          ...createExecutablePlanV2().actions[1]!.inputs,
+          executionMode: "object_native_freeform",
+        },
+      },
+      {
+        ...createExecutablePlanV2().actions[2]!,
+        inputs: {
+          ...createExecutablePlanV2().actions[2]!.inputs,
+          executionMode: "object_native_freeform",
+        },
+      },
+      createExecutablePlanV2().actions[3]!,
+    ],
+  };
+}
+
 test("emitSkeletonMutations uses copy slot text and concrete layout hints in mutation payloads", async () => {
   const batch = await emitSkeletonMutations(
     createHydratedPlanningInput(),
@@ -505,7 +535,7 @@ test("emitSkeletonMutations는 layoutGeometry 계산 결과와 같은 bounds를 
   );
 });
 
-test("emitSkeletonMutations suppresses legacy foundation and polish emission for retrieval_prior_v2 execution", async () => {
+test("emitSkeletonMutations suppresses empty polish proposal for retrieval_prior_v2 execution", async () => {
   const batch = await emitSkeletonMutations(
     createHydratedPlanningInput(),
     createNormalizedIntent(),
@@ -526,7 +556,7 @@ test("emitSkeletonMutations suppresses legacy foundation and polish emission for
   const polishProposal = batch.proposals.find((proposal) => proposal.stageLabel === "polish");
   assert.ok(foundationProposal);
   assert.ok(copyProposal);
-  assert.ok(polishProposal);
+  assert.equal(polishProposal, undefined);
 
   assert.equal(
     foundationProposal!.mutation.commands.some(
@@ -539,14 +569,28 @@ test("emitSkeletonMutations suppresses legacy foundation and polish emission for
     false,
   );
   assert.equal(copyProposal!.mutation.commands.length, 2);
+});
+
+test("emitSkeletonMutations skips empty polish proposal for object_native execution", async () => {
+  const batch = await emitSkeletonMutations(
+    createHydratedPlanningInput(),
+    createNormalizedIntent(),
+    createExecutablePlanObjectNative(),
+    {
+      textLayoutHelper: {
+        estimate: async () => ({
+          width: 240,
+          height: 84,
+          estimatedLineCount: 1,
+        }),
+      },
+    },
+  );
+
+  const proposalLabels = batch.proposals.map((proposal) => proposal.stageLabel);
+  assert.deepEqual(proposalLabels, ["foundation", "copy"]);
   assert.equal(
-    polishProposal!.mutation.commands.some(
-      (command) =>
-        isCreateLayerCommand(command) &&
-        ["primary_accent", "secondary_accent", "corner_accent", "badge_or_ribbon", "cta_container"].includes(
-          String(command.layerBlueprint.metadata?.role ?? ""),
-        ),
-    ),
-    false,
+    batch.proposals.every((proposal) => proposal.mutation.commands.length > 0),
+    true,
   );
 });

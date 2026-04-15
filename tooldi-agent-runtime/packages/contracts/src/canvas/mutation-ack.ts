@@ -8,7 +8,10 @@ import {
   MutationOperationSchema,
   RunStatusSchema,
 } from "../common.js";
-import { TemplateSaveEvidenceSchema } from "./template-save-receipt.js";
+import {
+  TemplateSaveEvidenceSchema,
+  TemplateSaveReceiptSchema,
+} from "./template-save-receipt.js";
 
 export const MutationCommandResultSchema = Type.Object(
   {
@@ -29,6 +32,7 @@ export const MutationCommandResultSchema = Type.Object(
     tombstoneKey: Type.Optional(IdentifierSchema),
     contentHash: Type.Optional(Type.String({ minLength: 1 })),
     saveEvidence: Type.Optional(TemplateSaveEvidenceSchema),
+    saveReceipt: Type.Optional(TemplateSaveReceiptSchema),
     error: Type.Optional(ErrorSummarySchema),
   },
   { additionalProperties: false },

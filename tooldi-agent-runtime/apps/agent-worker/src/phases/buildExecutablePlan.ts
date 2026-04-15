@@ -1,4 +1,4 @@
-import type { ExecutablePlan } from "@tooldi/agent-contracts";
+import type { ExecutablePlan, ExecutionSlotKey } from "@tooldi/agent-contracts";
 import { createRequestId } from "@tooldi/agent-domain";
 import type { ToolRegistry } from "@tooldi/tool-registry";
 
@@ -85,28 +85,39 @@ export async function buildExecutablePlan(
     : null;
   const v2FreeformCopyBlocks =
     freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2" ||
-    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset"
+    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset" ||
+    freeformLayoutPlan?.workflowVariant === "object_native_v1"
       ? freeformLayoutPlan.copyBlocks
       : [];
   const v2FreeformPolishBlocks =
     freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2" ||
-    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset"
+    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset" ||
+    freeformLayoutPlan?.workflowVariant === "object_native_v1"
       ? freeformLayoutPlan.polishBlocks
       : [];
   const executionMode =
     freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2" ||
     freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset"
       ? "v2_freeform"
+      : freeformLayoutPlan?.workflowVariant === "object_native_v1"
+        ? "object_native_freeform"
       : "legacy_slots";
 
   const requestedWorkflowVariant = String(input.request.workflowVariant ?? "legacy");
+  const requiredExecutionSlots = resolveRequiredExecutionSlots(executionMode);
   if (
     requestedWorkflowVariant === "retrieval_prior_v2" ||
-    requestedWorkflowVariant === "retrieval_prior_v2_reset"
+    requestedWorkflowVariant === "retrieval_prior_v2_reset" ||
+    requestedWorkflowVariant === "object_native_v1"
   ) {
-    if (!freeformLayoutPlan || executionMode !== "v2_freeform" || v2FreeformCopyBlocks.length === 0) {
+    if (
+      !freeformLayoutPlan ||
+      (executionMode !== "v2_freeform" &&
+        executionMode !== "object_native_freeform") ||
+      v2FreeformCopyBlocks.length === 0
+    ) {
       throw new Error(
-        "retrieval_prior_v2 requires freeform layout execution truth; refusing to fall back to legacy slot execution",
+        "Freeform workflow variants require freeform layout execution truth; refusing to fall back to legacy slot execution",
       );
     }
   }
@@ -221,12 +232,16 @@ export async function buildExecutablePlan(
         slotKey: "headline",
       },
       inputs: {
+        executionMode,
         selectedLayoutCandidateId: selectionDecision.selectedLayoutCandidateId,
         layoutMode: selectionDecision.layoutMode,
         displayFontFamily: typographyDecision.display?.fontToken ?? null,
         displayFontWeight: typographyDecision.display?.fontWeight ?? null,
         bodyFontFamily: typographyDecision.body?.fontToken ?? null,
         bodyFontWeight: typographyDecision.body?.fontWeight ?? null,
+        ...(requiredExecutionSlots.length > 0
+          ? { requiredExecutionSlots }
+          : {}),
         requiredSlots: normalizedIntent.requiredSlots,
         goalSummary: normalizedIntent.goalSummary,
         copyPlanPrimaryMessage: copyPlan.primaryMessage,
@@ -345,6 +360,15 @@ function buildCopySlotTextMap(
     },
     {},
   );
+}
+
+function resolveRequiredExecutionSlots(
+  executionMode: "legacy_slots" | "v2_freeform" | "object_native_freeform",
+): ExecutionSlotKey[] {
+  if (executionMode === "object_native_freeform") {
+    return ["background", "headline", "offer_line", "cta"];
+  }
+  return [];
 }
 
 function assertPhotoSelectionExecutable(assetPlan: AssetPlan): void {

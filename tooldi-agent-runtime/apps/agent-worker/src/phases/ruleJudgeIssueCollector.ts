@@ -47,6 +47,12 @@ export function collectRuleJudgeIssues(
 ): RuleJudgeIssue[] {
   const assetPolicy = normalizeTemplateAssetPolicy(intent.assetPolicy);
   const issues: RuleJudgeIssue[] = [];
+  const objectNativeExecution = plan.actions.some(
+    (action) =>
+      action.inputs &&
+      typeof action.inputs === "object" &&
+      action.inputs.executionMode === "object_native_freeform",
+  );
 
   if (typographyDecision.fallbackUsed) {
     issues.push(surfaceRuleJudgeIssue("typography_fallback"));
@@ -111,7 +117,9 @@ export function collectRuleJudgeIssues(
     );
   }
 
-  issues.push(...detectGraphicPromoStructureIssues(intent, selectionDecision));
+  if (!objectNativeExecution) {
+    issues.push(...detectGraphicPromoStructureIssues(intent, selectionDecision));
+  }
 
   const domainSubjectMismatch = detectDomainSubjectMismatch(
     intent,

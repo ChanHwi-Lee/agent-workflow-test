@@ -47,7 +47,6 @@ import type {
 import { TooldiCatalogSourceError } from "./tooldiCatalogSourceTypes.js";
 
 import {
-  assertTemplateListResponse,
   assertDirectListResponse,
   assertListSuccessResponse,
   mapPriceToLegacyCode,
@@ -56,6 +55,7 @@ import {
   normalizeFontAsset,
   normalizeGraphicAsset,
   normalizePhotoAsset,
+  normalizeTemplateListResponse,
   normalizeTemplateAsset,
   normalizeTemplateDocument,
   toDirectPage,
@@ -67,6 +67,7 @@ import {
   type ShapeApiRow,
   type TemplateApiRow,
   type TemplateDataApiResponse,
+  type TemplateListApiResponse,
 } from "./tooldiCatalogAssetMapper.js";
 import { TooldiCatalogSourceHttpClient } from "./tooldiCatalogSourceHttp.js";
 
@@ -283,7 +284,7 @@ class TooldiApiCatalogSourceClient implements TooldiCatalogSourceClient {
     query: SearchTemplateAssetsQuery,
   ): Promise<TooldiCatalogSearchResult<TooldiTemplateAsset>> {
     const path = "/editor/get_templates";
-    const response = await this.httpClient.postJson<ApiListSuccess<TemplateApiRow>>(
+    const response = await this.httpClient.postJson<TemplateListApiResponse>(
       path,
       {
         keyword: query.keyword,
@@ -297,13 +298,16 @@ class TooldiApiCatalogSourceClient implements TooldiCatalogSourceClient {
         ...(query.source ? { source: query.source } : {}),
       },
     );
-    assertTemplateListResponse(response, `${this.httpClient.baseUrl}${path}`);
+    const normalized = normalizeTemplateListResponse(
+      response,
+      `${this.httpClient.baseUrl}${path}`,
+    );
     return {
       sourceFamily: "template_source",
-      page: response.page ?? query.page,
-      hasNextPage: response.hasNextPage ?? false,
-      traceId: response.trace_id ?? null,
-      assets: response.data.map((asset) => normalizeTemplateAsset(asset)),
+      page: normalized.page ?? query.page,
+      hasNextPage: normalized.hasNextPage ?? false,
+      traceId: normalized.trace_id ?? null,
+      assets: normalized.data.map((asset) => normalizeTemplateAsset(asset)),
     };
   }
 
