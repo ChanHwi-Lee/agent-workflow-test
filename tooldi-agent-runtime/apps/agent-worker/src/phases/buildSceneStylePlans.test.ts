@@ -179,6 +179,27 @@ function createBundle(): TemplatePriorBundle {
                     fill: "#FFFFFF",
                   },
                   {
+                    type: "rect",
+                    left: 220,
+                    top: 180,
+                    width: 420,
+                    height: 72,
+                    rx: 32,
+                    ry: 32,
+                    fill: "rgba(180, 236, 120, 1)",
+                  },
+                  {
+                    type: "text",
+                    left: 260,
+                    top: 194,
+                    width: 340,
+                    height: 36,
+                    fontFamily: "Rounded Display",
+                    fontSize: 32,
+                    fontWeight: 600,
+                    fill: "#1C5D40",
+                  },
+                  {
                     type: "text",
                     left: 250,
                     top: 420,
@@ -243,10 +264,15 @@ test("buildSceneStylePlans extracts typed style and binding plans from template 
   assert.equal(result.sceneStylePlan?.typographyPolicy.tone, "rounded");
   assert.equal(result.sceneStylePlan?.palettePolicy.backgroundColorHex, "#62d84e");
   assert.equal(result.sceneStylePlan?.palettePolicy.ctaSurfaceColorHex, "#b4ec78");
+  assert.equal(result.sceneStylePlan?.promoSurfaceColorHex, "#b4ec78");
+  assert.equal(result.sceneStylePlan?.promoTextColorHex, "#1c5d40");
   assert.equal(result.sceneStylePlan?.motifTags.includes("floral"), true);
   assert.equal(result.sceneBindingPlan?.preferredDecorationMode, "promo_multi_graphic");
   assert.equal(result.sceneBindingPlan?.preferredCtaTreatment, "framed");
   assert.equal(result.sceneBindingPlan?.backgroundMode, "pastel_gradient");
+  assert.equal(result.sceneBindingPlan?.promoSurfaceColorHex, "#b4ec78");
+  assert.equal(result.sceneBindingPlan?.promoTextColorHex, "#1c5d40");
+  assert.equal(result.sceneBindingPlan?.promoTextColorSource, "reference");
 });
 
 test("buildSceneStylePlans keeps band CTA precedence even when badge-like treatment is detected", () => {

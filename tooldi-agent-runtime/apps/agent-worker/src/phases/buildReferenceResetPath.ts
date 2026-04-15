@@ -133,7 +133,12 @@ export function buildReferenceResetPath(
     summary:
       "Reset candidate executes editable block plan through the existing freeform carrier.",
   };
-  const warnings = collectQualityWarnings(referenceBlockGraph, blockBindingPlan, freeformLayoutPlan);
+  const warnings = collectQualityWarnings(
+    referenceBlockGraph,
+    blockBindingPlan,
+    freeformLayoutPlan,
+    sceneBindingPlan,
+  );
 
   return {
     referenceBlockGraph,
@@ -430,6 +435,7 @@ function buildEditableBlockPlan(
   const blocks: FreeformRenderableBlock[] = [];
   const assignmentByBlockId = new Map(blockBindingPlan.assignments.map((assignment) => [assignment.blockId, assignment] as const));
   const candidateId = graph.selectedTemplateCode;
+  const semanticBounds: LayoutBounds[] = [];
 
   for (const block of graph.blocks) {
     const assignment = assignmentByBlockId.get(block.blockId);
@@ -445,6 +451,7 @@ function buildEditableBlockPlan(
     );
     if (block.kind === "promo_surface") {
       const fitted = fitBandBounds(scaled, assignment.text, "promo", input.request.editorContext.canvasWidth);
+      semanticBounds.push(fitted);
       blocks.push({
         blockId: `${block.blockId}_surface`,
         stage: "copy",
@@ -458,9 +465,10 @@ function buildEditableBlockPlan(
         textContent: null,
         styleTokens: {
           fillColor:
+            sceneBindingPlan?.promoSurfaceColorHex ??
             block.fillColorHex ??
             sceneStylePlan?.palettePolicy.accentColorHex ??
-            sceneBindingPlan?.accentTextColorHex ??
+            sceneBindingPlan?.ctaSurfaceColorHex ??
             "#d9f99d",
           cornerRadius: Math.round(fitted.height / 2),
           opacity: 0.9,
@@ -472,6 +480,7 @@ function buildEditableBlockPlan(
     }
     if (block.kind === "action_surface") {
       const fitted = fitBandBounds(scaled, assignment.text, "cta", input.request.editorContext.canvasWidth);
+      semanticBounds.push(fitted);
       blocks.push({
         blockId: `${block.blockId}_cta`,
         stage: "copy",
@@ -516,6 +525,9 @@ function buildEditableBlockPlan(
       input.request.editorContext.canvasWidth,
       input.request.editorContext.canvasHeight,
     );
+    if (semanticBounds.some((bounds) => overlapRatio(bounds, scaled) > 0.12)) {
+      continue;
+    }
     if (block.layerType === "image" && block.sourceOriginUrl) {
       blocks.push({
         blockId: `${block.blockId}_decor`,
@@ -635,8 +647,9 @@ function createStyleOnlyEditableBlockPlan(
       textContent: null,
       styleTokens: {
         fillColor:
+          sceneBindingPlan?.promoSurfaceColorHex ??
           sceneStylePlan?.palettePolicy.accentColorHex ??
-          sceneBindingPlan?.accentTextColorHex ??
+          sceneBindingPlan?.ctaSurfaceColorHex ??
           "#d9f99d",
         cornerRadius: 32,
         opacity: 0.9,
@@ -659,9 +672,10 @@ function createStyleOnlyEditableBlockPlan(
       textAlign: "center",
       styleTokens: {
         fillColor:
+          sceneBindingPlan?.promoTextColorHex ??
           sceneBindingPlan?.accentTextColorHex ??
-          sceneStylePlan?.palettePolicy.backgroundColorHex ??
-          "#0f7035",
+          sceneStylePlan?.palettePolicy.primaryTextColorHex ??
+          "#111111",
       },
       clusterZone: "center_cluster",
     });
@@ -769,6 +783,11 @@ function buildTextBlock(
   textAlign: "left" | "center" | "right",
 ): FreeformRenderableBlock {
   const fitted = fitTextBounds(assignment.text ?? "", bounds, block.kind);
+  const promoTextColor =
+    sceneBindingPlan?.promoTextColorHex ??
+    sceneBindingPlan?.accentTextColorHex ??
+    sceneStylePlan?.palettePolicy.primaryTextColorHex ??
+    "#111111";
   return {
     blockId: `${block.blockId}_text`,
     stage: "copy",
@@ -785,10 +804,12 @@ function buildTextBlock(
     textAlign,
     styleTokens: {
       fillColor:
-        block.fillColorHex ??
-        sceneBindingPlan?.primaryTextColorHex ??
-        sceneStylePlan?.palettePolicy.primaryTextColorHex ??
-        "#111111",
+        block.kind === "promo_surface"
+          ? promoTextColor
+          : block.fillColorHex ??
+            sceneBindingPlan?.primaryTextColorHex ??
+            sceneStylePlan?.palettePolicy.primaryTextColorHex ??
+            "#111111",
     },
     clusterZone: block.clusterZone,
   };
@@ -851,6 +872,7 @@ function collectQualityWarnings(
   graph: ReferenceBlockGraph,
   blockBindingPlan: BlockBindingPlan,
   freeformLayoutPlan: FreeformLayoutPlan,
+  sceneBindingPlan: SceneBindingPlan | null,
 ): string[] {
   const warnings: string[] = [];
   if (!graph.blocks.some((block) => block.kind === "display_text")) {
@@ -861,6 +883,10 @@ function collectQualityWarnings(
   }
   if (blockBindingPlan.droppedAtomIds.length > 0) {
     warnings.push(`dropped ${blockBindingPlan.droppedAtomIds.length} optional message atoms`);
+  }
+  warnings.push(`safe_decor_retained_count:${freeformLayoutPlan.polishBlocks.length}`);
+  if (sceneBindingPlan?.promoTextColorSource === "contrast_fallback") {
+    warnings.push("promo_contrast_fallback_applied");
   }
   return warnings;
 }
@@ -988,11 +1014,11 @@ function classifyDecorationBlock(
     return null;
   }
   const areaRatio = (bounds.width * bounds.height) / Math.max(canvasWidth * canvasHeight, 1);
-  if (areaRatio < 0.001 || areaRatio > 0.08) {
+  if (areaRatio < 0.001 || areaRatio > 0.14) {
     return null;
   }
-  const zone = resolveClusterZone(bounds, canvasWidth, canvasHeight);
-  if (zone !== "top_corner" && zone !== "bottom_strip" && zone !== "right_cluster") {
+  const zone = resolveDecorationZone(bounds, canvasWidth, canvasHeight);
+  if (!zone) {
     return null;
   }
   const fill = normalizeHex(readFillColor(object));
@@ -1019,6 +1045,25 @@ function classifyDecorationBlock(
     sourceWidth: asNumber(object.imageWidth),
     sourceHeight: asNumber(object.imageHeight),
   };
+}
+
+function resolveDecorationZone(
+  bounds: LayoutBounds,
+  canvasWidth: number,
+  canvasHeight: number,
+): ConcreteLayoutClusterZone | null {
+  const rightEdge = bounds.x + bounds.width;
+  const bottomEdge = bounds.y + bounds.height;
+  if (bottomEdge <= canvasHeight * 0.34) {
+    return "top_corner";
+  }
+  if (bounds.y >= canvasHeight * 0.7) {
+    return "bottom_strip";
+  }
+  if (rightEdge >= canvasWidth * 0.72) {
+    return "right_cluster";
+  }
+  return null;
 }
 
 function readBounds(object: CanvasObject): LayoutBounds | null {
@@ -1323,4 +1368,20 @@ function scoreDecorationBlock(block: ReferenceBlock): number {
     score += 60000;
   }
   return score;
+}
+
+function overlapRatio(a: LayoutBounds, b: LayoutBounds): number {
+  const overlapWidth = Math.max(
+    0,
+    Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x),
+  );
+  const overlapHeight = Math.max(
+    0,
+    Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y),
+  );
+  const overlapArea = overlapWidth * overlapHeight;
+  if (overlapArea <= 0) {
+    return 0;
+  }
+  return overlapArea / Math.max(1, Math.min(a.width * a.height, b.width * b.height));
 }

@@ -6,6 +6,7 @@ import { createTestRun } from "@tooldi/agent-testkit";
 import type {
   CopyPlan,
   HydratedPlanningInput,
+  SceneBindingPlan,
   TemplatePriorBundle,
 } from "../types.js";
 import { buildReferenceResetPath } from "./buildReferenceResetPath.js";
@@ -127,13 +128,48 @@ function createTemplatePriorBundle(): TemplatePriorBundle {
   };
 }
 
+function createSceneBindingPlan(
+  overrides: Partial<SceneBindingPlan> = {},
+): SceneBindingPlan {
+  return {
+    planId: "binding-1",
+    runId: "run-1",
+    traceId: "trace-1",
+    workflowVariant: "retrieval_prior_v2_reset",
+    selectedTemplateCode: "19046887349",
+    selectedTemplateTitle: "봄맞이 할인 이벤트 광고",
+    backgroundMode: "pastel_gradient",
+    backgroundColorHex: "#6c9b36",
+    secondaryBackgroundColorHex: "#81dc47",
+    primaryTextColorHex: "#ffffff",
+    secondaryTextColorHex: "#ffffff",
+    accentTextColorHex: "#6bd357",
+    inverseTextColorHex: "#ffffff",
+    promoSurfaceColorHex: "#b4ec78",
+    promoTextColorHex: "#1c5d40",
+    promoTextColorSource: "reference",
+    ctaSurfaceColorHex: "#6bd357",
+    ctaTextColorHex: "#ffffff",
+    ctaShapeLanguage: "transparent_band",
+    preferredDecorationMode: "promo_multi_graphic",
+    preferredAccentDensity: "medium",
+    preferredBadgeProminence: "dominant",
+    preferredCtaTreatment: "framed",
+    motifTags: ["abstract"],
+    includeRibbon: false,
+    includeFrame: false,
+    summary: "binding",
+    ...overrides,
+  };
+}
+
 test("buildReferenceResetPath creates reset artifacts and freeform execution carrier", () => {
   const result = buildReferenceResetPath(
     createHydratedInput(),
     createTemplatePriorBundle(),
     createCopyPlan(),
     null,
-    null,
+    createSceneBindingPlan(),
   );
 
   assert.ok(result.referenceBlockGraph);
@@ -150,6 +186,10 @@ test("buildReferenceResetPath creates reset artifacts and freeform execution car
   assert.ok(result.freeformLayoutPlan?.copyBlocks.some((block) => block.executionSlotKey === "headline"));
   assert.ok(result.freeformLayoutPlan?.copyBlocks.some((block) => block.executionSlotKey === "cta"));
   assert.ok((result.freeformLayoutPlan?.polishBlocks.length ?? 0) >= 1);
+  const promoSurface = result.freeformLayoutPlan?.copyBlocks.find((block) => block.variantKey === "reset_promo_surface");
+  const promoText = result.freeformLayoutPlan?.copyBlocks.find((block) => block.executionSlotKey === "offer_line");
+  assert.equal(promoSurface?.styleTokens?.fillColor, "#b4ec78");
+  assert.equal(promoText?.styleTokens?.fillColor, "#1c5d40");
   assert.ok(result.qualityEvalSummary);
 });
 
@@ -167,10 +207,32 @@ test("buildReferenceResetPath downgrades to style-only when the reference lacks 
     bundle,
     createCopyPlan(),
     null,
-    null,
+    createSceneBindingPlan({
+      promoSurfaceColorHex: "#6bd357",
+      promoTextColorHex: "#6bd357",
+      promoTextColorSource: "contrast_fallback",
+    }),
   );
 
   assert.equal(result.freeformLayoutPlan?.compositionStatus, "style_only");
   assert.equal(result.styleDowngradeVerdict?.applied, true);
   assert.match(result.styleDowngradeVerdict?.reason ?? "", /semantic promo\/CTA surface/);
+});
+
+test("buildReferenceResetPath records promo contrast fallback in quality summary", () => {
+  const result = buildReferenceResetPath(
+    createHydratedInput(),
+    createTemplatePriorBundle(),
+    createCopyPlan(),
+    null,
+    createSceneBindingPlan({
+      promoSurfaceColorHex: "#6bd357",
+      promoTextColorHex: "#111111",
+      promoTextColorSource: "contrast_fallback",
+    }),
+  );
+
+  assert.ok(
+    result.qualityEvalSummary?.warnings.includes("promo_contrast_fallback_applied"),
+  );
 });

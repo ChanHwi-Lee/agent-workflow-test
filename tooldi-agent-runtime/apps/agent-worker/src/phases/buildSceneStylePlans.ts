@@ -69,6 +69,17 @@ export function buildSceneStylePlans(
     canvasWidth,
     canvasHeight,
   );
+  const promoSurfaceColorHex = detectPromoSurfaceColor(
+    nonTextObjects,
+    canvasWidth,
+    canvasHeight,
+  );
+  const promoTextColorHex = detectPromoTextColor(
+    textObjects,
+    promoSurfaceColorHex,
+    canvasWidth,
+    canvasHeight,
+  );
   const badgeLikeTreatment =
     motifTags.includes("coupon") ||
     motifTags.includes("ribbon") ||
@@ -88,6 +99,8 @@ export function buildSceneStylePlans(
     motifTags,
     ctaShapeLanguage,
     badgeLikeTreatment,
+    promoSurfaceColorHex,
+    promoTextColorHex,
     summary:
       `Scene style extracted palette/background/typography from template ${selectedTemplateCode} ` +
       `with ${motifTags.length} motif tags and ${ctaShapeLanguage} CTA treatment.`,
@@ -142,6 +155,28 @@ function buildSceneBindingPlan(
       sceneStylePlan.palettePolicy.accentColorHex ??
         sceneStylePlan.palettePolicy.backgroundColorHex,
     );
+  const promoSurfaceColorHex =
+    sceneStylePlan.promoSurfaceColorHex ??
+    sceneStylePlan.palettePolicy.accentColorHex ??
+    sceneStylePlan.palettePolicy.ctaSurfaceColorHex ??
+    null;
+  const promoTextColorReference = sceneStylePlan.promoTextColorHex;
+  const promoTextColorHex =
+    promoSurfaceColorHex && promoTextColorReference
+      ? contrastRatio(promoSurfaceColorHex, promoTextColorReference) >= 3
+        ? promoTextColorReference
+        : contrastingTextColor(promoSurfaceColorHex)
+      : promoSurfaceColorHex
+        ? contrastingTextColor(promoSurfaceColorHex)
+        : sceneStylePlan.palettePolicy.primaryTextColorHex;
+  const promoTextColorSource =
+    promoSurfaceColorHex && promoTextColorReference
+      ? contrastRatio(promoSurfaceColorHex, promoTextColorReference) >= 3
+        ? "reference"
+        : "contrast_fallback"
+      : promoSurfaceColorHex
+        ? "contrast_fallback"
+        : null;
   const includeRibbon =
     sceneStylePlan.badgeLikeTreatment ||
     sceneStylePlan.motifTags.includes("ribbon") ||
@@ -164,6 +199,9 @@ function buildSceneBindingPlan(
     secondaryTextColorHex: sceneStylePlan.palettePolicy.secondaryTextColorHex,
     accentTextColorHex,
     inverseTextColorHex,
+    promoSurfaceColorHex,
+    promoTextColorHex,
+    promoTextColorSource,
     ctaSurfaceColorHex: sceneStylePlan.palettePolicy.ctaSurfaceColorHex,
     ctaTextColorHex: sceneStylePlan.palettePolicy.ctaTextColorHex,
     ctaShapeLanguage: sceneStylePlan.ctaShapeLanguage,
@@ -526,6 +564,34 @@ function detectCtaSurfaceColor(
   return candidate ? collectColors(candidate)[0] ?? null : null;
 }
 
+function detectPromoSurfaceColor(
+  nonTextObjects: CanvasObject[],
+  canvasWidth: number | null,
+  canvasHeight: number | null,
+): string | null {
+  const candidate = nonTextObjects
+    .filter((object) => isRectLike(object))
+    .filter((object) => isPromoShapeCandidate(object, canvasWidth, canvasHeight))
+    .sort((left, right) => estimateArea(right) - estimateArea(left))[0];
+  return candidate ? collectColors(candidate)[0] ?? null : null;
+}
+
+function detectPromoTextColor(
+  textObjects: CanvasObject[],
+  promoSurfaceColorHex: string | null,
+  canvasWidth: number | null,
+  canvasHeight: number | null,
+): string | null {
+  const candidate = textObjects
+    .filter((object) => isPromoTextLike(object, canvasWidth, canvasHeight))
+    .sort((left, right) => estimateTextPriority(right) - estimateTextPriority(left))[0];
+  const candidateColor = candidate ? collectColors(candidate)[0] ?? null : null;
+  if (!candidateColor) {
+    return promoSurfaceColorHex ? contrastingTextColor(promoSurfaceColorHex) : null;
+  }
+  return candidateColor;
+}
+
 function isRectLike(object: CanvasObject): boolean {
   const type = typeof object.type === "string" ? object.type : "";
   return type === "rect" || type === "textbox" || type === "group";
@@ -551,6 +617,27 @@ function isCtaShapeCandidate(
   );
 }
 
+function isPromoShapeCandidate(
+  object: CanvasObject,
+  canvasWidth: number | null,
+  canvasHeight: number | null,
+): boolean {
+  if (!canvasWidth || !canvasHeight) {
+    return false;
+  }
+  const width = estimateWidth(object);
+  const height = estimateHeight(object);
+  const top = asNumber(object.top) ?? asNumber(object.top_from_zero) ?? 0;
+  return (
+    width >= canvasWidth * 0.14 &&
+    width <= canvasWidth * 0.7 &&
+    height >= canvasHeight * 0.04 &&
+    height <= canvasHeight * 0.18 &&
+    top >= canvasHeight * 0.08 &&
+    top <= canvasHeight * 0.55
+  );
+}
+
 function isCtaTextLike(object: CanvasObject, canvasHeight: number | null): boolean {
   if (!isTextLikeObject(object) || !canvasHeight) {
     return false;
@@ -558,6 +645,26 @@ function isCtaTextLike(object: CanvasObject, canvasHeight: number | null): boole
   const top = asNumber(object.top) ?? 0;
   const width = estimateWidth(object);
   return top >= canvasHeight * 0.42 && width <= 280;
+}
+
+function isPromoTextLike(
+  object: CanvasObject,
+  canvasWidth: number | null,
+  canvasHeight: number | null,
+): boolean {
+  if (!isTextLikeObject(object) || !canvasWidth || !canvasHeight) {
+    return false;
+  }
+  const top = asNumber(object.top) ?? asNumber(object.top_from_zero) ?? 0;
+  const width = estimateWidth(object);
+  const height = estimateHeight(object);
+  return (
+    top >= canvasHeight * 0.08 &&
+    top <= canvasHeight * 0.55 &&
+    width >= canvasWidth * 0.12 &&
+    width <= canvasWidth * 0.7 &&
+    height <= canvasHeight * 0.14
+  );
 }
 
 function detectBadgeLikeLabel(
@@ -716,6 +823,18 @@ function contrastingTextColor(backgroundColorHex: string): string {
 
 function invertColorByLuminance(colorHex: string): string {
   return calculateRelativeLuminance(colorHex) >= 0.58 ? "#111111" : "#f8fafc";
+}
+
+function contrastRatio(foregroundColorHex: string, backgroundColorHex: string): number {
+  const lighter = Math.max(
+    calculateRelativeLuminance(foregroundColorHex),
+    calculateRelativeLuminance(backgroundColorHex),
+  );
+  const darker = Math.min(
+    calculateRelativeLuminance(foregroundColorHex),
+    calculateRelativeLuminance(backgroundColorHex),
+  );
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 function parseRgbChannel(channel: string | undefined): number {

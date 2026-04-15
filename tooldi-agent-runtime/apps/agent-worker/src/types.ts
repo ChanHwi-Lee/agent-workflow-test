@@ -395,6 +395,8 @@ export interface SceneStylePlan {
   motifTags: SceneMotifTag[];
   ctaShapeLanguage: SceneCtaShapeLanguage;
   badgeLikeTreatment: boolean;
+  promoSurfaceColorHex?: string | null;
+  promoTextColorHex?: string | null;
   summary: string;
 }
 
@@ -419,6 +421,9 @@ export interface SceneBindingPlan {
   secondaryTextColorHex: string | null;
   accentTextColorHex: string | null;
   inverseTextColorHex: string | null;
+  promoSurfaceColorHex?: string | null;
+  promoTextColorHex?: string | null;
+  promoTextColorSource?: "reference" | "contrast_fallback" | null;
   ctaSurfaceColorHex: string | null;
   ctaTextColorHex: string | null;
   ctaShapeLanguage: SceneCtaShapeLanguage;
