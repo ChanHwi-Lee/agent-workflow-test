@@ -139,11 +139,38 @@ test("buildReferenceResetPath creates reset artifacts and freeform execution car
   assert.ok(result.referenceBlockGraph);
   assert.equal(result.referenceBlockGraph?.workflowVariant, "retrieval_prior_v2_reset");
   assert.ok(result.messageAtomPlan);
+  assert.equal(
+    result.messageAtomPlan?.atoms.some((atom) => atom.kind === "support"),
+    false,
+  );
   assert.ok(result.blockBindingPlan);
   assert.ok(result.editableBlockPlan);
   assert.ok(result.freeformLayoutPlan);
   assert.equal(result.freeformLayoutPlan?.workflowVariant, "retrieval_prior_v2_reset");
   assert.ok(result.freeformLayoutPlan?.copyBlocks.some((block) => block.executionSlotKey === "headline"));
   assert.ok(result.freeformLayoutPlan?.copyBlocks.some((block) => block.executionSlotKey === "cta"));
+  assert.ok((result.freeformLayoutPlan?.polishBlocks.length ?? 0) >= 1);
   assert.ok(result.qualityEvalSummary);
+});
+
+test("buildReferenceResetPath downgrades to style-only when the reference lacks semantic surfaces", () => {
+  const bundle = createTemplatePriorBundle();
+  const primaryCandidate = bundle.candidates[0];
+  assert.ok(primaryCandidate);
+  (primaryCandidate.fetchedDocument as any).pages[0].parsed.objects = [
+    { id: "display-1", type: "text", text: "할인해", left: 420, top: 250, width: 420, height: 220, fontSize: 132, textAlign: "left", fill: "#ffffff" },
+    { id: "meta-1", type: "text", text: "SPRING SALE", left: 80, top: 48, width: 160, height: 30, fontSize: 24, textAlign: "left", fill: "#ffffff" },
+  ];
+
+  const result = buildReferenceResetPath(
+    createHydratedInput(),
+    bundle,
+    createCopyPlan(),
+    null,
+    null,
+  );
+
+  assert.equal(result.freeformLayoutPlan?.compositionStatus, "style_only");
+  assert.equal(result.styleDowngradeVerdict?.applied, true);
+  assert.match(result.styleDowngradeVerdict?.reason ?? "", /semantic promo\/CTA surface/);
 });

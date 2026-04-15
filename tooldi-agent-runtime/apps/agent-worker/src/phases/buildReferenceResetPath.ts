@@ -20,6 +20,7 @@ import type {
   StyleDowngradeVerdict,
   TemplatePriorBundle,
 } from "../types.js";
+import { deriveGenericPromoHeadline } from "./copyAbstractLayoutPlanningShared.js";
 import { deriveWorkflowVariant } from "./planningContext.js";
 
 type CanvasObject = Record<string, unknown>;
@@ -54,7 +55,12 @@ export function buildReferenceResetPath(
         ) ?? null
       : null;
   const page = readFirstParsedPage(primaryCandidate?.fetchedDocument ?? null);
-  const messageAtomPlan = buildMessageAtomPlan(copyPlan, input.job.runId, input.job.traceId);
+  const messageAtomPlan = buildMessageAtomPlan(
+    input.request.userInput.prompt,
+    copyPlan,
+    input.job.runId,
+    input.job.traceId,
+  );
 
   if (!selectedTemplateCode || !selectedTemplateTitle || !messageAtomPlan) {
     return buildStyleOnlyResult(
@@ -87,6 +93,19 @@ export function buildReferenceResetPath(
     selectedTemplateTitle,
     page,
   );
+  const referenceGate = evaluateStrongReferenceGate(referenceBlockGraph);
+  if (!referenceGate.passed) {
+    return buildStyleOnlyResult(
+      input,
+      selectedTemplateCode,
+      selectedTemplateTitle,
+      messageAtomPlan,
+      sceneStylePlan,
+      sceneBindingPlan,
+      referenceGate.reason ?? "Primary reference was too weak for reset composition mode.",
+      referenceBlockGraph,
+    );
+  }
   const blockBindingPlan = bindMessageAtomsToReferenceBlocks(
     input.job.runId,
     input.job.traceId,
@@ -166,6 +185,7 @@ function buildStyleOnlyResult(
   sceneStylePlan: SceneStylePlan | null,
   sceneBindingPlan: SceneBindingPlan | null,
   reason: string,
+  referenceBlockGraph: ReferenceBlockGraph | null = null,
 ): BuildReferenceResetPathResult {
   const editableBlockPlan = createStyleOnlyEditableBlockPlan(
     input,
@@ -176,7 +196,7 @@ function buildStyleOnlyResult(
     sceneBindingPlan,
   );
   return {
-    referenceBlockGraph: null,
+    referenceBlockGraph,
     messageAtomPlan,
     blockBindingPlan: null,
     editableBlockPlan,
@@ -200,7 +220,7 @@ function buildStyleOnlyResult(
       selectedTemplateCode,
       selectedTemplateTitle,
       warnings: [reason],
-      retainedReferenceBlockCount: 0,
+      retainedReferenceBlockCount: referenceBlockGraph?.blocks.length ?? 0,
       emittedBlockCount: editableBlockPlan.blocks.length,
       summary: reason,
     },
@@ -214,6 +234,7 @@ function buildStyleOnlyResult(
 }
 
 function buildMessageAtomPlan(
+  prompt: string,
   copyPlan: CopyPlan | null,
   runId: string,
   traceId: string,
@@ -238,10 +259,17 @@ function buildMessageAtomPlan(
     });
   };
 
-  pushAtom("primary", copyPlan.primaryMessage, false);
-  pushAtom("offer", slotText("offer_line"), true);
-  pushAtom("cta", slotText("cta") || "혜택 보기", true);
-  pushAtom("support", slotText("subheadline"), true);
+  const normalizedPrompt = normalizePromptForMessageAtoms(prompt);
+  const promptHeadline = derivePromptPrimaryMessage(normalizedPrompt, copyPlan);
+  const offerText = derivePromptOfferMessage(normalizedPrompt, slotText("offer_line"));
+  const ctaText = derivePromptCtaMessage(normalizedPrompt, slotText("cta"));
+
+  pushAtom("primary", promptHeadline, false);
+  pushAtom("offer", offerText, true);
+  if (shouldCreateSupportAtom(normalizedPrompt, slotText("subheadline"), copyPlan.primaryMessage)) {
+    pushAtom("support", slotText("subheadline"), true);
+  }
+  pushAtom("cta", ctaText, true);
   pushAtom("detail", slotText("footer_note"), true);
 
   return {
@@ -251,7 +279,7 @@ function buildMessageAtomPlan(
     workflowVariant: "retrieval_prior_v2_reset",
     atoms,
     summary:
-      "Reset message atom plan derives variable message atoms from primary/support/offer/cta/detail intent without fixed slot topology.",
+      "Reset message atom plan derives prompt-native primary/offer/cta/detail atoms and only keeps support text when the prompt shape clearly warrants it.",
   };
 }
 
@@ -277,7 +305,8 @@ function extractReferenceBlockGraph(
   const decorations = objects
     .filter((object) => !isTextLikeObject(object))
     .map((object) => classifyDecorationBlock(object, canvasWidth, canvasHeight))
-    .filter((block): block is ReferenceBlock => block !== null);
+    .filter((block): block is ReferenceBlock => block !== null)
+    .sort((left, right) => scoreDecorationBlock(right) - scoreDecorationBlock(left));
 
   const primaryDisplay = [...textBlocks]
     .filter((block) => block.kind === "display_text")
@@ -317,7 +346,7 @@ function extractReferenceBlockGraph(
   if (detailText) blocks.push(detailText);
   if (promoSurface) blocks.push(promoSurface);
   if (actionSurface) blocks.push(actionSurface);
-  blocks.push(...decorations.slice(0, 2));
+  blocks.push(...decorations.slice(0, 3));
 
   return {
     planId: createRequestId(),
@@ -330,7 +359,7 @@ function extractReferenceBlockGraph(
     sourceCanvasHeight: canvasHeight,
     blocks,
     summary:
-      "Reset reference block graph keeps one dominant display, one support/detail lane, semantic surfaces, and only safe edge decorations.",
+      "Reset reference block graph keeps one dominant display, semantic surfaces, and only safe edge decorations that can survive editable execution.",
   };
 }
 
@@ -970,6 +999,9 @@ function classifyDecorationBlock(
   if (fill && isDarkFill(fill)) {
     return null;
   }
+  if (normalizeLayerType(object) === "shape" && !fill) {
+    return null;
+  }
   return {
     blockId: createRequestId(),
     kind: "decor_cluster",
@@ -1066,7 +1098,20 @@ function normalizeHex(value: string | null): string | null {
     return null;
   }
   const normalized = value.trim();
-  return normalized.startsWith("#") ? normalized : null;
+  if (normalized.startsWith("#")) {
+    return normalized;
+  }
+  const rgbMatch =
+    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*[\d.]+\s*)?\)$/i.exec(
+      normalized,
+    );
+  if (!rgbMatch) {
+    return null;
+  }
+  const channels = rgbMatch.slice(1, 4).map((channel) =>
+    Math.max(0, Math.min(255, Number.parseInt(channel ?? "0", 10))),
+  );
+  return `#${channels.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
 }
 
 function readTextAlign(object: CanvasObject): "left" | "center" | "right" | null {
@@ -1144,4 +1189,138 @@ function createDowngradeVerdict(
       ? `V2 reset downgraded to style-only generation: ${reason ?? "unknown reason"}.`
       : "V2 reset retained a stable reference-first editable block plan.",
   };
+}
+
+function evaluateStrongReferenceGate(
+  graph: ReferenceBlockGraph,
+): { passed: boolean; reason: string | null } {
+  const retainedBlocks = graph.blocks.filter((block) => block.kind !== "background");
+  const textBlocks = retainedBlocks.filter(
+    (block) =>
+      block.kind === "display_text" ||
+      block.kind === "support_text" ||
+      block.kind === "detail_text",
+  );
+  const semanticSurfaces = retainedBlocks.filter(
+    (block) =>
+      block.kind === "promo_surface" || block.kind === "action_surface",
+  );
+  if (!retainedBlocks.some((block) => block.kind === "display_text")) {
+    return {
+      passed: false,
+      reason: "Reference had no usable dominant display block; reset path downgraded to style-only.",
+    };
+  }
+  if (textBlocks.length < 1) {
+    return {
+      passed: false,
+      reason: "Reference retained no bindable text blocks; reset path downgraded to style-only.",
+    };
+  }
+  if (semanticSurfaces.length < 1) {
+    return {
+      passed: false,
+      reason: "Reference retained no semantic promo/CTA surface; reset path downgraded to style-only.",
+    };
+  }
+  if (retainedBlocks.length < 3) {
+    return {
+      passed: false,
+      reason: "Reference retained too few safe blocks for composition mode; reset path downgraded to style-only.",
+    };
+  }
+  return { passed: true, reason: null };
+}
+
+function normalizePromptForMessageAtoms(prompt: string): string {
+  return prompt
+    .replace(/\s+/g, " ")
+    .replace(/(배너|광고|템플릿)(를|을)?\s*(만들어줘|제작해줘|만들어 줘|해주세요|해줘)$/u, "")
+    .trim();
+}
+
+function derivePromptPrimaryMessage(
+  normalizedPrompt: string,
+  copyPlan: CopyPlan,
+): string {
+  const slotHeadline =
+    copyPlan.slots.find((slot) => slot.key === "headline")?.text.trim() ?? "";
+  if (
+    slotHeadline &&
+    slotHeadline !== copyPlan.primaryMessage &&
+    !looksLikeRawRequest(slotHeadline)
+  ) {
+    return slotHeadline;
+  }
+  if (!looksLikeRawRequest(copyPlan.primaryMessage)) {
+    return copyPlan.primaryMessage.trim();
+  }
+  return deriveGenericPromoHeadline(normalizedPrompt || copyPlan.primaryMessage);
+}
+
+function derivePromptOfferMessage(
+  normalizedPrompt: string,
+  fallbackOffer: string,
+): string {
+  if (fallbackOffer) {
+    return fallbackOffer;
+  }
+  if (/(세일|할인|혜택|프로모션|이벤트|특가|off)/iu.test(normalizedPrompt)) {
+    return "전 품목 최대 50% 할인";
+  }
+  return "";
+}
+
+function derivePromptCtaMessage(
+  normalizedPrompt: string,
+  fallbackCta: string,
+): string {
+  if (fallbackCta) {
+    return fallbackCta;
+  }
+  if (/(세일|할인|혜택|프로모션|이벤트|특가|오픈|new)/iu.test(normalizedPrompt)) {
+    return "혜택 보기";
+  }
+  if (/(구매|쇼핑|예약|신청|확인|보기)/iu.test(normalizedPrompt)) {
+    return "자세히 보기";
+  }
+  return "";
+}
+
+function shouldCreateSupportAtom(
+  normalizedPrompt: string,
+  supportText: string,
+  primaryMessage: string,
+): boolean {
+  if (!supportText) {
+    return false;
+  }
+  if (supportText === primaryMessage.trim()) {
+    return false;
+  }
+  if (normalizedPrompt.length < 18) {
+    return false;
+  }
+  return /[,!?.·]|(지금|이번|새로운|신상|한정|특별|확인)/u.test(normalizedPrompt);
+}
+
+function looksLikeRawRequest(text: string): boolean {
+  return /(만들어줘|제작해줘|해주세요|배너|광고|템플릿)/u.test(text);
+}
+
+function scoreDecorationBlock(block: ReferenceBlock): number {
+  let score = block.prominence;
+  if (block.layerType === "image") {
+    score += 500000;
+  } else if (block.layerType === "group") {
+    score += 250000;
+  }
+  if (block.clusterZone === "top_corner") {
+    score += 120000;
+  } else if (block.clusterZone === "right_cluster") {
+    score += 80000;
+  } else if (block.clusterZone === "bottom_strip") {
+    score += 60000;
+  }
+  return score;
 }
