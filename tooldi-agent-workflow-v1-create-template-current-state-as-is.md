@@ -197,6 +197,13 @@
 
 - backend completion chain은 존재하지만 real editor save evidence 연동은 아직 prototype 수준이다.
 
+### 8.6 retrieval prior 실험의 현재 한계
+
+- `retrieval_prior_v2`, `retrieval_prior_v2_reset` 실험으로 unsafe stable reject, style-only readable fallback, text/surface 정합성 같은 safety hardening은 상당 부분 확보했다.
+- 하지만 브라우저 결과 기준으로는 visible quality가 크게 오르지 않았다.
+- 현재 판단은 `retrieval_prior_v2_reset`을 더 미세 조정하는 것이 아니라, semantic-slot hybrid 실행 계약을 object-native reference execution으로 교체해야 한다는 것이다.
+- 이 전환의 철학, 정상 동작 목표, current done/not-done은 [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md) 를 따른다.
+
 ## 9. Interfaces / external dependency
 
 | 인터페이스 | 현재 상태 |

@@ -13,6 +13,7 @@
 - 문서 인덱스: [tooldi-agent-workflow-v1-doc-index.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-doc-index.md)
 - 현재 구현 상태: [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
 - 표현 전략 lock: [tooldi-agent-workflow-v1-create-template-representation-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-representation-design-lock.md)
+- object-native 전환 아키텍처: [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md)
 - 다음 작업 우선순위: [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
 
 ## 2026-04-09 현재 구현 스냅샷
@@ -56,6 +57,7 @@
   - `ExecutionSceneSummary`, `JudgePlan`, `RefineDecision` 은 더 이상 `slotKey`/`role` alias 추론을 truth로 쓰지 않는다.
 - `ConcreteLayoutPlan` 은 이제 `slotAnchors` 외에 `resolvedSlotBounds` 를 가지며, copy/photo/background placement authority는 이 bounds를 기준으로 정렬된다.
 - real save evidence 는 아직 synthetic finalize placeholder 에 의존한다.
+- `retrieval_prior_v2_reset` 까지의 safety hardening만으로는 브라우저 visible quality가 충분히 올라가지 않았고, 다음 단계는 semantic-slot hybrid 를 더 미세 조정하는 것이 아니라 object-native reference execution 으로 전환하는 것이다.
 
 ## 범위
 

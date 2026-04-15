@@ -63,6 +63,25 @@
 
 즉 현재 상태는 `작동하는 create_template subplan-driven runtime v1` 이며, 다음 단계의 핵심은 새 runtime 도입이 아니라 `real save evidence / visual quality judge / bounded refine 품질` 을 고도화하는 것이다.
 
+## 2.1 2026-04-15 기준 우선순위 재판정
+
+최근 `retrieval_prior_v2_reset` 실험으로 아래는 확보됐다.
+
+- unsafe stable reject
+- style-only readable fallback
+- promo surface/text contract 정리
+- FE text-height invariant 정리
+
+하지만 브라우저 결과는 거의 계속 `style_only` fallback에 머물렀다.  
+이유는 planner가 reference를 읽더라도 execution 직전에는 다시 좁은 semantic contract로 압축되기 때문이다.
+
+따라서 현재 roadmap의 실제 최우선 과제는 fallback polish가 아니라 아래로 재고정한다.
+
+- `retrieval_prior_v2_reset` 추가 미세 조정 중단
+- `object-native reference execution` 전환 설계와 검증
+
+이 전환의 아키텍처 철학과 정상 동작 목표는 [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md) 를 authoritative design reset 문서로 따른다.
+
 ## 3. 현재 단계에서 고정할 전제
 
 다음 구현은 아래 전제를 유지하는 것이 맞다.
