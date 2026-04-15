@@ -62,6 +62,18 @@ function createCopyPlan(): CopyPlan {
   };
 }
 
+function createLongOfferCopyPlan(): CopyPlan {
+  const copyPlan = createCopyPlan();
+  return {
+    ...copyPlan,
+    slots: copyPlan.slots.map((slot) =>
+      slot.key === "offer_line"
+        ? { ...slot, text: "전 품목 최대 50% 할인 혜택" }
+        : slot,
+    ),
+  };
+}
+
 function createTemplatePriorBundle(): TemplatePriorBundle {
   return {
     bundleId: "bundle-1",
@@ -128,6 +140,18 @@ function createTemplatePriorBundle(): TemplatePriorBundle {
   };
 }
 
+function createDecorHeavyTemplatePriorBundle(): TemplatePriorBundle {
+  const bundle = createTemplatePriorBundle();
+  const primaryCandidate = bundle.candidates[0];
+  assert.ok(primaryCandidate);
+  ((primaryCandidate.fetchedDocument as any).pages[0].parsed.objects as any[]).push(
+    { id: "decor-2", type: "rect", left: 980, top: 420, width: 72, height: 72, fill: "#fef08a", rx: 36, ry: 36 },
+    { id: "decor-3", type: "rect", left: 1030, top: 520, width: 64, height: 64, fill: "#fde68a", rx: 32, ry: 32 },
+    { id: "decor-4", type: "rect", left: 1080, top: 110, width: 56, height: 56, fill: "#fef3c7", rx: 28, ry: 28 },
+  );
+  return bundle;
+}
+
 function createRealLikeTemplatePriorBundle(): TemplatePriorBundle {
   const bundle = createTemplatePriorBundle();
   const primaryCandidate = bundle.candidates[0];
@@ -160,6 +184,23 @@ function createSafeCueTemplatePriorBundle(): TemplatePriorBundle {
     { id: "footer-1", type: "textbox", text: "이벤트 기간 내 혜택 적용", left: 395, top: 740, width: 420, height: 24, originX: "center", originY: "top", textAlign: "center", fill: "#ffffff" },
     { id: "decor-dot", type: "rect", left: 655, top: 66, width: 90, height: 90, originX: "left", originY: "top", fill: "rgba(255, 245, 156, 255)" },
   ];
+  return bundle;
+}
+
+function createUnsafeStableTemplatePriorBundle(): TemplatePriorBundle {
+  const bundle = createTemplatePriorBundle();
+  const primaryCandidate = bundle.candidates[0];
+  assert.ok(primaryCandidate);
+  (primaryCandidate.fetchedDocument as any).pages[0].parsed = {
+    width: 1200,
+    height: 628,
+    objects: [
+      { id: "promo-surface", type: "rect", left: 180, top: 126, width: 420, height: 72, fill: "#d9f99d", rx: 36, ry: 36 },
+      { id: "display-main", type: "text", text: "특별한 세일", left: 84, top: 168, width: 620, height: 240, fontSize: 110, textAlign: "left", fill: "#ffffff" },
+      { id: "cta-surface", type: "rect", left: 252, top: 360, width: 696, height: 72, fill: "#8be46d", rx: 18, ry: 18 },
+      { id: "footer-1", type: "text", text: "이벤트 기간 내 혜택 적용", left: 320, top: 586, width: 480, height: 20, fontSize: 16, textAlign: "center", fill: "#ffffff" },
+    ],
+  };
   return bundle;
 }
 
@@ -272,6 +313,100 @@ test("buildReferenceResetPath records promo contrast fallback in quality summary
   );
 });
 
+test("buildReferenceResetPath expands or wraps long promo text without overflowing in style-only mode", () => {
+  const result = buildReferenceResetPath(
+    createHydratedInput(),
+    createRealLikeTemplatePriorBundle(),
+    createLongOfferCopyPlan(),
+    null,
+    createSceneBindingPlan(),
+  );
+
+  assert.equal(result.freeformLayoutPlan?.compositionStatus, "style_only");
+  const promoSurface = result.freeformLayoutPlan?.copyBlocks.find(
+    (block) => block.variantKey === "reset_style_promo_surface",
+  );
+  const promoText = result.freeformLayoutPlan?.copyBlocks.find(
+    (block) => block.executionSlotKey === "offer_line",
+  );
+  assert.ok(promoSurface);
+  assert.ok(promoText);
+  assert.ok(
+    result.qualityEvalSummary?.warnings.includes("safe_decor_skipped_due_to_style_only"),
+  );
+  assert.ok(
+    result.qualityEvalSummary?.warnings.includes("promo_band_width_expanded") ||
+      result.qualityEvalSummary?.warnings.includes("promo_wrapped_to_two_lines"),
+  );
+  assert.ok((promoText?.bounds.width ?? 0) <= (promoSurface?.bounds.width ?? 0));
+  assert.ok((promoText?.bounds.height ?? 0) < (promoSurface?.bounds.height ?? 0));
+  assert.ok((promoText?.bounds.y ?? 0) >= (promoSurface?.bounds.y ?? 0));
+  assert.ok(
+    (promoText?.bounds.y ?? 0) + (promoText?.bounds.height ?? 0) <=
+      (promoSurface?.bounds.y ?? 0) + (promoSurface?.bounds.height ?? 0),
+  );
+});
+
+test("buildReferenceResetPath keeps promo surface driven by final text box in style-only mode", () => {
+  const result = buildReferenceResetPath(
+    createHydratedInput(),
+    createRealLikeTemplatePriorBundle(),
+    createLongOfferCopyPlan(),
+    null,
+    createSceneBindingPlan(),
+  );
+
+  const promoSurface = result.freeformLayoutPlan?.copyBlocks.find(
+    (block) => block.variantKey === "reset_style_promo_surface",
+  );
+  const promoText = result.freeformLayoutPlan?.copyBlocks.find(
+    (block) => block.executionSlotKey === "offer_line",
+  );
+
+  assert.ok(promoSurface);
+  assert.ok(promoText);
+  assert.ok((promoText?.fontSize ?? 0) <= 42);
+  assert.ok((promoSurface?.bounds.width ?? 0) >= (promoText?.bounds.width ?? 0) + 40);
+  assert.ok((promoSurface?.bounds.height ?? 0) >= (promoText?.bounds.height ?? 0) + 16);
+});
+
+test("buildReferenceResetPath uses a non-overlapping vertical stack in style-only mode", () => {
+  const result = buildReferenceResetPath(
+    createHydratedInput(),
+    createRealLikeTemplatePriorBundle(),
+    createLongOfferCopyPlan(),
+    null,
+    createSceneBindingPlan(),
+  );
+
+  assert.equal(result.freeformLayoutPlan?.compositionStatus, "style_only");
+  assert.ok(
+    result.qualityEvalSummary?.warnings.includes("style_only_simple_readable_layout_applied"),
+  );
+
+  const promoSurface = result.freeformLayoutPlan?.copyBlocks.find(
+    (block) => block.variantKey === "reset_style_promo_surface",
+  );
+  const headline = result.freeformLayoutPlan?.copyBlocks.find(
+    (block) => block.executionSlotKey === "headline",
+  );
+  const cta = result.freeformLayoutPlan?.copyBlocks.find(
+    (block) => block.executionSlotKey === "cta",
+  );
+  const footer = result.freeformLayoutPlan?.copyBlocks.find(
+    (block) => block.executionSlotKey === "footer_note",
+  );
+
+  assert.ok(promoSurface);
+  assert.ok(headline);
+  assert.ok(cta);
+  assert.ok(footer);
+  assert.ok((promoSurface?.bounds.y ?? 0) + (promoSurface?.bounds.height ?? 0) < (headline?.bounds.y ?? 0));
+  assert.ok((headline?.bounds.y ?? 0) + (headline?.bounds.height ?? 0) < (cta?.bounds.y ?? 0));
+  assert.ok((cta?.bounds.y ?? 0) + (cta?.bounds.height ?? 0) < (footer?.bounds.y ?? 0));
+  assert.ok((headline?.fontSize ?? 0) < 96);
+});
+
 test("buildReferenceResetPath downgrades to style-only when only unsafe display candidates survive", () => {
   const result = buildReferenceResetPath(
     createHydratedInput(),
@@ -311,5 +446,61 @@ test("buildReferenceResetPath keeps stable composition when text-only semantic c
     (result.freeformLayoutPlan?.polishBlocks ?? []).every(
       (block) => block.bounds.x >= 0 && block.bounds.y >= 0,
     ),
+  );
+});
+
+test("buildReferenceResetPath keeps at most two safe decor blocks in stable mode", () => {
+  const result = buildReferenceResetPath(
+    createHydratedInput(),
+    createDecorHeavyTemplatePriorBundle(),
+    createCopyPlan(),
+    null,
+    createSceneBindingPlan(),
+  );
+
+  assert.equal(result.freeformLayoutPlan?.compositionStatus, "stable");
+  assert.ok((result.freeformLayoutPlan?.polishBlocks.length ?? 0) <= 2);
+});
+
+test("buildReferenceResetPath downgrades unsafe stable candidates after renderability guard", () => {
+  const result = buildReferenceResetPath(
+    createHydratedInput(),
+    createUnsafeStableTemplatePriorBundle(),
+    createCopyPlan(),
+    null,
+    createSceneBindingPlan(),
+  );
+
+  assert.equal(result.freeformLayoutPlan?.compositionStatus, "style_only");
+  assert.equal(result.styleDowngradeVerdict?.applied, true);
+  assert.match(result.styleDowngradeVerdict?.reason ?? "", /renderability guard/);
+  assert.ok(
+    result.qualityEvalSummary?.warnings.includes(
+      "downgraded_to_style_only_after_renderability_guard",
+    ),
+  );
+  assert.ok(
+    result.qualityEvalSummary?.warnings.includes(
+      "stable_candidate_rejected_due_to_semantic_overlap",
+    ),
+  );
+});
+
+test("buildReferenceResetPath keeps safe stable candidates after renderability guard", () => {
+  const result = buildReferenceResetPath(
+    createHydratedInput(),
+    createSafeCueTemplatePriorBundle(),
+    createCopyPlan(),
+    null,
+    createSceneBindingPlan(),
+  );
+
+  assert.equal(result.freeformLayoutPlan?.compositionStatus, "stable");
+  assert.equal(result.styleDowngradeVerdict?.applied, false);
+  assert.equal(
+    result.qualityEvalSummary?.warnings.includes(
+      "downgraded_to_style_only_after_renderability_guard",
+    ),
+    false,
   );
 });

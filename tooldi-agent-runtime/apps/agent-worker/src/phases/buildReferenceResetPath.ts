@@ -120,6 +120,28 @@ export function buildReferenceResetPath(
     sceneStylePlan,
     sceneBindingPlan,
   );
+  const stableRenderableValidation = validateStableRenderablePlan(
+    editableBlockPlan,
+    input.request.editorContext.canvasWidth,
+    input.request.editorContext.canvasHeight,
+  );
+  if (!stableRenderableValidation.passed) {
+    return buildStyleOnlyResult(
+      input,
+      selectedTemplateCode,
+      selectedTemplateTitle,
+      messageAtomPlan,
+      sceneStylePlan,
+      sceneBindingPlan,
+      stableRenderableValidation.reason ??
+        "Stable candidate failed renderability guard; reset path downgraded to style-only.",
+      referenceBlockGraph,
+      [
+        ...stableRenderableValidation.warnings,
+        "downgraded_to_style_only_after_renderability_guard",
+      ],
+    );
+  }
   const freeformLayoutPlan: FreeformLayoutPlan = {
     planId: createRequestId(),
     runId: input.job.runId,
@@ -191,6 +213,7 @@ function buildStyleOnlyResult(
   sceneBindingPlan: SceneBindingPlan | null,
   reason: string,
   referenceBlockGraph: ReferenceBlockGraph | null = null,
+  extraWarnings: string[] = [],
 ): BuildReferenceResetPathResult {
   const editableBlockPlan = createStyleOnlyEditableBlockPlan(
     input,
@@ -224,7 +247,7 @@ function buildStyleOnlyResult(
       workflowVariant: "retrieval_prior_v2_reset",
       selectedTemplateCode,
       selectedTemplateTitle,
-      warnings: [reason],
+      warnings: [...new Set([reason, ...extraWarnings])],
       retainedReferenceBlockCount: referenceBlockGraph?.blocks.length ?? 0,
       emittedBlockCount: editableBlockPlan.blocks.length,
       summary: reason,
@@ -363,7 +386,7 @@ function extractReferenceBlockGraph(
   if (detailText) blocks.push(detailText);
   if (promoSurface) blocks.push(promoSurface);
   if (actionSurface) blocks.push(actionSurface);
-  blocks.push(...decorations.slice(0, 3));
+  blocks.push(...decorations.slice(0, 2));
   const sanitizedBlocks = sanitizeReferenceBlocksForExecution(
     blocks,
     canvasWidth,
@@ -469,8 +492,8 @@ function buildEditableBlockPlan(
       targetCanvasHeight,
     );
     if (block.kind === "promo_surface") {
-      const fitted = fitBandBounds(scaled, assignment.text, "promo", targetCanvasWidth);
-      semanticBounds.push(fitted);
+      const fitted = fitPromoBandContent(scaled, assignment.text, targetCanvasWidth);
+      semanticBounds.push(fitted.surfaceBounds);
       blocks.push({
         blockId: `${block.blockId}_surface`,
         stage: "copy",
@@ -480,7 +503,7 @@ function buildEditableBlockPlan(
         role: "freeform_surface",
         variantKey: "reset_promo_surface",
         candidateId,
-        bounds: fitted,
+        bounds: fitted.surfaceBounds,
         textContent: null,
         styleTokens: {
           fillColor:
@@ -489,12 +512,37 @@ function buildEditableBlockPlan(
             sceneStylePlan?.palettePolicy.accentColorHex ??
             sceneBindingPlan?.ctaSurfaceColorHex ??
             "#d9f99d",
-          cornerRadius: Math.round(fitted.height / 2),
+          cornerRadius: Math.round(fitted.surfaceBounds.height / 2),
           opacity: 0.9,
+          widthExpanded: fitted.widthExpanded,
         },
         clusterZone: block.clusterZone,
       });
-      blocks.push(buildTextBlock(candidateId, block, assignment, fitted, sceneStylePlan, sceneBindingPlan, "center"));
+      blocks.push({
+        blockId: `${block.blockId}_text`,
+        stage: "copy",
+        layerType: "text",
+        slotKey: null,
+        executionSlotKey: "offer_line",
+        role: "price_callout",
+        variantKey: `reset_${block.kind}`,
+        candidateId,
+        bounds: fitted.textBounds,
+        textContent: assignment.text,
+        fontRole: "display",
+        fontSize: fitted.fontSize,
+        textAlign: "center",
+        styleTokens: {
+          fillColor:
+            sceneBindingPlan?.promoTextColorHex ??
+            sceneBindingPlan?.accentTextColorHex ??
+            sceneStylePlan?.palettePolicy.primaryTextColorHex ??
+            "#111111",
+          wrappedLines: fitted.wrappedLines,
+          widthExpanded: fitted.widthExpanded,
+        },
+        clusterZone: block.clusterZone,
+      });
       continue;
     }
     if (block.kind === "action_surface") {
@@ -641,6 +689,190 @@ function buildEditableBlockPlan(
   };
 }
 
+function validateStableRenderablePlan(
+  editableBlockPlan: EditableBlockPlan,
+  canvasWidth: number,
+  canvasHeight: number,
+): { passed: boolean; reason: string | null; warnings: string[] } {
+  if (editableBlockPlan.compositionStatus !== "stable") {
+    return { passed: true, reason: null, warnings: [] };
+  }
+
+  const warnings: string[] = [];
+  const copyBlocks = editableBlockPlan.blocks.filter((block) => block.stage === "copy");
+  const polishBlocks = editableBlockPlan.blocks.filter((block) => block.stage === "polish");
+  const headlineBlocks = copyBlocks.filter((block) => block.executionSlotKey === "headline");
+  const offerTextBlocks = copyBlocks.filter((block) => block.executionSlotKey === "offer_line");
+  const ctaBlocks = copyBlocks.filter((block) => block.executionSlotKey === "cta");
+  const footerBlocks = copyBlocks.filter((block) => block.executionSlotKey === "footer_note");
+  const supportBlocks = copyBlocks.filter((block) => block.executionSlotKey === "subheadline");
+  const promoSurfaceBlocks = copyBlocks.filter(
+    (block) => block.variantKey === "reset_promo_surface",
+  );
+
+  if (
+    headlineBlocks.length > 1 ||
+    offerTextBlocks.length > 1 ||
+    ctaBlocks.length > 1 ||
+    footerBlocks.length > 1 ||
+    promoSurfaceBlocks.length > 1 ||
+    supportBlocks.length > 0 ||
+    polishBlocks.length > 1
+  ) {
+    warnings.push("stable_candidate_rejected_due_to_unsupported_subset");
+  }
+
+  const headline = headlineBlocks[0] ?? null;
+  const promoSurface = promoSurfaceBlocks[0] ?? null;
+  const offerText = offerTextBlocks[0] ?? null;
+  const cta = ctaBlocks[0] ?? null;
+  const footer = footerBlocks[0] ?? null;
+  const semanticBlocks = [
+    ...headlineBlocks,
+    ...offerTextBlocks,
+    ...ctaBlocks,
+    ...footerBlocks,
+    ...promoSurfaceBlocks,
+  ];
+
+  if (
+    semanticBlocks.some(
+      (block) => !isBoundsWithinCanvas(block.bounds, canvasWidth, canvasHeight),
+    ) ||
+    polishBlocks.some((block) => !isBoundsWithinCanvas(block.bounds, canvasWidth, canvasHeight))
+  ) {
+    warnings.push("stable_candidate_rejected_due_to_off_canvas_bounds");
+  }
+
+  if (headline && !isHeadlineBlockRenderable(headline.bounds, canvasWidth, canvasHeight)) {
+    warnings.push("stable_candidate_rejected_due_to_off_canvas_bounds");
+  }
+  if (promoSurface && !isPromoZoneRenderable(promoSurface.bounds, canvasHeight)) {
+    warnings.push("stable_candidate_rejected_due_to_zone_conflict");
+  }
+  if (cta && !isCtaZoneRenderable(cta.bounds, canvasHeight)) {
+    warnings.push("stable_candidate_rejected_due_to_zone_conflict");
+  }
+  if (
+    promoSurface &&
+    offerText &&
+    !isContainedWithin(offerText.bounds, promoSurface.bounds, 8)
+  ) {
+    warnings.push("stable_candidate_rejected_due_to_zone_conflict");
+  }
+
+  const minStackGap = 16;
+  if (
+    promoSurface &&
+    headline &&
+    promoSurface.bounds.y + promoSurface.bounds.height + minStackGap > headline.bounds.y
+  ) {
+    warnings.push("stable_candidate_rejected_due_to_semantic_overlap");
+  }
+  if (
+    headline &&
+    cta &&
+    headline.bounds.y + headline.bounds.height + minStackGap > cta.bounds.y
+  ) {
+    warnings.push("stable_candidate_rejected_due_to_semantic_overlap");
+  }
+  if (cta && footer && cta.bounds.y + cta.bounds.height + 8 > footer.bounds.y) {
+    warnings.push("stable_candidate_rejected_due_to_semantic_overlap");
+  }
+
+  for (const decor of polishBlocks) {
+    if (!isExecutionSafeScaledBounds(decor.bounds, canvasWidth, canvasHeight, "decor_cluster")) {
+      warnings.push("stable_candidate_rejected_due_to_off_canvas_bounds");
+      continue;
+    }
+    if (
+      decor.clusterZone !== "top_corner" &&
+      decor.clusterZone !== "right_cluster" &&
+      decor.clusterZone !== "bottom_strip"
+    ) {
+      warnings.push("stable_candidate_rejected_due_to_zone_conflict");
+      continue;
+    }
+    if (semanticBlocks.some((block) => overlapRatio(block.bounds, decor.bounds) > 0.12)) {
+      warnings.push("stable_candidate_rejected_due_to_semantic_overlap");
+    }
+  }
+
+  const uniqueWarnings = [...new Set(warnings)];
+  if (uniqueWarnings.length === 0) {
+    return { passed: true, reason: null, warnings: [] };
+  }
+
+  return {
+    passed: false,
+    reason: describeStableGuardFailure(uniqueWarnings),
+    warnings: uniqueWarnings,
+  };
+}
+
+function describeStableGuardFailure(warnings: string[]): string {
+  if (warnings.includes("stable_candidate_rejected_due_to_off_canvas_bounds")) {
+    return "Stable candidate failed renderability guard due to off-canvas bounds; reset path downgraded to style-only.";
+  }
+  if (warnings.includes("stable_candidate_rejected_due_to_zone_conflict")) {
+    return "Stable candidate failed renderability guard due to zone conflict; reset path downgraded to style-only.";
+  }
+  if (warnings.includes("stable_candidate_rejected_due_to_semantic_overlap")) {
+    return "Stable candidate failed renderability guard due to semantic overlap; reset path downgraded to style-only.";
+  }
+  if (warnings.includes("stable_candidate_rejected_due_to_unsupported_subset")) {
+    return "Stable candidate failed renderability guard due to unsupported stable subset; reset path downgraded to style-only.";
+  }
+  return "Stable candidate failed renderability guard; reset path downgraded to style-only.";
+}
+
+function isBoundsWithinCanvas(
+  bounds: LayoutBounds,
+  canvasWidth: number,
+  canvasHeight: number,
+): boolean {
+  return (
+    bounds.x >= 0 &&
+    bounds.y >= 0 &&
+    bounds.x + bounds.width <= canvasWidth &&
+    bounds.y + bounds.height <= canvasHeight
+  );
+}
+
+function isHeadlineBlockRenderable(
+  bounds: LayoutBounds,
+  canvasWidth: number,
+  canvasHeight: number,
+): boolean {
+  const areaRatio = (bounds.width * bounds.height) / Math.max(canvasWidth * canvasHeight, 1);
+  return isBoundsWithinCanvas(bounds, canvasWidth, canvasHeight) && areaRatio <= 0.34;
+}
+
+function isPromoZoneRenderable(bounds: LayoutBounds, canvasHeight: number): boolean {
+  const top = bounds.y;
+  const bottom = bounds.y + bounds.height;
+  return top >= canvasHeight * 0.06 && bottom <= canvasHeight * 0.42;
+}
+
+function isCtaZoneRenderable(bounds: LayoutBounds, canvasHeight: number): boolean {
+  const top = bounds.y;
+  const bottom = bounds.y + bounds.height;
+  return top >= canvasHeight * 0.62 && bottom <= canvasHeight * 0.94;
+}
+
+function isContainedWithin(
+  inner: LayoutBounds,
+  outer: LayoutBounds,
+  tolerance: number,
+): boolean {
+  return (
+    inner.x >= outer.x - tolerance &&
+    inner.y >= outer.y - tolerance &&
+    inner.x + inner.width <= outer.x + outer.width + tolerance &&
+    inner.y + inner.height <= outer.y + outer.height + tolerance
+  );
+}
+
 function createStyleOnlyEditableBlockPlan(
   input: HydratedPlanningInput,
   selectedTemplateCode: string,
@@ -650,12 +882,28 @@ function createStyleOnlyEditableBlockPlan(
   sceneBindingPlan: SceneBindingPlan | null,
 ): EditableBlockPlan {
   const blocks: FreeformRenderableBlock[] = [];
+  const canvasWidth = input.request.editorContext.canvasWidth;
+  const canvasHeight = input.request.editorContext.canvasHeight;
   const atom = (kind: MessageAtom["kind"]) => messageAtomPlan?.atoms.find((entry) => entry.kind === kind) ?? null;
   const primary = atom("primary");
   const offer = atom("offer");
   const cta = atom("cta");
   const detail = atom("detail");
+  const footerBounds: LayoutBounds | null = detail
+    ? { x: 260, y: canvasHeight - 36, width: 680, height: 22 }
+    : null;
+  const ctaBounds: LayoutBounds | null = cta
+    ? { x: 252, y: canvasHeight - 132, width: 696, height: 72 }
+    : null;
+  let promoSurfaceBounds: LayoutBounds | null = null;
+
   if (offer) {
+    const fittedPromo = fitPromoBandContent(
+      { x: 108, y: 122, width: 480, height: 64 },
+      offer.text,
+      canvasWidth,
+    );
+    promoSurfaceBounds = fittedPromo.surfaceBounds;
     blocks.push({
       blockId: createRequestId(),
       stage: "copy",
@@ -665,7 +913,7 @@ function createStyleOnlyEditableBlockPlan(
       role: "freeform_surface",
       variantKey: "reset_style_promo_surface",
       candidateId: selectedTemplateCode,
-      bounds: { x: 108, y: 122, width: 480, height: 64 },
+      bounds: fittedPromo.surfaceBounds,
       textContent: null,
       styleTokens: {
         fillColor:
@@ -675,6 +923,7 @@ function createStyleOnlyEditableBlockPlan(
           "#d9f99d",
         cornerRadius: 32,
         opacity: 0.9,
+        widthExpanded: fittedPromo.widthExpanded,
       },
       clusterZone: "center_cluster",
     });
@@ -687,10 +936,10 @@ function createStyleOnlyEditableBlockPlan(
       role: "price_callout",
       variantKey: "reset_style_promo_text",
       candidateId: selectedTemplateCode,
-      bounds: { x: 138, y: 136, width: 420, height: 34 },
+      bounds: fittedPromo.textBounds,
       textContent: offer.text,
       fontRole: "display",
-      fontSize: 38,
+      fontSize: fittedPromo.fontSize,
       textAlign: "center",
       styleTokens: {
         fillColor:
@@ -698,11 +947,21 @@ function createStyleOnlyEditableBlockPlan(
           sceneBindingPlan?.accentTextColorHex ??
           sceneStylePlan?.palettePolicy.primaryTextColorHex ??
           "#111111",
+        wrappedLines: fittedPromo.wrappedLines,
+        widthExpanded: fittedPromo.widthExpanded,
       },
       clusterZone: "center_cluster",
     });
   }
   if (primary) {
+    const headlineLayout = fitStyleOnlyHeadlineBlock(
+      primary.text,
+      canvasWidth,
+      canvasHeight,
+      promoSurfaceBounds,
+      ctaBounds,
+      footerBounds,
+    );
     blocks.push({
       blockId: createRequestId(),
       stage: "copy",
@@ -712,16 +971,17 @@ function createStyleOnlyEditableBlockPlan(
       role: "headline",
       variantKey: "reset_style_headline",
       candidateId: selectedTemplateCode,
-      bounds: { x: 84, y: 220, width: 720, height: 180 },
+      bounds: headlineLayout.bounds,
       textContent: primary.text,
       fontRole: "display",
-      fontSize: 96,
+      fontSize: headlineLayout.fontSize,
       textAlign: "left",
       styleTokens: {
         fillColor:
           sceneBindingPlan?.primaryTextColorHex ??
           sceneStylePlan?.palettePolicy.primaryTextColorHex ??
           "#ffffff",
+        styleOnlyHeadlineShrunk: headlineLayout.fontSize < 96,
       },
       clusterZone: "center_cluster",
     });
@@ -736,7 +996,7 @@ function createStyleOnlyEditableBlockPlan(
       role: "cta",
       variantKey: "reset_style_cta",
       candidateId: selectedTemplateCode,
-      bounds: { x: 252, y: input.request.editorContext.canvasHeight - 132, width: 696, height: 72 },
+      bounds: ctaBounds ?? { x: 252, y: canvasHeight - 132, width: 696, height: 72 },
       textContent: cta.text,
       fontRole: "display",
       fontSize: null,
@@ -768,7 +1028,7 @@ function createStyleOnlyEditableBlockPlan(
       role: "footer_note",
       variantKey: "reset_style_footer",
       candidateId: selectedTemplateCode,
-      bounds: { x: 260, y: input.request.editorContext.canvasHeight - 36, width: 680, height: 22 },
+      bounds: footerBounds ?? { x: 260, y: canvasHeight - 36, width: 680, height: 22 },
       textContent: detail.text,
       fontRole: "body",
       fontSize: 18,
@@ -791,7 +1051,40 @@ function createStyleOnlyEditableBlockPlan(
     selectedTemplateTitle,
     compositionStatus: "style_only",
     blocks,
-    summary: "Reset candidate downgraded to a style-only editable block plan.",
+    summary: "Reset candidate downgraded to a simple readable style-only editable block plan.",
+  };
+}
+
+function fitStyleOnlyHeadlineBlock(
+  text: string,
+  canvasWidth: number,
+  canvasHeight: number,
+  promoSurfaceBounds: LayoutBounds | null,
+  ctaBounds: LayoutBounds | null,
+  footerBounds: LayoutBounds | null,
+): { bounds: LayoutBounds; fontSize: number } {
+  const left = 84;
+  const width = 720;
+  const top = promoSurfaceBounds ? promoSurfaceBounds.y + promoSurfaceBounds.height + 28 : 148;
+  const lowerBound = ctaBounds
+    ? ctaBounds.y - 40
+    : footerBounds
+      ? footerBounds.y - 56
+      : canvasHeight - 72;
+  const availableHeight = clampNumber(lowerBound - top, 120, 280);
+  const baseBounds: LayoutBounds = {
+    x: left,
+    y: top,
+    width,
+    height: availableHeight,
+  };
+  const fitted = fitTextBounds(text, baseBounds, "display_text");
+  return {
+    bounds: {
+      ...baseBounds,
+      height: fitted.bounds.height,
+    },
+    fontSize: fitted.fontSize,
   };
 }
 
@@ -890,6 +1183,105 @@ function fitBandBounds(
   };
 }
 
+function fitPromoBandContent(
+  surfaceBounds: LayoutBounds,
+  text: string,
+  canvasWidth: number,
+): {
+  surfaceBounds: LayoutBounds;
+  textBounds: LayoutBounds;
+  fontSize: number;
+  wrappedLines: number;
+  widthExpanded: boolean;
+} {
+  const minFont = 24;
+  const maxFont = 42;
+  const horizontalPadding = 28;
+  const verticalPadding = 12;
+  const maxSurfaceWidth = Math.max(300, canvasWidth - 96);
+  const maxTextWidth = Math.max(180, maxSurfaceWidth - horizontalPadding * 2);
+  let fontSize = maxFont;
+  let widthExpanded = false;
+
+  while (
+    fontSize > minFont &&
+    approximatePromoTextWidth(text, fontSize) > maxTextWidth
+  ) {
+    fontSize -= 2;
+  }
+
+  let wrappedLines = 1;
+  let measuredTextWidth = Math.min(maxTextWidth, approximatePromoTextWidth(text, fontSize));
+
+  if (approximatePromoTextWidth(text, fontSize) > maxTextWidth) {
+    wrappedLines = 2;
+    fontSize = clampNumber(
+      Math.floor(
+        Math.min(
+          surfaceBounds.height / 2.35,
+          maxTextWidth / Math.max(text.replace(/\s+/g, "").length * 0.52, 1),
+        ),
+      ),
+      20,
+      32,
+    );
+    measuredTextWidth = Math.min(
+      maxTextWidth,
+      Math.max(180, Math.ceil(approximatePromoTextWidth(text, fontSize) / 2)),
+    );
+  }
+
+  const textHeight = estimatePromoRenderedTextHeight(fontSize, wrappedLines);
+  const surfaceWidth = clampNumber(
+    Math.max(
+      surfaceBounds.width,
+      Math.round(measuredTextWidth + horizontalPadding * 2),
+    ),
+    300,
+    maxSurfaceWidth,
+  );
+  const surfaceHeight = Math.max(
+    surfaceBounds.height,
+    Math.round(textHeight + verticalPadding * 2),
+  );
+  const fittedSurface: LayoutBounds = {
+    x: clampNumber(
+      Math.round(surfaceBounds.x + (surfaceBounds.width - surfaceWidth) / 2),
+      48,
+      canvasWidth - surfaceWidth - 48,
+    ),
+    y: surfaceBounds.y,
+    width: surfaceWidth,
+    height: surfaceHeight,
+  };
+  widthExpanded = fittedSurface.width > surfaceBounds.width;
+  const textBounds: LayoutBounds = {
+    x: fittedSurface.x + horizontalPadding,
+    y: fittedSurface.y + Math.round((fittedSurface.height - textHeight) / 2),
+    width: Math.max(160, Math.round(fittedSurface.width - horizontalPadding * 2)),
+    height: textHeight,
+  };
+
+  return {
+    surfaceBounds: fittedSurface,
+    textBounds,
+    fontSize,
+    wrappedLines,
+    widthExpanded,
+  };
+}
+
+function approximatePromoTextWidth(text: string, fontSize: number): number {
+  return Math.ceil(text.replace(/\s+/g, "").length * fontSize * 0.88);
+}
+
+function estimatePromoRenderedTextHeight(fontSize: number, wrappedLines: number): number {
+  const renderedLineHeight = fontSize * 1.13 * 1.13;
+  const renderedPadding = fontSize;
+  const totalHeight = renderedLineHeight * wrappedLines + renderedPadding;
+  return Math.max(Math.ceil(totalHeight), fontSize);
+}
+
 function collectQualityWarnings(
   graph: ReferenceBlockGraph,
   blockBindingPlan: BlockBindingPlan,
@@ -906,9 +1298,37 @@ function collectQualityWarnings(
   if (blockBindingPlan.droppedAtomIds.length > 0) {
     warnings.push(`dropped ${blockBindingPlan.droppedAtomIds.length} optional message atoms`);
   }
+  const promoTextBlock = freeformLayoutPlan.copyBlocks.find(
+    (block) => block.executionSlotKey === "offer_line",
+  );
+  if (promoTextBlock?.styleTokens?.widthExpanded === true) {
+    warnings.push("promo_band_width_expanded");
+  }
+  if (
+    typeof promoTextBlock?.styleTokens?.wrappedLines === "number" &&
+    Number(promoTextBlock.styleTokens.wrappedLines) > 1
+  ) {
+    warnings.push("promo_wrapped_to_two_lines");
+  }
   warnings.push(`safe_decor_retained_count:${freeformLayoutPlan.polishBlocks.length}`);
+  if (freeformLayoutPlan.compositionStatus === "style_only") {
+    warnings.push("style_only_simple_readable_layout_applied");
+    warnings.push("safe_decor_skipped_due_to_style_only");
+  } else if (
+    freeformLayoutPlan.compositionStatus === "stable" &&
+    !graph.blocks.some((block) => block.kind === "decor_cluster") &&
+    freeformLayoutPlan.polishBlocks.length === 0
+  ) {
+    warnings.push("safe_decor_skipped_due_to_no_safe_candidate");
+  }
   if (sceneBindingPlan?.promoTextColorSource === "contrast_fallback") {
     warnings.push("promo_contrast_fallback_applied");
+  }
+  const headlineBlock = freeformLayoutPlan.copyBlocks.find(
+    (block) => block.executionSlotKey === "headline",
+  );
+  if (headlineBlock?.styleTokens?.styleOnlyHeadlineShrunk === true) {
+    warnings.push("style_only_headline_shrunk_to_fit");
   }
   return warnings;
 }
