@@ -128,6 +128,41 @@ function createTemplatePriorBundle(): TemplatePriorBundle {
   };
 }
 
+function createRealLikeTemplatePriorBundle(): TemplatePriorBundle {
+  const bundle = createTemplatePriorBundle();
+  const primaryCandidate = bundle.candidates[0];
+  assert.ok(primaryCandidate);
+  (primaryCandidate.fetchedDocument as any).pages[0].parsed = {
+    width: 787,
+    height: 817,
+    objects: [
+      { id: "rect-top-left", type: "rect", left: -540.1534573666622, top: 197.1957108877889, width: 100, height: 100, originX: "left", originY: "top", fill: { type: "linear", colorStops: [{ color: "rgb(107,211,87)" }, { color: "rgb(216,255,156)" }] } },
+      { id: "decor-top-right", type: "image", left: 332.9405973649491, top: -174.68085902474894, width: 2600, height: 2012, originX: "left", originY: "top", originSrc: "https://example.com/decor.png", fill: "rgb(0,0,0)" },
+      { id: "meta-1", type: "textbox", text: "4. 1 ~ 4. 16", left: 72.22305336721655, top: -183.1882304334586, width: 217.9786001384255, height: 44.06999999999999, originX: "right", originY: "top", textAlign: "center", fill: "#ffffff" },
+      { id: "offer-text", type: "textbox", text: "전제품 최대 30%", left: -136.74815363626868, top: -121.89064342718689, width: 386.4766271402143, height: 54.239999999999995, originX: "center", originY: "top", textAlign: "center", fill: "#0f7035" },
+      { id: "display-main", type: "textbox", text: "할인해", left: -136.74815363626868, top: -29.625431439238525, width: 539.410160243073, height: 202.26999999999998, originX: "center", originY: "top", textAlign: "center", fill: "#ffffff" },
+      { id: "display-secondary", type: "textbox", text: "봄", left: 298.1038449594805, top: -162.2450399924603, width: 341.79041220414024, height: 357.08, originX: "center", originY: "top", textAlign: "center", fill: "#ffffff" },
+      { id: "cta-text", type: "textbox", text: "지금 바로 확인하러 가기 ▶", left: -138.9143617283997, top: 213.20321358801493, width: 406.7703726421612, height: 41.809999999999995, originX: "center", originY: "top", textAlign: "center", fill: "#0f7035" },
+      { id: "decor-dot", type: "rect", left: -383.07943396883456, top: -134.0536990119939, width: 100, height: 100, originX: "left", originY: "top", fill: "rgba(255, 245, 156, 255)" },
+    ],
+  };
+  return bundle;
+}
+
+function createSafeCueTemplatePriorBundle(): TemplatePriorBundle {
+  const bundle = createRealLikeTemplatePriorBundle();
+  const primaryCandidate = bundle.candidates[0];
+  assert.ok(primaryCandidate);
+  (primaryCandidate.fetchedDocument as any).pages[0].parsed.objects = [
+    { id: "offer-text", type: "textbox", text: "전제품 최대 30%", left: 390, top: 132, width: 320, height: 48, originX: "center", originY: "top", textAlign: "center", fill: "#0f7035" },
+    { id: "display-main", type: "textbox", text: "특별한 세일", left: 600, top: 188, width: 420, height: 160, originX: "center", originY: "top", textAlign: "center", fill: "#ffffff" },
+    { id: "cta-text", type: "textbox", text: "지금 바로 확인하러 가기 ▶", left: 395, top: 620, width: 420, height: 40, originX: "center", originY: "top", textAlign: "center", fill: "#0f7035" },
+    { id: "footer-1", type: "textbox", text: "이벤트 기간 내 혜택 적용", left: 395, top: 740, width: 420, height: 24, originX: "center", originY: "top", textAlign: "center", fill: "#ffffff" },
+    { id: "decor-dot", type: "rect", left: 655, top: 66, width: 90, height: 90, originX: "left", originY: "top", fill: "rgba(255, 245, 156, 255)" },
+  ];
+  return bundle;
+}
+
 function createSceneBindingPlan(
   overrides: Partial<SceneBindingPlan> = {},
 ): SceneBindingPlan {
@@ -234,5 +269,47 @@ test("buildReferenceResetPath records promo contrast fallback in quality summary
 
   assert.ok(
     result.qualityEvalSummary?.warnings.includes("promo_contrast_fallback_applied"),
+  );
+});
+
+test("buildReferenceResetPath downgrades to style-only when only unsafe display candidates survive", () => {
+  const result = buildReferenceResetPath(
+    createHydratedInput(),
+    createRealLikeTemplatePriorBundle(),
+    createCopyPlan(),
+    null,
+    createSceneBindingPlan(),
+  );
+
+  assert.equal(result.freeformLayoutPlan?.compositionStatus, "style_only");
+  assert.equal(result.styleDowngradeVerdict?.applied, true);
+  assert.match(result.styleDowngradeVerdict?.reason ?? "", /safe dominant display/);
+});
+
+test("buildReferenceResetPath keeps stable composition when text-only semantic cues exist with a safe display target", () => {
+  const result = buildReferenceResetPath(
+    createHydratedInput(),
+    createSafeCueTemplatePriorBundle(),
+    createCopyPlan(),
+    null,
+    createSceneBindingPlan(),
+  );
+
+  assert.equal(result.freeformLayoutPlan?.compositionStatus, "stable");
+  assert.equal(result.styleDowngradeVerdict?.applied, false);
+  const headline = result.freeformLayoutPlan?.copyBlocks.find((block) => block.executionSlotKey === "headline");
+  const promo = result.freeformLayoutPlan?.copyBlocks.find((block) => block.executionSlotKey === "offer_line");
+  const cta = result.freeformLayoutPlan?.copyBlocks.find((block) => block.executionSlotKey === "cta");
+  assert.ok(headline);
+  assert.ok(promo);
+  assert.ok(cta);
+  assert.ok((headline?.bounds.y ?? -1) >= 0);
+  assert.ok((promo?.bounds.y ?? -1) >= 60);
+  assert.ok((promo?.bounds.y ?? 999) <= 190);
+  assert.ok((cta?.bounds.y ?? -1) >= 420);
+  assert.ok(
+    (result.freeformLayoutPlan?.polishBlocks ?? []).every(
+      (block) => block.bounds.x >= 0 && block.bounds.y >= 0,
+    ),
   );
 });

@@ -303,19 +303,31 @@ function extractReferenceBlockGraph(
     .filter(isTextLikeObject)
     .map((object) => classifyTextBlock(object, canvasWidth, canvasHeight))
     .filter((block): block is ReferenceBlock => block !== null);
-  const surfaces = objects
+  const explicitSurfaces = objects
     .filter((object) => !isTextLikeObject(object))
     .map((object) => classifySurfaceBlock(object, canvasWidth, canvasHeight))
     .filter((block): block is ReferenceBlock => block !== null);
+  const inferredSurfaces = inferImplicitSurfaceBlocks(textBlocks, canvasWidth, canvasHeight);
+  const surfaces = [...explicitSurfaces];
+  if (!surfaces.some((block) => block.kind === "promo_surface")) {
+    const inferredPromo = inferredSurfaces.find((block) => block.kind === "promo_surface");
+    if (inferredPromo) {
+      surfaces.push(inferredPromo);
+    }
+  }
+  if (!surfaces.some((block) => block.kind === "action_surface")) {
+    const inferredAction = inferredSurfaces.find((block) => block.kind === "action_surface");
+    if (inferredAction) {
+      surfaces.push(inferredAction);
+    }
+  }
   const decorations = objects
     .filter((object) => !isTextLikeObject(object))
     .map((object) => classifyDecorationBlock(object, canvasWidth, canvasHeight))
     .filter((block): block is ReferenceBlock => block !== null)
     .sort((left, right) => scoreDecorationBlock(right) - scoreDecorationBlock(left));
 
-  const primaryDisplay = [...textBlocks]
-    .filter((block) => block.kind === "display_text")
-    .sort((left, right) => right.prominence - left.prominence)[0] ?? null;
+  const primaryDisplay = selectSafePrimaryDisplay(textBlocks, canvasWidth, canvasHeight);
   const supportText = [...textBlocks]
     .filter((block) => block.kind === "support_text")
     .sort((left, right) => right.prominence - left.prominence)[0] ?? null;
@@ -352,6 +364,11 @@ function extractReferenceBlockGraph(
   if (promoSurface) blocks.push(promoSurface);
   if (actionSurface) blocks.push(actionSurface);
   blocks.push(...decorations.slice(0, 3));
+  const sanitizedBlocks = sanitizeReferenceBlocksForExecution(
+    blocks,
+    canvasWidth,
+    canvasHeight,
+  );
 
   return {
     planId: createRequestId(),
@@ -362,7 +379,7 @@ function extractReferenceBlockGraph(
     selectedTemplateTitle,
     sourceCanvasWidth: canvasWidth,
     sourceCanvasHeight: canvasHeight,
-    blocks,
+    blocks: sanitizedBlocks,
     summary:
       "Reset reference block graph keeps one dominant display, semantic surfaces, and only safe edge decorations that can survive editable execution.",
   };
@@ -436,6 +453,8 @@ function buildEditableBlockPlan(
   const assignmentByBlockId = new Map(blockBindingPlan.assignments.map((assignment) => [assignment.blockId, assignment] as const));
   const candidateId = graph.selectedTemplateCode;
   const semanticBounds: LayoutBounds[] = [];
+  const targetCanvasWidth = input.request.editorContext.canvasWidth;
+  const targetCanvasHeight = input.request.editorContext.canvasHeight;
 
   for (const block of graph.blocks) {
     const assignment = assignmentByBlockId.get(block.blockId);
@@ -446,11 +465,11 @@ function buildEditableBlockPlan(
       block.bounds,
       graph.sourceCanvasWidth,
       graph.sourceCanvasHeight,
-      input.request.editorContext.canvasWidth,
-      input.request.editorContext.canvasHeight,
+      targetCanvasWidth,
+      targetCanvasHeight,
     );
     if (block.kind === "promo_surface") {
-      const fitted = fitBandBounds(scaled, assignment.text, "promo", input.request.editorContext.canvasWidth);
+      const fitted = fitBandBounds(scaled, assignment.text, "promo", targetCanvasWidth);
       semanticBounds.push(fitted);
       blocks.push({
         blockId: `${block.blockId}_surface`,
@@ -479,7 +498,7 @@ function buildEditableBlockPlan(
       continue;
     }
     if (block.kind === "action_surface") {
-      const fitted = fitBandBounds(scaled, assignment.text, "cta", input.request.editorContext.canvasWidth);
+      const fitted = fitBandBounds(scaled, assignment.text, "cta", targetCanvasWidth);
       semanticBounds.push(fitted);
       blocks.push({
         blockId: `${block.blockId}_cta`,
@@ -522,9 +541,12 @@ function buildEditableBlockPlan(
       block.bounds,
       graph.sourceCanvasWidth,
       graph.sourceCanvasHeight,
-      input.request.editorContext.canvasWidth,
-      input.request.editorContext.canvasHeight,
+      targetCanvasWidth,
+      targetCanvasHeight,
     );
+    if (!isExecutionSafeScaledBounds(scaled, targetCanvasWidth, targetCanvasHeight, block.kind)) {
+      continue;
+    }
     if (semanticBounds.some((bounds) => overlapRatio(bounds, scaled) > 0.12)) {
       continue;
     }
@@ -926,7 +948,7 @@ function classifyTextBlock(
   if (!bounds || !text) {
     return null;
   }
-  const fontSize = asNumber(object.fontSize);
+  const fontSize = readEffectiveFontSize(object, bounds);
   if (isMetaTextLike(text, bounds, canvasHeight, fontSize)) {
     return null;
   }
@@ -1110,7 +1132,11 @@ function isMetaTextLike(
   if (/^\d{1,2}\.\d{1,2}\s*[~-]\s*\d{1,2}\.\d{1,2}$/.test(normalized)) {
     return true;
   }
-  if (bounds.y < canvasHeight * 0.18 && (fontSize ?? 0) <= 34) {
+  const topBand = bounds.y < canvasHeight * 0.18;
+  const compactHeight = bounds.height <= canvasHeight * 0.08;
+  const compactWidth = bounds.width <= 320;
+  const smallFont = fontSize !== null ? fontSize <= 34 : compactHeight;
+  if (topBand && smallFont && compactWidth) {
     if (normalized.length <= 18) {
       return true;
     }
@@ -1123,6 +1149,37 @@ function isMetaTextLike(
 
 function readText(object: CanvasObject): string | null {
   return typeof object.text === "string" && object.text.trim().length > 0 ? object.text.trim() : null;
+}
+
+function readEffectiveFontSize(
+  object: CanvasObject,
+  bounds: LayoutBounds,
+): number | null {
+  const direct = asNumber(object.fontSize);
+  if (direct !== null) {
+    return direct;
+  }
+  const styles = object.styles;
+  if (styles && typeof styles === "object") {
+    for (const lineStyles of Object.values(styles as Record<string, unknown>)) {
+      if (!lineStyles || typeof lineStyles !== "object") {
+        continue;
+      }
+      for (const charStyle of Object.values(lineStyles as Record<string, unknown>)) {
+        if (!charStyle || typeof charStyle !== "object") {
+          continue;
+        }
+        const styledSize = asNumber((charStyle as Record<string, unknown>).fontSize);
+        if (styledSize !== null) {
+          return styledSize;
+        }
+      }
+    }
+  }
+  if (bounds.height <= 0) {
+    return null;
+  }
+  return Math.max(16, Math.min(160, Math.round(bounds.height * 0.78)));
 }
 
 function readFillColor(object: CanvasObject): string | null {
@@ -1181,6 +1238,131 @@ function normalizeLayerType(object: CanvasObject): ReferenceBlock["layerType"] {
   return "shape";
 }
 
+function inferImplicitSurfaceBlocks(
+  textBlocks: ReferenceBlock[],
+  canvasWidth: number,
+  canvasHeight: number,
+): ReferenceBlock[] {
+  const blocks: ReferenceBlock[] = [];
+  const promoCue = textBlocks
+    .filter((block) => isPromoCueBlock(block, canvasWidth, canvasHeight))
+    .sort((left, right) => right.prominence - left.prominence)[0] ?? null;
+  const actionCue = textBlocks
+    .filter((block) => isActionCueBlock(block, canvasWidth, canvasHeight))
+    .sort((left, right) => right.prominence - left.prominence)[0] ?? null;
+
+  if (promoCue) {
+    blocks.push({
+      blockId: createRequestId(),
+      kind: "promo_surface",
+      layerType: "shape",
+      bounds: resolveCanonicalSurfaceBounds(promoCue.bounds, canvasWidth, canvasHeight, "promo"),
+      sourceObjectType: "synthetic_promo_surface",
+      sourceObjectId: promoCue.sourceObjectId,
+      sourceText: promoCue.sourceText,
+      fillColorHex: null,
+      fontSize: null,
+      prominence: promoCue.prominence * 0.9,
+      clusterZone: promoCue.clusterZone,
+      textAlign: promoCue.textAlign,
+      sourceOriginUrl: null,
+      sourceWidth: null,
+      sourceHeight: null,
+    });
+  }
+
+  if (actionCue) {
+    blocks.push({
+      blockId: createRequestId(),
+      kind: "action_surface",
+      layerType: "shape",
+      bounds: resolveCanonicalSurfaceBounds(actionCue.bounds, canvasWidth, canvasHeight, "action"),
+      sourceObjectType: "synthetic_action_surface",
+      sourceObjectId: actionCue.sourceObjectId,
+      sourceText: actionCue.sourceText,
+      fillColorHex: null,
+      fontSize: null,
+      prominence: actionCue.prominence * 0.85,
+      clusterZone: actionCue.clusterZone,
+      textAlign: actionCue.textAlign,
+      sourceOriginUrl: null,
+      sourceWidth: null,
+      sourceHeight: null,
+    });
+  }
+
+  return blocks;
+}
+
+function isPromoCueBlock(
+  block: ReferenceBlock,
+  canvasWidth: number,
+  canvasHeight: number,
+): boolean {
+  if (!block.sourceText || block.kind !== "support_text") {
+    return false;
+  }
+  const normalized = block.sourceText.replace(/\s+/g, "");
+  const inUpperHalf = block.bounds.y + block.bounds.height <= canvasHeight * 0.5;
+  const bandLikeWidth = block.bounds.width >= canvasWidth * 0.24;
+  const compactHeight = block.bounds.height <= canvasHeight * 0.12;
+  return (
+    inUpperHalf &&
+    bandLikeWidth &&
+    compactHeight &&
+    (/(할인|혜택|쿠폰|특가|OFF|세일|프로모션|이벤트|최대)/iu.test(normalized) ||
+      block.textAlign === "center")
+  );
+}
+
+function isActionCueBlock(
+  block: ReferenceBlock,
+  canvasWidth: number,
+  canvasHeight: number,
+): boolean {
+  if (!block.sourceText) {
+    return false;
+  }
+  const normalized = block.sourceText.replace(/\s+/g, "");
+  const nearBottom = block.bounds.y >= canvasHeight * 0.45;
+  const bandLikeWidth = block.bounds.width >= canvasWidth * 0.24;
+  const compactHeight = block.bounds.height <= canvasHeight * 0.12;
+  const strongCtaTextCue = /(가기|보기|확인|신청|바로|구매|쇼핑|자세히|예약|문의|▶|→)/iu.test(
+    normalized,
+  );
+  return (
+    (nearBottom || strongCtaTextCue) &&
+    bandLikeWidth &&
+    compactHeight &&
+    (strongCtaTextCue || block.textAlign === "center")
+  );
+}
+
+function resolveCanonicalSurfaceBounds(
+  bounds: LayoutBounds,
+  canvasWidth: number,
+  canvasHeight: number,
+  kind: "promo" | "action",
+): LayoutBounds {
+  const centerX = bounds.x + bounds.width / 2;
+  const targetWidth =
+    kind === "action"
+      ? clampNumber(bounds.width + 144, Math.round(canvasWidth * 0.36), Math.round(canvasWidth * 0.62))
+      : clampNumber(bounds.width + 112, Math.round(canvasWidth * 0.28), Math.round(canvasWidth * 0.58));
+  const targetHeight =
+    kind === "action"
+      ? clampNumber(bounds.height + 36, Math.round(canvasHeight * 0.09), Math.round(canvasHeight * 0.12))
+      : clampNumber(bounds.height + 28, Math.round(canvasHeight * 0.07), Math.round(canvasHeight * 0.1));
+  const x = clampNumber(Math.round(centerX - targetWidth / 2), 48, canvasWidth - targetWidth - 48);
+  const y =
+    kind === "action"
+      ? clampNumber(Math.round(canvasHeight * 0.72), Math.round(canvasHeight * 0.68), Math.round(canvasHeight * 0.8))
+      : clampNumber(Math.round(canvasHeight * 0.14), Math.round(canvasHeight * 0.12), Math.round(canvasHeight * 0.24));
+  const width = targetWidth;
+  const height = targetHeight;
+  return { x, y, width, height };
+}
+
 function asNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -1200,6 +1382,104 @@ function scaleBounds(
     width: Math.round(bounds.width * scaleX),
     height: Math.round(bounds.height * scaleY),
   };
+}
+
+function selectSafePrimaryDisplay(
+  textBlocks: ReferenceBlock[],
+  canvasWidth: number,
+  canvasHeight: number,
+): ReferenceBlock | null {
+  const candidates = textBlocks
+    .filter((block) => block.kind === "display_text")
+    .filter((block) => isExecutionSafeDisplayBlock(block, canvasWidth, canvasHeight))
+    .sort((left, right) => scoreDisplayCandidate(right, canvasWidth, canvasHeight) - scoreDisplayCandidate(left, canvasWidth, canvasHeight));
+  return candidates[0] ?? null;
+}
+
+function isExecutionSafeDisplayBlock(
+  block: ReferenceBlock,
+  canvasWidth: number,
+  canvasHeight: number,
+): boolean {
+  const text = block.sourceText?.trim() ?? "";
+  const whitespaceSeparated = text.split(/\s+/).filter(Boolean);
+  const isSingleWordGlyph = whitespaceSeparated.length <= 1 && text.length <= 2;
+  const topBleed = Math.max(0, -block.bounds.y);
+  const leftBleed = Math.max(0, -block.bounds.x);
+  const rightBleed = Math.max(0, block.bounds.x + block.bounds.width - canvasWidth);
+  const areaRatio = (block.bounds.width * block.bounds.height) / Math.max(canvasWidth * canvasHeight, 1);
+
+  if (topBleed > canvasHeight * 0.08) {
+    return false;
+  }
+  if (leftBleed > canvasWidth * 0.12 || rightBleed > canvasWidth * 0.12) {
+    return false;
+  }
+  if (areaRatio > 0.22) {
+    return false;
+  }
+  if (isSingleWordGlyph && block.bounds.height >= canvasHeight * 0.24) {
+    return false;
+  }
+  return true;
+}
+
+function scoreDisplayCandidate(
+  block: ReferenceBlock,
+  canvasWidth: number,
+  canvasHeight: number,
+): number {
+  const text = block.sourceText?.trim() ?? "";
+  const textLengthBonus = Math.min(text.length, 24) * 200;
+  const centerBias = 1 - Math.min(1, Math.abs(block.bounds.x + block.bounds.width / 2 - canvasWidth / 2) / Math.max(canvasWidth / 2, 1));
+  const topBleedPenalty = Math.max(0, -block.bounds.y) * 120;
+  const areaPenalty = Math.max(0, block.bounds.width * block.bounds.height - canvasWidth * canvasHeight * 0.14) * 0.2;
+  return block.prominence + textLengthBonus + centerBias * 10000 - topBleedPenalty - areaPenalty;
+}
+
+function sanitizeReferenceBlocksForExecution(
+  blocks: ReferenceBlock[],
+  canvasWidth: number,
+  canvasHeight: number,
+): ReferenceBlock[] {
+  return blocks.filter((block) => {
+    if (block.kind === "background") {
+      return true;
+    }
+    if (block.kind === "decor_cluster") {
+      return isExecutionSafeScaledBounds(block.bounds, canvasWidth, canvasHeight, block.kind);
+    }
+    if (block.kind === "display_text") {
+      return isExecutionSafeDisplayBlock(block, canvasWidth, canvasHeight);
+    }
+    return isExecutionSafeScaledBounds(block.bounds, canvasWidth, canvasHeight, block.kind);
+  });
+}
+
+function isExecutionSafeScaledBounds(
+  bounds: LayoutBounds,
+  canvasWidth: number,
+  canvasHeight: number,
+  kind: ReferenceBlock["kind"],
+): boolean {
+  const topBleed = Math.max(0, -bounds.y);
+  const leftBleed = Math.max(0, -bounds.x);
+  const rightBleed = Math.max(0, bounds.x + bounds.width - canvasWidth);
+  const bottomBleed = Math.max(0, bounds.y + bounds.height - canvasHeight);
+  if (kind === "decor_cluster") {
+    return topBleed <= canvasHeight * 0.05 &&
+      leftBleed <= canvasWidth * 0.05 &&
+      rightBleed <= canvasWidth * 0.05 &&
+      bottomBleed <= canvasHeight * 0.05;
+  }
+  return topBleed <= canvasHeight * 0.04 &&
+    leftBleed <= canvasWidth * 0.04 &&
+    rightBleed <= canvasWidth * 0.04 &&
+    bottomBleed <= canvasHeight * 0.04;
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }
 
 function isDarkFill(fill: string): boolean {
@@ -1253,7 +1533,7 @@ function evaluateStrongReferenceGate(
   if (!retainedBlocks.some((block) => block.kind === "display_text")) {
     return {
       passed: false,
-      reason: "Reference had no usable dominant display block; reset path downgraded to style-only.",
+      reason: "Reference had no safe dominant display block; reset path downgraded to style-only.",
     };
   }
   if (textBlocks.length < 1) {
