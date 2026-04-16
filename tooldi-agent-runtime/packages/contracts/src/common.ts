@@ -37,20 +37,6 @@ export const JsonValueSchema = Type.Recursive(
 
 export const JsonObjectSchema = Type.Record(Type.String(), JsonValueSchema);
 
-export const SlotKeyValues = [
-  "background",
-  "headline",
-  "supporting_copy",
-  "cta",
-  "decoration",
-  "badge",
-  "hero_image",
-] as const;
-
-export const SlotKeySchema = Type.Union(
-  SlotKeyValues.map((value) => Type.Literal(value)),
-);
-
 export const ExecutionSlotKeyValues = [
   "background",
   "headline",

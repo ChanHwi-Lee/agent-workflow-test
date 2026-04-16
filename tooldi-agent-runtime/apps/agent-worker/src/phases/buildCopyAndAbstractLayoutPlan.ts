@@ -111,7 +111,7 @@ function buildPriorContext(
   if (sceneRolePlan) {
     fragments.push(
       `roles=${sceneRolePlan.roles
-        .map((role) => `${role.key}:${role.mappedSlotKey}`)
+        .map((role) => `${role.key}:${role.mappedExecutionSlotKey}`)
         .join(",")}`,
     );
   }

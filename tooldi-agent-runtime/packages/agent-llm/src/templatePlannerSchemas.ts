@@ -271,7 +271,7 @@ export interface TemplateSemanticBriefContext {
     forbiddenStyles: string[];
   };
   requiredSlots: Array<
-    "background" | "headline" | "supporting_copy" | "cta" | "decoration"
+    "background" | "headline" | "subheadline" | "cta"
   >;
   primaryVisualPolicy: TemplatePrimaryVisualPolicy;
 }

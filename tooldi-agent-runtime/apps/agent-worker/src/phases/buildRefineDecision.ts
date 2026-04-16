@@ -51,7 +51,7 @@ export async function buildRefineDecision(
       case "preflight_cta_missing_or_weak":
         operations.push({
           kind: "rewrite_copy_slot_text",
-          slotKey: "cta",
+          executionSlotKey: "cta",
           text: "혜택 보기",
         });
         break;
@@ -59,7 +59,7 @@ export async function buildRefineDecision(
         if (hasGenericPromoSafeHeadline) {
           operations.push({
             kind: "rewrite_copy_slot_text",
-            slotKey: "headline",
+            executionSlotKey: "headline",
             text: copyPlan.primaryMessage,
           });
         }
@@ -72,7 +72,7 @@ export async function buildRefineDecision(
         }
         operations.push({
           kind: "move_copy_slot_anchor",
-          slotKey: "cta",
+          executionSlotKey: "cta",
           anchor: "bottom_center",
         });
         operations.push({

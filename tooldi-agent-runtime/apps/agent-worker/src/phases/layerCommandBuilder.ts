@@ -9,7 +9,6 @@ import type {
   LayoutBounds,
   MutationProposalDraft,
 } from "../types.js";
-import { isExecutionIdentityValid } from "./executionSlotIdentity.js";
 import type { TypographyMetadata } from "./planInputParsers.js";
 
 type CreateLayerCommand = Extract<
@@ -18,7 +17,6 @@ type CreateLayerCommand = Extract<
 >;
 
 type CreateLayerCommandOptions = {
-  slotKey: CreateLayerCommand["slotKey"];
   executionSlotKey: ExecutionSlotKey | null;
   clientLayerKey: string;
   layerType: "shape" | "text" | "group" | "image";
@@ -57,18 +55,6 @@ export function buildCreateLayerCommand(
   stage: string,
   options: CreateLayerCommandOptions,
 ): MutationProposalDraft["mutation"]["commands"][number] {
-  if (
-    !isExecutionIdentityValid(
-      options.slotKey,
-      options.executionSlotKey,
-      options.role,
-    )
-  ) {
-    throw new Error(
-      `Invalid execution identity for ${options.clientLayerKey}: slot=${String(options.slotKey)} executionSlot=${String(options.executionSlotKey)} role=${options.role}`,
-    );
-  }
-
   const metadata: Record<string, string | number | boolean | null> = {
     role: options.role,
     variantKey: options.variantKey,
@@ -111,13 +97,11 @@ export function buildCreateLayerCommand(
   return {
     commandId: createRequestId(),
     op: "createLayer",
-    slotKey: options.slotKey,
     executionSlotKey: options.executionSlotKey,
     clientLayerKey: options.clientLayerKey,
     targetRef: {
       layerId: null,
       clientLayerKey: options.clientLayerKey,
-      ...(options.slotKey ? { slotKey: options.slotKey } : {}),
     },
     targetLayerVersion: null,
     parentRef: {
@@ -146,7 +130,6 @@ export function buildSaveTemplateCommand(
   return {
     commandId: createRequestId(),
     op: "saveTemplate",
-    slotKey: null,
     targetRef: {},
     targetLayerVersion: null,
     allowNoop: false,

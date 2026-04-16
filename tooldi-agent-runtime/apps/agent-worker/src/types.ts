@@ -338,7 +338,7 @@ export interface SceneRolePlanEntry {
   key: SceneRoleKey;
   required: boolean;
   preferredZone: SceneRoleZone;
-  mappedSlotKey: CopyPlanSlotKey | "background" | "hero_image" | "decoration";
+  mappedExecutionSlotKey: CopyPlanSlotKey | "background" | "hero_image" | null;
   priority: CopyPlanPriority;
   maxLength: number | null;
   toneHint: CopyPlanToneHint | null;
@@ -676,7 +676,6 @@ export interface FreeformRenderableBlock {
   blockId: string;
   stage: "copy" | "polish";
   layerType: "shape" | "text" | "group" | "image";
-  slotKey: "background" | "headline" | "supporting_copy" | "cta" | "decoration" | "badge" | "hero_image" | null;
   executionSlotKey: ExecutionSlotKey | null;
   role: string;
   variantKey: string;
@@ -830,6 +829,36 @@ export interface ProjectedObjectGraph {
   objects: ProjectedObject[];
   objectCount: number;
   summary: string;
+}
+
+// ---------------------------------------------------------------------------
+// Adaptive Composition Decision (SSOT: Layer 3 — LLM Decision)
+// ---------------------------------------------------------------------------
+
+export interface ElementDecision {
+  objectId: string;
+  operation: "retain" | "modify" | "remove";
+  newText: string | null;
+  newFillColor: string | null;
+  reason: string;
+}
+
+export interface AddDecision {
+  vocabularyId: string;
+  text: string | null;
+  placementZone: SpatialZone;
+  reason: string;
+}
+
+export interface AdaptiveCompositionDecision {
+  decisionId: string;
+  runId: string;
+  traceId: string;
+  templateCode: string;
+  projectedGraphId: string;
+  elementDecisions: ElementDecision[];
+  addDecisions: AddDecision[];
+  compositionSummary: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -1695,14 +1724,6 @@ export interface RuleJudgeVerdict {
 
 export interface StageAckRecordCommand {
   op: "createLayer" | "updateLayer" | "deleteLayer" | "saveTemplate";
-  slotKey:
-    | CopyPlanSlotKey
-    | "background"
-    | "supporting_copy"
-    | "decoration"
-    | "hero_image"
-    | "badge"
-    | null;
   executionSlotKey: ExecutionSlotKey | null;
   clientLayerKey: string | null;
   role: string | null;
@@ -1821,12 +1842,12 @@ export interface JudgePlan {
 export type RefinementPatchOperation =
   | {
       kind: "rewrite_copy_slot_text";
-      slotKey: CopyPlanSlotKey;
+      executionSlotKey: CopyPlanSlotKey;
       text: string;
     }
   | {
       kind: "move_copy_slot_anchor";
-      slotKey: CopyPlanSlotKey;
+      executionSlotKey: CopyPlanSlotKey;
       anchor: ConcreteLayoutAnchorZone;
     }
   | {

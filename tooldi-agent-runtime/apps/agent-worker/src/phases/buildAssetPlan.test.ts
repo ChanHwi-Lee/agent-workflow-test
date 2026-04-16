@@ -33,7 +33,7 @@ function createIntent(
     canvasPreset: "wide_1200x628",
     layoutIntent: "copy_focused",
     tone: "bright_playful",
-    requiredSlots: ["background", "headline", "supporting_copy", "cta", "decoration"],
+    requiredSlots: ["background", "headline", "subheadline", "cta"],
     assetPolicy: normalizeTemplateAssetPolicy({
       allowedFamilies: ["background", "graphic", "photo"],
       preferredFamilies: ["graphic"],

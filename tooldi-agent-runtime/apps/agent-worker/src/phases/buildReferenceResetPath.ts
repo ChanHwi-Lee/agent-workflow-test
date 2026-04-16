@@ -674,7 +674,6 @@ function buildEditableBlockPlan(
         blockId: `${block.blockId}_surface`,
         stage: "copy",
         layerType: "shape",
-        slotKey: null,
         executionSlotKey: null,
         role: "freeform_surface",
         variantKey: "reset_promo_surface",
@@ -698,7 +697,6 @@ function buildEditableBlockPlan(
         blockId: `${block.blockId}_text`,
         stage: "copy",
         layerType: "text",
-        slotKey: null,
         executionSlotKey: "offer_line",
         role: "price_callout",
         variantKey: `reset_${block.kind}`,
@@ -728,7 +726,6 @@ function buildEditableBlockPlan(
         blockId: `${block.blockId}_cta`,
         stage: "copy",
         layerType: "group",
-        slotKey: "cta",
         executionSlotKey: "cta",
         role: "cta",
         variantKey: "reset_cta_band",
@@ -779,7 +776,6 @@ function buildEditableBlockPlan(
         blockId: `${block.blockId}_decor`,
         stage: "polish",
         layerType: "image",
-        slotKey: "decoration",
         executionSlotKey: null,
         role: "freeform_reference_decor",
         variantKey: "reset_reference_image",
@@ -798,7 +794,6 @@ function buildEditableBlockPlan(
         blockId: `${block.blockId}_decor`,
         stage: "polish",
         layerType: "shape",
-        slotKey: "decoration",
         executionSlotKey: null,
         role: "freeform_reference_decor",
         variantKey: "reset_reference_shape",
@@ -826,7 +821,6 @@ function buildEditableBlockPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "text",
-      slotKey: null,
       executionSlotKey: "footer_note",
       role: "footer_note",
       variantKey: "reset_footer_detail",
@@ -1084,7 +1078,6 @@ function createStyleOnlyEditableBlockPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "shape",
-      slotKey: null,
       executionSlotKey: null,
       role: "freeform_surface",
       variantKey: "reset_style_promo_surface",
@@ -1107,7 +1100,6 @@ function createStyleOnlyEditableBlockPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "text",
-      slotKey: null,
       executionSlotKey: "offer_line",
       role: "price_callout",
       variantKey: "reset_style_promo_text",
@@ -1142,7 +1134,6 @@ function createStyleOnlyEditableBlockPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "text",
-      slotKey: "headline",
       executionSlotKey: "headline",
       role: "headline",
       variantKey: "reset_style_headline",
@@ -1167,7 +1158,6 @@ function createStyleOnlyEditableBlockPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "group",
-      slotKey: "cta",
       executionSlotKey: "cta",
       role: "cta",
       variantKey: "reset_style_cta",
@@ -1199,7 +1189,6 @@ function createStyleOnlyEditableBlockPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "text",
-      slotKey: null,
       executionSlotKey: "footer_note",
       role: "footer_note",
       variantKey: "reset_style_footer",
@@ -1283,7 +1272,6 @@ export function buildTextBlock(
     blockId: `${block.blockId}_text`,
     stage: "copy",
     layerType: "text",
-    slotKey: toCompatSlotKey(assignment.executionSlotKey),
     executionSlotKey: assignment.executionSlotKey,
     role: assignment.role,
     variantKey: `reset_${block.kind}`,
@@ -1304,21 +1292,6 @@ export function buildTextBlock(
     },
     clusterZone: block.clusterZone,
   };
-}
-
-function toCompatSlotKey(
-  executionSlotKey: BlockBindingAssignment["executionSlotKey"],
-): FreeformRenderableBlock["slotKey"] {
-  switch (executionSlotKey) {
-    case "headline":
-      return "headline";
-    case "subheadline":
-      return "supporting_copy";
-    case "cta":
-      return "cta";
-    default:
-      return null;
-  }
 }
 
 function fitTextBounds(

@@ -48,15 +48,18 @@ export function registerExecutionNodes(
       });
       cooperativeStopRequested ||= executingEvent.cancelRequested;
 
+      // SSOT: prefer adaptive composition batch when available
       const skeletonBatch = cooperativeStopRequested
         ? {
             commitGroup:
-              state.plan.actions[0]?.commitGroup ?? "cancelled_before_mutation",
+              state.plan?.actions[0]?.commitGroup ?? "cancelled_before_mutation",
             proposals: [],
           }
-        : await emitSkeletonMutations(state.hydrated, state.intent, state.plan, {
-            textLayoutHelper: dependencies.textLayoutHelper,
-          });
+        : state.adaptiveSkeletonBatch
+          ? state.adaptiveSkeletonBatch
+          : await emitSkeletonMutations(state.hydrated, state.intent, state.plan, {
+              textLayoutHelper: dependencies.textLayoutHelper,
+            });
 
       return {
         cooperativeStopRequested,

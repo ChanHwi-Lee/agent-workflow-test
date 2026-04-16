@@ -201,13 +201,11 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
             {
               commandId: "command-background",
               op: "createLayer",
-              slotKey: "background",
               executionSlotKey: "background",
               clientLayerKey: "background-layer",
               targetRef: {
                 layerId: null,
                 clientLayerKey: "background-layer",
-                slotKey: "background",
               },
               targetLayerVersion: null,
               parentRef: { position: "append" },
@@ -224,13 +222,11 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
             {
               commandId: "command-headline",
               op: "createLayer",
-              slotKey: "headline",
               executionSlotKey: "headline",
               clientLayerKey: "headline-layer",
               targetRef: {
                 layerId: null,
                 clientLayerKey: "headline-layer",
-                slotKey: "headline",
               },
               targetLayerVersion: null,
               parentRef: { position: "append" },
@@ -247,13 +243,11 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
             {
               commandId: "command-supporting",
               op: "createLayer",
-              slotKey: "supporting_copy",
               executionSlotKey: "subheadline",
               clientLayerKey: "supporting-layer",
               targetRef: {
                 layerId: null,
                 clientLayerKey: "supporting-layer",
-                slotKey: "supporting_copy",
               },
               targetLayerVersion: null,
               parentRef: { position: "append" },
@@ -270,7 +264,6 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
             {
               commandId: "command-offer",
               op: "createLayer",
-              slotKey: null,
               executionSlotKey: "offer_line",
               clientLayerKey: "offer-layer",
               targetRef: {
@@ -294,13 +287,11 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
             {
               commandId: "command-cta",
               op: "createLayer",
-              slotKey: "cta",
               executionSlotKey: "cta",
               clientLayerKey: "cta-layer",
               targetRef: {
                 layerId: null,
                 clientLayerKey: "cta-layer",
-                slotKey: "cta",
               },
               targetLayerVersion: null,
               parentRef: { position: "append" },
@@ -317,7 +308,6 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
             {
               commandId: "command-footer",
               op: "createLayer",
-              slotKey: null,
               executionSlotKey: "footer_note",
               clientLayerKey: "footer-layer",
               targetRef: {
@@ -341,7 +331,6 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
             {
               commandId: "command-hero-image",
               op: "createLayer",
-              slotKey: null,
               executionSlotKey: "hero_image",
               clientLayerKey: "hero-image-layer",
               targetRef: {
@@ -368,13 +357,11 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
             {
               commandId: "command-decoration",
               op: "createLayer",
-              slotKey: "decoration",
               executionSlotKey: null,
               clientLayerKey: "decoration-layer",
               targetRef: {
                 layerId: null,
                 clientLayerKey: "decoration-layer",
-                slotKey: "decoration",
               },
               targetLayerVersion: null,
               parentRef: { position: "append" },
@@ -480,7 +467,6 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
       bundle.payload.editableCanvasState.draftManifest.slotBindings.some(
         (binding) =>
           binding.executionSlotKey === "offer_line" &&
-          binding.slotKey === null &&
           binding.primaryLayerId === "offer-layer",
       ),
       true,
@@ -489,7 +475,6 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
       bundle.payload.mutationLedger.checkpoints[0]?.bundleSnapshot.slotStatuses.some(
         (status) =>
           status.executionSlotKey === "footer_note" &&
-          status.slotKey === null &&
           status.primaryLayerId === "footer-layer",
       ),
       true,
@@ -498,7 +483,6 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
       bundle.payload.editableCanvasState.draftManifest.slotBindings.some(
         (binding) =>
           binding.executionSlotKey === "hero_image" &&
-          binding.slotKey === null &&
           binding.primaryLayerId === "hero-image-layer",
       ),
       true,
@@ -710,13 +694,11 @@ test("RunFinalizeService accepts object-native execution-slot minimum draft with
             {
               commandId: "command-background",
               op: "createLayer",
-              slotKey: "background",
               executionSlotKey: "background",
               clientLayerKey: "background-layer",
               targetRef: {
                 layerId: null,
                 clientLayerKey: "background-layer",
-                slotKey: "background",
               },
               targetLayerVersion: null,
               parentRef: { position: "append" },
@@ -733,13 +715,11 @@ test("RunFinalizeService accepts object-native execution-slot minimum draft with
             {
               commandId: "command-headline",
               op: "createLayer",
-              slotKey: "headline",
               executionSlotKey: "headline",
               clientLayerKey: "headline-layer",
               targetRef: {
                 layerId: null,
                 clientLayerKey: "headline-layer",
-                slotKey: "headline",
               },
               targetLayerVersion: null,
               parentRef: { position: "append" },
@@ -756,7 +736,6 @@ test("RunFinalizeService accepts object-native execution-slot minimum draft with
             {
               commandId: "command-offer",
               op: "createLayer",
-              slotKey: null,
               executionSlotKey: "offer_line",
               clientLayerKey: "offer-layer",
               targetRef: {
@@ -780,13 +759,11 @@ test("RunFinalizeService accepts object-native execution-slot minimum draft with
             {
               commandId: "command-cta",
               op: "createLayer",
-              slotKey: "cta",
               executionSlotKey: "cta",
               clientLayerKey: "cta-layer",
               targetRef: {
                 layerId: null,
                 clientLayerKey: "cta-layer",
-                slotKey: "cta",
               },
               targetLayerVersion: null,
               parentRef: { position: "append" },
@@ -1012,13 +989,11 @@ test("RunFinalizeService accepts topology minimum draft without CTA when the top
             {
               commandId: "command-background",
               op: "createLayer",
-              slotKey: "background",
               executionSlotKey: "background",
               clientLayerKey: "background-layer",
               targetRef: {
                 layerId: null,
                 clientLayerKey: "background-layer",
-                slotKey: "background",
               },
               targetLayerVersion: null,
               parentRef: { position: "append" },
@@ -1035,13 +1010,11 @@ test("RunFinalizeService accepts topology minimum draft without CTA when the top
             {
               commandId: "command-headline",
               op: "createLayer",
-              slotKey: "headline",
               executionSlotKey: "headline",
               clientLayerKey: "headline-layer",
               targetRef: {
                 layerId: null,
                 clientLayerKey: "headline-layer",
-                slotKey: "headline",
               },
               targetLayerVersion: null,
               parentRef: { position: "append" },
@@ -1066,13 +1039,11 @@ test("RunFinalizeService accepts topology minimum draft without CTA when the top
             {
               commandId: "command-support",
               op: "createLayer",
-              slotKey: "supporting_copy",
               executionSlotKey: "subheadline",
               clientLayerKey: "support-layer",
               targetRef: {
                 layerId: null,
                 clientLayerKey: "support-layer",
-                slotKey: "supporting_copy",
               },
               targetLayerVersion: null,
               parentRef: { position: "append" },

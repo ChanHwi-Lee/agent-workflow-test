@@ -212,7 +212,6 @@ function createExecutablePlanV2(): ExecutablePlan {
               blockId: "headline",
               stage: "copy",
               layerType: "text",
-              slotKey: "headline",
               executionSlotKey: "headline",
               role: "headline",
               variantKey: "text_display",
@@ -224,7 +223,6 @@ function createExecutablePlanV2(): ExecutablePlan {
               blockId: "cta",
               stage: "copy",
               layerType: "group",
-              slotKey: "cta",
               executionSlotKey: "cta",
               role: "cta",
               variantKey: "reference_cta_band",
@@ -276,7 +274,6 @@ test("buildExecutionSceneSummary binds copy and graphic layers from ack history"
       commands: [
         {
           op: "createLayer",
-          slotKey: "headline",
           executionSlotKey: "headline",
           clientLayerKey: "headline_run",
           role: "headline",
@@ -285,10 +282,9 @@ test("buildExecutionSceneSummary binds copy and graphic layers from ack history"
         },
         {
           op: "createLayer",
-          slotKey: "supporting_copy",
           executionSlotKey: "subheadline",
           clientLayerKey: "supporting_copy_run",
-          role: "supporting_copy",
+          role: "subheadline",
           targetLayerId: null,
           proposedBounds: { x: 80, y: 220, width: 420, height: 70 },
         },
@@ -306,7 +302,6 @@ test("buildExecutionSceneSummary binds copy and graphic layers from ack history"
       commands: [
         {
           op: "createLayer",
-          slotKey: "decoration",
           executionSlotKey: null,
           clientLayerKey: "primary_accent_run",
           role: "primary_accent",
@@ -377,7 +372,6 @@ test("buildExecutionSceneSummary preserves canonical execution slots across upda
         commands: [
           {
             op: "createLayer",
-            slotKey: "headline",
             executionSlotKey: "headline",
             clientLayerKey: "headline_run",
             role: "headline",
@@ -386,7 +380,6 @@ test("buildExecutionSceneSummary preserves canonical execution slots across upda
           },
           {
             op: "createLayer",
-            slotKey: "cta",
             executionSlotKey: "cta",
             clientLayerKey: "cta_run",
             role: "cta",
@@ -405,7 +398,6 @@ test("buildExecutionSceneSummary preserves canonical execution slots across upda
         commands: [
           {
             op: "updateLayer",
-            slotKey: "cta",
             executionSlotKey: "cta",
             clientLayerKey: "cta_run",
             role: "cta",
@@ -429,7 +421,7 @@ test("buildExecutionSceneSummary preserves canonical execution slots across upda
   });
 });
 
-test("buildExecutionSceneSummary binds hero_image from canonical executionSlotKey without slotKey compat lookup", async () => {
+test("buildExecutionSceneSummary binds hero_image from canonical executionSlotKey", async () => {
   const concreteLayoutPlan = {
     ...createConcreteLayoutPlan(),
     primaryVisualFamily: "photo" as const,
@@ -460,7 +452,6 @@ test("buildExecutionSceneSummary binds hero_image from canonical executionSlotKe
         commands: [
           {
             op: "createLayer",
-            slotKey: null,
             executionSlotKey: "hero_image",
             clientLayerKey: "hero_image_run",
             role: "hero_image",
@@ -504,7 +495,6 @@ test("buildExecutionSceneSummary ignores legacy badge/decor expectations for ret
         commands: [
           {
             op: "createLayer",
-            slotKey: "background",
             executionSlotKey: "background",
             clientLayerKey: "background_run",
             role: "background",
@@ -526,7 +516,6 @@ test("buildExecutionSceneSummary ignores legacy badge/decor expectations for ret
         commands: [
           {
             op: "createLayer",
-            slotKey: "headline",
             executionSlotKey: "headline",
             clientLayerKey: "headline_run",
             role: "headline",
@@ -535,7 +524,6 @@ test("buildExecutionSceneSummary ignores legacy badge/decor expectations for ret
           },
           {
             op: "createLayer",
-            slotKey: "cta",
             executionSlotKey: "cta",
             clientLayerKey: "cta_run",
             role: "cta",

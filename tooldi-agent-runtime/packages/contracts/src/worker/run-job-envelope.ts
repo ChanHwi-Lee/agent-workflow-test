@@ -6,7 +6,6 @@ import {
   IdentifierSchema,
   IsoDateTimeSchema,
   JsonObjectSchema,
-  SlotKeySchema,
 } from "../common.js";
 import { RunRepairContextSchema } from "../public/run-recovery.js";
 
@@ -181,7 +180,7 @@ export const PersistedPlanActionSchema = Type.Object(
         pageId: IdentifierSchema,
         layerId: Type.Union([IdentifierSchema, Type.Null()]),
         artifactId: Type.Optional(IdentifierSchema),
-        slotKey: Type.Optional(SlotKeySchema),
+        slotKey: Type.Optional(Type.String({ minLength: 1 })),
       },
       { additionalProperties: false },
     ),

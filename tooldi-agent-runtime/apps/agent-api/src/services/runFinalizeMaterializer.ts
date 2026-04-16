@@ -149,15 +149,9 @@ export async function materializeRunArtifacts(
             editableLayerIds: input.ledgerProjection.editableLayerIds,
             referencedAssetIds: [],
             slotStatuses: input.ledgerProjection.slotBindings.map((binding) => ({
-              slotKey: binding.slotKey,
+              executionSlotKey: binding.executionSlotKey ?? null,
               status: "ready" as const,
               primaryLayerId: binding.primaryLayerId,
-              ...(Object.prototype.hasOwnProperty.call(
-                binding,
-                "executionSlotKey",
-              )
-                ? { executionSlotKey: binding.executionSlotKey ?? null }
-                : {}),
             })),
           },
           recoveryBase: {

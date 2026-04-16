@@ -466,7 +466,7 @@ function bindCopyAtomsToReferenceBlocks(
   bindByKind(textBlocks, assignments, copyAtomPlan.atoms, usedAtomIds, "support", {
     preferredSlotKeys: ["subheadline", "offer_line"],
     preferredKinds: ["support", "promo_band"],
-    semanticRole: "supporting_copy",
+    semanticRole: "subheadline",
     semanticExecutionSlotKey: "subheadline",
     fallbackRole: "freeform_support_text",
   });
@@ -625,7 +625,6 @@ function createStableFreeformLayoutPlan(
           blockId: `${block.blockId}_cta_group`,
           stage: "copy",
           layerType: "group",
-          slotKey: "cta",
           executionSlotKey: "cta",
           role: "cta",
           variantKey: "reference_cta_band",
@@ -673,7 +672,6 @@ function createStableFreeformLayoutPlan(
           blockId: `${block.blockId}_surface`,
           stage: "copy",
           layerType: "shape",
-          slotKey: null,
           executionSlotKey: null,
           role: "freeform_surface",
           variantKey: `surface_${block.kind}`,
@@ -703,7 +701,6 @@ function createStableFreeformLayoutPlan(
         blockId: `${block.blockId}_text`,
         stage: "copy",
         layerType: "text",
-        slotKey: toCompatSlotKey(assignment.executionSlotKey),
         executionSlotKey: assignment.executionSlotKey,
         role: assignment.role,
         variantKey: `text_${block.kind}`,
@@ -753,7 +750,6 @@ function createStableFreeformLayoutPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "text",
-      slotKey: null,
       executionSlotKey: "footer_note",
       role: "footer_note",
       variantKey: "synthetic_detail_footer",
@@ -943,7 +939,6 @@ function buildTemplateRemixDecorationBlocks(
           blockId: `${typeof object.id === "string" ? object.id : createRequestId()}_image_${index}`,
           stage: "polish",
           layerType: "image",
-          slotKey: "decoration",
           executionSlotKey: null,
           role: "reference_decoration_image",
           variantKey: "reference_decoration_image",
@@ -968,7 +963,6 @@ function buildTemplateRemixDecorationBlocks(
         blockId: `${typeof object.id === "string" ? object.id : createRequestId()}_shape_${index}`,
         stage: "polish",
         layerType: "shape",
-        slotKey: "decoration",
         executionSlotKey: null,
         role: inferDecorationRole({
           blockId: "decoration",
@@ -1227,7 +1221,6 @@ function createStyleOnlyFreeformLayoutPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "shape",
-      slotKey: null,
       executionSlotKey: null,
       role: "freeform_surface",
       variantKey: "style_only_promo_band",
@@ -1248,7 +1241,6 @@ function createStyleOnlyFreeformLayoutPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "text",
-      slotKey: null,
       executionSlotKey: "offer_line",
       role: "price_callout",
       variantKey: "style_only_promo_text",
@@ -1273,7 +1265,6 @@ function createStyleOnlyFreeformLayoutPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "text",
-      slotKey: "headline",
       executionSlotKey: "headline",
       role: "headline",
       variantKey: "style_only_display",
@@ -1298,9 +1289,8 @@ function createStyleOnlyFreeformLayoutPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "text",
-      slotKey: "supporting_copy",
       executionSlotKey: "subheadline",
-      role: "supporting_copy",
+      role: "subheadline",
       variantKey: "style_only_support",
       candidateId: selectedTemplateCode,
       bounds: { x: 100, y: 392, width: 520, height: 54 },
@@ -1323,7 +1313,6 @@ function createStyleOnlyFreeformLayoutPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "group",
-      slotKey: "cta",
       executionSlotKey: "cta",
       role: "cta",
       variantKey: "style_only_cta",
@@ -1356,7 +1345,6 @@ function createStyleOnlyFreeformLayoutPlan(
       blockId: createRequestId(),
       stage: "copy",
       layerType: "text",
-      slotKey: null,
       executionSlotKey: "footer_note",
       role: "footer_note",
       variantKey: "style_only_footer",
@@ -1381,7 +1369,6 @@ function createStyleOnlyFreeformLayoutPlan(
       blockId: createRequestId(),
       stage: "polish",
       layerType: "shape",
-      slotKey: "decoration",
       executionSlotKey: null,
       role: "freeform_accent_circle",
       variantKey: "style_only_accent",
@@ -1402,7 +1389,6 @@ function createStyleOnlyFreeformLayoutPlan(
       blockId: createRequestId(),
       stage: "polish",
       layerType: "shape",
-      slotKey: "decoration",
       executionSlotKey: null,
       role: "freeform_accent_circle",
       variantKey: "style_only_accent",
@@ -1767,32 +1753,6 @@ function splitHeadlineForDisplayPair(
     };
   }
   return { primaryText: normalized, echoText: null };
-}
-
-function toCompatSlotKey(
-  executionSlotKey: FreeformRenderableBlock["executionSlotKey"],
-): FreeformRenderableBlock["slotKey"] {
-  switch (executionSlotKey) {
-    case "headline":
-      return "headline";
-    case "subheadline":
-      return "supporting_copy";
-    case "offer_line":
-      return null;
-    case "cta":
-      return "cta";
-    case "footer_note":
-      return null;
-    case "badge_text":
-      return "badge";
-    case "hero_image":
-      return "hero_image";
-    case "background":
-      return "background";
-    case null:
-    default:
-      return null;
-  }
 }
 
 function bindingRank(kind: ReferenceCompositionBlockKind): number {

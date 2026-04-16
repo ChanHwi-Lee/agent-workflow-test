@@ -11,6 +11,7 @@ type TopologyCompletionContract = {
   requiresMediaCapability: boolean;
 };
 import type {
+  AdaptiveCompositionDecision,
   FinalizeRunDraft,
   AbstractLayoutPlan,
   AbstractLayoutPlanNormalizationReport,
@@ -135,6 +136,9 @@ export const RunJobGraphState = Annotation.Root({
   objectNativeRenderabilityReportRef: replaceValue<string | null>(() => null),
   projectedTemplateGraph: replaceValue<ProjectedObjectGraph | null>(() => null),
   projectedTemplateGraphRef: replaceValue<string | null>(() => null),
+  adaptiveCompositionDecision: replaceValue<AdaptiveCompositionDecision | null>(() => null),
+  adaptiveCompositionDecisionRef: replaceValue<string | null>(() => null),
+  adaptiveSkeletonBatch: replaceValue<import("../types.js").SkeletonMutationBatch | null>(() => null),
   topologyMatchReport: replaceValue<TopologyMatchReport | null>(() => null),
   topologyMatchReportRef: replaceValue<string | null>(() => null),
   topologySelection: replaceValue<TopologySelection | null>(() => null),

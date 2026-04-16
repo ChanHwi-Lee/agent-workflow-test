@@ -19,6 +19,8 @@ import { buildScenePlans } from "../phases/buildScenePlans.js";
 import { buildSceneStylePlans } from "../phases/buildSceneStylePlans.js";
 import { buildTopologyPath } from "../phases/buildTopologyPath.js";
 import { projectTemplateObjectGraph } from "../phases/projectTemplateGraph.js";
+import { buildAdaptiveCompositionDecision } from "../phases/buildAdaptiveCompositionDecision.js";
+import { emitAdaptiveCompositionMutations } from "../phases/emitAdaptiveCompositionMutations.js";
 import {
   buildTemplatePriorBundle,
   createGeminiTemplatePriorReranker,
@@ -588,10 +590,67 @@ export function registerBuildNodes(
             },
           );
         }
+
+        // --- SSOT Layer 3: LLM Adaptive Composition Decision ---
+        let adaptiveCompositionDecision = null as import("../types.js").AdaptiveCompositionDecision | null;
+        let adaptiveCompositionDecisionRef: string | null = null;
+        if (projectedTemplateGraph && state.copyPlan) {
+          const plannerProvider = dependencies.env.templatePlannerProvider;
+          const plannerModel = dependencies.env.templatePlannerModel;
+          if (plannerProvider && plannerModel) {
+            try {
+              adaptiveCompositionDecision = await buildAdaptiveCompositionDecision({
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                projectedGraph: projectedTemplateGraph,
+                copyPlan: state.copyPlan,
+                palette: state.hydrated.request.brandContext?.palette ?? [],
+                provider: plannerProvider,
+                modelName: plannerModel,
+                temperature: dependencies.env.templatePlannerTemperature,
+              });
+              adaptiveCompositionDecisionRef = await persistArtifactTask(
+                `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/adaptive-composition-decision.json`,
+                adaptiveCompositionDecision,
+                {
+                  artifactKind: "adaptive-composition-decision",
+                  runId: state.job.runId,
+                  traceId: state.job.traceId,
+                  attemptSeq: String(state.job.attemptSeq),
+                },
+              );
+            } catch (err) {
+              const compositionLog = await appendEventTask(state.job.runId, {
+                traceId: state.job.traceId,
+                attempt: state.job.attemptSeq,
+                queueJobId: state.job.queueJobId,
+                event: {
+                  type: "log",
+                  level: "warn",
+                  message: `[ssot/adaptive-composition] LLM call failed: ${err instanceof Error ? err.message : String(err)}`,
+                },
+              });
+              cooperativeStopRequested ||= compositionLog.cancelRequested;
+            }
+          }
+        }
+        // --- SSOT Layer 4 bridge: build adaptive mutation batch ---
+        let adaptiveSkeletonBatch = null as import("../types.js").SkeletonMutationBatch | null;
+        if (adaptiveCompositionDecision && projectedTemplateGraph) {
+          adaptiveSkeletonBatch = emitAdaptiveCompositionMutations({
+            runId: state.job.runId,
+            traceId: state.job.traceId,
+            documentId: state.hydrated.request.editorContext.documentId,
+            pageId: state.hydrated.request.editorContext.pageId,
+            projectedGraph: projectedTemplateGraph,
+            compositionDecision: adaptiveCompositionDecision,
+          });
+        }
         // --- end SSOT ---
 
         return {
           cooperativeStopRequested,
+          adaptiveSkeletonBatch,
           referenceCompositionGraph: null,
           referenceCompositionGraphRef: null,
           referenceSupportEvidence: null,
@@ -622,6 +681,8 @@ export function registerBuildNodes(
           styleDowngradeVerdictRef,
           projectedTemplateGraph,
           projectedTemplateGraphRef,
+          adaptiveCompositionDecision,
+          adaptiveCompositionDecisionRef,
         };
       }
 

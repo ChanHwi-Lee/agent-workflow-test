@@ -332,7 +332,6 @@ export function buildStageAckRecord(
     resolvedLayerIds: ack.resolvedLayerIds ?? null,
     commands: proposal.mutation.commands.map((command) => ({
       op: command.op,
-      slotKey: command.slotKey ?? null,
       executionSlotKey:
         "executionSlotKey" in command ? command.executionSlotKey ?? null : null,
       clientLayerKey:

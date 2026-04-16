@@ -70,9 +70,8 @@ export async function normalizeTemplateIntent(
       requiredSlots: [
         "background",
         "headline",
-        "supporting_copy",
+        "subheadline",
         "cta",
-        "decoration",
       ],
       assetPolicy: normalizeTemplateAssetPolicy(
         "graphic_allowed_photo_optional",

@@ -70,9 +70,8 @@ function createNormalizedIntent(): NormalizedIntent {
     requiredSlots: [
       "background",
       "headline",
-      "supporting_copy",
+      "subheadline",
       "cta",
-      "decoration",
     ],
     assetPolicy: normalizeTemplateAssetPolicy("graphic_allowed_photo_optional"),
     primaryVisualPolicy: "graphic_preferred",
@@ -198,7 +197,6 @@ function createExecutablePlan(): ExecutablePlan {
           documentId: "document-1",
           pageId: "page-1",
           layerId: null,
-          slotKey: "decoration",
         },
         inputs: {
           decorationMode: "promo_multi_graphic",
@@ -294,7 +292,6 @@ function createExecutablePlanV2(): ExecutablePlan {
               blockId: "headline-v2",
               stage: "copy",
               layerType: "text",
-              slotKey: "headline",
               executionSlotKey: "headline",
               role: "headline",
               variantKey: "text_display",
@@ -309,7 +306,6 @@ function createExecutablePlanV2(): ExecutablePlan {
               blockId: "cta-v2",
               stage: "copy",
               layerType: "group",
-              slotKey: "cta",
               executionSlotKey: "cta",
               role: "cta",
               variantKey: "reference_cta_band",
@@ -386,10 +382,10 @@ test("emitSkeletonMutations uses copy slot text and concrete layout hints in mut
   const copyProposal = batch.proposals.find((proposal) => proposal.stageLabel === "copy");
   assert.ok(copyProposal);
   const headlineCommand = copyProposal.mutation.commands.find(
-    (command) => command.slotKey === "headline",
+    (command) => "executionSlotKey" in command && command.executionSlotKey === "headline",
   );
   const supportingCopyCommand = copyProposal.mutation.commands.find(
-    (command) => command.slotKey === "supporting_copy",
+    (command) => "executionSlotKey" in command && command.executionSlotKey === "subheadline",
   );
   const ctaProposal = batch.proposals.find((proposal) => proposal.stageLabel === "polish");
   assert.ok(ctaProposal);
@@ -408,7 +404,7 @@ test("emitSkeletonMutations uses copy slot text and concrete layout hints in mut
   assert.equal(supportingCopyCommand.executionSlotKey, "subheadline");
 
   const ctaCommand = ctaProposal.mutation.commands.find(
-    (command) => command.slotKey === "cta",
+    (command) => "executionSlotKey" in command && command.executionSlotKey === "cta",
   );
   if (!ctaCommand || !isCreateLayerCommand(ctaCommand)) {
     throw new Error("cta createLayer command is required");

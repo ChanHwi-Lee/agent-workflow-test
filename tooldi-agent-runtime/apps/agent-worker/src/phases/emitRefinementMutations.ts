@@ -98,14 +98,14 @@ function applyPatchPlanToExecutablePlan(
       case "rewrite_copy_slot_text":
         if (copyAction?.inputs && typeof copyAction.inputs === "object") {
           const copySlotTexts = ensureRecord(copyAction.inputs.copySlotTexts);
-          copySlotTexts[operation.slotKey] = operation.text;
+          copySlotTexts[operation.executionSlotKey] = operation.text;
           copyAction.inputs.copySlotTexts = copySlotTexts;
         }
         break;
       case "move_copy_slot_anchor":
         if (copyAction?.inputs && typeof copyAction.inputs === "object") {
           const copySlotAnchors = ensureRecord(copyAction.inputs.copySlotAnchors);
-          copySlotAnchors[operation.slotKey] = operation.anchor;
+          copySlotAnchors[operation.executionSlotKey] = operation.anchor;
           copyAction.inputs.copySlotAnchors = copySlotAnchors;
         }
         break;
@@ -229,7 +229,7 @@ function compilePatchCommands(
           { kind: "rewrite_copy_slot_text" }
         > => operation.kind === "rewrite_copy_slot_text",
       )
-      .map((operation) => operation.slotKey),
+      .map((operation) => operation.executionSlotKey),
   );
   const requiresLayoutPatch = operations.some(
     (operation) =>
@@ -302,13 +302,11 @@ function buildUpdateLayerPatchCommand(
   return {
     commandId: createRequestId(),
     op: "updateLayer",
-    slotKey: command.slotKey,
     executionSlotKey: command.executionSlotKey ?? null,
     clientLayerKey: command.clientLayerKey,
     targetRef: {
       layerId: binding.layerId,
       clientLayerKey: command.clientLayerKey,
-      ...(command.slotKey ? { slotKey: command.slotKey } : {}),
     },
     targetLayerVersion: lastMutationAck.resultingRevision ?? 0,
     expectedLayerType: command.layerBlueprint.layerType as UpdateLayerCommand["expectedLayerType"],

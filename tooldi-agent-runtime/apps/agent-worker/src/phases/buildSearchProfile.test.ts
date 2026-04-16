@@ -38,9 +38,8 @@ function createIntent(overrides: Partial<NormalizedIntent> = {}): NormalizedInte
     requiredSlots: [
       "background",
       "headline",
-      "supporting_copy",
+      "subheadline",
       "cta",
-      "decoration",
     ],
     assetPolicy: normalizeTemplateAssetPolicy(
       "photo_preferred_graphic_allowed",

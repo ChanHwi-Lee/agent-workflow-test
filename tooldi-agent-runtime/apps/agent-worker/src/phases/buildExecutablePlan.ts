@@ -144,7 +144,6 @@ export async function buildExecutablePlan(
         documentId: input.request.editorContext.documentId,
         pageId: input.request.editorContext.pageId,
         layerId: null,
-        slotKey: "background",
       },
       inputs: {
         executionMode,
@@ -208,7 +207,6 @@ export async function buildExecutablePlan(
         documentId: input.request.editorContext.documentId,
         pageId: input.request.editorContext.pageId,
         layerId: null,
-        slotKey: "hero_image",
       },
       inputs: {
         executionMode,
@@ -251,7 +249,6 @@ export async function buildExecutablePlan(
         documentId: input.request.editorContext.documentId,
         pageId: input.request.editorContext.pageId,
         layerId: null,
-        slotKey: "headline",
       },
       inputs: {
         executionMode,
@@ -310,7 +307,6 @@ export async function buildExecutablePlan(
         documentId: input.request.editorContext.documentId,
         pageId: input.request.editorContext.pageId,
         layerId: null,
-        slotKey: "decoration",
       },
       inputs: {
         executionMode,

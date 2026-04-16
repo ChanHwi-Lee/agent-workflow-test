@@ -3306,7 +3306,7 @@ test("processRunJob keeps the representative wide banner geometry inside the can
   );
   assert.equal(
     proposedMutations.some((mutation) =>
-      mutation.commands.some((command) => command.slotKey === "badge"),
+      mutation.commands.some((command) => "executionSlotKey" in command && command.executionSlotKey === "badge_text"),
     ),
     false,
   );

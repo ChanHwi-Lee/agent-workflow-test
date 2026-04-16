@@ -819,7 +819,7 @@ function deriveFontWeightPlan(
   intent: NormalizedIntent,
 ): SearchProfileArtifact["font"]["weight"] {
   const displayTarget = intent.requiredSlots.includes("headline") ? 700 : 600;
-  const bodyTarget = intent.requiredSlots.includes("supporting_copy")
+  const bodyTarget = intent.requiredSlots.includes("subheadline")
     ? intent.layoutIntent === "copy_focused"
       ? 500
       : 400

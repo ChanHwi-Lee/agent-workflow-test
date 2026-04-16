@@ -116,7 +116,7 @@ function createMutationEnvelope(input: {
       {
         commandId: "command-1",
         op: "createLayer",
-        slotKey: "headline",
+        executionSlotKey: "headline",
         clientLayerKey: "headline-layer",
         targetRef: {
           layerId: null,

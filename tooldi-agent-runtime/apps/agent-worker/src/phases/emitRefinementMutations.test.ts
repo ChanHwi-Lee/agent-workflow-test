@@ -81,9 +81,8 @@ function createNormalizedIntent(): NormalizedIntent {
     requiredSlots: [
       "background",
       "headline",
-      "supporting_copy",
+      "subheadline",
       "cta",
-      "decoration",
     ],
     assetPolicy: normalizeTemplateAssetPolicy("graphic_allowed_photo_optional"),
     primaryVisualPolicy: "graphic_preferred",
@@ -297,7 +296,6 @@ function createExecutablePlan(options?: {
           documentId: "document-1",
           pageId: "page-1",
           layerId: null,
-          slotKey: "decoration",
         },
         inputs: {
           decorationMode: "promo_multi_graphic",
@@ -487,7 +485,7 @@ test("emitRefinementMutations는 CTA copy refine에서 graphic role update를 �
     createRefineDecision([
       {
         kind: "rewrite_copy_slot_text",
-        slotKey: "cta",
+        executionSlotKey: "cta",
         text: "혜택 보기",
       },
     ]),

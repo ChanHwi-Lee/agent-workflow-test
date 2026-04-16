@@ -18,12 +18,11 @@ type TopologyCompletionContract = {
 
 import type { MutationLedgerRecord } from "../repositories/mutationLedgerRepository.js";
 
-const REQUIRED_SLOTS = [
+const REQUIRED_EXECUTION_SLOTS_COMPAT = [
   "background",
   "headline",
-  "supporting_copy",
+  "subheadline",
   "cta",
-  "decoration",
 ] as const;
 
 export interface RunLedgerProjection {
@@ -167,16 +166,14 @@ function buildSlotBindings(
         continue;
       }
 
-      const executionSlotKey = resolveExecutionSlotKey(command);
-      const slotIdentity =
-        executionSlotKey ?? ("executionSlotKey" in command ? null : command.slotKey ?? null);
-      if (slotIdentity === null) {
+      const executionSlotKey =
+        "executionSlotKey" in command ? command.executionSlotKey ?? null : null;
+      if (executionSlotKey === null) {
         continue;
       }
 
       const resolvedLayerId = resolvePrimaryLayerId(record, command);
-      bindingsBySlot.set(slotIdentity, {
-        slotKey: command.slotKey ?? null,
+      bindingsBySlot.set(executionSlotKey, {
         executionSlotKey,
         primaryLayerId: resolvedLayerId,
         layerIds: [resolvedLayerId],
@@ -221,7 +218,7 @@ function hasMinimumRequiredCompatSlots(records: MutationLedgerRecord[]): boolean
       }
     }
   }
-  return REQUIRED_SLOTS.every((slot) => seen.has(slot));
+  return REQUIRED_EXECUTION_SLOTS_COMPAT.every((slot) => seen.has(slot));
 }
 
 function hasRequiredExecutionSlots(
@@ -235,7 +232,7 @@ function hasRequiredExecutionSlots(
         continue;
       }
 
-      const executionSlotKey = resolveExecutionSlotKey(command);
+      const executionSlotKey = command.executionSlotKey ?? null;
       if (executionSlotKey) {
         seen.add(executionSlotKey);
       }
@@ -301,60 +298,22 @@ function hasTopologyCompletionContract(
   );
 }
 
-function resolveExecutionSlotKey(
-  command: Extract<CanvasMutationCommand, { op: "createLayer" }>,
-): ExecutionSlotKey | null {
-  if ("executionSlotKey" in command) {
-    return command.executionSlotKey ?? null;
-  }
-
-  switch (command.slotKey) {
-    case "background":
-      return "background";
-    case "headline":
-      return "headline";
-    case "supporting_copy":
-      return "subheadline";
-    case "cta":
-      return command.layerBlueprint.metadata.role === "cta" ? "cta" : null;
-    case "badge":
-      return "badge_text";
-    case "hero_image":
-      return "hero_image";
-    case null:
-      break;
-    default:
-      return null;
-  }
-
-  switch (command.layerBlueprint.metadata.role) {
-    case "price_callout":
-      return "offer_line";
-    case "footer_note":
-      return "footer_note";
-    default:
-      return null;
-  }
-}
-
 function resolveRequiredCompatSlot(
   command: Extract<CanvasMutationCommand, { op: "createLayer" }>,
-): (typeof REQUIRED_SLOTS)[number] | null {
-  const executionSlotKey = resolveExecutionSlotKey(command);
+): (typeof REQUIRED_EXECUTION_SLOTS_COMPAT)[number] | null {
+  const executionSlotKey =
+    "executionSlotKey" in command ? command.executionSlotKey ?? null : null;
   switch (executionSlotKey) {
     case "background":
       return "background";
     case "headline":
       return "headline";
     case "subheadline":
-      return "supporting_copy";
+      return "subheadline";
     case "cta":
       return "cta";
     default:
-      return command.slotKey !== null &&
-        REQUIRED_SLOTS.includes(command.slotKey as (typeof REQUIRED_SLOTS)[number])
-        ? (command.slotKey as (typeof REQUIRED_SLOTS)[number])
-        : null;
+      return null;
   }
 }
 

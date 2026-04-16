@@ -38,9 +38,8 @@ function createIntent(
     requiredSlots: [
       "background",
       "headline",
-      "supporting_copy",
+      "subheadline",
       "cta",
-      "decoration",
     ],
     assetPolicy: normalizeTemplateAssetPolicy("graphic_allowed_photo_optional"),
     primaryVisualPolicy: "graphic_preferred",

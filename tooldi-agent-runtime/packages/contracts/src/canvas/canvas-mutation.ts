@@ -8,7 +8,6 @@ import {
   JsonObjectSchema,
   LayerTypeSchema,
   PrimitiveMetadataRecordSchema,
-  SlotKeySchema,
 } from "../common.js";
 
 const CanvasLayerTypeOrNullSchema = Type.Union([LayerTypeSchema, Type.Null()]);
@@ -27,7 +26,6 @@ const CanvasLayerRefSchema = Type.Object(
   {
     layerId: Type.Optional(IdentifierSchema),
     clientLayerKey: Type.Optional(IdentifierSchema),
-    slotKey: Type.Optional(SlotKeySchema),
   },
   { additionalProperties: false },
 );
@@ -36,16 +34,12 @@ const CreateLayerCommandSchema = Type.Object(
   {
     commandId: IdentifierSchema,
     op: Type.Literal("createLayer"),
-    slotKey: Type.Union([SlotKeySchema, Type.Null()]),
-    executionSlotKey: Type.Optional(
-      Type.Union([ExecutionSlotKeySchema, Type.Null()]),
-    ),
+    executionSlotKey: Type.Union([ExecutionSlotKeySchema, Type.Null()]),
     clientLayerKey: IdentifierSchema,
     targetRef: Type.Object(
       {
         layerId: Type.Null(),
         clientLayerKey: IdentifierSchema,
-        slotKey: Type.Optional(SlotKeySchema),
       },
       { additionalProperties: false },
     ),
@@ -98,10 +92,7 @@ const UpdateLayerCommandSchema = Type.Object(
   {
     commandId: IdentifierSchema,
     op: Type.Literal("updateLayer"),
-    slotKey: Type.Union([SlotKeySchema, Type.Null()]),
-    executionSlotKey: Type.Optional(
-      Type.Union([ExecutionSlotKeySchema, Type.Null()]),
-    ),
+    executionSlotKey: Type.Union([ExecutionSlotKeySchema, Type.Null()]),
     clientLayerKey: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
     targetRef: CanvasLayerRefSchema,
     targetLayerVersion: Type.Integer({ minimum: 0 }),
@@ -143,10 +134,7 @@ const DeleteLayerCommandSchema = Type.Object(
   {
     commandId: IdentifierSchema,
     op: Type.Literal("deleteLayer"),
-    slotKey: Type.Union([SlotKeySchema, Type.Null()]),
-    executionSlotKey: Type.Optional(
-      Type.Union([ExecutionSlotKeySchema, Type.Null()]),
-    ),
+    executionSlotKey: Type.Union([ExecutionSlotKeySchema, Type.Null()]),
     clientLayerKey: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
     targetRef: CanvasLayerRefSchema,
     targetLayerVersion: Type.Integer({ minimum: 0 }),
@@ -180,7 +168,6 @@ const SaveTemplateCommandSchema = Type.Object(
   {
     commandId: IdentifierSchema,
     op: Type.Literal("saveTemplate"),
-    slotKey: Type.Null(),
     clientLayerKey: Type.Optional(Type.Null()),
     targetRef: CanvasLayerRefSchema,
     targetLayerVersion: Type.Null(),

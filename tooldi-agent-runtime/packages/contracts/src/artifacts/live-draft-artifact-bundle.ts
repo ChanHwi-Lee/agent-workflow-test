@@ -12,13 +12,12 @@ import {
   IdentifierSchema,
   IsoDateTimeSchema,
   JsonObjectSchema,
-  SlotKeySchema,
   TopologyCompletionContractSchema,
 } from "../common.js";
 import { RunCompletionSnapshotSchema } from "./run-result.js";
 
 const RequiredSlotSchema = Type.Union(
-  ["background", "headline", "supporting_copy", "cta", "decoration"].map((value) =>
+  ["background", "headline", "subheadline", "cta"].map((value) =>
     Type.Literal(value),
   ),
 );
@@ -32,10 +31,7 @@ const StoredAssetDescriptorSchema = Type.Object(
     assetId: IdentifierSchema,
     assetRefKey: IdentifierSchema,
     storageKey: Type.String({ minLength: 1 }),
-    slotKey: Type.Union([SlotKeySchema, Type.Null()]),
-    executionSlotKey: Type.Optional(
-      Type.Union([ExecutionSlotKeySchema, Type.Null()]),
-    ),
+    executionSlotKey: Type.Union([ExecutionSlotKeySchema, Type.Null()]),
     sourceKind: Type.Union(
       ["generated", "edited", "uploaded", "fallback_graphic"].map((value) =>
         Type.Literal(value),
@@ -62,10 +58,7 @@ const DraftManifestSchema = Type.Object(
     slotBindings: Type.Array(
       Type.Object(
         {
-          slotKey: Type.Union([SlotKeySchema, Type.Null()]),
-          executionSlotKey: Type.Optional(
-            Type.Union([ExecutionSlotKeySchema, Type.Null()]),
-          ),
+          executionSlotKey: Type.Union([ExecutionSlotKeySchema, Type.Null()]),
           primaryLayerId: IdentifierSchema,
           layerIds: Type.Array(IdentifierSchema),
           layerType: Type.Union(
@@ -284,10 +277,7 @@ const LastKnownGoodCheckpointSchema = Type.Object(
         slotStatuses: Type.Array(
           Type.Object(
             {
-              slotKey: Type.Union([SlotKeySchema, Type.Null()]),
-              executionSlotKey: Type.Optional(
-                Type.Union([ExecutionSlotKeySchema, Type.Null()]),
-              ),
+              executionSlotKey: Type.Union([ExecutionSlotKeySchema, Type.Null()]),
               status: Type.Union(
                 ["not_started", "visible_placeholder", "ready", "fallback_ready"].map(
                   (value) => Type.Literal(value),

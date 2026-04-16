@@ -167,12 +167,12 @@ function applySceneRolePlanToSlots(
   const slotByKey = new Map(slots.map((slot) => [slot.key, slot] as const));
   const allowedKeys = new Set(
     sceneRolePlan.roles
-      .map((role) => role.mappedSlotKey)
+      .map((role) => role.mappedExecutionSlotKey)
       .filter(
-        (slotKey): slotKey is CopyPlanSlot["key"] =>
-          slotKey !== "background" &&
-          slotKey !== "hero_image" &&
-          slotKey !== "decoration",
+        (executionSlotKey): executionSlotKey is CopyPlanSlot["key"] =>
+          executionSlotKey !== "background" &&
+          executionSlotKey !== "hero_image" &&
+          executionSlotKey !== null,
       ),
   );
 
@@ -181,13 +181,13 @@ function applySceneRolePlanToSlots(
 
   for (const role of sceneRolePlan.roles) {
     if (
-      role.mappedSlotKey === "background" ||
-      role.mappedSlotKey === "hero_image" ||
-      role.mappedSlotKey === "decoration"
+      role.mappedExecutionSlotKey === "background" ||
+      role.mappedExecutionSlotKey === "hero_image" ||
+      role.mappedExecutionSlotKey === null
     ) {
       continue;
     }
-    if (filteredByKey.has(role.mappedSlotKey)) {
+    if (filteredByKey.has(role.mappedExecutionSlotKey)) {
       continue;
     }
     if (!role.required) {
@@ -207,7 +207,7 @@ function applySceneRolePlanToSlots(
                 ? "이벤트 기간 내 혜택 적용"
                 : "지금 확인하세요";
     filtered.push({
-      key: role.mappedSlotKey,
+      key: role.mappedExecutionSlotKey,
       text: fallbackText,
       priority: role.priority,
       required: role.required,

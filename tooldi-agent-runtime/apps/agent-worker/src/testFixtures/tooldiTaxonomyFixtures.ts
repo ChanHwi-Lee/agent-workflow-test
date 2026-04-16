@@ -135,9 +135,8 @@ export function createFashionRetailNormalizedIntent(
     requiredSlots: [
       "background",
       "headline",
-      "supporting_copy",
+      "subheadline",
       "cta",
-      "decoration",
     ],
     assetPolicy,
     searchKeywords,

@@ -64,9 +64,8 @@ function createIntent(): NormalizedIntent {
     requiredSlots: [
       "background",
       "headline",
-      "supporting_copy",
+      "subheadline",
       "cta",
-      "decoration",
     ],
     assetPolicy: {
       allowedFamilies: ["background", "graphic", "photo"],

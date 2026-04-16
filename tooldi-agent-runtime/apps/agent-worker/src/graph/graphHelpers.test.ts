@@ -275,13 +275,11 @@ test("graphHelpers는 ack와 proposal을 stage record로 보존한다", () => {
           {
             commandId: "command-1",
             op: "createLayer",
-            slotKey: "headline",
             executionSlotKey: "headline",
             clientLayerKey: "headline_1",
             targetRef: {
               layerId: null,
               clientLayerKey: "headline_1",
-              slotKey: "headline",
             },
             targetLayerVersion: null,
             parentRef: {

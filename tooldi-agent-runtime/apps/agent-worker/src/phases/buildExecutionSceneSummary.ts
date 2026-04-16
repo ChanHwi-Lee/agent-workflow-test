@@ -156,7 +156,7 @@ function buildV2GraphicLayerBindings(
   stageAckHistory: StageAckRecord[],
 ): ExecutionSceneGraphicLayerBinding[] {
   return readFreeformBlocks(polishAction)
-    .filter((block) => block.executionSlotKey === null && block.slotKey === "decoration")
+    .filter((block) => block.executionSlotKey === null)
     .map((block) => {
       const matchingCommand = findLatestGraphicCommandByRole(stageAckHistory, block.role);
       return {

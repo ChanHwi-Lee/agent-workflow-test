@@ -152,7 +152,6 @@ export async function emitSkeletonMutations(
 
   const foundationCommands: MutationProposalDraft["mutation"]["commands"] = [
     buildCreateLayerCommand(input.job.runId, "foundation", {
-      slotKey: "background",
       executionSlotKey: "background",
       clientLayerKey: `background_${input.job.runId}`,
       layerType: "shape",
@@ -174,8 +173,6 @@ export async function emitSkeletonMutations(
   if (!isV2FreeformExecution && foundationInputs.includeHeroPanel) {
     foundationCommands.push(
         buildCreateLayerCommand(input.job.runId, "foundation", {
-          slotKey:
-            copyInputs.layoutMode === "center_stack" ? null : "hero_image",
           executionSlotKey: null,
           clientLayerKey: `hero_panel_${input.job.runId}`,
           layerType: "shape",
@@ -194,7 +191,6 @@ export async function emitSkeletonMutations(
   if (!isV2FreeformExecution && foundationInputs.includeBadge) {
     foundationCommands.push(
       buildCreateLayerCommand(input.job.runId, "foundation", {
-        slotKey: "badge",
         executionSlotKey: "badge_text",
         clientLayerKey: `badge_${input.job.runId}`,
         layerType: "text",
@@ -215,7 +211,6 @@ export async function emitSkeletonMutations(
   if (!isV2FreeformExecution && foundationInputs.includeRibbon) {
     foundationCommands.push(
       buildCreateLayerCommand(input.job.runId, "foundation", {
-        slotKey: null,
         executionSlotKey: null,
         clientLayerKey: `ribbon_strip_${input.job.runId}`,
         layerType: "shape",
@@ -233,7 +228,6 @@ export async function emitSkeletonMutations(
   if (!isV2FreeformExecution && foundationInputs.includeFrame) {
     foundationCommands.push(
       buildCreateLayerCommand(input.job.runId, "foundation", {
-        slotKey: null,
         executionSlotKey: null,
         clientLayerKey: `frame_${input.job.runId}`,
         layerType: "shape",
@@ -252,7 +246,6 @@ export async function emitSkeletonMutations(
     photoSelected
       ? [
           buildCreateLayerCommand(input.job.runId, "photo", {
-            slotKey: "hero_image",
             executionSlotKey: "hero_image",
             clientLayerKey: `hero_image_${input.job.runId}`,
             layerType: "image",
@@ -282,7 +275,6 @@ export async function emitSkeletonMutations(
       ? buildFreeformBlockCommands(input.job.runId, "copy", copyInputs.freeformBlocks, typography)
       : [
           buildCreateLayerCommand(input.job.runId, "copy", {
-            slotKey: "headline",
             executionSlotKey: "headline",
             clientLayerKey: `headline_${input.job.runId}`,
             layerType: "text",
@@ -298,12 +290,11 @@ export async function emitSkeletonMutations(
             },
           }),
           buildCreateLayerCommand(input.job.runId, "copy", {
-            slotKey: "supporting_copy",
             executionSlotKey: "subheadline",
             clientLayerKey: `supporting_copy_${input.job.runId}`,
             layerType: "text",
             bounds: copySlotBounds.subheadline,
-            role: "supporting_copy",
+            role: "subheadline",
             variantKey: copyInputs.layoutMode,
             candidateId: copyInputs.selectedLayoutCandidateId,
             textContent: copyInputs.copySlotTexts.subheadline ?? "지금 바로 확인하세요",
@@ -314,7 +305,6 @@ export async function emitSkeletonMutations(
             },
           }),
           buildCreateLayerCommand(input.job.runId, "copy", {
-            slotKey: null,
             executionSlotKey: "offer_line",
             clientLayerKey: `price_callout_${input.job.runId}`,
             layerType: "text",
@@ -334,7 +324,6 @@ export async function emitSkeletonMutations(
   if (!isV2FreeformExecution && !useFreeformCopyBlocks && copyInputs.includeHeroCaption) {
     copyCommands.push(
         buildCreateLayerCommand(input.job.runId, "copy", {
-          slotKey: null,
           executionSlotKey: null,
           clientLayerKey: `hero_caption_${input.job.runId}`,
         layerType: "text",
@@ -369,7 +358,6 @@ export async function emitSkeletonMutations(
         )
       : [
           buildCreateLayerCommand(input.job.runId, "polish", {
-            slotKey: "cta",
             executionSlotKey: "cta",
             clientLayerKey: `cta_${input.job.runId}`,
             layerType: "group",
@@ -401,7 +389,6 @@ export async function emitSkeletonMutations(
   if (!isV2FreeformExecution && !useFreeformPolishBlocks && polishInputs.includeUnderline) {
     polishCommands.push(
       buildCreateLayerCommand(input.job.runId, "polish", {
-        slotKey: null,
         executionSlotKey: null,
         clientLayerKey: `underline_bar_${input.job.runId}`,
         layerType: "shape",
@@ -419,7 +406,6 @@ export async function emitSkeletonMutations(
   if (!isV2FreeformExecution && !useFreeformPolishBlocks && !foundationInputs.includeRibbon && polishInputs.includeRibbon) {
     polishCommands.push(
       buildCreateLayerCommand(input.job.runId, "polish", {
-        slotKey: null,
         executionSlotKey: null,
         clientLayerKey: `ribbon_strip_${input.job.runId}`,
         layerType: "shape",
@@ -437,7 +423,6 @@ export async function emitSkeletonMutations(
   if (!isV2FreeformExecution && !useFreeformPolishBlocks) {
     polishCommands.push(
       buildCreateLayerCommand(input.job.runId, "polish", {
-        slotKey: null,
         executionSlotKey: "footer_note",
         clientLayerKey: `footer_note_${input.job.runId}`,
         layerType: "text",
@@ -574,12 +559,6 @@ function buildGraphicRoleCommands(
           polishInputs.styleMetadata,
         );
         const baseOptions = {
-          slotKey:
-            binding.role === "primary_accent"
-              ? "decoration"
-              : binding.role === "cta_container"
-                ? "cta"
-                : null,
           executionSlotKey: null,
           clientLayerKey: `${binding.role}_${runId}`,
           layerType: "shape",
@@ -623,7 +602,6 @@ function buildGraphicRoleCommands(
             polishInputs.styleMetadata,
           );
           const baseOptions = {
-            slotKey: null,
             executionSlotKey: null,
             clientLayerKey: `cta_container_fallback_${runId}`,
             layerType: "shape",
@@ -654,7 +632,6 @@ function buildGraphicRoleCommands(
 
   return [
     buildCreateLayerCommand(runId, "polish", {
-      slotKey: "decoration",
       executionSlotKey: null,
       clientLayerKey: `decoration_${runId}`,
       layerType: "shape",
@@ -756,7 +733,6 @@ function buildFreeformBlockCommands(
 ): MutationProposalDraft["mutation"]["commands"] {
   return blocks.map((block, index) =>
     buildCreateLayerCommand(runId, stage, {
-      slotKey: block.slotKey,
       executionSlotKey: block.executionSlotKey,
       clientLayerKey: `${block.role}_${index}_${runId}`,
       layerType: block.layerType,

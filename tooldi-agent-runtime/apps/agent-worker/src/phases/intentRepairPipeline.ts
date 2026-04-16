@@ -496,9 +496,8 @@ export function repairTemplateIntentDraft(input: {
     requiredSlots: [
       "background",
       "headline",
-      "supporting_copy",
+      "subheadline",
       "cta",
-      "decoration",
     ],
     assetPolicy: normalizedAssetPolicy,
     searchKeywords: normalizedKeywords,

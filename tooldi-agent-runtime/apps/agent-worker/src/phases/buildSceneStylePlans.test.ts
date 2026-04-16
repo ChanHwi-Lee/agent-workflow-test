@@ -28,7 +28,7 @@ function createIntent(overrides: Partial<NormalizedIntent> = {}): NormalizedInte
     layoutIntent: "copy_focused",
     tone: "bright_playful",
     backgroundColorHex: "#ffeeee",
-    requiredSlots: ["background", "headline", "supporting_copy", "cta", "decoration"],
+    requiredSlots: ["background", "headline", "subheadline", "cta"],
     assetPolicy: {
       allowedFamilies: ["background", "graphic", "photo"],
       preferredFamilies: ["graphic"],
