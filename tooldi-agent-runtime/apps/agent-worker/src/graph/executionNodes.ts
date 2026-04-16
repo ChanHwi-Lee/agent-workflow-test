@@ -1,6 +1,7 @@
 import type { StateGraph } from "@langchain/langgraph";
 import type { WaitMutationAckResponse } from "@tooldi/agent-contracts";
 
+import { finalizeRun } from "../phases/finalizeRun.js";
 import { emitSkeletonMutations } from "../phases/emitSkeletonMutations.js";
 import { buildHeartbeatBase, buildStageAckRecord } from "./graphHelpers.js";
 import { shouldStopAfterCurrentAction } from "./nodeUtils.js";
@@ -47,6 +48,86 @@ export function registerExecutionNodes(
         },
       });
       cooperativeStopRequested ||= executingEvent.cancelRequested;
+
+      if (
+        !cooperativeStopRequested &&
+        state.hydrated.request.workflowVariant === "object_native_v1" &&
+        state.adaptiveSkeletonBatch === null
+      ) {
+        const missingAdaptiveLog = await appendEventTask(state.job.runId, {
+          traceId: state.job.traceId,
+          attempt: state.job.attemptSeq,
+          queueJobId: state.job.queueJobId,
+          event: {
+            type: "log",
+            level: "error",
+            message:
+              "[ssot/adaptive-composition] object_native_v1 requires an adaptive mutation batch; refusing legacy slot fallback",
+          },
+        });
+        cooperativeStopRequested ||= missingAdaptiveLog.cancelRequested;
+        const finalizeDraft = await finalizeRun(state.hydrated, [], null, {
+          cooperativeStopRequested,
+          ...(state.canonicalDesignBriefRef
+            ? { canonicalDesignBriefRef: state.canonicalDesignBriefRef }
+            : {}),
+          ...(state.semanticBriefDraftRef
+            ? { semanticBriefDraftRef: state.semanticBriefDraftRef }
+            : {}),
+          ...(state.briefCompilationReportRef
+            ? { briefCompilationReportRef: state.briefCompilationReportRef }
+            : {}),
+          ...(state.copyPlanRef ? { copyPlanRef: state.copyPlanRef } : {}),
+          ...(state.abstractLayoutPlanRef
+            ? { abstractLayoutPlanRef: state.abstractLayoutPlanRef }
+            : {}),
+          ...(state.assetPlanRef ? { assetPlanRef: state.assetPlanRef } : {}),
+          ...(state.concreteLayoutPlanRef
+            ? { concreteLayoutPlanRef: state.concreteLayoutPlanRef }
+            : {}),
+          ...(state.templatePriorBundleRef
+            ? { templatePriorBundleRef: state.templatePriorBundleRef }
+            : {}),
+          ...(state.sceneStylePlanRef
+            ? { sceneStylePlanRef: state.sceneStylePlanRef }
+            : {}),
+          ...(state.sceneBindingPlanRef
+            ? { sceneBindingPlanRef: state.sceneBindingPlanRef }
+            : {}),
+          overrideResult: {
+            finalStatus: "failed",
+            errorSummary: {
+              code: "adaptive_batch_missing",
+              message:
+                "object_native_v1 could not build an adaptive mutation batch and refused to fall back to the legacy slot engine",
+            },
+          },
+        });
+
+        return {
+          cooperativeStopRequested,
+          skeletonBatch: {
+            commitGroup:
+              state.plan?.actions[0]?.commitGroup ?? "adaptive_batch_missing",
+            proposals: [],
+          },
+          currentStageIndex: 0,
+          currentProposal: null,
+          currentMutationId: null,
+          lastMutationAck: null,
+          emittedMutationIds: [],
+          assignedSeqs: [],
+          stageAckHistory: [],
+          refineAttempt: 0,
+          executionSceneSummary: null,
+          executionSceneSummaryRef: null,
+          judgePlan: null,
+          judgePlanRef: null,
+          refineDecision: null,
+          refineDecisionRef: null,
+          finalizeDraft,
+        };
+      }
 
       // SSOT: prefer adaptive composition batch when available
       const skeletonBatch = cooperativeStopRequested

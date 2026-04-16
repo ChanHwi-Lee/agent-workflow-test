@@ -807,14 +807,30 @@ export interface ProjectedObject {
   sourceText: string | null;
   fontSize: number | null;
   fillColorHex: string | null;
+  secondaryFillColorHex?: string | null;
   fontFamily: string | null;
+  fontWeight: number | null;
   textAlign: "left" | "center" | "right" | null;
   sourceOriginUrl: string | null;
   sourceWidth: number | null;
   sourceHeight: number | null;
+  sourceCropX?: number | null;
+  sourceCropY?: number | null;
+  sourceObjectScaleX?: number | null;
+  sourceObjectScaleY?: number | null;
+  sourceImageScaleX?: number | null;
+  sourceImageScaleY?: number | null;
+  sourceAngle?: number | null;
+  sourceOpacity?: number | null;
+  sourceFlipX?: boolean | null;
+  sourceFlipY?: boolean | null;
+  sourceCornerRadius?: number | null;
   visualWeight: VisualWeight;
   zone: SpatialZone;
   prominence: number;
+  backingSurfaceObjectId: string | null;
+  backingSurfaceColorHex: string | null;
+  backingSurfaceBounds: LayoutBounds | null;
   compositeHint: "button" | "badge" | null;
 }
 
@@ -839,7 +855,7 @@ export interface ElementDecision {
   objectId: string;
   operation: "retain" | "modify" | "remove";
   newText: string | null;
-  newFillColor: string | null;
+  carriesAtomIds: string[];
   reason: string;
 }
 
@@ -847,6 +863,7 @@ export interface AddDecision {
   vocabularyId: string;
   text: string | null;
   placementZone: SpatialZone;
+  carriesAtomIds: string[];
   reason: string;
 }
 

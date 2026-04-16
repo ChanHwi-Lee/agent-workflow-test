@@ -41,6 +41,8 @@ type CreateLayerCommandOptions = {
   textContent?: string | null | undefined;
   clusterZone?: ConcreteLayoutClusterZone | null | undefined;
   customFontSize?: number | undefined;
+  customFontFamily?: string | undefined;
+  customFontWeight?: number | undefined;
   customTextAlign?: "left" | "center" | "right" | undefined;
   topologyId?: string | null | undefined;
   topologyCapabilityId?: string | null | undefined;
@@ -89,6 +91,12 @@ export function buildCreateLayerCommand(
   }
   if (typeof options.customFontSize === "number") {
     metadata.customFontSize = options.customFontSize;
+  }
+  if (options.customFontFamily) {
+    metadata.customFontFamily = options.customFontFamily;
+  }
+  if (typeof options.customFontWeight === "number") {
+    metadata.customFontWeight = options.customFontWeight;
   }
   if (options.customTextAlign) {
     metadata.customTextAlign = options.customTextAlign;

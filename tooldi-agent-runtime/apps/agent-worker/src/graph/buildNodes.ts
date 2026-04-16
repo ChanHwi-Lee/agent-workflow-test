@@ -42,6 +42,36 @@ import type { RunJobGraphDependencies } from "./runJobGraphTypes.js";
 import type { createRunJobGraphTasks } from "./graphTasks.js";
 import { buildSpringActivationFailureFinalizeDraft } from "./buildFailureDrafts.js";
 
+function readFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function readDeclaredPageDimension(
+  document: Record<string, unknown> | null,
+  dimension: "width" | "height",
+): number | null {
+  const metaData =
+    document?.metaData && typeof document.metaData === "object"
+      ? (document.metaData as Record<string, unknown>)
+      : null;
+  const canvas =
+    document?.canvas && typeof document.canvas === "object"
+      ? (document.canvas as Record<string, unknown>)
+      : null;
+  return (
+    readFiniteNumber(metaData?.[dimension]) ??
+    readFiniteNumber(canvas?.[dimension]) ??
+    null
+  );
+}
+
 export function registerBuildNodes(
   graph: StateGraph<typeof RunJobGraphState>,
   dependencies: RunJobGraphDependencies,
@@ -570,6 +600,13 @@ export function registerBuildNodes(
             ?.[0]
         )?.parsed;
         if (parsedPage && selectedCode) {
+          const declaredWidth = readDeclaredPageDimension(templatePage, "width");
+          const declaredHeight = readDeclaredPageDimension(templatePage, "height");
+          const projectionPage = {
+            ...parsedPage,
+            ...(declaredWidth !== null ? { width: declaredWidth } : {}),
+            ...(declaredHeight !== null ? { height: declaredHeight } : {}),
+          };
           projectedTemplateGraph = projectTemplateObjectGraph({
             runId: state.job.runId,
             traceId: state.job.traceId,
@@ -577,7 +614,7 @@ export function registerBuildNodes(
             templateTitle:
               objectNativePlans.objectNativeCandidateSelection
                 .nextSelectedTemplateTitle ?? selectedCode,
-            page: parsedPage,
+            page: projectionPage,
           });
           projectedTemplateGraphRef = await persistArtifactTask(
             `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/projected-template-graph.json`,
@@ -594,7 +631,7 @@ export function registerBuildNodes(
         // --- SSOT Layer 3: LLM Adaptive Composition Decision ---
         let adaptiveCompositionDecision = null as import("../types.js").AdaptiveCompositionDecision | null;
         let adaptiveCompositionDecisionRef: string | null = null;
-        if (projectedTemplateGraph && state.copyPlan) {
+        if (projectedTemplateGraph && objectNativePlans.messageAtomPlan) {
           const plannerProvider = dependencies.env.templatePlannerProvider;
           const plannerModel = dependencies.env.templatePlannerModel;
           if (plannerProvider && plannerModel) {
@@ -603,7 +640,8 @@ export function registerBuildNodes(
                 runId: state.job.runId,
                 traceId: state.job.traceId,
                 projectedGraph: projectedTemplateGraph,
-                copyPlan: state.copyPlan,
+                messageAtomPlan: objectNativePlans.messageAtomPlan,
+                sceneStylePlan: state.sceneStylePlan ?? null,
                 palette: state.hydrated.request.brandContext?.palette ?? [],
                 provider: plannerProvider,
                 modelName: plannerModel,
@@ -646,6 +684,8 @@ export function registerBuildNodes(
             targetCanvasHeight: state.hydrated.request.editorContext.canvasHeight,
             projectedGraph: projectedTemplateGraph,
             compositionDecision: adaptiveCompositionDecision,
+            sceneBindingPlan: state.sceneBindingPlan ?? null,
+            sceneStylePlan: state.sceneStylePlan ?? null,
           });
         }
         // --- end SSOT ---

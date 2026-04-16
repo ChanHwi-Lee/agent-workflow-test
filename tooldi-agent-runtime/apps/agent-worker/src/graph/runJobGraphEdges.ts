@@ -28,7 +28,11 @@ export function registerRunJobGraphEdges(graph: any) {
         : "prepare_execution",
     )
     .addConditionalEdges("prepare_execution", (state: any) =>
-      state.currentProposal ? "emit_stage" : "build_execution_scene_summary",
+      state.finalizeDraft
+        ? "send_finalize"
+        : state.currentProposal
+          ? "emit_stage"
+          : "build_execution_scene_summary",
     )
     .addConditionalEdges("emit_stage", (state: any) =>
       state.currentMutationId ? "await_stage_ack" : "build_execution_scene_summary",

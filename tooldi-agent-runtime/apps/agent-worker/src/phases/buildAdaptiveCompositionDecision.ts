@@ -15,56 +15,18 @@ import {
 } from "@tooldi/agent-llm";
 import type {
   AdaptiveCompositionDecision,
-  CopyPlan,
+  MessageAtomPlan,
   ProjectedObjectGraph,
+  SceneStylePlan,
   SpatialZone,
 } from "../types.js";
+import {
+  ADAPTIVE_VOCABULARY_IDS,
+  listAdaptiveVocabulary,
+} from "./adaptiveVocabularyRegistry.js";
 
-// ---------------------------------------------------------------------------
-// Addable Vocabulary Registry (SSOT Section 5)
-// ---------------------------------------------------------------------------
-
-export interface AddableVocabularyEntry {
-  id: string;
-  nodeType: "text" | "shape" | "group" | "image";
-  description: string;
-  requiredContent: "text" | "none";
-  defaultPlacementZone: SpatialZone;
-}
-
-const ADDABLE_VOCABULARY: AddableVocabularyEntry[] = [
-  {
-    id: "cta_button",
-    nodeType: "group",
-    description: "행동 유도 버튼 (예: '지금 주문하기', '자세히 보기')",
-    requiredContent: "text",
-    defaultPlacementZone: "bottom",
-  },
-  {
-    id: "footer_text",
-    nodeType: "text",
-    description: "하단 부가 정보 텍스트 (날짜, 조건, 유의사항 등)",
-    requiredContent: "text",
-    defaultPlacementZone: "bottom",
-  },
-  {
-    id: "badge_chip",
-    nodeType: "group",
-    description: "소형 뱃지/태그 (예: 'NEW', '한정', '50% OFF')",
-    requiredContent: "text",
-    defaultPlacementZone: "top-right",
-  },
-  {
-    id: "accent_shape",
-    nodeType: "shape",
-    description: "장식용 강조 도형",
-    requiredContent: "none",
-    defaultPlacementZone: "center",
-  },
-];
-
-export function getAddableVocabulary(): AddableVocabularyEntry[] {
-  return ADDABLE_VOCABULARY;
+export function getAddableVocabulary() {
+  return listAdaptiveVocabulary();
 }
 
 // ---------------------------------------------------------------------------
@@ -81,16 +43,17 @@ const ElementDecisionSchema = z.object({
     .max(80)
     .nullable()
     .describe("modify일 때 교체할 텍스트. retain/remove면 null"),
-  newFillColor: z
-    .string()
-    .nullable()
-    .describe("modify일 때 교체할 색상(hex). 변경 없으면 null"),
+  carriesAtomIds: z
+    .array(z.string())
+    .describe(
+      "이 오브젝트가 carry하는 message atom의 id 목록. retain: 기존 sourceText가 atom을 이미 표현하고 있으면 해당 atom id를 선언. modify: 새 텍스트가 carry할 atom id. remove와 text-bearing이 아닌 object(shape/image)는 반드시 []",
+    ),
   reason: z.string().max(120).describe("결정 이유 (한국어)"),
 });
 
 const AddDecisionSchema = z.object({
   vocabularyId: z
-    .enum(["cta_button", "footer_text", "badge_chip", "accent_shape"])
+    .enum(ADAPTIVE_VOCABULARY_IDS)
     .describe("추가할 요소의 vocabulary ID"),
   text: z
     .string()
@@ -110,7 +73,20 @@ const AddDecisionSchema = z.object({
       "bottom-right",
     ])
     .describe("배치 영역 힌트. 정확한 좌표는 코드가 결정한다."),
+  carriesAtomIds: z
+    .array(z.string())
+    .describe(
+      "이 새 요소가 carry하는 message atom의 id 목록. accent_shape은 반드시 []",
+    ),
   reason: z.string().max(120).describe("추가 이유 (한국어)"),
+}).superRefine((value, context) => {
+  if (value.vocabularyId !== "accent_shape" && (!value.text || value.text.trim().length === 0)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["text"],
+      message: `${value.vocabularyId} requires non-empty text content`,
+    });
+  }
 });
 
 const AdaptiveCompositionDecisionSchema = z.object({
@@ -149,23 +125,37 @@ function serializeProjectedGraphCompact(graph: ProjectedObjectGraph): string {
     }
     if (obj.fontSize) parts.push(`| fs:${obj.fontSize}`);
     if (obj.fillColorHex) parts.push(`| fill:${obj.fillColorHex}`);
+    parts.push(
+      `| bounds:${Math.round(obj.bounds.x)},${Math.round(obj.bounds.y)},${Math.round(obj.bounds.width)},${Math.round(obj.bounds.height)}`,
+    );
+    if (obj.backingSurfaceColorHex) parts.push(`| surface:${obj.backingSurfaceColorHex}`);
     if (obj.compositeHint) parts.push(`| [${obj.compositeHint}]`);
     return parts.join(" ");
   });
   return header + lines.join("\n");
 }
 
-function serializeMessageAtoms(copyPlan: CopyPlan): string {
-  return copyPlan.slots
-    .map((slot) => {
-      const required = slot.required ? "required" : "optional";
-      return `[${slot.key}] "${slot.text}" (${required}, ${slot.priority})`;
+function serializeMessageAtoms(messageAtomPlan: MessageAtomPlan): string {
+  return messageAtomPlan.atoms
+    .filter((atom) => atom.text.trim().length > 0)
+    .map((atom) => {
+      const atomKind =
+        atom.kind === "primary"
+          ? "primary_message"
+          : atom.kind === "cta"
+            ? "action_text"
+            : atom.kind === "offer"
+              ? "promo_message"
+              : atom.kind === "detail"
+                ? "detail_note"
+                : "supporting_message";
+      return `${atom.atomId}: "${atom.text}" (${atomKind}, ${atom.optional ? "optional" : "required"})`;
     })
     .join("\n");
 }
 
 function serializeAddableVocabulary(): string {
-  return ADDABLE_VOCABULARY.map(
+  return listAdaptiveVocabulary().map(
     (entry) =>
       `- ${entry.id}: ${entry.description} (${entry.requiredContent === "text" ? "텍스트 필수" : "텍스트 없음"})`,
   ).join("\n");
@@ -178,7 +168,7 @@ Your task: Given a template's object graph and message content, decide how to co
 
 For EACH template object, decide one of:
 - retain: Keep as-is. Use for background images, decorative elements that fit the new design.
-- modify: Keep the object but replace its text or color. Use for text objects that should show new content.
+- modify: Keep the object but replace its text. Use for text objects that should show new content.
 - remove: Delete the object. Use for elements that conflict with the new design intent.
 
 You may also ADD new elements from the addable vocabulary (only if the template lacks a suitable object).
@@ -187,24 +177,44 @@ Rules:
 1. Default is retain. Only modify or remove when there's a clear reason.
 2. For text objects: prefer modify (replace text with message atom content) over remove + add.
 3. Background/decorative images: usually retain.
-4. Place primary message into the dominant text object via modify.
-5. Place CTA text into a secondary/button-like object if one exists, otherwise add cta_button.
+4. Use observed bounds, visual weight, zone, and local surfaces to decide which objects can carry which message atoms.
+5. If an existing visually suitable object can carry action text, prefer modify over add.
 6. Only add elements when truly needed — the template already has a good layout.
 7. Do NOT specify exact coordinates for added elements. Just specify a zone.
 8. Return decisions in Korean (reason, compositionSummary).
-9. Every text object should be either modified with relevant content or removed — do not retain template placeholder text.`;
+9. Retain remains a valid outcome when an existing text object is already suitable or decorative.
+10. Do NOT specify colors. Text/surface colors are decided by code from palette + readability policy.
+
+Atom carriage contract (every required atom must be carried by exactly the union of declared carriesAtomIds):
+- retain + carriesAtomIds: existing sourceText already represents those atom ids (e.g. template text matches an atom).
+- modify + carriesAtomIds: the replacement newText carries those atom ids.
+- remove: carriesAtomIds must be [] (removed objects cannot carry content).
+- text-bearing shape/image/group retain/remove/modify: carriesAtomIds must be [] unless the object is of layerType "text". Only layerType "text" objects can carry atoms.
+- add text-bearing vocabulary (cta_button, footer_text, badge_chip): carriesAtomIds lists the atom ids this new element represents.
+- add accent_shape: carriesAtomIds must be [] (shape has no text).
+- carriesAtomIds must use atom ids from the "Message Atoms" list below. Do not invent ids.
+- Do not repeat the same atom id inside one decision's carriesAtomIds.
+- Every required (non-optional) atom must appear in the carriesAtomIds of exactly one or more decisions across the entire output.`;
 }
 
 function buildUserPrompt(
   graph: ProjectedObjectGraph,
-  copyPlan: CopyPlan,
+  messageAtomPlan: MessageAtomPlan,
+  sceneStylePlan: SceneStylePlan | null | undefined,
   palette: string[],
 ): string {
   const graphStr = serializeProjectedGraphCompact(graph);
-  const atomsStr = serializeMessageAtoms(copyPlan);
+  const atomsStr = serializeMessageAtoms(messageAtomPlan);
   const vocabStr = serializeAddableVocabulary();
   const paletteStr =
     palette.length > 0 ? palette.join(", ") : "지정 없음 (템플릿 색상 유지)";
+  const typographyStr = sceneStylePlan
+    ? [
+        `template_font_family: ${sceneStylePlan.typographyPolicy.templateFontFamily ?? "unspecified"}`,
+        `display_weight_target: ${sceneStylePlan.typographyPolicy.displayWeightTarget}`,
+        `body_weight_target: ${sceneStylePlan.typographyPolicy.bodyWeightTarget}`,
+      ].join("\n")
+    : "지정 없음";
 
   return `## Template Object Graph
 
@@ -217,6 +227,10 @@ ${atomsStr}
 ## Brand Palette
 
 ${paletteStr}
+
+## Typography Preference
+
+${typographyStr}
 
 ## Addable Vocabulary (add로 추가 가능한 요소)
 
@@ -234,7 +248,8 @@ export interface BuildAdaptiveCompositionDecisionInput {
   runId: string;
   traceId: string;
   projectedGraph: ProjectedObjectGraph;
-  copyPlan: CopyPlan;
+  messageAtomPlan: MessageAtomPlan;
+  sceneStylePlan?: SceneStylePlan | null;
   palette: string[];
   provider: TemplatePlannerProvider;
   modelName: string;
@@ -257,33 +272,152 @@ export async function buildAdaptiveCompositionDecision(
       role: "user",
       content: buildUserPrompt(
         input.projectedGraph,
-        input.copyPlan,
+        input.messageAtomPlan,
+        input.sceneStylePlan,
         input.palette,
       ),
     },
   ]);
 
-  const decisionId = `acd_${input.runId}_${Date.now()}`;
+  return finalizeAdaptiveCompositionDecision(result, {
+    runId: input.runId,
+    traceId: input.traceId,
+    projectedGraph: input.projectedGraph,
+    messageAtomPlan: input.messageAtomPlan,
+  });
+}
+
+export interface FinalizeAdaptiveCompositionDecisionContext {
+  runId: string;
+  traceId: string;
+  projectedGraph: ProjectedObjectGraph;
+  messageAtomPlan: MessageAtomPlan;
+}
+
+export function finalizeAdaptiveCompositionDecision(
+  rawResult: z.infer<typeof AdaptiveCompositionDecisionSchema>,
+  context: FinalizeAdaptiveCompositionDecisionContext,
+): AdaptiveCompositionDecision {
+  const decisionId = `acd_${context.runId}_${Date.now()}`;
+  const dedupedElementDecisions = new Map(
+    rawResult.elementDecisions.map((decision) => [decision.objectId, decision]),
+  );
+  const objectMap = new Map(
+    context.projectedGraph.objects.map((object) => [object.objectId, object]),
+  );
+  const invalidObjectIds = [...dedupedElementDecisions.keys()].filter(
+    (objectId) => !objectMap.has(objectId),
+  );
+  if (invalidObjectIds.length > 0) {
+    throw new Error(
+      `Adaptive composition returned unknown object ids: ${invalidObjectIds.join(", ")}`,
+    );
+  }
+
+  const atomIdSet = new Set(
+    context.messageAtomPlan.atoms.map((atom) => atom.atomId),
+  );
+
+  for (const decision of dedupedElementDecisions.values()) {
+    const unknownAtomIds = decision.carriesAtomIds.filter(
+      (atomId) => !atomIdSet.has(atomId),
+    );
+    if (unknownAtomIds.length > 0) {
+      throw new Error(
+        `ElementDecision ${decision.objectId} declared unknown atom ids in carriesAtomIds: ${unknownAtomIds.join(", ")}`,
+      );
+    }
+    if (
+      new Set(decision.carriesAtomIds).size !== decision.carriesAtomIds.length
+    ) {
+      throw new Error(
+        `ElementDecision ${decision.objectId} has duplicate atom ids in carriesAtomIds`,
+      );
+    }
+    if (
+      decision.operation === "remove" &&
+      decision.carriesAtomIds.length > 0
+    ) {
+      throw new Error(
+        `ElementDecision ${decision.objectId} is remove but carriesAtomIds is non-empty`,
+      );
+    }
+    const targetLayerType = objectMap.get(decision.objectId)?.layerType;
+    if (targetLayerType !== "text" && decision.carriesAtomIds.length > 0) {
+      throw new Error(
+        `ElementDecision ${decision.objectId} has layerType=${targetLayerType ?? "unknown"} but carriesAtomIds is non-empty; only text-bearing objects can carry atoms`,
+      );
+    }
+  }
+
+  for (const addDecision of rawResult.addDecisions) {
+    const unknownAtomIds = addDecision.carriesAtomIds.filter(
+      (atomId) => !atomIdSet.has(atomId),
+    );
+    if (unknownAtomIds.length > 0) {
+      throw new Error(
+        `AddDecision ${addDecision.vocabularyId} declared unknown atom ids in carriesAtomIds: ${unknownAtomIds.join(", ")}`,
+      );
+    }
+    if (
+      new Set(addDecision.carriesAtomIds).size !==
+      addDecision.carriesAtomIds.length
+    ) {
+      throw new Error(
+        `AddDecision ${addDecision.vocabularyId} has duplicate atom ids in carriesAtomIds`,
+      );
+    }
+    if (
+      addDecision.vocabularyId === "accent_shape" &&
+      addDecision.carriesAtomIds.length > 0
+    ) {
+      throw new Error(
+        `AddDecision accent_shape cannot carry atoms; carriesAtomIds must be []`,
+      );
+    }
+  }
+
+  const carriedAtomIds = new Set<string>();
+  for (const decision of dedupedElementDecisions.values()) {
+    for (const atomId of decision.carriesAtomIds) {
+      carriedAtomIds.add(atomId);
+    }
+  }
+  for (const addDecision of rawResult.addDecisions) {
+    for (const atomId of addDecision.carriesAtomIds) {
+      carriedAtomIds.add(atomId);
+    }
+  }
+
+  const missingRequiredAtoms = context.messageAtomPlan.atoms.filter(
+    (atom) => !atom.optional && !carriedAtomIds.has(atom.atomId),
+  );
+  if (missingRequiredAtoms.length > 0) {
+    throw new Error(
+      `Adaptive composition omitted required atoms: ${missingRequiredAtoms.map((atom) => atom.atomId).join(", ")}`,
+    );
+  }
 
   return {
     decisionId,
-    runId: input.runId,
-    traceId: input.traceId,
-    templateCode: input.projectedGraph.templateCode,
-    projectedGraphId: input.projectedGraph.graphId,
-    elementDecisions: result.elementDecisions.map((d) => ({
+    runId: context.runId,
+    traceId: context.traceId,
+    templateCode: context.projectedGraph.templateCode,
+    projectedGraphId: context.projectedGraph.graphId,
+    elementDecisions: [...dedupedElementDecisions.values()].map((d) => ({
       objectId: d.objectId,
       operation: d.operation,
       newText: d.newText ?? null,
-      newFillColor: d.newFillColor ?? null,
+      carriesAtomIds: d.carriesAtomIds,
       reason: d.reason,
     })),
-    addDecisions: result.addDecisions.map((d) => ({
+    addDecisions: rawResult.addDecisions.map((d) => ({
       vocabularyId: d.vocabularyId,
       text: d.text ?? null,
       placementZone: d.placementZone as SpatialZone,
+      carriesAtomIds: d.carriesAtomIds,
       reason: d.reason,
     })),
-    compositionSummary: result.compositionSummary,
+    compositionSummary: rawResult.compositionSummary,
   };
 }

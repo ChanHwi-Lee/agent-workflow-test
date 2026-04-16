@@ -21,10 +21,29 @@ import type {
   MutationProposalDraft,
   ProjectedObject,
   ProjectedObjectGraph,
+  SceneBindingPlan,
+  SceneStylePlan,
   SkeletonMutationBatch,
   VisualWeight,
 } from "../types.js";
 import { buildCreateLayerCommand } from "./layerCommandBuilder.js";
+import {
+  calculateRelativeLuminance,
+  normalizeHexColor,
+  resolveReadabilityPalette,
+} from "./mutationReadabilityPolicy.js";
+import type { StyleMetadata, TypographyMetadata } from "./planInputParsers.js";
+import {
+  getAdaptiveVocabularyEntry,
+  type AdaptiveVocabularyId,
+} from "./adaptiveVocabularyRegistry.js";
+
+type AdaptiveStyleContext = {
+  readabilityPalette: ReturnType<typeof resolveReadabilityPalette>;
+  sceneBindingPlan: SceneBindingPlan | null;
+  typography: TypographyMetadata | null;
+  styleMetadata: StyleMetadata | null;
+};
 
 // ---------------------------------------------------------------------------
 // FE-compatible executionSlotKey mapping
@@ -40,8 +59,11 @@ function mapVisualWeightToExecutionSlot(
   if (compositeHint === "badge")
     return { executionSlotKey: "badge_text" };
 
-  if (layerType === "image" || weight === "background")
+  if (weight === "background")
     return { executionSlotKey: "background" };
+
+  if (layerType === "image")
+    return { executionSlotKey: null };
 
   if (layerType === "text") {
     if (weight === "dominant")
@@ -62,18 +84,12 @@ function mapAddVocabularyToExecutionSlot(vocabularyId: string): {
   layerType: "text" | "shape" | "group";
   fontRole: "display" | "body" | undefined;
 } {
-  switch (vocabularyId) {
-    case "cta_button":
-      return { executionSlotKey: "cta", layerType: "group", fontRole: undefined };
-    case "footer_text":
-      return { executionSlotKey: "footer_note", layerType: "text", fontRole: "body" };
-    case "badge_chip":
-      return { executionSlotKey: "badge_text", layerType: "group", fontRole: undefined };
-    case "accent_shape":
-      return { executionSlotKey: null, layerType: "shape", fontRole: undefined };
-    default:
-      return { executionSlotKey: null, layerType: "shape", fontRole: undefined };
-  }
+  const entry = getAdaptiveVocabularyEntry(vocabularyId as AdaptiveVocabularyId);
+  return {
+    executionSlotKey: entry.executionSlotKey,
+    layerType: entry.layerType,
+    fontRole: entry.fontRole,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -82,24 +98,82 @@ function mapAddVocabularyToExecutionSlot(vocabularyId: string): {
 
 function normalizeBounds(
   obj: ProjectedObject,
+  executionSlotKey: ExecutionSlotKey | null,
   refCanvas: { width: number; height: number },
   targetCanvas: { width: number; height: number },
 ): LayoutBounds {
-  // Background layers fill the target canvas entirely
-  if (obj.visualWeight === "background") {
+  return scaleAndClampBounds(
+    obj.bounds,
+    executionSlotKey,
+    obj.visualWeight,
+    refCanvas,
+    targetCanvas,
+  );
+}
+
+function scaleAndClampBounds(
+  sourceBounds: LayoutBounds,
+  executionSlotKey: ExecutionSlotKey | null,
+  visualWeight: VisualWeight | null,
+  refCanvas: { width: number; height: number },
+  targetCanvas: { width: number; height: number },
+): LayoutBounds {
+  if (executionSlotKey === "background" || visualWeight === "background") {
     return { x: 0, y: 0, width: targetCanvas.width, height: targetCanvas.height };
   }
 
-  // Content/decorative layers: proportional scaling
   const scaleX = targetCanvas.width / refCanvas.width;
   const scaleY = targetCanvas.height / refCanvas.height;
 
-  return {
-    x: obj.bounds.x * scaleX,
-    y: obj.bounds.y * scaleY,
-    width: obj.bounds.width * scaleX,
-    height: obj.bounds.height * scaleY,
+  const scaled: LayoutBounds = {
+    x: sourceBounds.x * scaleX,
+    y: sourceBounds.y * scaleY,
+    width: sourceBounds.width * scaleX,
+    height: sourceBounds.height * scaleY,
   };
+
+  // Clamp content bounds to stay within target canvas
+  const margin = targetCanvas.width * 0.04;
+  if (scaled.width > targetCanvas.width - margin * 2) {
+    scaled.width = targetCanvas.width - margin * 2;
+    scaled.x = margin;
+  }
+  if (scaled.x < 0) scaled.x = margin;
+  if (scaled.y < 0) scaled.y = margin;
+  if (scaled.x + scaled.width > targetCanvas.width) {
+    scaled.x = targetCanvas.width - scaled.width - margin;
+  }
+  if (scaled.y + scaled.height > targetCanvas.height) {
+    scaled.y = targetCanvas.height - scaled.height - margin;
+  }
+
+  return scaled;
+}
+
+/**
+ * Semantic z-order weight: lower = closer to bottom.
+ * Commands are sorted ascending so backgrounds render first.
+ */
+function zOrderWeight(executionSlotKey: ExecutionSlotKey | null, visualWeight: VisualWeight | null): number {
+  if (visualWeight === "background") return 0;
+  switch (executionSlotKey) {
+    case "background": return 0;
+    case null:          return 1;   // decorative shapes
+    case "headline":    return 2;
+    case "subheadline": return 3;
+    case "offer_line":  return 3;
+    case "badge_text":  return 4;
+    case "footer_note": return 5;
+    case "cta":         return 6;
+    case "hero_image":  return 1;
+    default:            return 3;
+  }
+}
+
+function isCompoundExecutionSlot(
+  executionSlotKey: ExecutionSlotKey | null,
+): executionSlotKey is "cta" | "badge_text" {
+  return executionSlotKey === "cta" || executionSlotKey === "badge_text";
 }
 
 // ---------------------------------------------------------------------------
@@ -112,34 +186,9 @@ function computeAddBounds(
   canvasWidth: number,
   canvasHeight: number,
 ): LayoutBounds {
-  const defaults: Record<string, LayoutBounds> = {
-    cta_button: {
-      x: canvasWidth * 0.2,
-      y: canvasHeight * 0.78,
-      width: canvasWidth * 0.6,
-      height: Math.min(60, canvasHeight * 0.08),
-    },
-    footer_text: {
-      x: canvasWidth * 0.1,
-      y: canvasHeight * 0.92,
-      width: canvasWidth * 0.8,
-      height: 24,
-    },
-    badge_chip: {
-      x: canvasWidth * 0.7,
-      y: canvasHeight * 0.04,
-      width: Math.min(120, canvasWidth * 0.2),
-      height: 36,
-    },
-    accent_shape: {
-      x: canvasWidth * 0.4,
-      y: canvasHeight * 0.4,
-      width: canvasWidth * 0.2,
-      height: canvasHeight * 0.2,
-    },
-  };
-
-  const base = defaults[vocabularyId] ?? defaults.accent_shape!;
+  const base = getAdaptiveVocabularyEntry(
+    vocabularyId as AdaptiveVocabularyId,
+  ).defaultBounds(canvasWidth, canvasHeight);
 
   // Adjust y position based on placement zone
   if (placementZone === "top" || placementZone === "top-left" || placementZone === "top-right") {
@@ -169,18 +218,27 @@ function buildRetainCommand(
   obj: ProjectedObject,
   refCanvas: { width: number; height: number },
   targetCanvas: { width: number; height: number },
+  styleContext: AdaptiveStyleContext,
 ): CanvasMutationCommand {
   const { executionSlotKey } = mapVisualWeightToExecutionSlot(
     obj.visualWeight,
     obj.layerType,
     obj.compositeHint,
   );
+  const styleTokens = resolveExistingObjectStyleTokens(
+    obj,
+    executionSlotKey,
+    refCanvas,
+    targetCanvas,
+    styleContext,
+    obj.fillColorHex ?? "#000000",
+  );
 
   return buildCreateLayerCommand(runId, "adaptive-retain", {
     executionSlotKey,
     clientLayerKey: `${obj.objectId}_retain_${runId}`,
     layerType: obj.layerType,
-    bounds: normalizeBounds(obj, refCanvas, targetCanvas),
+    bounds: normalizeBounds(obj, executionSlotKey, refCanvas, targetCanvas),
     role: `retain_${obj.visualWeight}`,
     variantKey: "adaptive_composition",
     candidateId: obj.objectId,
@@ -191,11 +249,11 @@ function buildRetainCommand(
     cropMode: obj.layerType === "image" ? "centered_cover" : undefined,
     textContent: obj.sourceText,
     customFontSize: obj.fontSize ?? undefined,
+    customFontFamily: obj.fontFamily ?? undefined,
+    customFontWeight: obj.fontWeight ?? undefined,
     customTextAlign: obj.textAlign ?? undefined,
     fontRole: obj.visualWeight === "dominant" ? "display" : "body",
-    styleTokens: {
-      fillColor: obj.fillColorHex ?? "#000000",
-    },
+    styleTokens,
   });
 }
 
@@ -205,18 +263,27 @@ function buildModifyCommand(
   decision: ElementDecision,
   refCanvas: { width: number; height: number },
   targetCanvas: { width: number; height: number },
+  styleContext: AdaptiveStyleContext,
 ): CanvasMutationCommand {
   const { executionSlotKey } = mapVisualWeightToExecutionSlot(
     obj.visualWeight,
     obj.layerType,
     obj.compositeHint,
   );
+  const styleTokens = resolveExistingObjectStyleTokens(
+    obj,
+    executionSlotKey,
+    refCanvas,
+    targetCanvas,
+    styleContext,
+    obj.fillColorHex ?? "#000000",
+  );
 
   return buildCreateLayerCommand(runId, "adaptive-modify", {
     executionSlotKey,
     clientLayerKey: `${obj.objectId}_modify_${runId}`,
     layerType: obj.layerType,
-    bounds: normalizeBounds(obj, refCanvas, targetCanvas),
+    bounds: normalizeBounds(obj, executionSlotKey, refCanvas, targetCanvas),
     role: `modify_${obj.visualWeight}`,
     variantKey: "adaptive_composition",
     candidateId: obj.objectId,
@@ -227,11 +294,11 @@ function buildModifyCommand(
     cropMode: obj.layerType === "image" ? "centered_cover" : undefined,
     textContent: decision.newText ?? obj.sourceText,
     customFontSize: obj.fontSize ?? undefined,
+    customFontFamily: obj.fontFamily ?? undefined,
+    customFontWeight: obj.fontWeight ?? undefined,
     customTextAlign: obj.textAlign ?? undefined,
     fontRole: obj.visualWeight === "dominant" ? "display" : "body",
-    styleTokens: {
-      fillColor: decision.newFillColor ?? obj.fillColorHex ?? "#000000",
-    },
+    styleTokens,
   });
 }
 
@@ -241,6 +308,7 @@ function buildAddCommand(
   canvasWidth: number,
   canvasHeight: number,
   index: number,
+  styleContext: AdaptiveStyleContext,
 ): CanvasMutationCommand {
   const mapping = mapAddVocabularyToExecutionSlot(decision.vocabularyId);
   const bounds = computeAddBounds(
@@ -249,6 +317,28 @@ function buildAddCommand(
     canvasWidth,
     canvasHeight,
   );
+  const styleTokens = resolveAddStyleTokens(
+    decision.vocabularyId,
+    styleContext,
+  );
+
+  if (mapping.layerType === "group" && isCompoundExecutionSlot(mapping.executionSlotKey)) {
+    return buildCompoundGroupCommand({
+      runId,
+      stage: "adaptive-add",
+      clientLayerKey: `add_${decision.vocabularyId}_${index}_${runId}`,
+      executionSlotKey: mapping.executionSlotKey,
+      candidateId: `add_${index}`,
+      bounds,
+      role: `add_${decision.vocabularyId}`,
+      textContent: decision.text,
+      fontRole:
+        mapping.fontRole ??
+        (mapping.executionSlotKey === "cta" ? "display" : "body"),
+      ...(styleContext.typography ? { typography: styleContext.typography } : {}),
+      styleTokens,
+    });
+  }
 
   return buildCreateLayerCommand(runId, "adaptive-add", {
     executionSlotKey: mapping.executionSlotKey,
@@ -260,15 +350,300 @@ function buildAddCommand(
     candidateId: `add_${index}`,
     textContent: decision.text,
     fontRole: mapping.fontRole,
-    styleTokens:
-      decision.vocabularyId === "cta_button"
-        ? { fillColor: "#1a1a1a", textColor: "#ffffff" }
-        : decision.vocabularyId === "badge_chip"
-          ? { fillColor: "#ff6a00", textColor: "#ffffff" }
-          : decision.vocabularyId === "accent_shape"
-            ? { fillColor: "#ffd24a" }
-            : { fillColor: "#525252" },
+    ...(styleContext.typography ? { typography: styleContext.typography } : {}),
+    styleTokens,
   });
+}
+
+function buildCompoundGroupCommand(options: {
+  runId: string;
+  stage: "adaptive-retain" | "adaptive-modify" | "adaptive-add";
+  clientLayerKey: string;
+  executionSlotKey: "cta" | "badge_text";
+  candidateId: string;
+  bounds: LayoutBounds;
+  role: string;
+  textContent: string | null;
+  fontRole: "display" | "body";
+  typography?: TypographyMetadata;
+  styleTokens: Record<string, string | number | boolean | null>;
+}): CanvasMutationCommand {
+  return buildCreateLayerCommand(options.runId, options.stage, {
+    executionSlotKey: options.executionSlotKey,
+    clientLayerKey: options.clientLayerKey,
+    layerType: "group",
+    bounds: options.bounds,
+    role: options.role,
+    variantKey: "adaptive_composition",
+    candidateId: options.candidateId,
+    textContent: options.textContent,
+    fontRole: options.fontRole,
+    ...(options.typography ? { typography: options.typography } : {}),
+    styleTokens: options.styleTokens,
+  });
+}
+
+function readStyleMetadata(
+  sceneBindingPlan: SceneBindingPlan | null | undefined,
+): StyleMetadata | null {
+  return sceneBindingPlan
+    ? {
+        backgroundColorHex: sceneBindingPlan.backgroundColorHex,
+        secondaryBackgroundColorHex: sceneBindingPlan.secondaryBackgroundColorHex,
+        primaryTextColorHex: sceneBindingPlan.primaryTextColorHex,
+        secondaryTextColorHex: sceneBindingPlan.secondaryTextColorHex,
+        accentTextColorHex: sceneBindingPlan.accentTextColorHex,
+        inverseTextColorHex: sceneBindingPlan.inverseTextColorHex,
+        ctaSurfaceColorHex: sceneBindingPlan.ctaSurfaceColorHex,
+        ctaTextColorHex: sceneBindingPlan.ctaTextColorHex,
+        ctaShapeLanguage: sceneBindingPlan.ctaShapeLanguage,
+        backgroundVisualMode: sceneBindingPlan.backgroundMode,
+      }
+    : null;
+}
+
+function mergeReadabilityPalette(
+  base: ReturnType<typeof resolveReadabilityPalette>,
+  styleMetadata: StyleMetadata | null,
+) {
+  if (!styleMetadata) {
+    return base;
+  }
+  return {
+    primaryTextColor:
+      styleMetadata.primaryTextColorHex ?? base.primaryTextColor,
+    secondaryTextColor:
+      styleMetadata.secondaryTextColorHex ?? base.secondaryTextColor,
+    accentTextColor:
+      styleMetadata.accentTextColorHex ?? base.accentTextColor,
+    inverseTextColor:
+      styleMetadata.inverseTextColorHex ?? base.inverseTextColor,
+    ctaSurfaceColor:
+      styleMetadata.ctaSurfaceColorHex ?? base.ctaSurfaceColor,
+    ctaTextColor:
+      styleMetadata.ctaTextColorHex ?? base.ctaTextColor,
+  };
+}
+
+function resolveAdaptiveStyleContext(
+  sceneBindingPlan: SceneBindingPlan | null | undefined,
+  sceneStylePlan: SceneStylePlan | null | undefined,
+): AdaptiveStyleContext {
+  const styleMetadata = readStyleMetadata(sceneBindingPlan);
+  const backgroundColorHex =
+    sceneBindingPlan?.backgroundColorHex ??
+    styleMetadata?.backgroundColorHex ??
+    "#ffffff";
+  return {
+    sceneBindingPlan: sceneBindingPlan ?? null,
+    typography: sceneStylePlan
+      ? {
+          displayFontFamily: sceneStylePlan.typographyPolicy.templateFontFamily,
+          displayFontWeight: sceneStylePlan.typographyPolicy.displayWeightTarget,
+          bodyFontFamily: sceneStylePlan.typographyPolicy.templateFontFamily,
+          bodyFontWeight: sceneStylePlan.typographyPolicy.bodyWeightTarget,
+        }
+      : null,
+    styleMetadata,
+    readabilityPalette: mergeReadabilityPalette(
+      resolveReadabilityPalette(backgroundColorHex),
+      styleMetadata,
+    ),
+  };
+}
+
+function resolveExistingObjectStyleTokens(
+  obj: ProjectedObject,
+  executionSlotKey: ExecutionSlotKey | null,
+  refCanvas: { width: number; height: number },
+  targetCanvas: { width: number; height: number },
+  styleContext: AdaptiveStyleContext,
+  fallbackFillColor: string,
+): Record<string, string | number | boolean | null> | undefined {
+  if (obj.layerType === "image") {
+    const imageScaleX =
+      obj.sourceImageScaleX !== null && obj.sourceImageScaleX !== undefined
+        ? obj.sourceImageScaleX * (targetCanvas.width / refCanvas.width)
+        : null;
+    const imageScaleY =
+      obj.sourceImageScaleY !== null && obj.sourceImageScaleY !== undefined
+        ? obj.sourceImageScaleY * (targetCanvas.height / refCanvas.height)
+        : null;
+    const styleTokens: Record<string, string | number | boolean | null> = {};
+    if ((obj.sourceAngle ?? 0) !== 0) {
+      styleTokens.angle = obj.sourceAngle ?? 0;
+    }
+    if ((obj.sourceOpacity ?? 1) !== 1) {
+      styleTokens.opacity = obj.sourceOpacity ?? 1;
+    }
+    if (obj.sourceFlipX) {
+      styleTokens.flipX = true;
+    }
+    if (obj.sourceFlipY) {
+      styleTokens.flipY = true;
+    }
+    if (obj.sourceCropX !== null && obj.sourceCropX !== undefined) {
+      styleTokens.cropX = obj.sourceCropX;
+    }
+    if (obj.sourceCropY !== null && obj.sourceCropY !== undefined) {
+      styleTokens.cropY = obj.sourceCropY;
+    }
+    if ((obj.sourceObjectScaleX ?? 1) !== 1) {
+      styleTokens.objectScaleX = obj.sourceObjectScaleX ?? 1;
+    }
+    if ((obj.sourceObjectScaleY ?? 1) !== 1) {
+      styleTokens.objectScaleY = obj.sourceObjectScaleY ?? 1;
+    }
+    if (imageScaleX !== null) {
+      styleTokens.imageScaleX = imageScaleX;
+    }
+    if (imageScaleY !== null) {
+      styleTokens.imageScaleY = imageScaleY;
+    }
+    return Object.keys(styleTokens).length > 0 ? styleTokens : undefined;
+  }
+  if (obj.layerType === "shape") {
+    return {
+      fillColor: fallbackFillColor,
+      ...(obj.secondaryFillColorHex ? { secondaryColor: obj.secondaryFillColorHex } : {}),
+      ...(typeof obj.sourceCornerRadius === "number" ? { cornerRadius: obj.sourceCornerRadius } : {}),
+      ...(typeof obj.sourceOpacity === "number" ? { opacity: obj.sourceOpacity } : {}),
+      ...(typeof obj.sourceAngle === "number" ? { angle: obj.sourceAngle } : {}),
+    };
+  }
+  if (obj.layerType !== "text") {
+    return { fillColor: fallbackFillColor };
+  }
+  return {
+    fillColor: resolveExistingTextFillColor(
+      obj,
+      executionSlotKey,
+      styleContext,
+      fallbackFillColor,
+    ),
+  };
+}
+
+function resolveExistingTextFillColor(
+  obj: ProjectedObject,
+  executionSlotKey: ExecutionSlotKey | null,
+  styleContext: AdaptiveStyleContext,
+  preferredFillColor: string,
+): string {
+  if (!obj.backingSurfaceColorHex) {
+    return preferredFillColor;
+  }
+  return resolveReadablePreferredColor(
+    preferredFillColor,
+    obj.backingSurfaceColorHex,
+    resolveSlotFallbackTextColor(executionSlotKey, styleContext, obj.backingSurfaceColorHex),
+  );
+}
+
+function resolveAddStyleTokens(
+  vocabularyId: string,
+  styleContext: AdaptiveStyleContext,
+): Record<string, string | number | boolean | null> {
+  const { readabilityPalette, sceneBindingPlan, styleMetadata } = styleContext;
+  switch (vocabularyId) {
+    case "cta_button":
+      return {
+        surfaceColor: readabilityPalette.ctaSurfaceColor,
+        textColor: readabilityPalette.ctaTextColor,
+        ctaShapeLanguage: styleMetadata?.ctaShapeLanguage ?? null,
+      };
+    case "badge_chip":
+      return {
+        surfaceColor:
+          sceneBindingPlan?.promoSurfaceColorHex ?? readabilityPalette.accentTextColor,
+        textColor:
+          sceneBindingPlan?.promoTextColorHex ?? readabilityPalette.inverseTextColor,
+      };
+    case "accent_shape":
+      return { fillColor: readabilityPalette.accentTextColor };
+    default:
+      return {
+        fillColor: resolveReadablePreferredColor(
+          readabilityPalette.secondaryTextColor,
+          sceneBindingPlan?.secondaryBackgroundColorHex ??
+            sceneBindingPlan?.backgroundColorHex ??
+            "#ffffff",
+          resolveSlotFallbackTextColor(
+            "footer_note",
+            styleContext,
+            sceneBindingPlan?.secondaryBackgroundColorHex ??
+              sceneBindingPlan?.backgroundColorHex ??
+              "#ffffff",
+          ),
+        ),
+      };
+  }
+}
+
+function resolveReadablePreferredColor(
+  preferredColor: string,
+  surfaceColor: string,
+  fallbackColor: string,
+): string {
+  if (contrastRatio(preferredColor, surfaceColor) >= 3) {
+    return preferredColor;
+  }
+  if (contrastRatio(fallbackColor, surfaceColor) >= 3) {
+    return fallbackColor;
+  }
+  return resolveReadabilityPalette(surfaceColor).primaryTextColor;
+}
+
+function resolveSlotFallbackTextColor(
+  executionSlotKey: ExecutionSlotKey | null,
+  styleContext: AdaptiveStyleContext,
+  surfaceColor: string,
+): string {
+  const { readabilityPalette, sceneBindingPlan } = styleContext;
+  switch (executionSlotKey) {
+    case "offer_line":
+    case "badge_text":
+      return (
+        sceneBindingPlan?.promoTextColorHex ??
+        readabilityPalette.inverseTextColor ??
+        resolveReadabilityPalette(surfaceColor).primaryTextColor
+      );
+    case "cta":
+      return (
+        sceneBindingPlan?.ctaTextColorHex ??
+        readabilityPalette.ctaTextColor ??
+        resolveReadabilityPalette(surfaceColor).primaryTextColor
+      );
+    case "footer_note":
+      return (
+        sceneBindingPlan?.secondaryTextColorHex ??
+        readabilityPalette.secondaryTextColor ??
+        resolveReadabilityPalette(surfaceColor).primaryTextColor
+      );
+    case "headline":
+    case "subheadline":
+    default:
+      return (
+        sceneBindingPlan?.primaryTextColorHex ??
+        readabilityPalette.primaryTextColor ??
+        resolveReadabilityPalette(surfaceColor).primaryTextColor
+      );
+  }
+}
+
+function contrastRatio(
+  foregroundColorHex: string,
+  backgroundColorHex: string,
+): number {
+  const foregroundLuminance = calculateRelativeLuminance(
+    normalizeHexColor(foregroundColorHex),
+  );
+  const backgroundLuminance = calculateRelativeLuminance(
+    normalizeHexColor(backgroundColorHex),
+  );
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 // ---------------------------------------------------------------------------
@@ -284,19 +659,25 @@ export interface EmitAdaptiveCompositionInput {
   targetCanvasHeight: number;
   projectedGraph: ProjectedObjectGraph;
   compositionDecision: AdaptiveCompositionDecision;
+  sceneBindingPlan?: SceneBindingPlan | null;
+  sceneStylePlan?: SceneStylePlan | null;
 }
 
 export function emitAdaptiveCompositionMutations(
   input: EmitAdaptiveCompositionInput,
 ): SkeletonMutationBatch {
   const { projectedGraph, compositionDecision } = input;
+  const styleContext = resolveAdaptiveStyleContext(
+    input.sceneBindingPlan,
+    input.sceneStylePlan,
+  );
   const refCanvas = { width: projectedGraph.canvasWidth, height: projectedGraph.canvasHeight };
   const targetCanvas = { width: input.targetCanvasWidth, height: input.targetCanvasHeight };
   const objectMap = new Map(
     projectedGraph.objects.map((obj) => [obj.objectId, obj]),
   );
 
-  const allCommands: CanvasMutationCommand[] = [];
+  const taggedCommands: Array<{ command: CanvasMutationCommand; zWeight: number }> = [];
 
   // Process element decisions (retain/modify/remove)
   const decidedObjectIds = new Set(
@@ -308,10 +689,13 @@ export function emitAdaptiveCompositionMutations(
     const obj = objectMap.get(decision.objectId);
     if (!obj) continue;
 
+    const { executionSlotKey } = mapVisualWeightToExecutionSlot(obj.visualWeight, obj.layerType, obj.compositeHint);
+    const zWeight = zOrderWeight(executionSlotKey, obj.visualWeight);
+
     if (decision.operation === "retain") {
-      allCommands.push(buildRetainCommand(input.runId, obj, refCanvas, targetCanvas));
+      taggedCommands.push({ command: buildRetainCommand(input.runId, obj, refCanvas, targetCanvas, styleContext), zWeight });
     } else if (decision.operation === "modify") {
-      allCommands.push(buildModifyCommand(input.runId, obj, decision, refCanvas, targetCanvas));
+      taggedCommands.push({ command: buildModifyCommand(input.runId, obj, decision, refCanvas, targetCanvas, styleContext), zWeight });
     }
     // "remove" → skip, don't create
   }
@@ -319,23 +703,26 @@ export function emitAdaptiveCompositionMutations(
   // Objects NOT mentioned → implicit retain
   for (const obj of projectedGraph.objects) {
     if (!decidedObjectIds.has(obj.objectId)) {
-      allCommands.push(buildRetainCommand(input.runId, obj, refCanvas, targetCanvas));
+      const { executionSlotKey } = mapVisualWeightToExecutionSlot(obj.visualWeight, obj.layerType, obj.compositeHint);
+      const zWeight = zOrderWeight(executionSlotKey, obj.visualWeight);
+      taggedCommands.push({ command: buildRetainCommand(input.runId, obj, refCanvas, targetCanvas, styleContext), zWeight });
     }
   }
 
-  // Process add decisions
+  // Process add decisions (CTA/footer go on top)
   for (let i = 0; i < compositionDecision.addDecisions.length; i++) {
     const addDecision = compositionDecision.addDecisions[i]!;
-    allCommands.push(
-      buildAddCommand(
-        input.runId,
-        addDecision,
-        input.targetCanvasWidth,
-        input.targetCanvasHeight,
-        i,
-      ),
-    );
+    const mapping = mapAddVocabularyToExecutionSlot(addDecision.vocabularyId);
+    const zWeight = zOrderWeight(mapping.executionSlotKey, null);
+    taggedCommands.push({
+      command: buildAddCommand(input.runId, addDecision, input.targetCanvasWidth, input.targetCanvasHeight, i, styleContext),
+      zWeight,
+    });
   }
+
+  // Sort by z-order: backgrounds first (bottom), content/CTA last (top)
+  taggedCommands.sort((a, b) => a.zWeight - b.zWeight);
+  const allCommands = taggedCommands.map((t) => t.command);
 
   // Build single-stage proposal
   const commitGroup = createRequestId();
