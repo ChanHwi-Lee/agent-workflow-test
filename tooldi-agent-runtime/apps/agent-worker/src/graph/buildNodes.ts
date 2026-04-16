@@ -18,6 +18,7 @@ import { buildSearchProfile } from "../phases/buildSearchProfile.js";
 import { buildScenePlans } from "../phases/buildScenePlans.js";
 import { buildSceneStylePlans } from "../phases/buildSceneStylePlans.js";
 import { buildTopologyPath } from "../phases/buildTopologyPath.js";
+import { projectTemplateObjectGraph } from "../phases/projectTemplateGraph.js";
 import {
   buildTemplatePriorBundle,
   createGeminiTemplatePriorReranker,
@@ -548,6 +549,47 @@ export function registerBuildNodes(
         });
         cooperativeStopRequested ||= renderabilityLog.cancelRequested;
 
+        // --- SSOT: Template Graph Projection (Layer 2) ---
+        // Generate the projected template object graph alongside the legacy path.
+        // This runs in parallel with the existing pipeline and does not affect it.
+        let projectedTemplateGraph = null as import("../types.js").ProjectedObjectGraph | null;
+        let projectedTemplateGraphRef: string | null = null;
+        const selectedCode =
+          objectNativePlans.objectNativeCandidateSelection.nextSelectedTemplateCode;
+        const selectedCandidate = selectedCode
+          ? state.templatePriorBundle?.candidates?.find(
+              (c: { templateCode?: string }) => c.templateCode === selectedCode,
+            )
+          : null;
+        const templatePage = (selectedCandidate as Record<string, unknown> | null)
+          ?.fetchedDocument as Record<string, unknown> | null;
+        const parsedPage = (
+          (templatePage?.pages as Array<{ parsed?: Record<string, unknown> }> | null)
+            ?.[0]
+        )?.parsed;
+        if (parsedPage && selectedCode) {
+          projectedTemplateGraph = projectTemplateObjectGraph({
+            runId: state.job.runId,
+            traceId: state.job.traceId,
+            templateCode: selectedCode,
+            templateTitle:
+              objectNativePlans.objectNativeCandidateSelection
+                .nextSelectedTemplateTitle ?? selectedCode,
+            page: parsedPage,
+          });
+          projectedTemplateGraphRef = await persistArtifactTask(
+            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/projected-template-graph.json`,
+            projectedTemplateGraph,
+            {
+              artifactKind: "projected-template-graph",
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              attemptSeq: String(state.job.attemptSeq),
+            },
+          );
+        }
+        // --- end SSOT ---
+
         return {
           cooperativeStopRequested,
           referenceCompositionGraph: null,
@@ -578,6 +620,8 @@ export function registerBuildNodes(
           freeformLayoutPlanRef,
           styleDowngradeVerdict: objectNativePlans.styleDowngradeVerdict,
           styleDowngradeVerdictRef,
+          projectedTemplateGraph,
+          projectedTemplateGraphRef,
         };
       }
 

@@ -778,6 +778,62 @@ export interface ReferenceBlockGraph {
   summary: string;
 }
 
+// ---------------------------------------------------------------------------
+// Projected Template Graph (SSOT: template-aware adaptive composition)
+// ---------------------------------------------------------------------------
+
+export type VisualWeight =
+  | "dominant"
+  | "secondary"
+  | "tertiary"
+  | "decorative"
+  | "background";
+
+export type SpatialZone =
+  | "center"
+  | "top"
+  | "bottom"
+  | "left"
+  | "right"
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right"
+  | "full";
+
+export interface ProjectedObject {
+  objectId: string;
+  layerType: "text" | "shape" | "group" | "image";
+  bounds: LayoutBounds;
+  sourceText: string | null;
+  fontSize: number | null;
+  fillColorHex: string | null;
+  fontFamily: string | null;
+  textAlign: "left" | "center" | "right" | null;
+  sourceOriginUrl: string | null;
+  sourceWidth: number | null;
+  sourceHeight: number | null;
+  visualWeight: VisualWeight;
+  zone: SpatialZone;
+  prominence: number;
+  compositeHint: "button" | "badge" | null;
+}
+
+export interface ProjectedObjectGraph {
+  graphId: string;
+  runId: string;
+  traceId: string;
+  templateCode: string;
+  templateTitle: string;
+  canvasWidth: number;
+  canvasHeight: number;
+  objects: ProjectedObject[];
+  objectCount: number;
+  summary: string;
+}
+
+// ---------------------------------------------------------------------------
+
 export type MessageAtomKind =
   | "primary"
   | "support"
