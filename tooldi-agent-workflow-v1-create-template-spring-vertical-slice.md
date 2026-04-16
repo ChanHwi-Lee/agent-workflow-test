@@ -18,7 +18,8 @@
 
 - 이 문서는 generic roadmap이 아니라 `봄 템플릿 만들어줘` 1개 intent에 대한 narrow vertical slice spec이다.
 - 이 문서는 artifact identity, lifecycle ownership, completion semantics를 재정의하지 않는다.
-- 이 문서는 [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md) 의 4축을 실제 intent 1건에 투영하는 역할만 가진다.
+- 이 문서는 SSOT와 design-lock 문서를 실제 intent 1건에 투영하는 reference slice다.
+- slot-driven structure authority를 새로 만들면 안 된다.
 
 ## 2. 목표
 
@@ -70,7 +71,7 @@
 | `canvasPreset` | active page size 기준. 대표 preset은 `wide_1200x628` |
 | `layoutIntent` | `copy_focused` 기본, 단 background 자산 quality가 충분하면 `hero_focused` 허용 |
 | `tone` | `bright` + `playful` 사이의 spring promo tone |
-| `requiredSlots` | `background`, `headline`, `supporting_copy`, `cta`, `decoration` |
+| `messageAtoms` | `primary`, `offer`, `cta`, optional `detail` |
 | `assetPolicy` | 기본은 `graphic_allowed`, `photo_optional` |
 | `brandConstraints` | palette/typography hint가 있으면 반영, 없으면 generic spring promo defaults 사용 |
 
@@ -269,20 +270,18 @@ candidate compare는 아래 criteria를 기준으로 한다.
 
 ## 9. Mutation Synthesis Lock
 
-최종 mutation synthesis는 아래 slot 구조를 만든다.
+최종 mutation synthesis는 fixed slot checklist가 아니라 아래 composition obligation을 만족해야 한다.
 
-- `background`
-- `headline`
-- `supporting_copy`
-- `cta`
-- `decoration_primary`
-- optional `decoration_secondary`
-- optional `badge`
+- editable background treatment 1개 이상
+- dominant message-bearing object 1개 이상
+- action-bearing object 1개 이상
+- decorative/supporting object 1개 이상
 
 최소 성공 조건:
 
-- required slot 5개는 모두 `ready` 또는 `fallback_ready`
-- optional slot은 없어도 된다
+- selected reference composition이 editable draft로 물화되어야 한다
+- essential content-bearing object와 action-bearing object는 `ready` 또는 safe fallback 상태여야 한다
+- optional polish object는 없어도 된다
 
 기본 spring template mutation 전략:
 

@@ -5,7 +5,7 @@
 | 항목 | 값 |
 | --- | --- |
 | 문서명 | Tooldi Agent Workflow v1.5 Create Template Hardening Spec (Source-Grounded TO-BE) |
-| 문서 목적 | 현재 generic `create_template` skeleton 위에 실제 Tooldi taxonomy와 asset prior를 반영한 planner/search/judge hardening 요구사항을 정의한다. |
+| 문서 목적 | 현재 generic `create_template` skeleton 위에 실제 Tooldi taxonomy와 asset prior를 반영한 retrieval/judge hardening reference를 정리한다. |
 | 상태 | Draft |
 | 문서 유형 | TO-BE |
 | 작성일 | 2026-04-09 |
@@ -15,10 +15,11 @@
 
 ## 1. Purpose
 
-- 이 문서는 현재 `create_template` v1 skeleton 이 가진 planner/search/judge 품질 부족을 실제 Tooldi 데이터 구조에 grounded된 방식으로 보강하기 위한 구현 기준을 정의한다.
-- 이 문서는 현재 구조를 뒤엎지 않는다.
+- 이 문서는 현재 `create_template` v1 skeleton 이 가진 planner/search/judge 품질 부족을 실제 Tooldi 데이터 구조에 grounded된 방식으로 보강하기 위한 reference를 정리한다.
+- 이 문서는 SSOT를 override하지 않는다.
+- 이 문서에 남아 있는 old planner terminology는 historical implementation drift 또는 source-grounded hint로만 읽는다.
 - 이 문서는 아래 4개를 구체화한다.
-  - planner ontology v2
+  - source-grounded retrieval/judge hardening
   - deterministic normalize/repair layer
   - search profile v2
   - rule judge v2 + release eval contract
@@ -300,7 +301,7 @@ Minimum new rules:
 Hard reject examples:
 
 - mandatory executable asset metadata is incomplete or impossible
-- required slots cannot be materialized into any safe final plan
+- selected reference composition의 essential content obligation을 어떤 safe final plan으로도 물화할 수 없음
 - after repair, primary message and primary visual still point to incompatible meanings that cannot be resolved without inventing facts
 
 ### 7.10 Eval contract must be fixed
@@ -339,7 +340,7 @@ The system must define `NormalizedIntent v2` with at least:
 - `layoutIntent`
 - `themeHints`
 - `subjectHints`
-- `requiredSlots`
+- `messageAtoms`
 - `assetPolicy`
 - `searchConstraints`
 - `consistencyFlags`
@@ -391,7 +392,7 @@ The hardening design must remain grounded in these data sources:
 | wrong-domain but repairable primary signal | repair, then warning if still imperfect |
 | wrong-domain and irrecoverable primary signal | hard reject |
 | missing executable metadata | hard reject |
-| impossible required slots | hard reject |
+| impossible essential composition obligation | hard reject |
 
 ## 12. Non-Functional Requirements
 

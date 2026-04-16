@@ -40,7 +40,7 @@
 - candidate assemble / selection / typography selection
 - `RuleJudgeVerdict`
 - `ExecutionSceneSummary`, `JudgePlan`, `RefineDecision`
-- canonical `executionSlotKey` based execution/scene identity for copy/photo/background
+- legacy `executionSlotKey` metadata가 남아 있는 copy/photo/background execution paths
 - staged mutation execution
 - `completed`, `completed_with_warning`, `failed` terminal semantics
 
@@ -85,7 +85,7 @@
   - stable 판정은 reset semantic subset이 아니라 object-native renderability guard로 닫는다.
 - 현재 topology path는 첫 topology-driven stable slice를 가진다.
   - 지원 topology family: `band_overlay_promo`, `centered_message_stack`
-  - stable 판정은 global slot completeness가 아니라 selected topology의 completion contract + renderability guard로 닫는다.
+  - stable 판정은 global checklist completeness가 아니라 selected topology의 completion contract + renderability guard로 닫는다.
 - object-native artifact는 이제 `failureStage` (`semantic_gate_failure`, `binding_failure`, `renderability_guard_failure`) 를 남겨 style-only 원인을 구조적으로 분리한다.
   - candidate audit / selection / renderability report는 `missingClusterFamilies`, `textBearingClusterCount`, `contentClusterCount`, `bindingCoverage`, `renderabilityMetrics`, `semanticGateReason` 를 함께 남긴다.
 - topology emitted layer는 이제 `topologyId`, `topologyCapabilityId`, `topologyRole`, `textBearing`, `actionBearing`, `mediaBearing` metadata를 함께 실어 completion truth에 사용한다.
@@ -176,8 +176,8 @@
 - preflight `refine` 는 실행 이후 `ExecutionSceneSummary -> JudgePlan -> RefineDecision` 을 통해 **최대 1회 patch-only refine mutation** 으로 이어질 수 있다.
 - patch scope 는 `copy text`, `slot anchor`, `cluster zone`, `spacing`, `cta container fallback` 으로 제한된다.
 - `keep` 는 일반 `completed` 로 이어진다.
-- emitted mutation, `ExecutionSceneSummary`, `JudgePlan`, `RefineDecision` 는 copy/photo/background slot에 대해 canonical `executionSlotKey` 를 truth로 사용한다.
-- legacy `slotKey` 는 compat field로 유지되며, graphic identity는 계속 `role` 중심이다.
+- current runtime 일부 경로는 emitted mutation, `ExecutionSceneSummary`, `JudgePlan`, `RefineDecision` 에 `executionSlotKey` 를 남긴다.
+- 이 값은 current implementation correlation metadata이며, SSOT 기준 structure truth나 completion truth는 아니다.
 - `ConcreteLayoutPlan` 은 `resolvedSlotBounds` 를 가지며 copy/photo/background placement authority를 제공한다.
 
 ### 6.5 artifact chain
@@ -232,7 +232,7 @@
 
 ### 8.2 execution contract 잔여 품질
 
-- `executionSlotKey` canonicalization 으로 기존 `slotKey`/`role` alias 추론 mismatch 는 크게 줄었다.
+- `executionSlotKey` correlation 정리로 기존 `slotKey`/`role` alias 추론 mismatch 는 크게 줄었다.
 - 다만 현재 refine/judge 는 still non-visual 이고, real scene fidelity 나 screenshot 기반 품질 판정은 아직 없다.
 - 즉 현재 남은 큰 품질 gap은 retrieval 보다 `visual quality` 와 `real save evidence` 쪽이다.
 
@@ -255,8 +255,8 @@
 
 - `retrieval_prior_v2`, `retrieval_prior_v2_reset` 실험으로 unsafe stable reject, style-only readable fallback, text/surface 정합성 같은 safety hardening은 상당 부분 확보했다.
 - 하지만 브라우저 결과 기준으로는 visible quality가 크게 오르지 않았다.
-- 현재 판단은 `retrieval_prior_v2_reset`을 더 미세 조정하는 것이 아니라, semantic-slot hybrid 실행 계약을 object-native reference execution으로 교체해야 한다는 것이다.
-- 이 전환의 철학, 정상 동작 목표, current done/not-done은 [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md) 를 따른다.
+- 현재 판단은 `retrieval_prior_v2_reset`을 더 미세 조정하는 것이 아니라, legacy slot/plan execution 계약을 SSOT 기준 adaptive composition runtime으로 교체해야 한다는 것이다.
+- 이 전환의 철학, 정상 동작 목표, current done/not-done은 [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 를 따른다.
 
 ## 9. Interfaces / external dependency
 

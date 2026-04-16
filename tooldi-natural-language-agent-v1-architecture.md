@@ -20,7 +20,8 @@
 
 ### Document authority hierarchy
 
-- 이 문서는 v1 ontology와 semantic contract의 최상위 authoritative source다. artifact identity, counted completion moment, lifecycle ownership, contract-chain root identity, ordering primitive, checkpoint/rollback semantics, asset normalization boundary, primitive reuse boundary, acceptance-criterion closure는 오직 이 문서가 닫는다.
+- [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 가 설계 철학과 adaptive composition contract의 최상위 SSOT다. template object graph, message atoms, retain/modify/remove/add, completion definition은 오직 이 문서가 닫는다.
+- 이 문서는 v1 runtime semantic contract의 최상위 authoritative source다. artifact identity, counted completion moment, lifecycle ownership, contract-chain root identity, ordering primitive, checkpoint/rollback semantics, asset normalization boundary, primitive reuse boundary, acceptance-criterion closure는 오직 이 문서가 닫는다.
 - [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-functional-spec-to-be.md) 는 product/API projection 문서다. northbound request, FR/BR/NFR, payload shape, persistence table을 정의할 수는 있지만, 이 문서가 이미 닫은 artifact identity, completion semantics, authority ownership, AC closure를 재정의하거나 override할 수 없다.
 - [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md) 는 backend/control-plane scope와 sync/async split의 authoritative source다. 다만 lifecycle ownership의 normative 판정, canonical completion moment, canonical draft artifact identity는 이 문서를 재참조만 해야 한다.
 - [tooldi-agent-workflow-v1-scope-operations-decisions.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-scope-operations-decisions.md) 는 v1 scope/non-scope, stack lock, day-one operations decision의 authoritative source다. 이 문서 역시 artifact identity, completion semantics, lifecycle ownership을 별도 source로 만들면 안 된다.
@@ -29,6 +30,7 @@
 
 - Integrated Verification: `manual_cross_doc_consistency_review_v1`
 - Verification artifact set:
+  - [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md)
   - [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-natural-language-agent-v1-architecture.md)
   - [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-functional-spec-to-be.md)
   - [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md)
@@ -43,7 +45,7 @@ rg -n "RunCompletionRecord\\.draftGeneratedAt|canonical_completion_moment|LiveDr
   docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-scope-operations-decisions.md
 ```
 
-- This revision is valid only when the command above shows no sibling document asserting a second canonical completion moment, a second canonical draft artifact, or a second lifecycle-ownership source.
+- This revision is valid only when the command above shows no sibling document asserting a second canonical completion moment, a second canonical draft artifact, a second lifecycle-ownership source, or a second design-philosophy source that overrides the SSOT.
 - This artifact set is Markdown-only. No TypeScript files are changed here, so `npm test` is intentionally not part of the canonical verification path for this revision.
 
 ### Previous-vs-Current Delta
@@ -220,8 +222,8 @@ v1의 대표 사용자 가치와 구현 범위는 다음 한 문장으로 고정
 
 | 대표 시나리오 terminal state | `RunResult.finalStatus` | 최종 시스템 outcome | 사용자 visible 결과 |
 | --- | --- | --- | --- |
-| success | `completed` | `LiveDraftArtifactBundle` 이 committed 상태로 persisted 되고, `saveMetadata.latestSaveReceipt.savedRevision` 이 final revision과 일치한다. required slot은 모두 `ready` 또는 `fallback_ready` 이며 warning이 success bar를 넘지 않는다. | 활성 페이지에 편집 가능한 배너 초안 1개가 남고, 사용자는 별도 승인 없이 즉시 요소 선택, 이동, 텍스트 수정, 삭제를 할 수 있다. |
-| partial success | `completed_with_warning` | `completed` 와 동일한 durability 증빙을 가지지만 optional asset, polish, copy refinement 중 일부가 fallback 또는 warning summary로 남는다. required slot 충족과 editable draft durability는 유지된다. | 활성 페이지에 편집 가능한 배너 초안 1개가 남고 바로 수정 가능하다. 다만 UI는 `일부 장식 요소가 대체되었습니다` 같은 warning summary를 함께 노출해야 한다. |
+| success | `completed` | `LiveDraftArtifactBundle` 이 committed 상태로 persisted 되고, `saveMetadata.latestSaveReceipt.savedRevision` 이 final revision과 일치한다. selected composition이 editable/renderable/save truth를 모두 만족하고 warning이 success bar를 넘지 않는다. | 활성 페이지에 편집 가능한 배너 초안 1개가 남고, 사용자는 별도 승인 없이 즉시 요소 선택, 이동, 텍스트 수정, 삭제를 할 수 있다. |
+| partial success | `completed_with_warning` | `completed` 와 동일한 durability 증빙을 가지지만 optional asset, polish, copy refinement 중 일부가 fallback 또는 warning summary로 남는다. essential editable draft quality와 durability는 유지된다. | 활성 페이지에 편집 가능한 배너 초안 1개가 남고 바로 수정 가능하다. 다만 UI는 `일부 장식 요소가 대체되었습니다` 같은 warning summary를 함께 노출해야 한다. |
 | failure after visible apply | `save_failed_after_apply` | visible draft는 한때 존재했을 수 있지만 latest save receipt가 없거나 final revision과 불일치하므로 canonical completion으로 인정되지 않는다. 시스템은 run을 failure로 닫고 마지막 last-known-good checkpoint와 save failure 근거를 보존한다. | 사용자는 캔버스에서 초안을 잠시 봤을 수 있으나, run 종료 메시지는 `저장 완료 실패` 여야 한다. 새로고침 후 동일 초안이 유지된다고 약속할 수 없으며, 사용자에게 durability 미보장을 명확히 알려야 한다. |
 | failure before usable draft | `failed` | editable minimum을 충족하지 못했거나 unrecoverable conflict/timeout이 발생해 representative draft를 canonical artifact로 남기지 못한다. 시스템은 run 시작 상태 또는 명시된 last-known-good checkpoint 기준으로 rollback/cleanup 하고 terminal error summary를 남긴다. | 사용자는 완성된 editable 배너 초안을 받지 못한다. 캔버스에는 새 draft가 남지 않거나 마지막으로 확정 저장된 상태만 남고, UI는 실패 이유와 재시도 가능 여부를 보여줘야 한다. |
 
@@ -947,7 +949,7 @@ terminal status는 단순 UI 문구가 아니라 `최종 캔버스를 어디까�
 | `RefinementMutationBatch` | Worker/Composer | Editor Mutation Gateway | `batchId`, `commands[]`, `dependsOnBatchId`, `reason` |
 | `CompensationMutationBatch` | Worker | Editor Mutation Gateway | `batchId`, `revertsBatchId`, `commands[]`, `reason` |
 | `MutationApplyAck` | Editor Mutation Gateway | Worker/FE | `mutationId`, `seq`, `ackOutcome`, `ackRevision`, `resolvedLayerIds`, `failedCommandIds`, `saveReceiptId` |
-| `DraftManifest` | Worker | Agent API/FE/Observability | `draftId`, `runId`, `pageId`, `rootLayerIds`, `editableLayerIds`, `slotBindings`, `finalRevision` |
+| `DraftManifest` | Worker | Agent API/FE/Observability | `draftId`, `runId`, `pageId`, `rootLayerIds`, `editableLayerIds`, `compositionBindings`, `finalRevision` |
 | `TemplateSaveReceipt` | Editor Mutation Gateway | Worker/Agent API/FE | `outputTemplateCode`, `savedRevision`, `savedAt`, `reason` |
 | `RunCompletionSnapshot` | Worker | Agent API/FE/Observability | `draftId`, `completionState`, `terminalStatus`, `minimumDraftSatisfied`, `warnings[]`, `completedAt` |
 | `AuthoritativeCanvasFinalState` | Agent API finalizer | FE/Observability | `draftId`, `finalRevision`, `rootLayerIds`, `editableLayerIds`, `deletedLayerIds`, `reconciledThroughSeq`, `durabilityState`, `saveReceiptId` |
@@ -1049,7 +1051,7 @@ v1 draft flow의 persistable unit은 개별 mutation, `DraftManifest`, `Template
 
 | Bundle Component | Canonical entity | 역할 | 필수 필드 | 구현 포인트 |
 | --- | --- | --- | --- | --- |
-| `editableCanvasState` | `EditableBannerDraftCommitPayload` + `DraftManifest` | FE가 실제 editable draft를 렌더링하고 어떤 layer가 draft 소유인지 판정하는 유일한 canvas-state 계약 | `runId`, `traceId`, `draftId`, `pageId`, `mutations`, `rootLayerIds`, `editableLayerIds`, `slotBindings`, `finalRevision` | 각 agent 생성 레이어는 최소 `runId`, `draftId`, `slotKey`, `isPlaceholder` 메타데이터를 가져야 이후 `updateLayer`, `deleteLayer`, rollback이 쉬워진다. |
+| `editableCanvasState` | `EditableBannerDraftCommitPayload` + `DraftManifest` | FE가 실제 editable draft를 렌더링하고 어떤 layer가 draft 소유인지 판정하는 유일한 canvas-state 계약 | `runId`, `traceId`, `draftId`, `pageId`, `mutations`, `rootLayerIds`, `editableLayerIds`, `compositionBindings`, `finalRevision` | 각 agent 생성 레이어는 최소 `runId`, `draftId`, `slotKey`, `isPlaceholder` 메타데이터를 가져야 이후 `updateLayer`, `deleteLayer`, rollback이 쉬워진다. |
 | `referencedStoredAssets` | `StoredAssetDescriptor[]` | 초안이 참조하는 생성/선택 자산의 stable storage 계약 | `assetId`, `assetRefKey`, `storageKey`, `slotKey`, `sourceKind`, `mimeType`, `checksumSha256`, `provenance`, `placementDefaults` | 비트맵/패턴/장식 이미지는 반드시 stable asset reference를 얻은 뒤 레이어에 연결해야 한다. shape-only fallback은 이 배열에 들어오지 않는다. bundle에는 실제 draft가 참조하는 asset만 남겨야 한다. |
 | `mutationLedger` | `MutationLedger` | live-commit 변경 이력과 checkpoint state를 함께 담는 정렬된 원장 | `seq`, `mutationId`, `batchId`, `commandOps`, `clientLayerKeys`, `targetLayerIds`, `baseRevision`, `ackRevision`, `applyStatus`, `compensatesMutationId?`, `appliedAt`, `checkpoints[]`, `lastKnownGoodCheckpointId` | rollback, replay, checkpoint resume, observability, 비용 추적의 최소 단위다. 사용자가 보는 실제 캔버스 상태와 1:1 대응해야 한다. |
 | `saveMetadata` | `TemplateSaveReceipt` + `RunCompletionSnapshot` | working template 저장 성공과 완료 판정을 닫는 persistence 계약 | `savedRevision`, `savedAt`, `reason`, `completionState`, `terminalStatus`, `completedAt`, `finalRevision` | FE run panel, QA 판정, analytics의 공통 입력이다. terminal success는 save receipt와 completion snapshot이 같은 final revision을 가리킬 때만 허용한다. |
@@ -1097,14 +1099,14 @@ checkpoint snapshot은 최소 아래 4개 segment를 모두 가져야 한다. �
 
 | snapshot segment | minimum contents | restore purpose |
 | --- | --- | --- |
-| `editableCanvasState` | `EditableBannerDraftCommitPayload` projection 1개와 같은 boundary의 `DraftManifest` 1개. 최소 `runId`, `traceId`, `draftId`, `pageId`, `mutations[]`, `manifest.rootLayerIds[]`, `manifest.editableLayerIds[]`, `manifest.slotBindings[]`, `manifest.expectedFinalRevision` 이 필요하다. | FE/backend가 같은 layer tree, slot binding, editable state를 다시 hydrate 한다. |
-| `referencedStoredAssets` | checkpoint 시점 `slotBindings` 가 실제로 참조하는 `StoredAssetDescriptor[]` 의 closure. unused candidate, provider raw payload, orphan tentative asset은 제외한다. | image/decor layer가 raw provider payload 없이 동일 asset binding으로 재수화된다. |
+| `editableCanvasState` | `EditableBannerDraftCommitPayload` projection 1개와 같은 boundary의 `DraftManifest` 1개. 최소 `runId`, `traceId`, `draftId`, `pageId`, `mutations[]`, `manifest.rootLayerIds[]`, `manifest.editableLayerIds[]`, `manifest.compositionBindings[]`, `manifest.expectedFinalRevision` 이 필요하다. | FE/backend가 같은 layer tree, composition binding, editable state를 다시 hydrate 한다. |
+| `referencedStoredAssets` | checkpoint 시점 `compositionBindings` 가 실제로 참조하는 `StoredAssetDescriptor[]` 의 closure. unused candidate, provider raw payload, orphan tentative asset은 제외한다. | image/decor layer가 raw provider payload 없이 동일 asset binding으로 재수화된다. |
 | `mutationLedger` | 최소 `orderedEntries[]`, `reconciledThroughSeq`, `lastKnownGoodRevision`, `lastKnownGoodCheckpointId` 를 포함한 checkpoint 시점 ledger projection | compensation cutoff, replay range, rollback provenance를 동일하게 복원한다. |
 | `saveMetadata` | `latestSaveReceipt` 또는 `null`, `durabilityState`, `checkpointRevision` | restore가 run-start empty state인지, saved editable draft인지, save-uncertain tail인지를 명시적으로 고정한다. |
 
 successful rehydration guarantee는 아래처럼 고정한다.
 
-1. `bundleSnapshot.bundleSnapshotRef` 가 가리키는 snapshot만으로 같은 `draftId`, `pageId`, `rootLayerIds`, `editableLayerIds`, `slotBindings`, `assetId/assetRefKey` binding, `checkpointRevision`, `reconciledThroughSeq` 를 재구성할 수 있어야 한다.
+1. `bundleSnapshot.bundleSnapshotRef` 가 가리키는 snapshot만으로 같은 `draftId`, `pageId`, `rootLayerIds`, `editableLayerIds`, `compositionBindings`, `assetId/assetRefKey` binding, `checkpointRevision`, `reconciledThroughSeq` 를 재구성할 수 있어야 한다.
 2. rehydration은 primitive candidate, provider raw response, FE local checkpoint, hidden editor snapshot, wall-clock 추정에 의존하지 않는다. 필요한 모든 canonical state는 checkpoint row와 snapshot 안에 이미 있어야 한다.
 3. snapshot에 필요한 asset descriptor, mutation entry, save evidence 중 하나라도 빠지면 그 checkpoint는 `resume_only` 메모로는 남길 수 있어도 `MutationLedger.lastKnownGoodCheckpointId` 나 rollback restore base로 승격할 수 없다. 이 경우 시스템은 직전 유효 checkpoint로만 후퇴한다.
 4. restore는 hidden state rewrite가 아니라 `bundleSnapshot.bundleSnapshotRef` 로 rehydrate한 canonical base와 append-only compensation evidence를 조합해 수렴해야 한다. checkpoint snapshot을 근거로 기존 mutation row를 덮어써 과거를 다시 쓰면 안 된다.
@@ -1292,7 +1294,7 @@ v1 live-commit의 최소 실행 단위는 ad-hoc command RPC가 아니라 `Canva
 - `deleteLayer` 는 실제 page tree에서 target을 제거하되, append-only mutation chain과 terminal completion evidence에는 tombstone을 남겨 reconciliation과 rollback 근거를 보존해야 한다.
 - `unknown_apply_state` 가 발생하면 blind replay를 금지하고, ledger + layer metadata + latest revision/save receipt를 기준으로 먼저 reconciliation 해야 한다.
 
-run 종료 시 Agent Backend finalizer는 `AuthoritativeCanvasFinalState` 를 산출해야 한다. 이것은 full document 전체를 대체하는 snapshot이 아니라, `finalRevision` 시점에 이번 run이 남긴 draft scope를 authoritative하게 설명하는 control-plane model이다. 최소 `rootLayerIds`, `editableLayerIds`, `slotBindings`, `activeLayers`, `deletedLayers`, `reconciledThroughSeq`, `durabilityState`, `saveReceiptId` 를 포함해야 하며, `completed` 계열 terminal status는 이 final state가 최신 save receipt와 일치할 때만 허용된다.
+run 종료 시 Agent Backend finalizer는 `AuthoritativeCanvasFinalState` 를 산출해야 한다. 이것은 full document 전체를 대체하는 snapshot이 아니라, `finalRevision` 시점에 이번 run이 남긴 draft scope를 authoritative하게 설명하는 control-plane model이다. 최소 `rootLayerIds`, `editableLayerIds`, `compositionBindings`, `activeLayers`, `deletedLayers`, `reconciledThroughSeq`, `durabilityState`, `saveReceiptId` 를 포함해야 하며, `completed` 계열 terminal status는 이 final state가 최신 save receipt와 일치할 때만 허용된다.
 
 ### 3.5 대표 시나리오 시간 예산
 
@@ -1355,7 +1357,7 @@ type RepresentativeScenarioLatencyBudget = {
 | --- | --- | --- | --- | --- |
 | planner/intent model turn | `6초` | `10초` | `planning_late` warning을 추가하고 남은 planning stage budget에서만 계속한다. target을 넘긴 뒤에는 새 planner turn을 더 열지 않는다. | 현재 planner turn을 실패로 닫는다. 최대 2턴, repair 1회 규칙 안에서만 재시도할 수 있고 `T+25초` stage cutoff를 넘기면 즉시 `planning_timeout` 이다. |
 | plan schema validation + repair | `1초` | `3초` | validation repair를 1회만 허용하고 optional slot expansion은 버린다. | repair를 중단하고 plan을 invalid로 남긴다. `validated_plan_ready` stage가 아직 열려 있더라도 추가 repair는 금지한다. |
-| single asset generation call | `20초` | `35초` | slot을 `asset_late` 로 표시하고 gradient/shape/placeholder fallback 준비를 시작한다. 이때 asset call은 optional path로 격하돼 skeleton 또는 editable minimum critical path를 막을 수 없다. | call 결과를 더 이상 기다리지 않는다. optional slot이면 fallback으로 대체하고, required slot이면 `salvage_only` 또는 `failed` 판정을 위해 worker가 해당 slot을 non-image composition으로 축소한다. |
+| single asset generation call | `20초` | `35초` | late asset action을 `asset_late` 로 표시하고 gradient/shape/placeholder fallback 준비를 시작한다. 이때 asset call은 optional path로 격하돼 skeleton 또는 editable minimum critical path를 막을 수 없다. | call 결과를 더 이상 기다리지 않는다. optional enhancement면 fallback으로 대체하고, essential composition obligation이면 `salvage_only` 또는 `failed` 판정을 위해 worker가 해당 visual branch를 non-image composition으로 축소한다. |
 | canvas mutation batch ack | `2초` | `5초` | `ack_late` warning을 남기고 dependent seq emit을 보수적으로 멈춘다. stage target을 이미 넘겼으면 재전송보다 reconciliation 준비를 우선한다. | blind replay 없이 먼저 reconciliation 한다. 미반영이 확인되고 남은 global budget이 `15초` 이상일 때만 같은 `idempotency_key` 로 1회 재전송할 수 있으며, 아니면 compensation 또는 skip으로 수렴한다. |
 | saveTemplate ack | `4초` | `10초` | `durability_at_risk` warning을 emit하고 finalize payload assembly를 대기 상태로 둔다. | `T+105초` 이전 시작분이면 `0~1500ms` fixed delay로 1회 retry할 수 있다. 그래도 receipt가 없으면 `save_failed_after_apply` 후보로 남기고 새 visible mutation 없이 terminal 판정으로 넘어간다. |
 
@@ -1384,7 +1386,7 @@ v1은 실패를 단일 `retry` 로 뭉개지 않는다. 어떤 단계에서 무�
 | --- | --- | --- | --- | --- |
 | ingress / queue handoff | request validation, queue publish ack, pickup watchdog / Agent API | `invalid_request`, `queue_publish_failed` 는 non-retryable. `pickup_timeout` 만 same `runId` 기준 queue attempt 1회 재등록 가능 | publish 실패는 즉시 `failed`. pickup miss만 `1~3초` fixed delay 후 재enqueue. 2회 연속 miss면 terminal error | 첫 visible ack 전이므로 hydrate부터 다시 시작한다. canvas reconciliation은 필요 없다. |
 | planning / contract | planner timeout, plan schema validation, tool resolution / Worker Runtime | 같은 attempt 안에서 re-plan/repair 1회만 허용. validation/policy 류는 non-retryable | delay 없이 즉시 repair. `T+25초`를 넘기거나 2회 연속 실패하면 terminal `failed` 로 escalation | execution phase에 진입하지 않았으므로 plan 단계부터 다시 계산한다. |
-| tool / provider transient | provider 5xx, temporary network failure, rate limit, asset storage 일시 장애 / Tool Executor | retryable. 동일 `action_id` 안에서 tool call 1회 추가 시도 가능 | 기본 `0ms -> 1500ms` bounded backoff, rate limit은 `retry_after_ms` 우선. 2회 실패 시 optional slot은 fallback + `warn`, required slot은 salvage/fail 판정 | 같은 `action_id`, 같은 logical idempotency로 재개한다. 이미 ack된 mutation seq는 건드리지 않는다. |
+| tool / provider transient | provider 5xx, temporary network failure, rate limit, asset storage 일시 장애 / Tool Executor | retryable. 동일 `action_id` 안에서 tool call 1회 추가 시도 가능 | 기본 `0ms -> 1500ms` bounded backoff, rate limit은 `retry_after_ms` 우선. 2회 실패 시 optional enhancement는 fallback + `warn`, essential composition obligation은 salvage/fail 판정 | 같은 `action_id`, 같은 logical idempotency로 재개한다. 이미 ack된 mutation seq는 건드리지 않는다. |
 | unknown side effect | provider job state unknown, asset persist outcome unknown, mutation/save ack 유실 / Executor + Agent API | 직접 blind replay 금지. reconciliation 후에만 조건부 retry | 즉시 reconciliation을 시작하고, 미반영이 확인된 경우에만 `0~1500ms` 안에서 1회 replay 허용. 계속 불명확하면 `error` escalation | `last_acked_mutation_seq` 이후의 첫 미확정 tool call 또는 mutation부터 재개한다. |
 | deterministic canvas reject / conflict | stale revision, missing target layer, FE mutation reject / Editor Gateway + Worker | blind retry 금지. `conflict` 로 분류된 경우에만 최신 base revision 재조회 후 1회 rebased retry 가능 | 추가 backoff 없이 즉시 재계산한다. 재시도도 실패하면 현재 plan step compensation 후 fallback 또는 terminal | 현재 실패한 plan step 안에서만 정리한다. 이전 ack layer는 유지하고 다음 safe action으로 넘어간다. |
 | worker liveness after visible ack | heartbeat loss, queue lease loss, worker crash / Queue event + Agent API watchdog | retryable이더라도 `resumeFromSeq` 또는 ledger 기반 safe resume이 있을 때만 새 attempt 허용 | backend가 `1~3초` delayed retry를 건다. safe resume 불가면 salvage/partial/fail 로 escalation | 같은 `runId`, 새 `attempt_seq` 로 `lastAckSeq + 1`부터 이어간다. blind full restart는 금지한다. |
@@ -1428,7 +1430,7 @@ v1은 실패를 단일 `retry` 로 뭉개지 않는다. 어떤 단계에서 무�
 | --- | --- | --- | --- | --- |
 | 사용자가 stop을 눌렀고 milestone save 이전에 종료됨 | `cancelled` | 새 draft 관련 durable 상태는 남지 않는다. committed base는 `LastKnownGoodCheckpoint.recoveryBase.restoreTargetKind='run_start_snapshot'` 이 가리키는 run 시작 상태뿐이다. | active `planStepId` 와 그 step에서 생긴 run-owned visible tail 전체를 compensation 한다. placeholder, 임시 decoration, 미저장 copy/layout mutation은 모두 제거한다. | run panel은 `생성이 중단되었고 새 변경은 되돌려졌습니다` 를 terminal message로 보여줘야 한다. 캔버스는 원래 빈 캔버스 또는 run 시작 상태로 돌아가야 하며, incomplete draft가 남아 있는 것처럼 보이는 copy는 금지한다. |
 | 사용자가 stop을 눌렀지만 milestone save 이후라 마지막 저장본이 있음 | `cancelled` | 최신 성공 `TemplateSaveReceipt` 가 가리키는 editable draft가 그대로 남는다. 이 draft가 사용자가 이후 수동 편집할 수 있는 유일한 committed 결과다. | cancel 시점의 open `planStepId` 하나만 rollback / cleanup 한다. 마지막 저장본 이후에 붙은 optional polish, cleanup tail, 미완료 asset replacement만 제거 또는 fallback 처리한다. | run panel은 `생성이 중단되었습니다. 마지막 저장된 초안은 유지됩니다` 를 먼저 보여주고, 이어서 `일부 마무리 작업은 적용되지 않았습니다` 를 secondary note로 노출해야 한다. 사용자는 무엇이 남았고 무엇이 포기됐는지 분리해서 이해할 수 있어야 한다. |
-| 시스템이 optional work를 포기하고 usable draft만 남김 | `completed_with_warning` | terminal summary가 final durable base로 채택한 `TemplateSaveReceipt` 와 일치하는 editable draft 1개가 committed 상태로 남는다. required slot과 user-editable layer set은 유지된다. | 실패한 optional `planStepId` 의 tail만 rollback / fallback 한다. decoration polish, optional hero image, badge cleanup, copy micro-refinement 같은 non-required work만 제거 또는 대체한다. | UI는 success처럼 닫되 warning summary를 반드시 함께 보여줘야 한다. 예: `배너 초안은 준비되었습니다`, `일부 장식 요소는 기본 스타일로 대체되었습니다`. warning은 화면에서 보이는 draft가 왜 원래 계획보다 덜 완성됐는지 설명해야 한다. |
+| 시스템이 optional work를 포기하고 usable draft만 남김 | `completed_with_warning` | terminal summary가 final durable base로 채택한 `TemplateSaveReceipt` 와 일치하는 editable draft 1개가 committed 상태로 남는다. essential editable draft quality와 user-editable layer set은 유지된다. | 실패한 optional `planStepId` 의 tail만 rollback / fallback 한다. decoration polish, optional hero image, badge cleanup, copy micro-refinement 같은 non-essential work만 제거 또는 대체한다. | UI는 success처럼 닫되 warning summary를 반드시 함께 보여줘야 한다. 예: `배너 초안은 준비되었습니다`, `일부 장식 요소는 기본 스타일로 대체되었습니다`. warning은 화면에서 보이는 draft가 왜 원래 계획보다 덜 완성됐는지 설명해야 한다. |
 | 화면에는 초안이 보였지만 latest save가 확정되지 않음 | `save_failed_after_apply` | committed라고 약속할 수 있는 것은 `latest_saved_revision` checkpoint와 마지막 성공 `TemplateSaveReceipt` 까지뿐이다. 그 이후 visible tail은 durable result로 간주하면 안 된다. | 시스템은 latest saved checkpoint 이후 tail을 우선 rollback / reconcile 한다. 다만 apply 상태를 끝내 증명하지 못하면 tail을 완전히 숨겼다고 약속하지 않고 `unknown_apply_state` 또는 `compensation_failed` 근거를 남긴 채 종료한다. | run panel은 `저장 확인 실패` 를 primary state로 보여주고, `화면의 초안 일부는 새로고침 후 유지되지 않을 수 있습니다` 를 명시해야 한다. retryable이면 `저장 다시 시도` 만 노출하고, retryable이 아니면 manual edit 또는 close만 허용한다. incomplete work는 `미저장 변경` 또는 `저장 불확실` 로 표시해야지 성공 경고처럼 표시하면 안 된다. |
 
 추가 고정 규칙은 아래와 같다.
@@ -2162,7 +2164,7 @@ type PlanningInput = {
     draftCount: 1;
     factualityPolicy: 'generic_promo_only';
     forbiddenClaimKinds: Array<'discount_percent' | 'deadline_date' | 'brand_name' | 'product_name'>;
-    requiredSlots: Array<'background' | 'headline' | 'supporting_copy' | 'cta' | 'decoration'>;
+    minimumEditableOutcomes: Array<'background_treatment' | 'dominant_message' | 'supporting_message' | 'action_bearing_object' | 'decorative_support'>;
   };
   toolBudget: {
     plannerTurnsMax: 2;
@@ -2175,7 +2177,7 @@ type PlanningInput = {
 v1 bootstrap artifact 규칙:
 
 - `RunJobEnvelope` 는 full canvas JSON를 싣지 않고 `requestRef`, `snapshotRef` 로 hydrate한다.
-- `PlanningInput.guardrails.requiredSlots` 는 대표 시나리오 성공 최소 구성을 바로 반영해야 한다.
+- `PlanningInput.guardrails.minimumEditableOutcomes` 는 대표 시나리오 성공 최소 구성을 바로 반영해야 한다.
 - `attemptSeq` 는 retry/resume 때만 증가하고, `runId`, `traceId`, `draftCount=1` 은 유지한다.
 
 #### 6.3.1.1 queue and handoff boundary
@@ -2224,8 +2226,8 @@ type NormalizedIntent = {
     allowSpecificDates: false;
     allowSpecificBrands: false;
   };
-  requiredSlots: Array<'background' | 'headline' | 'supporting_copy' | 'cta' | 'decoration'>;
-  optionalSlots: Array<'badge' | 'hero_image'>;
+  messageAtoms: Array<'primary' | 'offer' | 'cta' | 'detail' | 'legal_or_footer'>;
+  optionalEnhancements: Array<'badge' | 'hero_image'>;
 };
 
 type ExecutablePlan = {
@@ -2301,7 +2303,7 @@ type ExecutablePlan = {
 v1 planner artifact 규칙:
 
 - `NormalizedIntent` 는 free-form 자연어를 남기지 않고, v1 제약이 확정된 구조만 남긴다.
-- `NormalizedIntent.intentId` 는 raw request를 구조화한 첫 stable semantic id다. `intentVersion` 은 run별 `1` 에서 시작하고, `goalType`, `themeKey`, `copyPolicy`, `requiredSlots`, `optionalSlots` 중 하나라도 바뀌는 재해석이 있을 때만 증가한다.
+- `NormalizedIntent.intentId` 는 raw request를 구조화한 첫 stable semantic id다. `intentVersion` 은 run별 `1` 에서 시작하고, `goalType`, `themeKey`, `copyPolicy`, `messageAtoms`, `optionalEnhancements` 중 하나라도 바뀌는 재해석이 있을 때만 증가한다.
 - `ExecutablePlan.slotPlan[].initialCommit` 은 §2.8의 `within_run_internal_correction_only` status를 이미 전제로 해야 한다. 예를 들어 장식 이미지는 `create_then_replace_and_delete`, CTA style polish는 `create_then_update` 처럼 same-run refinement/cleanup 경로를 함께 가져야 한다.
 - `ExecutablePlan.planId` 는 실행 가능한 validated plan의 stable id다. `planVersion` 은 run별 `1` 에서 시작하고 새 validated plan이 생길 때마다 증가한다. 같은 intent 아래 plan만 보정되면 `intentVersion` 은 유지하고 `planVersion` 만 증가할 수 있다.
 - `ExecutablePlan.copyBlocks[].text` 는 일반 프로모션 표현만 허용한다. 예시: `봄 세일`, `시즌 특가`, `지금 확인하기`.
@@ -2310,7 +2312,7 @@ v1 planner artifact 규칙:
 - `ExecutablePlan.commitPlan.planSteps[]` 는 v1에서 rollback, compensation, step-level observability를 함께 닫는 sole execution unit이다. rollback scope를 `rollbackGroup`, `commitGroup`, mutation batch 같은 별도 개념으로 다시 정의하면 안 된다.
 - 각 tool call, `CanvasMutationEnvelope`, `saveTemplate` attempt는 정확히 하나의 `planStepId` 에 속해야 한다. 어떤 mutation/save도 둘 이상의 plan step에 걸칠 수 없다.
 - `commitGroup` 과 `rollbackHint.rollbackGroupId` 는 transport/compatibility projection일 뿐이며, 언제나 같은 `planStepId` 값을 mirror 해야 한다.
-- `requiredSlots` 를 모두 만족할 경로가 없는 plan은 validated plan으로 간주하면 안 된다.
+- essential composition obligation을 만족할 경로가 없는 plan은 validated plan으로 간주하면 안 된다.
 
 #### 6.3.2.1 persisted contract chain: `AgentRunRecord -> NormalizedIntent -> ExecutablePlan`
 
@@ -2675,7 +2677,7 @@ type SaveTemplateCommand = {
 
 이 절의 canonical entity는 `StoredAssetDescriptor` 다. `Asset Storage Adapter` 는 final descriptor object의 유일한 emit owner다. 다만 field 값의 upstream source authority는 고정되어 있고, adapter는 그 source-owned 값을 검증해 조립할 뿐 임의로 재해석하거나 덮어쓸 수 없다. provider raw output, editor-side guess, planner metadata만으로 descriptor를 합성하거나 수정하면 안 된다.
 
-`StoredAssetDescriptor` 는 `persisted object 1개 + immutable metadata envelope 1개` 의 쌍으로만 발급한다. 따라서 shape-only fallback, placeholder layer, 순수 color/shape recipe는 descriptor를 만들지 않으며 `CanvasMutationEnvelope` 와 `DraftManifest.slotBindings[].status=fallback_ready` 로만 표현한다.
+`StoredAssetDescriptor` 는 `persisted object 1개 + immutable metadata envelope 1개` 의 쌍으로만 발급한다. 따라서 shape-only fallback, placeholder layer, 순수 color/shape recipe는 descriptor를 만들지 않으며 `CanvasMutationEnvelope` 와 `DraftManifest.compositionBindings[].status=fallback_ready` 로만 표현한다.
 
 `StoredAssetDescriptor` 는 v1에서 canvas mutation authoring 직전까지 유지될 수 있는 sole pre-mutation asset contract이기도 하다. 즉 asset-bearing step이 worker, adapter, backend persistence, final bundle hydrate 경계를 넘을 때 허용되는 object family는 `ImageSearchCandidate[]`(persist 전 후보) 또는 persisted `StoredAssetDescriptor[]`(persist 후 canonical asset) 뿐이다. `CanvasReadyImageAsset`, `selected_asset`, `render_hints`, provider DTO, upload file handle/cache object처럼 같은 bytes를 다른 이름으로 포장한 sibling bridge contract는 정의하지 않는다.
 
@@ -3010,7 +3012,7 @@ leakage barrier와 editability guarantee는 아래처럼 닫는다.
 - image-bearing mutation authoring 직전에는 반드시 descriptor-linked placement intent normalization step이 한 번 실행돼야 한다. 이 step이 닫은 `selectedAssetRefKey`/`selectedAssetId`/placement-ready field만 `createLayer` / `updateLayer` 로 projection할 수 있고, tool result raw payload는 mutation logic input으로 재진입하면 안 된다.
 - persisted object 이후 asset-bearing step이 넘길 수 있는 object family는 `StoredAssetDescriptor[]` 하나뿐이다. `selected_asset`, `CanvasReadyImageAsset`, `render_hints`, upload file/cache DTO, provider raw payload를 병행 노출하면 안 된다.
 - `CanvasMutationEnvelope` 의 `createLayer`/`updateLayer` 는 provider URL, base64, candidate id, 별도 asset DTO를 직접 참조할 수 없고, 오직 `assetRefKey` 와 그 아래 canonical `assetId` 로만 attach 해야 한다.
-- `LiveDraftArtifactBundle.referencedStoredAssets[]` 는 final `DraftManifest.slotBindings[]` 에 실제로 연결된 descriptor만 남겨야 하며, candidate 탈락분이나 shape fallback recipe를 포함하면 안 된다.
+- `LiveDraftArtifactBundle.referencedStoredAssets[]` 는 final `DraftManifest.compositionBindings[]` 에 실제로 연결된 descriptor만 남겨야 하며, candidate 탈락분이나 shape fallback recipe를 포함하면 안 된다.
 - descriptor는 append-only immutable record다. bytes, mime, dimensions, checksum, provenance가 달라지면 기존 row를 수정하지 않고 새 `StoredAssetDescriptor` 를 발급한다.
 
 v1 live-commit artifact 규칙:
@@ -3069,14 +3071,14 @@ type EditableBannerDraftCommitPayload = {
   draftId: string;
   pageId: string;
   commitMode: 'apply_immediately';
-  requiredSlots: Array<'background' | 'headline' | 'supporting_copy' | 'cta' | 'decoration'>;
+  minimumEditableOutcomes: Array<'background_treatment' | 'dominant_message' | 'supporting_message' | 'action_bearing_object' | 'decorative_support'>;
   firstRenderableSeq: number;
   reconciledThroughSeq: number;
   mutations: CanvasMutationEnvelope[];
   manifest: {
     rootLayerIds: string[];
     editableLayerIds: string[];
-    slotBindings: Array<{
+    compositionBindings: Array<{
       slotKey: 'background' | 'headline' | 'supporting_copy' | 'cta' | 'decoration' | 'badge' | 'hero_image';
       primaryLayerId: string;
       layerIds: string[];
@@ -3328,7 +3330,7 @@ materialization / commit / finalization order는 아래 순서로 고정한다.
 
 이 규칙 때문에 representative v1 run의 query path도 하나로 고정된다. persistence/SLA/audit는 먼저 `AgentRunRecord.runId` 를 root로 고정한 뒤 `AgentRunRecord.completionRecordRef` 로 terminal `RunCompletionRecord` 를 읽고, `RunCompletionRecord.canonicalRunId`, `parentBundleRef`, `LiveDraftArtifactBundle.parentCommitPayloadRef`, `EditableBannerDraftCommitPayload.parentMutationRangeRef` 를 순서대로 검증한다. 그 뒤에만 committed `LiveDraftArtifactBundle` 및 embedded `EditableBannerDraftCommitPayload` 를 hydrate하고, 필요할 때만 해당 payload가 참조하는 `CanvasMutationEvent.mutationId` / `seq` 범위를 역추적한다.
 
-대표 시나리오에서 `slotBindings` 는 최소 아래를 만족해야 한다.
+대표 시나리오에서 `compositionBindings` 는 최소 아래를 만족해야 한다.
 
 | slotKey | required | 대표 값 예시 | editable expectation |
 | --- | --- | --- | --- |
@@ -3342,10 +3344,10 @@ materialization / commit / finalization order는 아래 순서로 고정한다.
 
 `EditableBannerDraftCommitPayload` 가 성립하려면 아래 조건을 모두 만족해야 한다.
 
-- `requiredSlots` 의 각 slot은 `manifest.slotBindings` 에 정확히 1개 이상의 binding을 가져야 한다.
-- `requiredSlots` 의 status는 `editable_draft_ready` 시점까지 모두 `ready` 또는 `fallback_ready` 여야 한다. `placeholder` 상태로 terminal success를 닫을 수는 없다.
+- `minimumEditableOutcomes` 의 각 항목은 `manifest.compositionBindings` 에 정확히 1개 이상의 binding을 가져야 한다.
+- `minimumEditableOutcomes` 의 status는 `editable_draft_ready` 시점까지 모두 `ready` 또는 `fallback_ready` 여야 한다. `placeholder` 상태로 terminal success를 닫을 수는 없다.
 - `manifest.editableLayerIds` 는 사용자가 기존 editor 도구로 직접 선택, 이동, 텍스트 수정, 삭제 가능한 stable layer id만 담아야 한다.
-- `referencedStoredAssets[]` 는 `manifest.slotBindings[].assetId` 또는 `assetRefKey` 로 실제 연결된 asset만 포함해야 한다. provider URL, base64, ephemeral handle은 이 배열에 직접 남길 수 없다.
+- `referencedStoredAssets[]` 는 `manifest.compositionBindings[].assetId` 또는 `assetRefKey` 로 실제 연결된 asset만 포함해야 한다. provider URL, base64, ephemeral handle은 이 배열에 직접 남길 수 없다.
 - `mutationLedger.orderedEntries[]` 는 `editableCanvasState.commitPayload.mutations[]` 와 같은 `seq` 순서를 유지해야 하며, `reconciledThroughSeq` 는 `commitPayload.reconciledThroughSeq` 와 같아야 한다.
 - `savePlan.saveRequired=true` 이므로 `completed` 계열 terminal 상태는 `saveMetadata.latestSaveReceipt !== null` 이고 `saveMetadata.latestSaveReceipt.savedRevision === editableCanvasState.draftManifest.finalRevision` 을 동시에 만족할 때만 허용된다.
 
@@ -3536,12 +3538,12 @@ materialization / commit / finalization order는 아래 순서로 고정한다.
       "brand_name",
       "product_name"
     ],
-    "requiredSlots": [
-      "background",
-      "headline",
-      "supporting_copy",
-      "cta",
-      "decoration"
+    "minimumEditableOutcomes": [
+      "background_treatment",
+      "dominant_message",
+      "supporting_message",
+      "action_bearing_object",
+      "decorative_support"
     ]
   },
   "toolBudget": {
@@ -3581,14 +3583,13 @@ materialization / commit / finalization order는 아래 순서로 고정한다.
     "allowSpecificDates": false,
     "allowSpecificBrands": false
   },
-  "requiredSlots": [
-    "background",
-    "headline",
-    "supporting_copy",
+  "messageAtoms": [
+    "primary",
+    "offer",
     "cta",
-    "decoration"
+    "detail"
   ],
-  "optionalSlots": [
+  "optionalEnhancements": [
     "badge",
     "hero_image"
   ]
@@ -4169,12 +4170,12 @@ materialization / commit / finalization order는 아래 순서로 고정한다.
       "draftId": "draft_banner_001",
       "pageId": "page_home_hero",
       "commitMode": "apply_immediately",
-      "requiredSlots": [
-        "background",
-        "headline",
-        "supporting_copy",
-        "cta",
-        "decoration"
+      "minimumEditableOutcomes": [
+        "background_treatment",
+        "dominant_message",
+        "supporting_message",
+        "action_bearing_object",
+        "decorative_support"
       ],
       "firstRenderableSeq": 1,
       "reconciledThroughSeq": 2,
@@ -4445,7 +4446,7 @@ materialization / commit / finalization order는 아래 순서로 고정한다.
           "lyr_grp_7104",
           "lyr_shape_7105"
         ],
-        "slotBindings": [
+        "compositionBindings": [
           {
             "slotKey": "background",
             "primaryLayerId": "lyr_bg_7101",
@@ -4528,7 +4529,7 @@ materialization / commit / finalization order는 아래 순서로 고정한다.
         "lyr_grp_7104",
         "lyr_shape_7105"
       ],
-      "slotBindings": [
+      "compositionBindings": [
         {
           "slotKey": "background",
           "primaryLayerId": "lyr_bg_7101",

@@ -61,7 +61,7 @@ Phase B 의 목표는 아래 하나다.
 
 - `photoBranchMode=photo_selected` 인 경우에만 `place_photo_hero` action 을 생성한다.
 - `photo_selected` 는 executable photo metadata 와 dedicated photo layout candidate 가 모두 있을 때만 허용한다.
-- 실제 mutation 은 `slotKey=hero_image`, `layerType=image` 로 내려간다.
+- 실제 mutation 은 hero visual image object를 생성하는 image-layer command로 내려가야 한다.
 - `photo` 는 `background` 가 아니라 `hero visual object` 다.
 - outer frame 는 hero bounds 를 그대로 사용하고, inner viewport 는 `centered_cover` 로 계산한다.
 - image metadata 가 부족하거나 picture load 가 실패하면 run 은 fail-fast 로 종료한다.

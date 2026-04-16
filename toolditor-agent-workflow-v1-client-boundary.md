@@ -451,8 +451,9 @@ type CanvasMutationCommand =
       reason: 'milestone_first_editable' | 'run_completed';
     };
 
-- `executionSlotKey` 는 FE apply/debug path에서 copy/photo/background semantic slot을 식별하는 canonical field다.
-- `slotKey` 는 additive migration 동안 compat field로 유지하며, FE는 semantic truth를 재구성하지 않고 `executionSlotKey` 를 우선 소비한다.
+- `executionSlotKey` 는 FE apply/debug path에 남아 있는 legacy execution correlation field다.
+- `slotKey` 와 `executionSlotKey` 는 둘 다 structure truth나 completion truth가 아니다.
+- FE는 이 필드들을 current runtime correlation/debug 용도로만 소비하고, SSOT를 대신하는 semantic source로 승격하면 안 된다.
 - semantic `createLayer` / `updateLayer` command 에서 `executionSlotKey` 가 없거나 invalid 하면 FE 는 silent fallback 없이 reject 하고 contract violation 을 surface 한다.
 
 type CanvasMutationEnvelope = {

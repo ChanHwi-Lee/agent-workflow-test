@@ -6,15 +6,17 @@
 
 # agent-workflow-test
 
-2026-04-08 기준 진행 상태 메모.
+2026-04-16 기준 진행 상태 메모.
 
 ## 먼저 읽을 문서
 
 - 문서 인덱스: [tooldi-agent-workflow-v1-doc-index.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-doc-index.md)
+- 설계 철학 SSOT: [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md)
 - 현재 구현 상태: [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
 - 표현 전략 lock: [tooldi-agent-workflow-v1-create-template-representation-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-representation-design-lock.md)
-- object-native 전환 아키텍처: [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md)
-- topology-driven v4 설계 초안: [tooldi-agent-workflow-v4-topology-driven-editor-native-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v4-topology-driven-editor-native-architecture.md)
+- intelligence lock: [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md)
+- object-native 전환 배경 참고: [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md)
+- topology-driven v4 배경 참고: [tooldi-agent-workflow-v4-topology-driven-editor-native-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v4-topology-driven-editor-native-architecture.md)
 - 다음 작업 우선순위: [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
 
 ## 2026-04-09 현재 구현 스냅샷
@@ -22,7 +24,11 @@
 - worker orchestration 은 `BullMQ Worker + LangGraph` 로 동작한다.
 - planner/model abstraction 은 `LangChain JS` 로 정리했고, 현재 local 기본 planner provider 는 `Google Gemini` 다.
 - public 제품 표면은 여전히 `empty_canvas -> create_template` 1종이다.
-- 현재 worker 는 generic `create_template` skeleton 을 넘어 `strict core + structured subplans` 체인을 가진다.
+- 최근 설계 철학 SSOT는 `template-aware adaptive composition` 으로 고정됐다.
+  - template object graph가 구조의 1차 진실이다.
+  - message atoms는 content hint다.
+  - completion은 `editability + renderability + save truth` 로 닫는다.
+- 현재 worker 는 여전히 아래 legacy artifact chain을 남긴다.
   - `normalized-intent`
   - `copy-plan`
   - `layout-plan-abstract`
@@ -37,6 +43,7 @@
   - `judge-plan`
   - `refine-decision`
   - `executable-plan`
+- 위 artifact chain은 current runtime scaffolding 이며 설계 철학의 canonical source가 아니다.
 - terminal outcome 은 `completed`, `completed_with_warning`, `failed` 를 실제로 구분한다.
 - real Tooldi source representative slice 는 계속 동작한다.
   - `background`
@@ -47,18 +54,17 @@
   - `식당에서 신규 봄 계절메뉴를 만들어줘`
   - `카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘`
   - `패션 리테일 봄 세일 배너 만들어줘`
-- `create_template` 표현 전략은 이제 giant schema 확장이 아니라 `strict core schema + structured subplans` 방향으로 고정한다.
-  - giant end-to-end schema 금지
-  - freeform brief handoff 금지
-  - family-specific retrieval/execution semantics 유지
+- `create_template` 표현 전략은 이제 `message atoms -> projected template object graph -> adaptive composition decision -> executor materialization` 방향으로 고정한다.
+  - giant schema 금지
+  - slot completeness 금지
+  - capability-as-planning-ontology 금지
 - 현재 create-template 는 preflight `ruleJudge` 뒤에 **scene-aware, non-visual 1회 patch refine** 를 가진다.
   - `execution-scene-summary -> judge-plan -> refine-decision -> patch mutation -> finalize`
-- execution/scene layer는 이제 copy/photo/background semantic slot에 대해 `executionSlotKey` 를 canonical identity로 사용한다.
-  - legacy `slotKey` 는 compat field로 유지한다.
-  - `ExecutionSceneSummary`, `JudgePlan`, `RefineDecision` 은 더 이상 `slotKey`/`role` alias 추론을 truth로 쓰지 않는다.
+- current runtime 일부 경로는 아직 `executionSlotKey` 같은 legacy execution metadata를 남긴다.
+  - 이 필드는 current implementation drift일 뿐 구조 truth나 completion truth가 아니다.
 - `ConcreteLayoutPlan` 은 이제 `slotAnchors` 외에 `resolvedSlotBounds` 를 가지며, copy/photo/background placement authority는 이 bounds를 기준으로 정렬된다.
 - real save evidence 는 아직 synthetic finalize placeholder 에 의존한다.
-- `retrieval_prior_v2_reset` 까지의 safety hardening만으로는 브라우저 visible quality가 충분히 올라가지 않았고, 다음 단계는 semantic-slot hybrid 를 더 미세 조정하는 것이 아니라 object-native reference execution 으로 전환하는 것이다.
+- `retrieval_prior_v2_reset` 까지의 safety hardening만으로는 브라우저 visible quality가 충분히 올라가지 않았고, 다음 단계는 SSOT 기준 adaptive composition 전환을 실제 runtime contract에 반영하는 것이다.
 
 ## 2026-04-15 현재 구현 추가
 
@@ -336,7 +342,8 @@ AGENT_INTERNAL_BASE_URL=http://127.0.0.1:3000 pnpm --filter @tooldi/agent-worker
 
 ## 후속 구현 로드맵
 
-- `create_template` intelligence layer의 capability catalog / selection policy / candidate schema / hierarchy 기준선은 [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md) 에 별도로 잠갔다.
+- 설계 철학과 migration direction은 [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 를 먼저 본다.
+- `create_template` intelligence projection은 [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md) 에 별도로 잠갔다.
 - `봄 템플릿 만들어줘` 한 건에 대한 실제 Tooldi 자산 기반 vertical slice 기준은 [tooldi-agent-workflow-v1-create-template-spring-vertical-slice.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-spring-vertical-slice.md) 에 정리했다.
 - 실제 Tooldi 콘텐츠 source family, PHP API / DB seam, real catalog adapter 기준선은 [tooldi-agent-workflow-v1-tooldi-content-discovery.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-tooldi-content-discovery.md) 에 정리했다.
 - 현재 worker runtime에는 `real Tooldi catalog source adapter` seam 이 추가되어 있고, spring slice는 opt-in real source mode에서 `background/shape/font` 를 실제 Tooldi PHP API로 조회할 수 있다.
@@ -351,6 +358,7 @@ AGENT_INTERNAL_BASE_URL=http://127.0.0.1:3000 pnpm --filter @tooldi/agent-worker
 - 2026-04-08 기준 큰 방향은 custom worker orchestration 을 더 손으로 키우는 것이 아니라, TS LangGraph 기반 runtime 위에 LangChain JS planner/model layer 를 얹는 것이다.
 - 2026-04-08 기준 LangChain JS 와 provider adapter(OpenAI/Anthropic/Gemini)는 workspace 에 실제로 추가됐고, 현재 local 기본 planner provider 는 Gemini 다.
 - 현재 구현 상태와 문서 읽기 순서는 아래 두 문서를 기준으로 본다.
+  - [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md)
   - [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
   - [tooldi-agent-workflow-v1-doc-index.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-doc-index.md)
 - 이 문서는 normative spec이 아니라 working roadmap이며, sibling authoritative docs를 override하지 않는다.

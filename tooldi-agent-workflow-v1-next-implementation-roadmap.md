@@ -17,17 +17,20 @@
 ## 1. 문서 성격
 
 - 이 문서는 normative spec이 아니라 `다음 구현 우선순위` 를 정리하는 working roadmap이다.
-- `create_template` intelligence layer의 capability catalog / selection policy / candidate schema / hierarchy authority는 [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md) 가 맡고, 이 문서는 sequencing과 implementation track만 다룬다.
-- `create_template` 내부 표현 전략과 `core schema + structured subplans` 기준은 [tooldi-agent-workflow-v1-create-template-representation-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-representation-design-lock.md) 를 따른다.
-- planner/search/judge hardening의 source-grounded TO-BE 기준은 [tooldi-agent-workflow-v1-create-template-hardening-source-grounded-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-hardening-source-grounded-to-be.md) 를 따른다.
+- 설계 철학과 migration direction은 [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 를 먼저 따른다.
+- `create_template` intelligence projection은 [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md) 가 맡고, 이 문서는 sequencing과 implementation track만 다룬다.
+- `create_template` 표현 projection은 [tooldi-agent-workflow-v1-create-template-representation-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-representation-design-lock.md) 를 따른다.
+- planner/search/judge hardening reference는 [tooldi-agent-workflow-v1-create-template-hardening-source-grounded-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-hardening-source-grounded-to-be.md) 를 참고하되 planning ontology authority로 읽지 않는다.
 - authority ownership, artifact identity, completion semantics, FE/BE boundary는 sibling 문서를 override하지 않는다.
 - sibling 문서와 충돌이 나면 아래 순서를 따른다.
-  1. `tooldi-natural-language-agent-v1-architecture.md`
-  2. `tooldi-agent-workflow-v1-functional-spec-to-be.md`
-  3. `tooldi-agent-workflow-v1-backend-boundary.md`
-  4. `toolditor-agent-workflow-v1-client-boundary.md`
-  5. `tooldi-agent-workflow-v1-scope-operations-decisions.md`
-  6. `tooldi-agent-workflow-v1-template-intelligence-design-lock.md`
+  1. `tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md`
+  2. `tooldi-natural-language-agent-v1-architecture.md`
+  3. `tooldi-agent-workflow-v1-functional-spec-to-be.md`
+  4. `tooldi-agent-workflow-v1-backend-boundary.md`
+  5. `toolditor-agent-workflow-v1-client-boundary.md`
+  6. `tooldi-agent-workflow-v1-scope-operations-decisions.md`
+  7. `tooldi-agent-workflow-v1-template-intelligence-design-lock.md`
+  8. `tooldi-agent-workflow-v1-create-template-representation-design-lock.md`
 
 ## 2. 현재 기준선
 
@@ -36,7 +39,7 @@
 - separate control-plane / execution-plane skeleton 존재
 - `POST /runs -> SSE -> mutation ack -> finalize -> completed` happy-path prototype 존재
 - 2026-04-09 기준 worker 내부 orchestration 은 LangGraph `StateGraph` 로 실제 실행된다.
-- current worker 는 generic `create_template` skeleton 을 넘어 `strict core + structured subplans` chain 을 가진다.
+- current worker 는 아직 아래 legacy artifact chain을 남긴다.
   - `normalized-intent`
   - `copy-plan`
   - `layout-plan-abstract`
@@ -51,7 +54,9 @@
   - `judge-plan`
   - `refine-decision`
   - `executable-plan`
-- execution/scene layer는 copy/photo/background slot에 대해 canonical `executionSlotKey` 를 공식 truth로 사용하고, legacy `slotKey` 는 compat field로 유지한다.
+- 위 artifact chain은 current runtime scaffolding 이며 design truth는 아니다.
+- current runtime 일부 경로는 `executionSlotKey` 같은 legacy execution metadata를 여전히 남긴다.
+- 이 metadata는 구조 truth나 completion truth가 아니라 drift surface로만 취급한다.
 - `ConcreteLayoutPlan` 은 `resolvedSlotBounds` 를 가지며 preflight/execution 쪽 copy bounds authority를 제공한다.
 - planner/model abstraction 은 LangChain JS 뒤로 정리됐고, local 기본 provider 는 Gemini 다.
 - picture/shape retrieval은 direct `Picture::index` / `Shape::index` surface를 사용하는 `tooldi_api_direct` mode로 정리됐다.
@@ -61,7 +66,7 @@
 - `run.recovery` 는 projection skeleton 수준으로만 존재한다
 - 실제 editor save evidence, resume engine, rollback engine, production durability는 아직 아니다
 
-즉 현재 상태는 `작동하는 create_template subplan-driven runtime v1` 이며, 다음 단계의 핵심은 새 runtime 도입이 아니라 `real save evidence / visual quality judge / bounded refine 품질` 을 고도화하는 것이다.
+즉 현재 상태는 `작동하는 create_template transition runtime v1` 이며, 다음 단계의 핵심은 legacy slot/plan scaffolding을 SSOT 기준 adaptive composition runtime으로 실제 치환하는 것이다.
 
 ## 2.1 2026-04-15 기준 우선순위 재판정
 
@@ -73,14 +78,14 @@
 - FE text-height invariant 정리
 
 하지만 브라우저 결과는 거의 계속 `style_only` fallback에 머물렀다.  
-이유는 planner가 reference를 읽더라도 execution 직전에는 다시 좁은 semantic contract로 압축되기 때문이다.
+이유는 reference를 읽더라도 execution 직전에는 다시 legacy narrow contract로 압축되기 때문이다.
 
 따라서 현재 roadmap의 실제 최우선 과제는 fallback polish가 아니라 아래로 재고정한다.
 
 - `retrieval_prior_v2_reset` 추가 미세 조정 중단
-- `object-native reference execution` 전환 설계와 검증
+- SSOT 기준 adaptive composition runtime 전환 설계와 검증
 
-이 전환의 아키텍처 철학과 정상 동작 목표는 [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md) 를 authoritative design reset 문서로 따른다.
+이 전환의 설계 철학과 정상 동작 목표는 [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 를 authoritative SSOT로 따른다. `tooldi-agent-workflow-vnext-object-native-reference-architecture.md` 는 배경 참고용 historical context로만 읽는다.
 
 ## 3. 현재 단계에서 고정할 전제
 

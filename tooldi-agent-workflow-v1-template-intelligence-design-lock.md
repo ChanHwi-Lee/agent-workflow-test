@@ -5,258 +5,219 @@
 | 항목 | 값 |
 | --- | --- |
 | 문서명 | Tooldi Agent Workflow v1 Template Intelligence Design Lock |
-| 문서 목적 | `create_template` happy-path 고도화를 위한 intelligence layer의 v1 설계 기준을 고정한다. |
+| 문서 목적 | `create_template` intelligence layer를 SSOT 기준으로 다시 잠그고, 무엇을 discovery vocabulary로 읽고 무엇을 executor vocabulary로 읽는지 분리한다. |
 | 상태 | Draft |
 | 문서 유형 | Decision / Spec Lock |
-| 작성일 | 2026-04-07 |
+| 작성일 | 2026-04-16 |
 | 기준 시스템 | `toolditor FE`, `Fastify Agent API`, `BullMQ Worker Runtime`, `Redis`, `existing internal tool adapters` |
-| 기준 데이터 | `tooldi-natural-language-agent-v1-architecture.md`, `tooldi-agent-workflow-v1-functional-spec-to-be.md`, `tooldi-agent-workflow-v1-backend-boundary.md`, `tooldi-agent-workflow-v1-scope-operations-decisions.md`, `README.md` |
+| 기준 데이터 | `tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md`, `tooldi-natural-language-agent-v1-architecture.md`, `tooldi-agent-workflow-v1-functional-spec-to-be.md`, `tooldi-agent-workflow-v1-backend-boundary.md`, `tooldi-agent-workflow-v1-scope-operations-decisions.md`, `README.md` |
 | 대상 독자 | PM, FE, Agent Backend, Worker, QA |
 | Owner | Ouroboros workflow |
 
 ## 1. 문서 성격
 
-- 이 문서는 `create_template` intelligence layer의 vocabulary, phase boundary, selection policy를 잠그는 sibling authority 문서다.
+- 이 문서는 `create_template` intelligence layer의 projection lock이다.
+- 설계 철학, adaptive composition axiom, completion definition은 SSOT만 authoritative 하다.
 - 이 문서는 artifact identity, counted completion moment, lifecycle ownership, FE/BE control-plane split을 재정의하지 않는다.
-- sibling 문서와 충돌이 나면 아래 순서를 따른다.
-  1. `tooldi-natural-language-agent-v1-architecture.md`
-  2. `tooldi-agent-workflow-v1-functional-spec-to-be.md`
-  3. `tooldi-agent-workflow-v1-backend-boundary.md`
-  4. `toolditor-agent-workflow-v1-client-boundary.md`
-  5. `tooldi-agent-workflow-v1-scope-operations-decisions.md`
-  6. 이 문서
+- 이 문서는 capability catalog을 planning ontology로 격상하지 않는다. capability는 executor vocabulary이고, planning은 template object graph와 message atoms를 중심으로 조직된다.
 
-즉, 이 문서는 위 문서들이 이미 잠근 ownership/scope 위에서 `template intelligence` 관련 세부 기준만 닫는다.
+## 2. 이 문서가 잠그는 것
 
-## 2. 목적
+이 문서가 잠그는 것은 아래 다섯 가지다.
 
-이 문서가 잠그는 것은 아래 4가지다.
+1. source family registry
+2. reference discovery / compare / select policy
+3. message atom extraction vocabulary
+4. addable vocabulary registry
+5. executor capability registry
 
-1. Tooldi 요소 capability catalog
-2. `create_template` intent -> tool selection policy
-3. search / compare / select candidate schema
-4. agent tool / editor primitive hierarchy
-
-핵심 질문은 "LLM이 무엇을 알아야 적절한 툴과 요소를 고를 수 있는가" 이다.
-
-이 질문의 답은 단순 기능 설명서가 아니라 아래 3종을 함께 정의하는 것이다.
-
-- 무엇이 존재하는가
-- 무엇을 할 수 있는가
-- 언제 무엇을 써야 하는가
+핵심 질문은 이제 `"LLM이 어떤 slot을 채워야 하는가"` 가 아니라 `"어떤 reference graph를 선택하고 어떤 object를 retain/modify/remove/add 해야 하는가"` 다.
 
 ## 3. v1 고정 전제
 
 ### 3.1 happy-path 우선
 
-- v1 현재 단계의 우선순위는 recovery 고도화보다 happy-path intelligence 고도화다.
-- 따라서 첫 구현 기준은 `더 적절한 요소 선택`, `더 나은 structured plan`, `더 설명 가능한 selection trace` 다.
+- v1 현재 단계의 우선순위는 recovery 고도화보다 happy-path composition quality 고도화다.
+- 따라서 첫 구현 기준은 `더 적절한 reference 선택`, `더 나은 object-level decision`, `더 설명 가능한 selection trace` 다.
 
-### 3.2 전체 문서화, 핵심만 실행
+### 3.2 retrieval은 열되 planning ontology는 고정하지 않는다
 
-- capability catalog는 `background`, `text`, `shape`, `group`, `photo`, `graphic`, `qr`, `barcode` 까지 모두 포함한다.
-- 하지만 immediate v1 implementation / happy-path execution surface는 계속 `background`, `shape`, `text`, `group` 중심으로 유지한다.
-- `photo`, `graphic`, `qr`, `barcode` 는 catalog와 future selection policy에는 포함하지만, 기본 happy-path 실행 요구사항으로는 올리지 않는다.
+- retrieval stage는 열어 둔다.
+- 하지만 retrieval result를 다시 slot schema로 축약하면 안 된다.
+- retrieval의 목적은 `reference template object graph` 를 찾는 것이지, required slot checklist를 채우는 것이 아니다.
 
-### 3.3 photo branch phase A 잠금
-
-- `photo_source` 는 `spring template` vertical slice에서 더 이상 reasoning-only family가 아니다.
-- Phase A 기준 `photo_source` 는 아래 상태로 고정한다.
-  - candidate assembly: enabled
-  - compare/select: enabled
-  - editor execution: deferred
-- 즉 worker는 실제 Tooldi `picture` inventory를 조회하고, `photo` 를 선택 후보로 평가하며, `photo branch` 가 적합한지 여부를 explicit selection artifact와 log에 남겨야 한다.
-- 하지만 Phase A 에서는 실제 canvas mutation 실행 경로는 여전히 `graphic-first shape/text/group safe path` 를 유지한다.
-- 이유는 `photo` execution path가 `crop`, `focal area`, `copy readability`, `object image insert contract` 를 추가로 요구하기 때문이다.
-- Phase A 는 therefore `photo branch selection proof`, not `photo branch execution`.
-
-### 3.4 photo branch phase B 잠금
-
-- `photo_source` 는 `wide_1200x628` representative preset 에 한해 `execution-enabled` 로 승격할 수 있다.
-- 이때 `photo` 는 `background replacement` 가 아니라 `hero visual object` 로만 실행한다.
-- execution path 는 `foundation -> photo -> copy -> polish` 로 고정한다.
-- photo execution failure 는 same-run graphic fallback 으로 숨기지 않고 fail-fast 로 surface 한다.
-- square/story preset, multi-photo, photo background, auth/user-context source 는 계속 다음 단계다.
-
-### 3.4 retrieval은 구조만 열고 실행은 잠근다
-
-- `embeddings / RAG` 는 여전히 v1 제품 범위 밖이다.
-- 다만 전체 pipeline은 `optional retrieval stage` 를 later-addable seam 으로 가진다.
-- v1 default는 `retrievalMode=none` 이다.
-- 이후 metadata search, semantic search, rerank는 같은 stage contract에 꽂을 수 있어야 한다.
-
-### 3.5 multi-agent는 열지 않는다
+### 3.3 multi-agent는 열지 않는다
 
 - planner, selector, judge, vision evaluator는 logical phase일 뿐 독립 actor 협업 구조가 아니다.
 - v1은 single-run / single-worker mental model을 유지한다.
 
-## 4. Template Intelligence Canonical Pipeline
+## 4. Canonical Intelligence Pipeline
 
 `create_template` intelligence pipeline은 아래 순서로 고정한다.
 
 1. ingress
 2. grounding / context pack
-3. normalized intent
-4. executable plan
-5. optional retrieval stage
-6. candidate compare / select
-7. mutation synthesis
-8. optional critique / refinement
-9. finalize
+3. message atom extraction
+4. reference discovery
+5. reference compare / select
+6. projected object graph build
+7. adaptive composition decision
+8. executor materialization
+9. evaluation / finalize
 
 추가 규칙:
 
-- retrieval stage와 critique/refinement stage는 optional 이지만, stage slot 자체는 구조에 포함한다.
-- planner와 selector는 retrieval result가 없는 경우에도 동작 가능한 fallback path를 가져야 한다.
-- editor primitive는 `mutation synthesis` 이후에만 직접 등장해야 한다.
-- backend API 프로세스 안에서 planner/model/tool를 직접 실행하면 안 되고, execution-plane worker가 이 pipeline을 소유한다.
+- retrieval stage와 evaluation/refinement stage는 optional 이지만 stage slot 자체는 구조에 포함한다.
+- planner와 selector는 retrieval result가 없는 경우에도 fallback path를 가져야 한다.
+- editor primitive는 `executor materialization` 이후에만 직접 등장해야 한다.
+- backend API 프로세스 안에서 planner/model/tool를 직접 실행하면 안 되고 execution-plane worker가 이 pipeline을 소유한다.
 
-## 5. Capability Catalog Lock
+## 5. Source Family Registry
 
-### 5.1 목적
+### 5.1 원칙
 
-capability catalog는 사용자 문서가 아니라 machine-readable selection 기준이다.
+source family registry는 planning ontology가 아니라 discovery surface registry다.
 
-각 요소 family는 최소 아래 필드를 가져야 한다.
+각 family는 최소 아래 필드를 가져야 한다.
 
 - `familyId`
 - `displayName`
-- `description`
-- `primaryUseCases`
-- `requiredInputs`
-- `optionalInputs`
-- `styleControls`
-- `supportedOperations`
-- `constraints`
+- `discoveryRole`
+- `selectionSignals`
+- `executionConstraints`
 - `failureModes`
-- `v1CatalogStatus`
-- `v1ExecutionStatus`
+- `currentRuntimeStatus`
 
-### 5.2 요소 family
+### 5.2 family 고정값
 
-v1 capability catalog의 top-level family는 아래로 고정한다.
-
-| family | 의미 | v1 catalog | immediate v1 execution |
+| family | 의미 | discovery status | 기본 메모 |
 | --- | --- | --- | --- |
-| `background` | 페이지 배경, 배경색, 배경 패턴, 배경 이미지 slot | 포함 | 제한적 포함 |
-| `text` | headline, supporting copy, badge, footer note 등 텍스트 계열 | 포함 | 포함 |
-| `shape` | rect, ellipse, polygon, line 등 도형 계열 | 포함 | 포함 |
-| `group` | CTA, badge block, composite decoration 등 그룹 계열 | 포함 | 포함 |
-| `photo` | 업로드/검색/사진 추가로 들어오는 사진 계열 | 포함 | wide-only execution-enabled |
-| `graphic` | bitmap/vector/illust/icon/calligraphy bitmap 등 요소 계열 | 포함 | future-facing |
-| `qr` | QR code 요소 | 포함 | future-facing |
-| `barcode` | barcode 요소 | 포함 | future-facing |
+| `template` | reference template metadata / fetched document | enabled | 구조의 1차 진실을 읽기 위한 reference source |
+| `background` | background contents (`pattern`, `image`) | enabled | background treatment 후보 |
+| `graphic` | shape / vector / bitmap / illustration / icon 계열 | enabled | decor/addable/support object 후보 |
+| `photo` | picture / 업로드 이미지 / 일반 사진 계열 | enabled | hero/supporting visual 후보 |
+| `font` | font inventory | enabled | materialization stage typography token source |
+| `qr` | QR code 요소 | deferred | addable vocabulary reserved |
+| `barcode` | barcode 요소 | deferred | addable vocabulary reserved |
 
 ### 5.3 image taxonomy lock
 
 `image` 라는 단일 family로 묶지 않고 아래처럼 분리한다.
 
 - `photo`
-  - 사진, 업로드 이미지, 검색 이미지, 일반 picture/image 계열
-  - realism, crop, AI photo editing, stock-search candidate와 더 가깝다
+  - realism, crop, focal point, hero/supporting visual에 적합
 - `graphic`
-  - bitmap, vector, illust, icon, calligraphy bitmap 같은 요소 계열
-  - 장식성, 조형성, 시각 기호성, 요소 라이브러리 재사용과 더 가깝다
+  - decor, symbolic motif, vector/bitmap element, abstract support object에 적합
 
-이 구분을 고정하는 이유:
+이 구분은 discovery와 execution constraint를 동시에 바꾸므로 유지한다.
 
-- Toolditor 내부에서도 `photo`와 `bitmap/vector`는 실제로 다른 정책과 진입 조건을 가진다.
-- selection policy, AI eligibility, future retrieval source가 다르므로 하나의 `image` family로 합치면 안 된다.
+## 6. Message Atom Vocabulary
 
-### 5.4 요소 family별 operation matrix
+### 6.1 canonical atom families
 
-각 family는 `존재하는가`만이 아니라 `무엇을 할 수 있는가`를 가져야 한다.
+`create_template` 의 canonical content vocabulary는 아래 atom family로 고정한다.
 
-최소 operation 분류는 아래로 고정한다.
-
-- `create`
-- `update_style`
-- `update_content`
-- `replace_asset`
-- `group_into`
-- `ungroup`
-- `set_background`
-- `delete`
-
-단, v1 사용자-visible scope가 아닌 runtime/internal operation은 catalog에 존재할 수 있다.
-
-## 6. Structured Intent Lock
-
-### 6.1 `create_template` intent 기본 shape
-
-`create_template` 는 단일 string prompt 해석으로 끝나지 않고, 최소 아래 structured field로 정규화되어야 한다.
-
-- `templateKind`
-- `canvasPreset`
-- `layoutIntent`
-- `tone`
-- `requiredSlots`
-- `brandConstraints`
-- `assetPolicy`
-
-### 6.2 field semantics
-
-| field | 의미 |
-| --- | --- |
-| `templateKind` | `promo_banner`, `announcement_banner`, `coupon_banner`, `seasonal_sale_banner` 같은 결과물 유형 |
-| `canvasPreset` | `square_1080`, `story_1080x1920`, `wide_1200x628` 같은 canvas class |
-| `layoutIntent` | `hero_focused`, `copy_focused`, `product_focused` 같은 레이아웃 성격 |
-| `tone` | `bright`, `premium`, `playful`, `minimal` 같은 시각 톤 |
-| `requiredSlots` | happy-path 최소 충족 slot 목록 |
-| `brandConstraints` | palette, typography hint, forbidden style 같은 브랜드 제약 |
-| `assetPolicy` | `shapes_only`, `photo_allowed`, `graphic_allowed`, `brand_assets_only` 같은 asset 사용 규칙 |
-
-### 6.3 required slot baseline
-
-`create_template` v1 minimum required slot은 아래 5개로 고정한다.
-
-- `background`
-- `headline`
-- `supporting_copy`
+- `primary`
+- `offer`
 - `cta`
-- `decoration`
+- optional `detail`
+- optional `legal_or_footer`
 
-추가 slot은 선택적으로 존재할 수 있지만, v1 representative happy-path는 위 5개를 기준으로 평가한다.
+### 6.2 규칙
 
-### 6.4 photo branch phase A intent rule
+- message atoms는 structure truth가 아니다.
+- atom 존재가 특정 object 수나 특정 layout role을 강제하지 않는다.
+- atom은 selected reference graph와 결합돼 retain/modify/remove/add 결정을 돕는 content seed다.
 
-- `photo` 는 Phase A 에서 `hero visual candidate` 로만 취급한다.
-- `photo` 는 `background replacement` 나 `multi-photo collage` 로 해석하면 안 된다.
-- `create_template` intent 가 `graphic_allowed_photo_optional` 인 경우에도 아래 조건을 만족할 때만 photo branch compare 로 승격한다.
-  - current preset 이 hero visual area 를 분리할 수 있다
-  - copy cluster 와 photo hero 가 충돌하지 않는다
-  - graphic-only path 대비 계절성 또는 focal strength 이점이 있다
-- 위 조건을 만족하지 않으면 `photo_source` 는 candidate set 에 존재해도 최종 path 에서는 `graphic preferred` 로 남겨야 한다.
+## 7. Addable Vocabulary Registry
 
-## 7. Tool Selection Policy Lock
+### 7.1 역할
 
-### 7.1 원칙
+새 요소 추가는 addable vocabulary registry를 통해서만 허용한다.
 
-- planner는 editor primitive를 직접 selection unit으로 취급하면 안 된다.
-- planner는 먼저 상위 agent tool / selection policy를 통해 방향을 정하고, 마지막에 primitive mutation으로 내려가야 한다.
-- 즉, `text`, `shape`, `image` 는 editor primitive family이고, `layout planner`, `copy chooser`, `asset ranker` 는 agent tool family다.
+registry는 최소 아래 분류를 가진다.
 
-### 7.2 selection input
+- `cta_button`
+- `footer_text`
+- `accent_shape`
+- `badge`
+- `supporting_graphic`
+- `hero_photo_frame`
 
-selection은 최소 아래 입력을 본다.
+### 7.2 규칙
 
-- normalized intent
+- registry는 기존 object 분류 체계가 아니다.
+- 템플릿에 이미 있는 object는 retain/modify/remove로 다루고, 여기에 없는 것만 add로 다룬다.
+- add request는 placement zone 수준까지만 허용하고 좌표/scale/z-order를 직접 결정하지 않는다.
+
+## 8. Executor Capability Registry
+
+### 8.1 역할
+
+capability는 planning ontology가 아니라 executor vocabulary다.
+
+예시 capability family:
+
+- `create_text_object`
+- `update_text_content`
+- `update_text_style`
+- `create_shape_object`
+- `create_group_object`
+- `bind_photo_asset`
+- `bind_graphic_asset`
+- `set_background_treatment`
+- `delete_run_owned_object`
+
+### 8.2 규칙
+
+- capability registry를 planning taxonomy처럼 읽으면 안 된다.
+- planner/selector는 object graph와 message atom을 보고 결정을 만들고, executor는 그 결정을 capability로 물화한다.
+- topology는 transitional adapter일 뿐 planning ontology가 아니다.
+
+## 9. Reference Selection Policy
+
+selection 단계는 최소 아래 입력을 본다.
+
+- message atoms
 - context pack
-- allowed tool registry
-- current execution policy
-- retrieval result 또는 empty retrieval fallback
-
-### 7.3 selection output
+- selected source family candidates
+- fetched reference template metadata/document
+- asset policy
+- canvas/output constraints
 
 selection 단계는 최소 아래 결과를 남겨야 한다.
 
-- chosen tool or path
 - considered candidate set
 - compare criteria
-- rank reason
-- final chosen candidate
+- selected reference template
+- projected object graph ref 또는 equivalent evidence
+- rejection reasons
 
-즉, selection은 black-box 결론이 아니라 `candidate set -> explicit comparison -> chosen candidate` 구조를 남겨야 한다.
+즉 selection은 black-box 결론이 아니라 `candidate set -> comparison -> selected reference` 구조를 남겨야 한다.
+
+## 10. Photo Rule
+
+- `photo` 는 discovery/selection 대상에 포함한다.
+- `photo` 는 `background replacement` 를 기본값으로 해석하면 안 된다.
+- 현재 단계에서는 `hero/supporting visual object` 후보로만 읽는다.
+- photo execution failure 는 same-run graphic fallback 으로 설명을 숨기지 않고 evidence에 남겨야 한다.
+
+## 11. 금지 패턴
+
+- `requiredSlots` 같은 fixed slot checklist로 planning을 조직하는 것
+- capability catalog을 planning ontology처럼 읽는 것
+- reference graph를 읽어 놓고 execution 직전에 다시 semantic slot skeleton으로 축약하는 것
+- message atoms를 layout structure truth로 오독하는 것
+
+## 12. Current Default
+
+추후 별도 decision record가 나오기 전까지 `create_template` intelligence 관련 새 설계는 아래 가정 위에서 시작한다.
+
+- reference discovery는 `template/background/graphic/photo/font` family를 분리해 다룬다
+- message atoms는 `primary/offer/cta/detail/legal_or_footer` vocabulary를 따른다
+- add는 addable vocabulary registry로만 열린다
+- capability는 executor vocabulary일 뿐 planning ontology가 아니다
+- selection은 object graph를 선택하고, adaptive composition은 object-level retain/modify/remove/add를 만든다
 
 ## 8. Candidate Schema Lock
 

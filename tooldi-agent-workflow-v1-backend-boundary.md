@@ -431,9 +431,9 @@ type CanvasMutationCommand =
       reason: 'milestone_first_editable' | 'run_completed';
     };
 
-- `executionSlotKey` 는 copy/photo/background semantic slot의 canonical execution identity다.
-- `slotKey` 는 additive migration 동안 public/boundary compat field로 유지한다.
-- backend worker, `ExecutionSceneSummary`, `JudgePlan`, `RefineDecision`, finalize materialization 은 semantic truth를 `executionSlotKey` 기준으로 판단한다.
+- `executionSlotKey` 는 current runtime 일부 경로에 남아 있는 legacy execution correlation field다.
+- `slotKey` 와 `executionSlotKey` 는 둘 다 structure truth나 completion truth가 아니다.
+- backend worker, `ExecutionSceneSummary`, `JudgePlan`, `RefineDecision`, finalize materialization 은 이 field들을 drift surface로만 다뤄야 하며, SSOT를 대신하는 source로 승격하면 안 된다.
 - semantic `createLayer` / `updateLayer` command 에서 `executionSlotKey` 가 없거나 invalid 하면 FE executor 는 추론하지 않고 reject 해야 한다.
 
 type CanvasMutationEnvelope = {
