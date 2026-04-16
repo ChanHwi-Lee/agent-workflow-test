@@ -642,6 +642,8 @@ export function registerBuildNodes(
             traceId: state.job.traceId,
             documentId: state.hydrated.request.editorContext.documentId,
             pageId: state.hydrated.request.editorContext.pageId,
+            targetCanvasWidth: state.hydrated.request.editorContext.canvasWidth,
+            targetCanvasHeight: state.hydrated.request.editorContext.canvasHeight,
             projectedGraph: projectedTemplateGraph,
             compositionDecision: adaptiveCompositionDecision,
           });

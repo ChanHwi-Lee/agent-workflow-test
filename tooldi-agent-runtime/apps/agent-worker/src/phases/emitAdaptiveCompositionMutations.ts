@@ -77,6 +77,32 @@ function mapAddVocabularyToExecutionSlot(vocabularyId: string): {
 }
 
 // ---------------------------------------------------------------------------
+// Bounds normalization: reference canvas → target canvas
+// ---------------------------------------------------------------------------
+
+function normalizeBounds(
+  obj: ProjectedObject,
+  refCanvas: { width: number; height: number },
+  targetCanvas: { width: number; height: number },
+): LayoutBounds {
+  // Background layers fill the target canvas entirely
+  if (obj.visualWeight === "background") {
+    return { x: 0, y: 0, width: targetCanvas.width, height: targetCanvas.height };
+  }
+
+  // Content/decorative layers: proportional scaling
+  const scaleX = targetCanvas.width / refCanvas.width;
+  const scaleY = targetCanvas.height / refCanvas.height;
+
+  return {
+    x: obj.bounds.x * scaleX,
+    y: obj.bounds.y * scaleY,
+    width: obj.bounds.width * scaleX,
+    height: obj.bounds.height * scaleY,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Placement helpers for add decisions
 // ---------------------------------------------------------------------------
 
@@ -141,6 +167,8 @@ function computeAddBounds(
 function buildRetainCommand(
   runId: string,
   obj: ProjectedObject,
+  refCanvas: { width: number; height: number },
+  targetCanvas: { width: number; height: number },
 ): CanvasMutationCommand {
   const { executionSlotKey } = mapVisualWeightToExecutionSlot(
     obj.visualWeight,
@@ -152,7 +180,7 @@ function buildRetainCommand(
     executionSlotKey,
     clientLayerKey: `${obj.objectId}_retain_${runId}`,
     layerType: obj.layerType,
-    bounds: obj.bounds,
+    bounds: normalizeBounds(obj, refCanvas, targetCanvas),
     role: `retain_${obj.visualWeight}`,
     variantKey: "adaptive_composition",
     candidateId: obj.objectId,
@@ -175,6 +203,8 @@ function buildModifyCommand(
   runId: string,
   obj: ProjectedObject,
   decision: ElementDecision,
+  refCanvas: { width: number; height: number },
+  targetCanvas: { width: number; height: number },
 ): CanvasMutationCommand {
   const { executionSlotKey } = mapVisualWeightToExecutionSlot(
     obj.visualWeight,
@@ -186,7 +216,7 @@ function buildModifyCommand(
     executionSlotKey,
     clientLayerKey: `${obj.objectId}_modify_${runId}`,
     layerType: obj.layerType,
-    bounds: obj.bounds,
+    bounds: normalizeBounds(obj, refCanvas, targetCanvas),
     role: `modify_${obj.visualWeight}`,
     variantKey: "adaptive_composition",
     candidateId: obj.objectId,
@@ -250,6 +280,8 @@ export interface EmitAdaptiveCompositionInput {
   traceId: string;
   documentId: string;
   pageId: string;
+  targetCanvasWidth: number;
+  targetCanvasHeight: number;
   projectedGraph: ProjectedObjectGraph;
   compositionDecision: AdaptiveCompositionDecision;
 }
@@ -258,6 +290,8 @@ export function emitAdaptiveCompositionMutations(
   input: EmitAdaptiveCompositionInput,
 ): SkeletonMutationBatch {
   const { projectedGraph, compositionDecision } = input;
+  const refCanvas = { width: projectedGraph.canvasWidth, height: projectedGraph.canvasHeight };
+  const targetCanvas = { width: input.targetCanvasWidth, height: input.targetCanvasHeight };
   const objectMap = new Map(
     projectedGraph.objects.map((obj) => [obj.objectId, obj]),
   );
@@ -275,9 +309,9 @@ export function emitAdaptiveCompositionMutations(
     if (!obj) continue;
 
     if (decision.operation === "retain") {
-      allCommands.push(buildRetainCommand(input.runId, obj));
+      allCommands.push(buildRetainCommand(input.runId, obj, refCanvas, targetCanvas));
     } else if (decision.operation === "modify") {
-      allCommands.push(buildModifyCommand(input.runId, obj, decision));
+      allCommands.push(buildModifyCommand(input.runId, obj, decision, refCanvas, targetCanvas));
     }
     // "remove" → skip, don't create
   }
@@ -285,7 +319,7 @@ export function emitAdaptiveCompositionMutations(
   // Objects NOT mentioned → implicit retain
   for (const obj of projectedGraph.objects) {
     if (!decidedObjectIds.has(obj.objectId)) {
-      allCommands.push(buildRetainCommand(input.runId, obj));
+      allCommands.push(buildRetainCommand(input.runId, obj, refCanvas, targetCanvas));
     }
   }
 
@@ -296,8 +330,8 @@ export function emitAdaptiveCompositionMutations(
       buildAddCommand(
         input.runId,
         addDecision,
-        projectedGraph.canvasWidth,
-        projectedGraph.canvasHeight,
+        input.targetCanvasWidth,
+        input.targetCanvasHeight,
         i,
       ),
     );
