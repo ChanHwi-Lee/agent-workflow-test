@@ -6,6 +6,24 @@ import type {
   TemplateSaveReceipt,
 } from "@tooldi/agent-contracts";
 
+type TopologyCompletionContract = {
+  topologyId: string;
+  requiredCapabilityIds: string[];
+  minimumEditableTextCapabilityCount: number;
+  requiresActionCapability: boolean;
+  requiresMediaCapability: boolean;
+};
+
+type TopologyAwareRunFinalizeRequest = RunFinalizeRequest & {
+  topologyMatchReportRef?: string;
+  topologySelectionRef?: string;
+  topologyBindingPlanRef?: string;
+  topologyExecutionPlanRef?: string;
+  topologyCompletionReportRef?: string;
+  selectedTopologyId?: string | null;
+  topologyCompletionContract?: TopologyCompletionContract | null;
+};
+
 export type MaterializationInput = {
   draftId: string;
   canonicalDesignBriefRef: string;
@@ -34,10 +52,17 @@ export type MaterializationInput = {
   executionSceneSummaryRef: string | null;
   judgePlanRef: string | null;
   refineDecisionRef: string | null;
+  topologyMatchReportRef: string | null;
+  topologySelectionRef: string | null;
+  topologyBindingPlanRef: string | null;
+  topologyExecutionPlanRef: string | null;
+  topologyCompletionReportRef: string | null;
   sourceMutationRange: NonNullable<RunFinalizeRequest["sourceMutationRange"]>;
   latestSaveEvidence: TemplateSaveEvidence | null;
   latestSaveReceipt: TemplateSaveReceipt | null;
   requiredExecutionSlots: ExecutionSlotKey[];
+  selectedTopologyId: string | null;
+  topologyCompletionContract: TopologyCompletionContract | null;
 };
 
 type NormalizeFinalizeInputCommand = {
@@ -51,7 +76,7 @@ export function normalizeFinalizeInput(
   result: AgentRunResultSummary;
   materialization: MaterializationInput | null;
 } {
-  const request = command.request;
+  const request = command.request as TopologyAwareRunFinalizeRequest | undefined;
   let result = command.result;
 
   if (
@@ -123,10 +148,17 @@ export function normalizeFinalizeInput(
       executionSceneSummaryRef: request.executionSceneSummaryRef ?? null,
       judgePlanRef: request.judgePlanRef ?? null,
       refineDecisionRef: request.refineDecisionRef ?? null,
+      topologyMatchReportRef: request.topologyMatchReportRef ?? null,
+      topologySelectionRef: request.topologySelectionRef ?? null,
+      topologyBindingPlanRef: request.topologyBindingPlanRef ?? null,
+      topologyExecutionPlanRef: request.topologyExecutionPlanRef ?? null,
+      topologyCompletionReportRef: request.topologyCompletionReportRef ?? null,
       sourceMutationRange: request.sourceMutationRange,
       latestSaveEvidence: request.latestSaveEvidence ?? null,
       latestSaveReceipt: request.latestSaveReceipt ?? null,
       requiredExecutionSlots: request.requiredExecutionSlots ?? [],
+      selectedTopologyId: request.selectedTopologyId ?? null,
+      topologyCompletionContract: request.topologyCompletionContract ?? null,
     },
   };
 }

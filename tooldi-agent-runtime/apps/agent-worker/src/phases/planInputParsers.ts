@@ -67,7 +67,8 @@ export type StyleMetadata = {
 export type ExecutionMode =
   | "legacy_slots"
   | "v2_freeform"
-  | "object_native_freeform";
+  | "object_native_freeform"
+  | "topology_freeform";
 
 export type FoundationInputs = {
   executionMode: ExecutionMode;

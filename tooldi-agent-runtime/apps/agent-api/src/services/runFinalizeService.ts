@@ -115,6 +115,8 @@ export class RunFinalizeService {
       const ledgerProjection = buildRunLedgerProjection(rangedRecords, {
         requiredExecutionSlots:
           normalized.materialization.requiredExecutionSlots,
+        topologyCompletionContract:
+          normalized.materialization.topologyCompletionContract,
       });
       const materialized = await materializeRunArtifacts({
         run: {

@@ -13,6 +13,7 @@ import {
   IsoDateTimeSchema,
   JsonObjectSchema,
   SlotKeySchema,
+  TopologyCompletionContractSchema,
 } from "../common.js";
 import { RunCompletionSnapshotSchema } from "./run-result.js";
 
@@ -99,6 +100,12 @@ const EditableBannerDraftCommitPayloadSchema = Type.Object(
     requiredSlots: Type.Array(RequiredSlotSchema, { minItems: 1 }),
     requiredExecutionSlots: Type.Optional(
       Type.Array(ExecutionSlotKeySchema, { minItems: 1 }),
+    ),
+    selectedTopologyId: Type.Optional(
+      Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
+    ),
+    topologyCompletionContract: Type.Optional(
+      Type.Union([TopologyCompletionContractSchema, Type.Null()]),
     ),
     firstRenderableSeq: Type.Integer({ minimum: 1 }),
     reconciledThroughSeq: Type.Integer({ minimum: 0 }),
@@ -246,6 +253,11 @@ const LastKnownGoodCheckpointSchema = Type.Object(
         executionSceneSummaryRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         judgePlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         refineDecisionRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+        topologyMatchReportRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+        topologySelectionRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+        topologyBindingPlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+        topologyExecutionPlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+        topologyCompletionReportRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         latestSaveReceiptId: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         bundleRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
       },

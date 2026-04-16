@@ -14,6 +14,7 @@
 - 현재 구현 상태: [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
 - 표현 전략 lock: [tooldi-agent-workflow-v1-create-template-representation-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-representation-design-lock.md)
 - object-native 전환 아키텍처: [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md)
+- topology-driven v4 설계 초안: [tooldi-agent-workflow-v4-topology-driven-editor-native-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v4-topology-driven-editor-native-architecture.md)
 - 다음 작업 우선순위: [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
 
 ## 2026-04-09 현재 구현 스냅샷
@@ -85,6 +86,23 @@
 - FE `saveTemplate` ack 는 이제 `saveEvidence` 뿐 아니라 canonical `saveReceipt` 도 함께 보낸다.
 - backend finalizer 는 `latestSaveReceiptId` 뿐 아니라 `LiveDraftArtifactBundle.saveMetadata.latestSaveReceipt` 를 실제 payload로 materialize 한다.
   - completed 계열 finalize는 이제 `saveEvidence + saveReceipt + finalRevision` 이 모두 있어야 통과하고, 하나라도 빠지면 `save_failed_after_apply` 로 강등한다.
+
+## 2026-04-16 현재 구현 추가
+
+- experimental `workflowVariant=topology_v1` 경로를 추가했다.
+  - `object_native_v1` 는 baseline 으로 유지한다.
+  - 새 경로는 `band_overlay_promo`, `centered_message_stack` 두 topology family만 연다.
+- `topology_v1` worker 는 아래 artifact family를 새로 남긴다.
+  - `topology-match-report`
+  - `topology-selection`
+  - `topology-binding-plan`
+  - `topology-execution-plan`
+  - `topology-completion-report`
+- `topology_v1` 는 `requiredExecutionSlots` 대신 topology completion contract를 minimum draft truth로 사용한다.
+  - worker finalize callback은 `selectedTopologyId`, `topologyCompletionContract` 와 topology artifact ref를 backend에 함께 보낸다.
+  - backend finalizer/ledger/materializer 는 emitted layer metadata의 `topologyCapabilityId`, `textBearing`, `actionBearing`, `mediaBearing` 를 기준으로 minimum draft pass/fail 을 판정한다.
+- freeform block emission은 이제 `topologyId`, `topologyCapabilityId`, `topologyRole` metadata를 createLayer command에 실어 보낸다.
+- toolditor spike panel은 `experimental v4 생성` 버튼을 가지며 `topology-match`, `topology-selection`, `topology-completion` log를 따로 노출한다.
 
 ## 범위
 

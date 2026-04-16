@@ -302,6 +302,21 @@ export function registerFinalizeNodes(
             : {}),
           ...(state.judgePlan ? { judgePlan: state.judgePlan } : {}),
           ...(state.refineDecision ? { refineDecision: state.refineDecision } : {}),
+          ...(state.topologyMatchReport
+            ? { topologyMatchReport: state.topologyMatchReport }
+            : {}),
+          ...(state.topologySelection
+            ? { topologySelection: state.topologySelection }
+            : {}),
+          ...(state.topologyBindingPlan
+            ? { topologyBindingPlan: state.topologyBindingPlan }
+            : {}),
+          ...(state.topologyExecutionPlan
+            ? { topologyExecutionPlan: state.topologyExecutionPlan }
+            : {}),
+          ...(state.topologyCompletionReport
+            ? { topologyCompletionReport: state.topologyCompletionReport }
+            : {}),
           ...(state.plan ? { plan: state.plan } : {}),
           emittedMutationIds: state.emittedMutationIds,
           finalizeDraft: state.finalizeDraft,

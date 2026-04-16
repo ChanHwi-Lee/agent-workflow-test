@@ -3,6 +3,13 @@ import type {
   RunJobEnvelope,
   WaitMutationAckResponse,
 } from "@tooldi/agent-contracts";
+type TopologyCompletionContract = {
+  topologyId: string;
+  requiredCapabilityIds: string[];
+  minimumEditableTextCapabilityCount: number;
+  requiresActionCapability: boolean;
+  requiresMediaCapability: boolean;
+};
 import type {
   FinalizeRunDraft,
   AbstractLayoutPlan,
@@ -50,6 +57,11 @@ import type {
   ObjectNativeReferenceAudit,
   ObjectNativeRenderabilityReport,
   QualityEvalSummary,
+  TopologyBindingPlan,
+  TopologyCompletionReport,
+  TopologyExecutionPlan,
+  TopologyMatchReport,
+  TopologySelection,
   TemplateRemixPlan,
   TypographyDecision,
 } from "../types.js";
@@ -120,6 +132,18 @@ export const RunJobGraphState = Annotation.Root({
   objectNativeCandidateSelectionRef: replaceValue<string | null>(() => null),
   objectNativeRenderabilityReport: replaceValue<ObjectNativeRenderabilityReport | null>(() => null),
   objectNativeRenderabilityReportRef: replaceValue<string | null>(() => null),
+  topologyMatchReport: replaceValue<TopologyMatchReport | null>(() => null),
+  topologyMatchReportRef: replaceValue<string | null>(() => null),
+  topologySelection: replaceValue<TopologySelection | null>(() => null),
+  topologySelectionRef: replaceValue<string | null>(() => null),
+  selectedTopologyId: replaceValue<string | null>(() => null),
+  topologyCompletionContract: replaceValue<TopologyCompletionContract | null>(() => null),
+  topologyBindingPlan: replaceValue<TopologyBindingPlan | null>(() => null),
+  topologyBindingPlanRef: replaceValue<string | null>(() => null),
+  topologyExecutionPlan: replaceValue<TopologyExecutionPlan | null>(() => null),
+  topologyExecutionPlanRef: replaceValue<string | null>(() => null),
+  topologyCompletionReport: replaceValue<TopologyCompletionReport | null>(() => null),
+  topologyCompletionReportRef: replaceValue<string | null>(() => null),
   compositionBrief: replaceValue<CompositionBrief | null>(() => null),
   compositionBriefRef: replaceValue<string | null>(() => null),
   compositionVariantSet: replaceValue<CompositionVariantSet | null>(() => null),

@@ -86,13 +86,15 @@ export async function buildExecutablePlan(
   const v2FreeformCopyBlocks =
     freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2" ||
     freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset" ||
-    freeformLayoutPlan?.workflowVariant === "object_native_v1"
+    freeformLayoutPlan?.workflowVariant === "object_native_v1" ||
+    freeformLayoutPlan?.workflowVariant === "topology_v1"
       ? freeformLayoutPlan.copyBlocks
       : [];
   const v2FreeformPolishBlocks =
     freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2" ||
     freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset" ||
-    freeformLayoutPlan?.workflowVariant === "object_native_v1"
+    freeformLayoutPlan?.workflowVariant === "object_native_v1" ||
+    freeformLayoutPlan?.workflowVariant === "topology_v1"
       ? freeformLayoutPlan.polishBlocks
       : [];
   const executionMode =
@@ -101,19 +103,24 @@ export async function buildExecutablePlan(
       ? "v2_freeform"
       : freeformLayoutPlan?.workflowVariant === "object_native_v1"
         ? "object_native_freeform"
+        : freeformLayoutPlan?.workflowVariant === "topology_v1"
+          ? "topology_freeform"
       : "legacy_slots";
+  const topologyFreeformExecution = executionMode === "topology_freeform";
 
   const requestedWorkflowVariant = String(input.request.workflowVariant ?? "legacy");
   const requiredExecutionSlots = resolveRequiredExecutionSlots(executionMode);
   if (
     requestedWorkflowVariant === "retrieval_prior_v2" ||
     requestedWorkflowVariant === "retrieval_prior_v2_reset" ||
-    requestedWorkflowVariant === "object_native_v1"
+    requestedWorkflowVariant === "object_native_v1" ||
+    requestedWorkflowVariant === "topology_v1"
   ) {
     if (
       !freeformLayoutPlan ||
       (executionMode !== "v2_freeform" &&
-        executionMode !== "object_native_freeform") ||
+        executionMode !== "object_native_freeform" &&
+        executionMode !== "topology_freeform") ||
       v2FreeformCopyBlocks.length === 0
     ) {
       throw new Error(
@@ -154,11 +161,26 @@ export async function buildExecutablePlan(
         layoutMode: concreteLayoutPlan.resolvedLayoutMode,
         layoutProfile: concreteLayoutPlan.abstractLayoutFamily,
         primaryVisualFamily: assetPlan.primaryVisualFamily,
-        includeHeroPanel: executionMode === "v2_freeform" ? false : includeHeroPanel,
-        includeBadge: executionMode === "v2_freeform" ? false : includeBadge,
-        includeRibbon: executionMode === "v2_freeform" ? false : includeRibbon,
-        includeFrame: executionMode === "v2_freeform" ? false : includeFrame,
-        badgeText: executionMode === "v2_freeform" ? null : copySlotTexts.badge_text ?? null,
+        includeHeroPanel:
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? false
+            : includeHeroPanel,
+        includeBadge:
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? false
+            : includeBadge,
+        includeRibbon:
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? false
+            : includeRibbon,
+        includeFrame:
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? false
+            : includeFrame,
+        badgeText:
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? null
+            : copySlotTexts.badge_text ?? null,
         ...(styleMetadata ? { styleMetadata } : {}),
         resolvedSlotBounds: JSON.parse(
           JSON.stringify(concreteLayoutPlan.resolvedSlotBounds),
@@ -260,8 +282,14 @@ export async function buildExecutablePlan(
         freeformBlocks: JSON.parse(JSON.stringify(v2FreeformCopyBlocks)),
         layoutProfile: concreteLayoutPlan.abstractLayoutFamily,
         primaryVisualFamily: assetPlan.primaryVisualFamily,
-        includeHeroCaption: executionMode === "v2_freeform" ? false : includeHeroCaption,
-        includeBadge: executionMode === "v2_freeform" ? false : includeBadge,
+        includeHeroCaption:
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? false
+            : includeHeroCaption,
+        includeBadge:
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? false
+            : includeBadge,
         ...(styleMetadata ? { styleMetadata } : {}),
       },
       rollback: {
@@ -289,23 +317,32 @@ export async function buildExecutablePlan(
         selectedDecorationCandidateId:
           selectionDecision.selectedDecorationCandidateId,
         selectedDecorationAssetId:
-          executionMode === "v2_freeform" ? null : selectionDecision.selectedDecorationAssetId,
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? null
+            : selectionDecision.selectedDecorationAssetId,
         selectedDecorationSerial:
-          executionMode === "v2_freeform" ? null : selectionDecision.selectedDecorationSerial,
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? null
+            : selectionDecision.selectedDecorationSerial,
         selectedDecorationCategory:
-          executionMode === "v2_freeform" ? null : selectionDecision.selectedDecorationCategory,
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? null
+            : selectionDecision.selectedDecorationCategory,
         decorationMode: selectionDecision.decorationMode,
         primaryVisualFamily: assetPlan.primaryVisualFamily,
         assetExecutionEligibility: JSON.parse(
           JSON.stringify(assetPlan.executionEligibility),
         ),
-        graphicCompositionSet: executionMode === "v2_freeform"
+        graphicCompositionSet:
+          executionMode === "v2_freeform" || topologyFreeformExecution
           ? null
           : selectionDecision.graphicCompositionSet
           ? JSON.parse(JSON.stringify(selectionDecision.graphicCompositionSet))
           : null,
         graphicRoleBindings:
-          executionMode === "v2_freeform" ? [] : JSON.parse(JSON.stringify(graphicRoleBindings)),
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? []
+            : JSON.parse(JSON.stringify(graphicRoleBindings)),
         displayFontFamily: typographyDecision.display?.fontToken ?? null,
         displayFontWeight: typographyDecision.display?.fontWeight ?? null,
         bodyFontFamily: typographyDecision.body?.fontToken ?? null,
@@ -318,14 +355,25 @@ export async function buildExecutablePlan(
           JSON.stringify(concreteLayoutPlan.graphicRolePlacementHints),
         ),
         ctaContainerExpected:
-          executionMode === "v2_freeform" ? false : concreteLayoutPlan.ctaContainerExpected,
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? false
+            : concreteLayoutPlan.ctaContainerExpected,
         spacingIntent: concreteLayoutPlan.spacingIntent,
         freeformBlocks: JSON.parse(JSON.stringify(v2FreeformPolishBlocks)),
         executionStrategy: selectionDecision.executionStrategy,
         fallbackSummary: selectionDecision.fallbackSummary,
-        includeBadge: executionMode === "v2_freeform" ? false : includeBadge,
-        includeUnderline: executionMode === "v2_freeform" ? false : includeUnderline,
-        includeRibbon: executionMode === "v2_freeform" ? false : includeRibbon,
+        includeBadge:
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? false
+            : includeBadge,
+        includeUnderline:
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? false
+            : includeUnderline,
+        includeRibbon:
+          executionMode === "v2_freeform" || topologyFreeformExecution
+            ? false
+            : includeRibbon,
         ...(styleMetadata ? { styleMetadata } : {}),
       },
       rollback: {
@@ -363,7 +411,11 @@ function buildCopySlotTextMap(
 }
 
 function resolveRequiredExecutionSlots(
-  executionMode: "legacy_slots" | "v2_freeform" | "object_native_freeform",
+  executionMode:
+    | "legacy_slots"
+    | "v2_freeform"
+    | "object_native_freeform"
+    | "topology_freeform",
 ): ExecutionSlotKey[] {
   if (executionMode === "object_native_freeform") {
     return ["background", "headline", "offer_line", "cta"];

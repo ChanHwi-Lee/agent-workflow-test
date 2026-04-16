@@ -17,6 +17,7 @@ const DEFAULT_TIMEOUT_MS = 120000;
 const DEFAULT_CANVAS_WIDTH = 1200;
 const DEFAULT_CANVAS_HEIGHT = 628;
 const DEFAULT_SIZE_SERIAL = "1200x628@1";
+const DEFAULT_WORKFLOW_VARIANT = "object_native_v1";
 
 const options = parseCliArgs(process.argv.slice(2));
 const prompts = options.prompts.length > 0 ? options.prompts : DEFAULT_PROMPTS;
@@ -33,11 +34,14 @@ const objectStoreBucket =
   process.env.OBJECT_STORE_BUCKET ?? "tooldi-agent-runtime-toolditor-local";
 const objectStorePrefix =
   process.env.OBJECT_STORE_PREFIX ?? "agent-runtime-toolditor-local";
+const workflowVariant = options.workflowVariant ?? DEFAULT_WORKFLOW_VARIANT;
 const outputPath =
   options.output ??
   resolve(
     objectStoreRootDir,
-    "object-native-real-eval",
+    workflowVariant === "topology_v1"
+      ? "topology-real-eval"
+      : "object-native-real-eval",
     `report_${new Date().toISOString().replaceAll(":", "").replaceAll(".", "")}.json`,
   );
 
@@ -118,6 +122,8 @@ console.log(
       failureStageCounts: summary.failureStageCounts,
       semanticGateReasonCounts: summary.semanticGateReasonCounts,
       missingClusterFamilyCounts: summary.missingClusterFamilyCounts,
+      selectedTopologyCounts: summary.selectedTopologyCounts,
+      topologyCompletionCounts: summary.topologyCompletionCounts,
       nextStep: summary.nextStep,
       reportPath: outputPath,
     },
@@ -136,6 +142,7 @@ async function evaluatePrompt({
   objectStoreRootDir,
   objectStoreBucket,
   objectStorePrefix,
+  workflowVariant,
 }) {
   let accepted = null;
 
@@ -146,6 +153,7 @@ async function evaluatePrompt({
       canvasWidth,
       canvasHeight,
       sizeSerial,
+      workflowVariant,
     });
     const lifecycle = await driveRunLifecycle({
       accepted,
@@ -156,6 +164,7 @@ async function evaluatePrompt({
       objectStoreRootDir,
       objectStoreBucket,
       objectStorePrefix,
+      workflowVariant,
     });
 
     const auditEntries = artifacts.audit?.entries ?? [];
@@ -184,7 +193,7 @@ async function evaluatePrompt({
       prompt,
       runId: accepted.runId,
       traceId: accepted.traceId,
-      requestWorkflowVariant: "object_native_v1",
+      requestWorkflowVariant: workflowVariant,
       runLogs: lifecycle.runLogs,
       candidateCount: artifacts.templatePriorBundle?.candidates?.length ?? 0,
       templatePriorFailedQueryCount:
@@ -227,11 +236,19 @@ async function evaluatePrompt({
       latestSaveReceipt,
       latestSaveEvidence,
       savedOutputTemplateCode: latestSaveReceipt?.outputTemplateCode ?? null,
+      selectedTopologyId: artifacts.topologySelection?.selectedTopologyId ?? null,
+      topologyCompletionPassed:
+        artifacts.topologyCompletion?.passed ?? null,
       objectNativeSummary: {
         auditSummary: artifacts.audit?.summary ?? null,
         selectionSummary: artifacts.selection?.summary ?? null,
         renderabilitySummary: artifacts.renderability?.summary ?? null,
         qualityEvalSummary: artifacts.qualityEvalSummary?.summary ?? null,
+      },
+      topologySummary: {
+        matchSummary: artifacts.topologyMatch?.summary ?? null,
+        selectionSummary: artifacts.topologySelection?.summary ?? null,
+        completionSummary: artifacts.topologyCompletion?.summary ?? null,
       },
     };
   } catch (error) {
@@ -250,6 +267,7 @@ async function startRun({
   canvasWidth,
   canvasHeight,
   sizeSerial,
+  workflowVariant,
 }) {
   const response = await fetch(`${baseUrl}/api/agent-workflow/runs`, {
     method: "POST",
@@ -257,9 +275,13 @@ async function startRun({
       "content-type": "application/json",
     },
     body: JSON.stringify(
-      createStartRunRequest("object-native-real-eval", {
+      createStartRunRequest(
+        workflowVariant === "topology_v1"
+          ? "topology-real-eval"
+          : "object-native-real-eval",
+        {
         prompt,
-        workflowVariant: "object_native_v1",
+        workflowVariant,
         canvasWidth,
         canvasHeight,
         sizeSerial,
@@ -402,6 +424,7 @@ async function readRunArtifacts({
   objectStoreRootDir,
   objectStoreBucket,
   objectStorePrefix,
+  workflowVariant,
 }) {
   const attemptRoot = resolve(
     objectStoreRootDir,
@@ -424,15 +447,39 @@ async function readRunArtifacts({
     clusterGraph,
     freeformLayoutPlan,
     qualityEvalSummary,
+    topologyMatch,
+    topologySelection,
+    topologyCompletion,
     bundle,
   ] = await Promise.all([
     readJsonWithRetry(resolve(attemptRoot, "template-prior-bundle.json")),
-    readJsonWithRetry(resolve(attemptRoot, "object-native-reference-audit.json")),
-    readJsonWithRetry(resolve(attemptRoot, "object-native-candidate-selection.json")),
-    readJsonWithRetry(resolve(attemptRoot, "object-native-renderability-report.json")),
-    readJsonWithRetry(resolve(attemptRoot, "object-native-cluster-graph.json")),
-    readJsonWithRetry(resolve(attemptRoot, "object-native-freeform-layout-plan.json")),
-    readJsonWithRetry(resolve(attemptRoot, "object-native-quality-eval-summary.json")),
+    workflowVariant === "object_native_v1"
+      ? readJsonWithRetry(resolve(attemptRoot, "object-native-reference-audit.json"))
+      : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-reference-audit.json")),
+    workflowVariant === "object_native_v1"
+      ? readJsonWithRetry(resolve(attemptRoot, "object-native-candidate-selection.json"))
+      : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-candidate-selection.json")),
+    workflowVariant === "object_native_v1"
+      ? readJsonWithRetry(resolve(attemptRoot, "object-native-renderability-report.json"))
+      : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-renderability-report.json")),
+    workflowVariant === "object_native_v1"
+      ? readJsonWithRetry(resolve(attemptRoot, "object-native-cluster-graph.json"))
+      : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-cluster-graph.json")),
+    workflowVariant === "object_native_v1"
+      ? readJsonWithRetry(resolve(attemptRoot, "object-native-freeform-layout-plan.json"))
+      : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-freeform-layout-plan.json")),
+    workflowVariant === "object_native_v1"
+      ? readJsonWithRetry(resolve(attemptRoot, "object-native-quality-eval-summary.json"))
+      : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-quality-eval-summary.json")),
+    workflowVariant === "topology_v1"
+      ? readJsonWithRetry(resolve(attemptRoot, "topology-match-report.json"))
+      : readJsonOrNullWithRetry(resolve(attemptRoot, "topology-match-report.json")),
+    workflowVariant === "topology_v1"
+      ? readJsonWithRetry(resolve(attemptRoot, "topology-selection.json"))
+      : readJsonOrNullWithRetry(resolve(attemptRoot, "topology-selection.json")),
+    workflowVariant === "topology_v1"
+      ? readJsonWithRetry(resolve(attemptRoot, "topology-completion-report.json"))
+      : readJsonOrNullWithRetry(resolve(attemptRoot, "topology-completion-report.json")),
     readJsonWithRetry(resolve(artifactsRoot, `bundle_${runId}.json`)),
   ]);
 
@@ -444,6 +491,9 @@ async function readRunArtifacts({
     clusterGraph,
     freeformLayoutPlan,
     qualityEvalSummary,
+    topologyMatch,
+    topologySelection,
+    topologyCompletion,
     bundle,
   };
 }
@@ -464,6 +514,14 @@ async function readJsonWithRetry(filePath, timeoutMs = 8000) {
   throw new Error(
     `Timed out while reading ${filePath}: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
   );
+}
+
+async function readJsonOrNullWithRetry(filePath, timeoutMs = 2000) {
+  try {
+    return await readJsonWithRetry(filePath, timeoutMs);
+  } catch {
+    return null;
+  }
 }
 
 function buildAggregateSummary({
@@ -493,6 +551,11 @@ function buildAggregateSummary({
   const missingClusterFamilyCounts = countBy(
     completedResults.flatMap((result) => result.missingClusterFamilies ?? []),
   );
+  const selectedTopologyCounts = countBy(
+    completedResults
+      .map((result) => result.selectedTopologyId)
+      .filter((value) => typeof value === "string" && value.length > 0),
+  );
   const errorCounts = countBy(
     erroredResults.map((result) => normalizeErrorMessage(result.error)),
   );
@@ -508,6 +571,17 @@ function buildAggregateSummary({
     ).length,
     missingBoth: completedResults.filter(
       (result) => !result.hasLatestSaveReceipt && !result.hasLatestSaveEvidence,
+    ).length,
+  };
+  const topologyCompletionCounts = {
+    passed: completedResults.filter(
+      (result) => result.topologyCompletionPassed === true,
+    ).length,
+    failed: completedResults.filter(
+      (result) => result.topologyCompletionPassed === false,
+    ).length,
+    notApplicable: completedResults.filter(
+      (result) => result.topologyCompletionPassed === null,
     ).length,
   };
 
@@ -550,6 +624,8 @@ function buildAggregateSummary({
     compositionStatusCounts,
     clusterKindCounts,
     missingClusterFamilyCounts,
+    selectedTopologyCounts,
+    topologyCompletionCounts,
     nextStep: inferNextStep({
       completedResults,
       erroredResults,
@@ -661,6 +737,7 @@ function parseCliArgs(argv) {
     canvasWidth: DEFAULT_CANVAS_WIDTH,
     canvasHeight: DEFAULT_CANVAS_HEIGHT,
     sizeSerial: DEFAULT_SIZE_SERIAL,
+    workflowVariant: DEFAULT_WORKFLOW_VARIANT,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -726,6 +803,13 @@ function parseCliArgs(argv) {
         options.sizeSerial = next;
         index += 1;
         break;
+      case "--workflow-variant":
+        if (!next) {
+          throw new Error("--workflow-variant requires a value");
+        }
+        options.workflowVariant = next;
+        index += 1;
+        break;
       case "--help":
         printHelp();
         process.exit(0);
@@ -749,6 +833,7 @@ Options:
   --canvas-width <n>      Canvas width for each run.
   --canvas-height <n>     Canvas height for each run.
   --size-serial <value>   Size serial for each run.
+  --workflow-variant <v>  Workflow variant to run. Default: object_native_v1.
   --help                  Print this help message.
 `);
 }

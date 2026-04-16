@@ -122,6 +122,11 @@ export async function materializeRunArtifacts(
             executionSceneSummaryRef: input.input.executionSceneSummaryRef,
             judgePlanRef: input.input.judgePlanRef,
             refineDecisionRef: input.input.refineDecisionRef,
+            topologyMatchReportRef: input.input.topologyMatchReportRef,
+            topologySelectionRef: input.input.topologySelectionRef,
+            topologyBindingPlanRef: input.input.topologyBindingPlanRef,
+            topologyExecutionPlanRef: input.input.topologyExecutionPlanRef,
+            topologyCompletionReportRef: input.input.topologyCompletionReportRef,
             latestSaveReceiptId: latestSaveReceipt?.saveReceiptId ?? null,
             bundleRef,
           },
@@ -200,6 +205,12 @@ export async function materializeRunArtifacts(
       ? {
           requiredExecutionSlots: [...input.ledgerProjection.requiredExecutionSlots],
         }
+      : {}),
+    ...(input.input.selectedTopologyId
+      ? { selectedTopologyId: input.input.selectedTopologyId }
+      : {}),
+    ...(input.input.topologyCompletionContract
+      ? { topologyCompletionContract: input.input.topologyCompletionContract }
       : {}),
     firstRenderableSeq: input.input.sourceMutationRange.firstSeq,
     reconciledThroughSeq: input.input.sourceMutationRange.reconciledThroughSeq,
@@ -383,6 +394,21 @@ export async function materializeRunArtifacts(
       ...(input.input.judgePlanRef ? { judgePlanRef: input.input.judgePlanRef } : {}),
       ...(input.input.refineDecisionRef
         ? { refineDecisionRef: input.input.refineDecisionRef }
+        : {}),
+      ...(input.input.topologyMatchReportRef
+        ? { topologyMatchReportRef: input.input.topologyMatchReportRef }
+        : {}),
+      ...(input.input.topologySelectionRef
+        ? { topologySelectionRef: input.input.topologySelectionRef }
+        : {}),
+      ...(input.input.topologyBindingPlanRef
+        ? { topologyBindingPlanRef: input.input.topologyBindingPlanRef }
+        : {}),
+      ...(input.input.topologyExecutionPlanRef
+        ? { topologyExecutionPlanRef: input.input.topologyExecutionPlanRef }
+        : {}),
+      ...(input.input.topologyCompletionReportRef
+        ? { topologyCompletionReportRef: input.input.topologyCompletionReportRef }
         : {}),
       bundleRef,
     },

@@ -4,6 +4,14 @@ import type {
 } from "@tooldi/agent-contracts";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
 
+type TopologyCompletionContract = {
+  topologyId: string;
+  requiredCapabilityIds: string[];
+  minimumEditableTextCapabilityCount: number;
+  requiresActionCapability: boolean;
+  requiresMediaCapability: boolean;
+};
+
 import type {
   FinalizeRunDraft,
   JudgePlan,
@@ -51,6 +59,11 @@ const FINALIZE_ARTIFACT_REF_KEYS = [
   "executionSceneSummaryRef",
   "judgePlanRef",
   "refineDecisionRef",
+  "topologyMatchReportRef",
+  "topologySelectionRef",
+  "topologyBindingPlanRef",
+  "topologyExecutionPlanRef",
+  "topologyCompletionReportRef",
 ] as const;
 
 const RESULT_ONLY_ARTIFACT_REF_KEYS = [
@@ -70,6 +83,8 @@ type ResultArtifactRefKey = (typeof RESULT_ARTIFACT_REF_KEYS)[number];
 type ArtifactRefState = {
   canonicalDesignBriefRef: string | null;
   workflowVariant?: string | null;
+  selectedTopologyId?: string | null;
+  topologyCompletionContract?: TopologyCompletionContract | null;
   ruleJudgeVerdict: RuleJudgeVerdict | null;
   judgePlan: JudgePlan | null;
   sourceSearchSummary: SourceSearchSummary | null;
@@ -221,7 +236,9 @@ export function buildFinalizeOptions(
     errorSummary?: FinalizeRunDraft["request"]["errorSummary"];
   },
 ) {
-  const objectNativeWorkflow = state.workflowVariant === "object_native_v1";
+  const objectNativeWorkflow =
+    state.workflowVariant === "object_native_v1" ||
+    state.workflowVariant === "topology_v1";
   const representativeFailureOverride =
     !objectNativeWorkflow &&
     state.sourceSearchSummary?.representativeReadiness.overallStatus === "failed"
@@ -237,6 +254,12 @@ export function buildFinalizeOptions(
 
   const base = {
     cooperativeStopRequested,
+    ...(state.selectedTopologyId !== undefined
+      ? { selectedTopologyId: state.selectedTopologyId }
+      : {}),
+    ...(state.topologyCompletionContract !== undefined
+      ? { topologyCompletionContract: state.topologyCompletionContract }
+      : {}),
     ...(state.canonicalDesignBriefRef
       ? { canonicalDesignBriefRef: state.canonicalDesignBriefRef }
       : {}),
@@ -272,6 +295,7 @@ function buildCombinedWarningSummary(state: ArtifactRefState) {
         : [];
   const representativeWarnings =
     state.workflowVariant !== "object_native_v1" &&
+    state.workflowVariant !== "topology_v1" &&
     state.sourceSearchSummary?.representativeReadiness.overallStatus ===
     "degraded"
       ? buildRepresentativeReadinessWarnings(
@@ -360,7 +384,7 @@ export function buildStageAckRecord(
 }
 
 function pickDefinedStringRefs<
-  TState extends Record<string, string | null | RuleJudgeVerdict | JudgePlan | SourceSearchSummary>,
+  TState extends Record<string, unknown>,
   TKey extends readonly (keyof TState)[],
 >(
   state: TState,

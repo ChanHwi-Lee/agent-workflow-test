@@ -8,6 +8,14 @@ import type {
   TemplateSaveReceipt,
 } from "@tooldi/agent-contracts";
 
+type TopologyCompletionContract = {
+  topologyId: string;
+  requiredCapabilityIds: string[];
+  minimumEditableTextCapabilityCount: number;
+  requiresActionCapability: boolean;
+  requiresMediaCapability: boolean;
+};
+
 import type { MutationLedgerRecord } from "../repositories/mutationLedgerRepository.js";
 
 const REQUIRED_SLOTS = [
@@ -25,6 +33,7 @@ export interface RunLedgerProjection {
   rootLayerIds: string[];
   editableLayerIds: string[];
   requiredExecutionSlots: ExecutionSlotKey[];
+  topologyCompletionContract: TopologyCompletionContract | null;
   minimumDraftSatisfied: boolean;
   maxMutationEventSequence: number;
 }
@@ -42,6 +51,7 @@ export function buildRunLedgerProjection(
   rangedRecords: MutationLedgerRecord[],
   options: {
     requiredExecutionSlots?: ExecutionSlotKey[];
+    topologyCompletionContract?: TopologyCompletionContract | null;
   } = {},
 ): RunLedgerProjection {
   const orderedEntries = buildMutationLedgerEntries(rangedRecords);
@@ -53,6 +63,7 @@ export function buildRunLedgerProjection(
   const requiredExecutionSlots = normalizeRequiredExecutionSlots(
     options.requiredExecutionSlots ?? [],
   );
+  const topologyCompletionContract = options.topologyCompletionContract ?? null;
 
   return {
     rangedRecords,
@@ -61,8 +72,14 @@ export function buildRunLedgerProjection(
     rootLayerIds,
     editableLayerIds,
     requiredExecutionSlots,
+    topologyCompletionContract,
     minimumDraftSatisfied:
-      requiredExecutionSlots.length > 0
+      topologyCompletionContract !== null
+        ? hasTopologyCompletionContract(
+            rangedRecords,
+            topologyCompletionContract,
+          )
+        : requiredExecutionSlots.length > 0
         ? hasRequiredExecutionSlots(rangedRecords, requiredExecutionSlots)
         : hasMinimumRequiredCompatSlots(rangedRecords),
     maxMutationEventSequence: Math.max(
@@ -232,6 +249,56 @@ function normalizeRequiredExecutionSlots(
   slots: ExecutionSlotKey[],
 ): ExecutionSlotKey[] {
   return [...new Set(slots)];
+}
+
+function hasTopologyCompletionContract(
+  records: MutationLedgerRecord[],
+  topologyCompletionContract: TopologyCompletionContract,
+): boolean {
+  const presentCapabilityIds = new Set<string>();
+  const textBearingCapabilityIds = new Set<string>();
+  let actionBearingPresent = false;
+  let mediaBearingPresent = false;
+
+  for (const record of records) {
+    for (const command of record.mutation.commands) {
+      if (command.op !== "createLayer") {
+        continue;
+      }
+
+      const metadata = command.layerBlueprint.metadata;
+      const topologyCapabilityId =
+        typeof metadata.topologyCapabilityId === "string" &&
+        metadata.topologyCapabilityId.length > 0
+          ? metadata.topologyCapabilityId
+          : null;
+      if (!topologyCapabilityId) {
+        continue;
+      }
+
+      presentCapabilityIds.add(topologyCapabilityId);
+      if (metadata.textBearing === true) {
+        textBearingCapabilityIds.add(topologyCapabilityId);
+      }
+      if (metadata.actionBearing === true) {
+        actionBearingPresent = true;
+      }
+      if (metadata.mediaBearing === true) {
+        mediaBearingPresent = true;
+      }
+    }
+  }
+
+  return (
+    topologyCompletionContract.requiredCapabilityIds.every((capabilityId: string) =>
+      presentCapabilityIds.has(capabilityId),
+    ) &&
+    textBearingCapabilityIds.size >=
+      topologyCompletionContract.minimumEditableTextCapabilityCount &&
+    (!topologyCompletionContract.requiresActionCapability ||
+      actionBearingPresent) &&
+    (!topologyCompletionContract.requiresMediaCapability || mediaBearingPresent)
+  );
 }
 
 function resolveExecutionSlotKey(

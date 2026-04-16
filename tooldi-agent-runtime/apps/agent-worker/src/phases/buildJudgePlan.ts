@@ -29,7 +29,8 @@ export async function buildJudgePlan(
         action.inputs &&
         typeof action.inputs === "object" &&
         (action.inputs.executionMode === "v2_freeform" ||
-          action.inputs.executionMode === "object_native_freeform"),
+          action.inputs.executionMode === "object_native_freeform" ||
+          action.inputs.executionMode === "topology_freeform"),
     );
 
   if (preflightVerdict) {

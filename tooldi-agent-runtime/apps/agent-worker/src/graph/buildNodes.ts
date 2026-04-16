@@ -17,6 +17,7 @@ import { buildReferenceResetPath } from "../phases/buildReferenceResetPath.js";
 import { buildSearchProfile } from "../phases/buildSearchProfile.js";
 import { buildScenePlans } from "../phases/buildScenePlans.js";
 import { buildSceneStylePlans } from "../phases/buildSceneStylePlans.js";
+import { buildTopologyPath } from "../phases/buildTopologyPath.js";
 import {
   buildTemplatePriorBundle,
   createGeminiTemplatePriorReranker,
@@ -138,6 +139,239 @@ export function registerBuildNodes(
     .addNode("build_reference_composition_v2", async (state) => {
       if (!state.hydrated) {
         throw new Error("build_reference_composition_v2 requires hydrated state");
+      }
+
+      if (deriveWorkflowVariant(state.hydrated) === "topology_v1") {
+        let cooperativeStopRequested = state.cooperativeStopRequested;
+        const topologyPlans = buildTopologyPath(
+          state.hydrated,
+          state.templatePriorBundle,
+          state.copyPlan,
+          state.sceneStylePlan,
+          state.sceneBindingPlan,
+        );
+
+        const topologyMatchReportRef = await persistArtifactTask(
+          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-match-report.json`,
+          topologyPlans.topologyMatchReport,
+          {
+            artifactKind: "topology-match-report",
+            runId: state.job.runId,
+            traceId: state.job.traceId,
+            attemptSeq: String(state.job.attemptSeq),
+          },
+        );
+        const topologySelectionRef = await persistArtifactTask(
+          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-selection.json`,
+          topologyPlans.topologySelection,
+          {
+            artifactKind: "topology-selection",
+            runId: state.job.runId,
+            traceId: state.job.traceId,
+            attemptSeq: String(state.job.attemptSeq),
+          },
+        );
+        const topologyBindingPlanRef = topologyPlans.topologyBindingPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-binding-plan.json`,
+              topologyPlans.topologyBindingPlan,
+              {
+                artifactKind: "topology-binding-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const topologyExecutionPlanRef = topologyPlans.topologyExecutionPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-execution-plan.json`,
+              topologyPlans.topologyExecutionPlan,
+              {
+                artifactKind: "topology-execution-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const topologyCompletionReportRef = await persistArtifactTask(
+          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-completion-report.json`,
+          topologyPlans.topologyCompletionReport,
+          {
+            artifactKind: "topology-completion-report",
+            runId: state.job.runId,
+            traceId: state.job.traceId,
+            attemptSeq: String(state.job.attemptSeq),
+          },
+        );
+        const referenceBlockGraphRef = topologyPlans.referenceBlockGraph
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-cluster-graph.json`,
+              topologyPlans.referenceBlockGraph,
+              {
+                artifactKind: "topology-cluster-graph",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const messageAtomPlanRef = topologyPlans.messageAtomPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-message-atom-plan.json`,
+              topologyPlans.messageAtomPlan,
+              {
+                artifactKind: "topology-message-atom-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const editableBlockPlanRef = topologyPlans.editableBlockPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-editable-block-plan.json`,
+              topologyPlans.editableBlockPlan,
+              {
+                artifactKind: "topology-editable-block-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const freeformLayoutPlanRef = topologyPlans.freeformLayoutPlan
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-freeform-layout-plan.json`,
+              topologyPlans.freeformLayoutPlan,
+              {
+                artifactKind: "topology-freeform-layout-plan",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const qualityEvalSummaryRef = topologyPlans.qualityEvalSummary
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-quality-eval-summary.json`,
+              topologyPlans.qualityEvalSummary,
+              {
+                artifactKind: "topology-quality-eval-summary",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+        const styleDowngradeVerdictRef = topologyPlans.styleDowngradeVerdict
+          ? await persistArtifactTask(
+              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-style-downgrade-verdict.json`,
+              topologyPlans.styleDowngradeVerdict,
+              {
+                artifactKind: "topology-style-downgrade-verdict",
+                runId: state.job.runId,
+                traceId: state.job.traceId,
+                attemptSeq: String(state.job.attemptSeq),
+              },
+            )
+          : null;
+
+        const matchLog = await appendEventTask(state.job.runId, {
+          traceId: state.job.traceId,
+          attempt: state.job.attemptSeq,
+          queueJobId: state.job.queueJobId,
+          event: {
+            type: "log",
+            level:
+              topologyPlans.topologySelection.selectedReadiness === "stable_capable"
+                ? "info"
+                : "warn",
+            message:
+              `[source/topology-match] candidates=${topologyPlans.topologyMatchReport.entries.length} ` +
+              `selected=${topologyPlans.topologySelection.nextSelectedTemplateCode ?? "n/a"} ` +
+              `topology=${topologyPlans.selectedTopologyId ?? "n/a"}`,
+          },
+        });
+        cooperativeStopRequested ||= matchLog.cancelRequested;
+        const selectionLog = await appendEventTask(state.job.runId, {
+          traceId: state.job.traceId,
+          attempt: state.job.attemptSeq,
+          queueJobId: state.job.queueJobId,
+          event: {
+            type: "log",
+            level:
+              topologyPlans.topologySelection.selectedReadiness === "stable_capable"
+                ? "info"
+                : "warn",
+            message:
+              `[source/topology-selection] previous=${topologyPlans.topologySelection.previousSelectedTemplateCode ?? "n/a"} ` +
+              `selected=${topologyPlans.topologySelection.nextSelectedTemplateCode ?? "n/a"} ` +
+              `topology=${topologyPlans.topologySelection.selectedTopologyId ?? "n/a"} ` +
+              `readiness=${topologyPlans.topologySelection.selectedReadiness ?? "n/a"} ` +
+              `failureStage=${topologyPlans.topologySelection.failureStage}`,
+          },
+        });
+        cooperativeStopRequested ||= selectionLog.cancelRequested;
+        const completionLog = await appendEventTask(state.job.runId, {
+          traceId: state.job.traceId,
+          attempt: state.job.attemptSeq,
+          queueJobId: state.job.queueJobId,
+          event: {
+            type: "log",
+            level: topologyPlans.topologyCompletionReport.passed ? "info" : "warn",
+            message:
+              `[source/topology-completion] passed=${topologyPlans.topologyCompletionReport.passed ? "yes" : "no"} ` +
+              `topology=${topologyPlans.topologyCompletionReport.topologyId ?? "n/a"} ` +
+              `present=${topologyPlans.topologyCompletionReport.presentCapabilityIds.join(",") || "none"}`,
+          },
+        });
+        cooperativeStopRequested ||= completionLog.cancelRequested;
+
+        return {
+          cooperativeStopRequested,
+          referenceCompositionGraph: null,
+          referenceCompositionGraphRef: null,
+          referenceSupportEvidence: null,
+          referenceSupportEvidenceRef: null,
+          copyAtomPlan: null,
+          copyAtomPlanRef: null,
+          copyBindingPlan: null,
+          copyBindingPlanRef: null,
+          templateRemixPlan: null,
+          templateRemixPlanRef: null,
+          objectNativeReferenceAudit: null,
+          objectNativeReferenceAuditRef: null,
+          objectNativeCandidateSelection: null,
+          objectNativeCandidateSelectionRef: null,
+          objectNativeRenderabilityReport: null,
+          objectNativeRenderabilityReportRef: null,
+          topologyMatchReport: topologyPlans.topologyMatchReport,
+          topologyMatchReportRef,
+          topologySelection: topologyPlans.topologySelection,
+          topologySelectionRef,
+          selectedTopologyId: topologyPlans.selectedTopologyId,
+          topologyCompletionContract: topologyPlans.topologyCompletionContract,
+          topologyBindingPlan: topologyPlans.topologyBindingPlan,
+          topologyBindingPlanRef,
+          topologyExecutionPlan: topologyPlans.topologyExecutionPlan,
+          topologyExecutionPlanRef,
+          topologyCompletionReport: topologyPlans.topologyCompletionReport,
+          topologyCompletionReportRef,
+          referenceBlockGraph: topologyPlans.referenceBlockGraph,
+          referenceBlockGraphRef,
+          messageAtomPlan: topologyPlans.messageAtomPlan,
+          messageAtomPlanRef,
+          editableBlockPlan: topologyPlans.editableBlockPlan,
+          editableBlockPlanRef,
+          qualityEvalSummary: topologyPlans.qualityEvalSummary,
+          qualityEvalSummaryRef,
+          freeformLayoutPlan: topologyPlans.freeformLayoutPlan,
+          freeformLayoutPlanRef,
+          styleDowngradeVerdict: topologyPlans.styleDowngradeVerdict,
+          styleDowngradeVerdictRef,
+        };
       }
 
       if (deriveWorkflowVariant(state.hydrated) === "object_native_v1") {
@@ -694,7 +928,8 @@ export function registerBuildNodes(
         workflowVariant !== "retrieval_prior_v1" &&
         workflowVariant !== "retrieval_prior_v2" &&
         workflowVariant !== "retrieval_prior_v2_reset" &&
-        workflowVariant !== "object_native_v1"
+        workflowVariant !== "object_native_v1" &&
+        workflowVariant !== "topology_v1"
       ) {
         return {
           templatePriorBundle: null,

@@ -24,6 +24,14 @@ import type {
   TooldiCatalogSourceMode,
 } from "@tooldi/tool-adapters";
 
+type TopologyCompletionContract = {
+  topologyId: string;
+  requiredCapabilityIds: string[];
+  minimumEditableTextCapabilityCount: number;
+  requiresActionCapability: boolean;
+  requiresMediaCapability: boolean;
+};
+
 export interface StoredRunSnapshot {
   editorContext: StartAgentWorkflowRunRequest["editorContext"];
   brandContext: StartAgentWorkflowRunRequest["brandContext"];
@@ -45,7 +53,8 @@ export type WorkflowVariant =
   | "retrieval_prior_v1"
   | "retrieval_prior_v2"
   | "retrieval_prior_v2_reset"
-  | "object_native_v1";
+  | "object_native_v1"
+  | "topology_v1";
 
 export type TemplateScaffoldLayoutMode =
   | "copy_left_with_right_decoration"
@@ -114,7 +123,8 @@ export interface TemplatePriorBundle {
     | "retrieval_prior_v1"
     | "retrieval_prior_v2"
     | "retrieval_prior_v2_reset"
-    | "object_native_v1";
+    | "object_native_v1"
+    | "topology_v1";
   query: {
     keyword: string;
     canvas: "horizontal" | "vertical" | "square" | "";
@@ -344,7 +354,8 @@ export interface SceneRolePlan {
     | "retrieval_prior_v1"
     | "retrieval_prior_v2"
     | "retrieval_prior_v2_reset"
-    | "object_native_v1";
+    | "object_native_v1"
+    | "topology_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   roles: SceneRolePlanEntry[];
@@ -359,7 +370,8 @@ export interface SceneLayoutPlan {
     | "retrieval_prior_v1"
     | "retrieval_prior_v2"
     | "retrieval_prior_v2_reset"
-    | "object_native_v1";
+    | "object_native_v1"
+    | "topology_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   layoutFamily: AbstractLayoutFamily;
@@ -417,7 +429,8 @@ export interface SceneStylePlan {
     | "retrieval_prior_v1"
     | "retrieval_prior_v2"
     | "retrieval_prior_v2_reset"
-    | "object_native_v1";
+    | "object_native_v1"
+    | "topology_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   backgroundKind: TemplatePriorScaffold["backgroundMode"];
@@ -439,7 +452,8 @@ export interface SceneBindingPlan {
     | "retrieval_prior_v1"
     | "retrieval_prior_v2"
     | "retrieval_prior_v2_reset"
-    | "object_native_v1";
+    | "object_native_v1"
+    | "topology_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   backgroundMode:
@@ -685,6 +699,12 @@ export interface FreeformRenderableBlock {
   renderPrimitive?: string | null;
   styleTokens?: Record<string, string | number | boolean | null>;
   clusterZone?: ConcreteLayoutClusterZone | null;
+  topologyId?: string | null;
+  topologyCapabilityId?: string | null;
+  topologyRole?: string | null;
+  textBearing?: boolean;
+  actionBearing?: boolean;
+  mediaBearing?: boolean;
 }
 
 export interface FreeformLayoutPlan {
@@ -694,7 +714,8 @@ export interface FreeformLayoutPlan {
   workflowVariant:
     | "retrieval_prior_v2"
     | "retrieval_prior_v2_reset"
-    | "object_native_v1";
+    | "object_native_v1"
+    | "topology_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   compositionStatus: "stable" | "style_only";
@@ -710,7 +731,8 @@ export interface StyleDowngradeVerdict {
   workflowVariant:
     | "retrieval_prior_v2"
     | "retrieval_prior_v2_reset"
-    | "object_native_v1";
+    | "object_native_v1"
+    | "topology_v1";
   applied: boolean;
   reason: string | null;
   summary: string;
@@ -747,7 +769,7 @@ export interface ReferenceBlockGraph {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1";
+  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1" | "topology_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   sourceCanvasWidth: number;
@@ -775,7 +797,7 @@ export interface MessageAtomPlan {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1";
+  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1" | "topology_v1";
   atoms: MessageAtom[];
   summary: string;
 }
@@ -792,7 +814,7 @@ export interface BlockBindingPlan {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1";
+  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1" | "topology_v1";
   assignments: BlockBindingAssignment[];
   droppedAtomIds: string[];
   summary: string;
@@ -802,7 +824,7 @@ export interface EditableBlockPlan {
   planId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1";
+  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1" | "topology_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   compositionStatus: "stable" | "style_only";
@@ -814,7 +836,7 @@ export interface QualityEvalSummary {
   summaryId: string;
   runId: string;
   traceId: string;
-  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1";
+  workflowVariant: "retrieval_prior_v2_reset" | "object_native_v1" | "topology_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   warnings: string[];
@@ -925,6 +947,124 @@ export interface ObjectNativeRenderabilityReport {
   selectedDiagnostics: ObjectNativeReadinessDiagnostics | null;
   reason: string;
   warnings: string[];
+  summary: string;
+}
+
+export type TopologyId = "band_overlay_promo" | "centered_message_stack";
+
+export type TopologyCapabilityId =
+  | "focal_text"
+  | "supporting_text"
+  | "action_affordance"
+  | "accent_band"
+  | "fineprint"
+  | "decor_cluster"
+  | "media_panel";
+
+export interface TopologyDefinition {
+  topologyId: TopologyId;
+  summary: string;
+  requiredCapabilityIds: TopologyCapabilityId[];
+  minimumEditableTextCapabilityCount: number;
+  requiresActionCapability: boolean;
+  requiresMediaCapability: boolean;
+}
+
+export interface TopologyMatchScore {
+  topologyId: TopologyId;
+  requiredCapabilityCoverage: number;
+  renderabilityPrecheckPassed: boolean;
+  textBearingCapabilityCount: number;
+  matchedCapabilityIds: TopologyCapabilityId[];
+  missingRequiredCapabilityIds: TopologyCapabilityId[];
+  score: number;
+  reason: string;
+}
+
+export interface TopologyMatchEntry {
+  templateCode: string;
+  templateTitle: string;
+  rank: number;
+  originalSelected: boolean;
+  topologyMatches: TopologyMatchScore[];
+}
+
+export interface TopologyMatchReport {
+  reportId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "topology_v1";
+  previousSelectedTemplateCode: string | null;
+  previousSelectedTemplateTitle: string | null;
+  nextSelectedTemplateCode: string | null;
+  nextSelectedTemplateTitle: string | null;
+  selectedTopologyId: TopologyId | null;
+  entries: TopologyMatchEntry[];
+  summary: string;
+}
+
+export interface TopologySelection {
+  selectionId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "topology_v1";
+  previousSelectedTemplateCode: string | null;
+  previousSelectedTemplateTitle: string | null;
+  nextSelectedTemplateCode: string | null;
+  nextSelectedTemplateTitle: string | null;
+  selectedTopologyId: TopologyId | null;
+  reselectionApplied: boolean;
+  selectedReadiness: "stable_capable" | "fallback_only" | "unusable" | null;
+  failureStage: ObjectNativeFailureStage;
+  reason: string;
+  summary: string;
+}
+
+export interface TopologyBindingAssignment {
+  blockId: string;
+  atomId: string | null;
+  text: string | null;
+  executionSlotKey: ExecutionSlotKey | null;
+  topologyCapabilityId: TopologyCapabilityId;
+  role: string;
+}
+
+export interface TopologyBindingPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "topology_v1";
+  topologyId: TopologyId;
+  assignments: TopologyBindingAssignment[];
+  droppedAtomIds: string[];
+  summary: string;
+}
+
+export interface TopologyExecutionPlan {
+  planId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "topology_v1";
+  topologyId: TopologyId;
+  selectedTemplateCode: string;
+  selectedTemplateTitle: string;
+  compositionStatus: "stable" | "style_only";
+  blocks: FreeformRenderableBlock[];
+  summary: string;
+}
+
+export interface TopologyCompletionReport {
+  reportId: string;
+  runId: string;
+  traceId: string;
+  workflowVariant: "topology_v1";
+  topologyId: TopologyId | null;
+  selectedTemplateCode: string | null;
+  selectedTemplateTitle: string | null;
+  completionContract: TopologyCompletionContract | null;
+  presentCapabilityIds: TopologyCapabilityId[];
+  passed: boolean;
+  reason: string;
   summary: string;
 }
 
@@ -1724,6 +1864,11 @@ export interface ProcessRunJobResult {
   executionSceneSummary?: ExecutionSceneSummary;
   judgePlan?: JudgePlan;
   refineDecision?: RefineDecision;
+  topologyMatchReport?: TopologyMatchReport;
+  topologySelection?: TopologySelection;
+  topologyBindingPlan?: TopologyBindingPlan;
+  topologyExecutionPlan?: TopologyExecutionPlan;
+  topologyCompletionReport?: TopologyCompletionReport;
   plan?: ExecutablePlan;
   emittedMutationIds: string[];
   finalizeDraft: FinalizeRunDraft;
@@ -1757,6 +1902,11 @@ export interface ProcessRunJobResult {
     executionSceneSummaryRef?: string;
     judgePlanRef?: string;
     refineDecisionRef?: string;
+    topologyMatchReportRef?: string;
+    topologySelectionRef?: string;
+    topologyBindingPlanRef?: string;
+    topologyExecutionPlanRef?: string;
+    topologyCompletionReportRef?: string;
   };
 }
 

@@ -66,6 +66,19 @@ export const ExecutionSlotKeySchema = Type.Union(
   ExecutionSlotKeyValues.map((value) => Type.Literal(value)),
 );
 
+export const TopologyCompletionContractSchema = Type.Object(
+  {
+    topologyId: Type.String({ minLength: 1 }),
+    requiredCapabilityIds: Type.Array(Type.String({ minLength: 1 }), {
+      minItems: 1,
+    }),
+    minimumEditableTextCapabilityCount: Type.Integer({ minimum: 0 }),
+    requiresActionCapability: Type.Boolean(),
+    requiresMediaCapability: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
+
 export const LayerTypeValues = [
   "group",
   "shape",
@@ -185,3 +198,6 @@ export type TerminalRunStatus = Static<typeof TerminalRunStatusSchema>;
 export type DurabilityState = Static<typeof DurabilityStateSchema>;
 export type CompletionState = Static<typeof CompletionStateSchema>;
 export type ExecutionSlotKey = Static<typeof ExecutionSlotKeySchema>;
+export type TopologyCompletionContract = Static<
+  typeof TopologyCompletionContractSchema
+>;

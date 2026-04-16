@@ -166,7 +166,8 @@ export async function buildTemplatePriorBundle(
     workflowVariant !== "retrieval_prior_v1" &&
     workflowVariant !== "retrieval_prior_v2" &&
     workflowVariant !== "retrieval_prior_v2_reset" &&
-    workflowVariant !== "object_native_v1"
+    workflowVariant !== "object_native_v1" &&
+    workflowVariant !== "topology_v1"
   ) {
     return null;
   }

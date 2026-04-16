@@ -97,7 +97,10 @@ export async function emitSkeletonMutations(
     polishInputs.executionMode === "v2_freeform" ||
     foundationInputs.executionMode === "object_native_freeform" ||
     copyInputs.executionMode === "object_native_freeform" ||
-    polishInputs.executionMode === "object_native_freeform";
+    polishInputs.executionMode === "object_native_freeform" ||
+    foundationInputs.executionMode === "topology_freeform" ||
+    copyInputs.executionMode === "topology_freeform" ||
+    polishInputs.executionMode === "topology_freeform";
 
   const commitGroup = plan.actions[0]?.commitGroup ?? createRequestId();
   const draftId = `draft_${input.job.runId}`;
@@ -779,6 +782,12 @@ function buildFreeformBlockCommands(
       clusterZone: block.clusterZone,
       customFontSize: block.fontSize ?? undefined,
       customTextAlign: block.textAlign ?? undefined,
+      topologyId: block.topologyId,
+      topologyCapabilityId: block.topologyCapabilityId,
+      topologyRole: block.topologyRole,
+      textBearing: block.textBearing,
+      actionBearing: block.actionBearing,
+      mediaBearing: block.mediaBearing,
     }),
   );
 }

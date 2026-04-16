@@ -7,6 +7,14 @@ import type {
 
 import type { FinalizeRunDraft, HydratedPlanningInput } from "../types.js";
 
+type TopologyCompletionContract = {
+  topologyId: string;
+  requiredCapabilityIds: string[];
+  minimumEditableTextCapabilityCount: number;
+  requiresActionCapability: boolean;
+  requiresMediaCapability: boolean;
+};
+
 export async function finalizeRun(
   input: HydratedPlanningInput,
   proposedMutationIds: string[],
@@ -39,11 +47,18 @@ export async function finalizeRun(
     executionSceneSummaryRef?: string;
     judgePlanRef?: string;
     refineDecisionRef?: string;
+    topologyMatchReportRef?: string;
+    topologySelectionRef?: string;
+    topologyBindingPlanRef?: string;
+    topologyExecutionPlanRef?: string;
+    topologyCompletionReportRef?: string;
     warningSummary?: Array<{
       code: string;
       message: string;
     }>;
     assignedSeqs?: number[];
+    selectedTopologyId?: string | null;
+    topologyCompletionContract?: TopologyCompletionContract | null;
     overrideResult?: {
       finalStatus: FinalizeRunDraft["request"]["finalStatus"];
       errorSummary?: FinalizeRunDraft["request"]["errorSummary"];
@@ -156,6 +171,12 @@ export async function finalizeRun(
       ...(requiredExecutionSlots.length > 0
         ? { requiredExecutionSlots }
         : {}),
+      ...(options.selectedTopologyId !== undefined
+        ? { selectedTopologyId: options.selectedTopologyId }
+        : {}),
+      ...(options.topologyCompletionContract !== undefined
+        ? { topologyCompletionContract: options.topologyCompletionContract }
+        : {}),
       ...(options.canonicalDesignBriefRef
         ? { canonicalDesignBriefRef: options.canonicalDesignBriefRef }
         : {}),
@@ -228,6 +249,21 @@ export async function finalizeRun(
       ...(options.judgePlanRef ? { judgePlanRef: options.judgePlanRef } : {}),
       ...(options.refineDecisionRef
         ? { refineDecisionRef: options.refineDecisionRef }
+        : {}),
+      ...(options.topologyMatchReportRef
+        ? { topologyMatchReportRef: options.topologyMatchReportRef }
+        : {}),
+      ...(options.topologySelectionRef
+        ? { topologySelectionRef: options.topologySelectionRef }
+        : {}),
+      ...(options.topologyBindingPlanRef
+        ? { topologyBindingPlanRef: options.topologyBindingPlanRef }
+        : {}),
+      ...(options.topologyExecutionPlanRef
+        ? { topologyExecutionPlanRef: options.topologyExecutionPlanRef }
+        : {}),
+      ...(options.topologyCompletionReportRef
+        ? { topologyCompletionReportRef: options.topologyCompletionReportRef }
         : {}),
       ...(sourceMutationRange ? { sourceMutationRange } : {}),
       createdLayerIds:

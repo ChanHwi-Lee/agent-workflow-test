@@ -28,7 +28,9 @@ export async function buildExecutionSceneSummary(
     readExecutionMode(copyAction) === "v2_freeform" ||
     readExecutionMode(polishAction) === "v2_freeform" ||
     readExecutionMode(copyAction) === "object_native_freeform" ||
-    readExecutionMode(polishAction) === "object_native_freeform";
+    readExecutionMode(polishAction) === "object_native_freeform" ||
+    readExecutionMode(copyAction) === "topology_freeform" ||
+    readExecutionMode(polishAction) === "topology_freeform";
 
   const finalRevision =
     [...stageAckHistory]

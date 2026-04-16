@@ -47,11 +47,12 @@ export function collectRuleJudgeIssues(
 ): RuleJudgeIssue[] {
   const assetPolicy = normalizeTemplateAssetPolicy(intent.assetPolicy);
   const issues: RuleJudgeIssue[] = [];
-  const objectNativeExecution = plan.actions.some(
+  const freeformExecution = plan.actions.some(
     (action) =>
       action.inputs &&
       typeof action.inputs === "object" &&
-      action.inputs.executionMode === "object_native_freeform",
+      (action.inputs.executionMode === "object_native_freeform" ||
+        action.inputs.executionMode === "topology_freeform"),
   );
 
   if (typographyDecision.fallbackUsed) {
@@ -117,7 +118,7 @@ export function collectRuleJudgeIssues(
     );
   }
 
-  if (!objectNativeExecution) {
+  if (!freeformExecution) {
     issues.push(...detectGraphicPromoStructureIssues(intent, selectionDecision));
   }
 
