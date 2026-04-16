@@ -176,12 +176,16 @@ completion은 여기서만 `editability + renderability + save truth` 로 닫는
 3. adaptive composition decision을 통해 retain/modify/remove/add를 닫는다.
 4. executor는 code-driven materialization만 맡는다.
 5. completion은 always `editability + renderability + save truth` 로 닫는다.
+6. CTA 부재는 실패 이유가 아니다.
+7. 적절한 reference가 없다고 from-scratch synthetic composition으로 전환하지 않는다.
+8. fallback은 selected reference를 유지한 bounded degradation까지만 허용한다.
 
 ### 7.2 현재 runtime과의 관계
 
 - current runtime artifact chain은 완전히 삭제되기 전까지 유지될 수 있다.
 - 다만 그 chain 안의 어떤 field도 SSOT를 override하면 안 된다.
 - legacy field가 필요하다면 현재 구현 상태 문서에서만 AS-IS drift로 기록한다.
+- legacy fallback path가 필요하더라도 selected reference를 버리는 synthetic composition route로 승격하면 안 된다.
 
 ## 8. Traceability
 

@@ -80,6 +80,7 @@
   - query 일부가 source-contract boundary에서 실패해도 run 전체를 transport failure로 닫지 않고 fallback 판단까지 계속 간다.
 - 현재 object-native path는 top-k candidate audit과 candidate-selection artifact를 남기지만, stable-capable candidate가 실제로 없으면 fallback-only reselection을 runtime truth로 승격하지 않는다.
 - fallback-only 후보끼리의 reselection heuristics는 v2 시절의 fallback tuning 착시를 재발시킬 수 있으므로 현재 기준선에서는 금지한다.
+- selected reference가 없을 때 synthetic composition으로 우회하는 경로는 현재 철학 기준선에서 금지 대상으로 본다.
 - 현재 object-native path는 첫 native stable slice를 가진다.
   - 지원 cluster family: `big_text`, `promo_band`, `cta`, `optional microtext/decor`
   - stable 판정은 reset semantic subset이 아니라 object-native renderability guard로 닫는다.
@@ -257,6 +258,7 @@
 - 하지만 브라우저 결과 기준으로는 visible quality가 크게 오르지 않았다.
 - 현재 판단은 `retrieval_prior_v2_reset`을 더 미세 조정하는 것이 아니라, legacy slot/plan execution 계약을 SSOT 기준 adaptive composition runtime으로 교체해야 한다는 것이다.
 - 이 전환의 철학, 정상 동작 목표, current done/not-done은 [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 를 따른다.
+- 현재 기준선에서 synthetic composition fallback은 허용 방향이 아니다. reference-first를 유지한 bounded degradation만 허용한다.
 
 ## 9. Interfaces / external dependency
 

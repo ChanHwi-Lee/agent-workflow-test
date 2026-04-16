@@ -84,6 +84,7 @@
 
 - `retrieval_prior_v2_reset` 추가 미세 조정 중단
 - SSOT 기준 adaptive composition runtime 전환 설계와 검증
+- synthetic composition fallback 경로 비허용
 
 이 전환의 설계 철학과 정상 동작 목표는 [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 를 authoritative SSOT로 따른다. `tooldi-agent-workflow-vnext-object-native-reference-architecture.md` 는 배경 참고용 historical context로만 읽는다.
 
@@ -103,6 +104,12 @@
 - `image/sticker/saveTemplate/deleteLayer` 를 한꺼번에 열지 않는다.
 - 예외적으로 post-execution bounded refine 를 위한 **narrow `updateLayer` patch surface** 는 허용한다.
 - 실제 image/sticker는 asset binding, license, save semantics, editor-side apply 제약이 있어 다음 단계로 미룬다.
+
+### 3.2A reference-first 유지
+
+- 적절한 reference template이 없다고 from-scratch synthetic composition으로 내려가지 않는다.
+- 허용되는 fallback은 selected reference를 유지한 bounded degradation뿐이다.
+- 즉 roadmap은 fallback polish가 아니라 reference selection quality와 reference-preserving execution quality를 올리는 방향이어야 한다.
 
 ### 3.3 single-run / single-worker mental model 유지
 

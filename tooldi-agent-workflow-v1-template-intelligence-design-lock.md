@@ -45,6 +45,7 @@
 - retrieval stage는 열어 둔다.
 - 하지만 retrieval result를 다시 slot schema로 축약하면 안 된다.
 - retrieval의 목적은 `reference template object graph` 를 찾는 것이지, required slot checklist를 채우는 것이 아니다.
+- 적절한 reference가 없다고 from-scratch synthetic composition으로 내려가면 안 된다.
 
 ### 3.3 multi-agent는 열지 않는다
 
@@ -195,12 +196,19 @@ selection 단계는 최소 아래 결과를 남겨야 한다.
 
 즉 selection은 black-box 결론이 아니라 `candidate set -> comparison -> selected reference` 구조를 남겨야 한다.
 
+추가 규칙:
+
+- selected reference가 없으면 synthetic composition fallback으로 성공을 만들지 않는다.
+- 이 경우 run은 fail-fast 하거나 explicit warning close 후보로만 수렴해야 한다.
+- allowed fallback은 selected reference를 유지한 optional object 제거, photo->graphic 전환, bounded add 정도로 제한한다.
+
 ## 10. Photo Rule
 
 - `photo` 는 discovery/selection 대상에 포함한다.
 - `photo` 는 `background replacement` 를 기본값으로 해석하면 안 된다.
 - 현재 단계에서는 `hero/supporting visual object` 후보로만 읽는다.
 - photo execution failure 는 same-run graphic fallback 으로 설명을 숨기지 않고 evidence에 남겨야 한다.
+- 이 fallback 역시 selected reference를 버리지 않는 범위에서만 허용된다.
 
 ## 11. 금지 패턴
 
@@ -208,6 +216,7 @@ selection 단계는 최소 아래 결과를 남겨야 한다.
 - capability catalog을 planning ontology처럼 읽는 것
 - reference graph를 읽어 놓고 execution 직전에 다시 semantic slot skeleton으로 축약하는 것
 - message atoms를 layout structure truth로 오독하는 것
+- reference miss를 이유로 synthetic composition을 상시 fallback으로 여는 것
 
 ## 12. Current Default
 
@@ -218,6 +227,8 @@ selection 단계는 최소 아래 결과를 남겨야 한다.
 - add는 addable vocabulary registry로만 열린다
 - capability는 executor vocabulary일 뿐 planning ontology가 아니다
 - selection은 object graph를 선택하고, adaptive composition은 object-level retain/modify/remove/add를 만든다
+- CTA 부재는 실패 이유가 아니다
+- selected reference가 없으면 synthetic composition으로 우회하지 않는다
 
 ## 8. Candidate Schema Lock
 

@@ -54,6 +54,7 @@
 | --- | --- |
 | 고정 슬롯 스키마를 completion truth로 사용 | v2/v3에서 `requiredExecutionSlots = ["background","headline","offer_line","cta"]`가 모든 템플릿에 동일한 구조를 강제했다. A1, A4 위반. |
 | capability catalog을 planning ontology로 격상 | capability는 executor의 실행 어휘이지, LLM이 계획을 세우는 상위 개념이 아니다. 격상하면 slot의 이름만 바뀐 재포장이 된다. A5 위반. |
+| reference를 못 찾았다고 from-scratch synthetic composition으로 도망감 | reference-first 원칙을 버리고 heuristic layout 조립으로 되돌아가면 다시 slot/threshold/fallback tuning 지옥으로 돌아간다. A1, A3, A4 위반. |
 | LLM이 레이아웃/지오메트리를 결정 | anchor 좌표, emphasis 수준, z-order, font sizing을 LLM이 지정하면 LLM에게 그래픽 디자이너 역할을 기대하게 된다. A2 위반. |
 | refine을 primary quality mechanism으로 사용 | refine은 bounded secondary pass이다. 초안 품질은 adaptive composition 결정의 질에서 나와야 한다. |
 | threshold micro-tuning, fallback polish, prompt-specific exception | v2에서 이런 패치가 축적되어 시스템의 일관성을 무너뜨렸다. 구조적 해결이 아닌 지엽적 조정은 금지. |
@@ -286,6 +287,12 @@ addable vocabulary registry는 **LLM이 "add" operation으로 새로 추가할 �
 - retain/modify/remove의 대상 분류 체계가 아니다. 기존 오브젝트의 "역할"을 분류하는 데 사용하면 slot 재포장이 된다.
 - 모든 가능한 디자인 요소의 exhaustive catalog이 아니다. 템플릿에 이미 있는 것은 retain/modify/remove로 다루고, 여기에 없는 것만 add로 다룬다.
 
+### 5.6 CTA는 필수가 아니다
+
+- `cta_button` 이 registry에 존재해도 모든 representative draft가 CTA를 반드시 가져야 하는 것은 아니다.
+- 행동 유도 요소는 selected reference graph와 adaptive composition decision의 결과로 들어올 수 있는 선택 항목이다.
+- CTA 부재 자체는 completion failure 이유가 아니다.
+
 ---
 
 ## 6. Completion Contract
@@ -317,6 +324,31 @@ run이 "완료"로 판정되려면 아래 세 축이 모두 충족되어야 한�
 - completion의 세 축 중 하나라도 **불충족**이면: run은 `failed` 또는 `completed_with_warning`이다.
 - 세 축이 모두 충족되었지만 **추가적인 품질 이슈**(copy 품질, 색상 조화 등)가 있으면: run은 `completed_with_warning`이되, completion 자체는 닫힌다.
 - 세 축이 모두 충족되었고 추가 이슈도 없으면: run은 `completed`이다.
+
+### 6.4 Reference-first rule
+
+시스템은 **reference template first** 로 동작해야 한다.
+
+- selected reference template이 representative composition의 구조 기준선이다.
+- 적절한 reference template이 없다고 해서 시스템이 from-scratch synthetic composition으로 전환하면 안 된다.
+- reference selection 단계에서 통과 가능한 후보가 없으면, run은 synthetic layout fallback으로 억지 성공을 만들지 말고 실패 또는 explicit warning close로 수렴해야 한다.
+
+### 6.5 허용되는 fallback의 범위
+
+fallback은 오직 **선택된 reference를 유지한 상태의 bounded degradation** 으로만 허용한다.
+
+허용:
+
+- optional object 제거
+- photo 대신 graphic 또는 shape treatment 사용
+- registry 기반 bounded add
+- style/token 수준 약화
+
+금지:
+
+- reference를 버리고 새 레이아웃을 처음부터 조립
+- completion을 맞추기 위한 synthetic structure 생성
+- prompt별 예외 규칙을 누적해 synthetic composition을 사실상 상시 경로로 만드는 것
 
 ---
 
@@ -433,7 +465,7 @@ run이 "완료"로 판정되려면 아래 세 축이 모두 충족되어야 한�
 | 보류 항목 | 이유 |
 | --- | --- |
 | Refine loop 동작 세부 / patch scope | refine은 bounded secondary이다. primary quality는 Layer 3의 LLM 결정 질에서 나온다. refine 세부는 나중에. |
-| Error recovery, fallback 전략 | v2에서 초반 에러 처리에 매몰된 패턴 방지. 정상 경로를 먼저 안정화한 뒤 처리. |
+| Error recovery의 세부 재시도 규칙 | 정상 경로를 먼저 안정화한 뒤 수치와 단계별 retry budget을 더 정교하게 조정한다. 단, reference-first와 synthetic fallback 금지는 이미 잠금이다. |
 | Multi-turn editing | 현재는 single-turn draft 생성이 목표. multi-turn은 향후 확장. |
 | Vision 기반 judge | 현재 judge는 rule 기반. vision 판정은 향후 고도화. |
 | Overlap detection, text fitting 등의 threshold 값 | renderability guard의 구체적 수치는 구현 시 결정. |
