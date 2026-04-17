@@ -159,7 +159,7 @@ export const TemplateCopyPlanDraftSchema = z.object({
   cta: TemplateCopyPlanSlotDraftSchema,
   footerNote: TemplateCopyPlanSlotDraftSchema.nullable(),
   badgeText: TemplateCopyPlanSlotDraftSchema.nullable(),
-  summary: z.string().min(1).max(160),
+  summary: z.string().min(1).max(400),
 });
 
 export type TemplateCopyPlanDraft = z.infer<typeof TemplateCopyPlanDraftSchema>;
@@ -171,7 +171,7 @@ export const TemplateAbstractLayoutDraftSchema = z.object({
   ctaAnchor: z.enum(templateCtaAnchors),
   density: z.enum(templateLayoutDensities),
   slotTopology: z.enum(templateSlotTopologies),
-  summary: z.string().min(1).max(160),
+  summary: z.string().min(1).max(400),
 });
 
 export type TemplateAbstractLayoutDraft = z.infer<
