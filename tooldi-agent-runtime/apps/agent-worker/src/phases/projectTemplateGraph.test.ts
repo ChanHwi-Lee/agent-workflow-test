@@ -263,7 +263,185 @@ test("projectTemplateObjectGraph annotates local backing surfaces for centered t
   assert.ok(buttonText, "button-like text should be projected");
   assert.equal(buttonText.backingSurfaceColorHex, "#ffffff");
   assert.ok(buttonText.backingSurfaceBounds, "backing surface bounds should be present");
+  // 414x287 panel is a large panel, not a button (aspect 1.44, area 15.8%) — stays null.
   assert.equal(buttonText.compositeHint, null);
+});
+
+test("projectTemplateObjectGraph promotes compact rounded CTA shape+text to compositeHint=button", () => {
+  const input = createInput([
+    {
+      type: "rect",
+      left: 450,
+      top: 520,
+      width: 300,
+      height: 60,
+      opacity: 1,
+      fill: "#ff6a00",
+      rx: 30,
+      ry: 30,
+    },
+    {
+      type: "textbox",
+      text: "지금 예약하기",
+      left: 600,
+      top: 540,
+      width: 200,
+      height: 24,
+      originX: "center",
+      originY: "top",
+      scaleX: 1,
+      scaleY: 1,
+      textAlign: "center",
+      opacity: 1,
+      fontSize: 20,
+      fill: "#ffffff",
+    },
+  ]);
+
+  const graph = projectTemplateObjectGraph(input);
+  const ctaText = graph.objects.find((o) => o.sourceText === "지금 예약하기");
+  assert.ok(ctaText, "CTA text should be projected");
+  assert.ok(ctaText.backingSurfaceObjectId, "CTA text should have a backing surface");
+  assert.equal(ctaText.compositeHint, "button");
+});
+
+test("projectTemplateObjectGraph promotes small top-zone chip+text to compositeHint=badge", () => {
+  const input = createInput([
+    {
+      type: "rect",
+      left: 60,
+      top: 60,
+      width: 120,
+      height: 36,
+      opacity: 1,
+      fill: "#ffd24a",
+      rx: 18,
+      ry: 18,
+    },
+    {
+      type: "textbox",
+      text: "NEW",
+      left: 90,
+      top: 68,
+      width: 60,
+      height: 20,
+      originX: "left",
+      originY: "top",
+      scaleX: 1,
+      scaleY: 1,
+      textAlign: "center",
+      opacity: 1,
+      fontSize: 16,
+      fill: "#111111",
+    },
+  ]);
+
+  const graph = projectTemplateObjectGraph(input);
+  const badgeText = graph.objects.find((o) => o.sourceText === "NEW");
+  assert.ok(badgeText, "badge text should be projected");
+  assert.ok(badgeText.backingSurfaceObjectId, "badge text should have a backing surface");
+  assert.equal(badgeText.compositeHint, "badge");
+});
+
+test("projectTemplateObjectGraph keeps compositeHint=null when text has no backing surface", () => {
+  const input = createInput([
+    {
+      type: "textbox",
+      text: "지금 예약하기",
+      left: 450,
+      top: 520,
+      width: 300,
+      height: 40,
+      originX: "left",
+      originY: "top",
+      scaleX: 1,
+      scaleY: 1,
+      textAlign: "center",
+      opacity: 1,
+      fontSize: 24,
+      fill: "#111111",
+    },
+  ]);
+
+  const graph = projectTemplateObjectGraph(input);
+  const textObj = graph.objects.find((o) => o.sourceText === "지금 예약하기");
+  assert.ok(textObj, "text should be projected");
+  assert.equal(textObj.backingSurfaceObjectId, null);
+  assert.equal(textObj.compositeHint, null);
+});
+
+test("projectTemplateObjectGraph keeps compositeHint=null when backing surface is translucent", () => {
+  const input = createInput([
+    {
+      type: "rect",
+      left: 450,
+      top: 520,
+      width: 300,
+      height: 60,
+      opacity: 0.4,
+      fill: "#ff6a00",
+      rx: 30,
+      ry: 30,
+    },
+    {
+      type: "textbox",
+      text: "지금 예약하기",
+      left: 600,
+      top: 540,
+      width: 200,
+      height: 24,
+      originX: "center",
+      originY: "top",
+      scaleX: 1,
+      scaleY: 1,
+      textAlign: "center",
+      opacity: 1,
+      fontSize: 20,
+      fill: "#ffffff",
+    },
+  ]);
+
+  const graph = projectTemplateObjectGraph(input);
+  const ctaText = graph.objects.find((o) => o.sourceText === "지금 예약하기");
+  assert.ok(ctaText, "text should be projected");
+  assert.equal(ctaText.compositeHint, null);
+});
+
+test("projectTemplateObjectGraph keeps compositeHint=null for text inside a tall near-square backing panel", () => {
+  const input = createInput([
+    {
+      type: "rect",
+      left: 120,
+      top: 120,
+      width: 400,
+      height: 380,
+      opacity: 1,
+      fill: "#ffffff",
+    },
+    {
+      type: "textbox",
+      text: "본문 카피가 여기에 들어갑니다 아주 긴 문장",
+      left: 150,
+      top: 240,
+      width: 340,
+      height: 120,
+      originX: "left",
+      originY: "top",
+      scaleX: 1,
+      scaleY: 1,
+      textAlign: "left",
+      opacity: 1,
+      fontSize: 20,
+      fill: "#111111",
+    },
+  ]);
+
+  const graph = projectTemplateObjectGraph(input);
+  const text = graph.objects.find((o) => (o.sourceText ?? "").startsWith("본문 카피"));
+  assert.ok(text, "text should be projected");
+  assert.ok(text.backingSurfaceObjectId, "text should have a backing surface");
+  // Aspect 1.05 (near square) and area ~20% → stays null under false-negative-preferred posture.
+  assert.equal(text.compositeHint, null);
 });
 
 test("projectTemplateObjectGraph does not classify large inset panels as background", () => {

@@ -443,6 +443,76 @@ function annotateLocalSurfaceContext(objects: ProjectedObject[]): void {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Composite hint annotation (L2 compound-flatten asymmetry repair)
+// ---------------------------------------------------------------------------
+//
+// SSOT A1/A2: L2 observes. It does not read SceneBindingPlan, ctaShapeLanguage,
+// palette, atom kind, or slot expectation. Hint is derived exclusively from
+// geometry + the already-annotated backing surface relationship.
+//
+// Posture: false-negative preferred. Ambiguous shape+text pairs stay null.
+// A false positive (text-on-panel wrongly promoted to CTA) is a more visible
+// regression than a false negative.
+//
+// Gating evidence (all required):
+//   - text has an annotated backingSurfaceObjectId (enclosure already checked)
+//   - backing shape is solid (no gradient secondary fill, opacity >= 0.9)
+//   - backing area is small relative to canvas (panels are excluded)
+//   - backing is horizontally elongated (wider than tall) for button
+//   - badge additionally requires top zone placement and a short label
+function annotateCompositeHints(
+  objects: ProjectedObject[],
+  canvasWidth: number,
+  canvasHeight: number,
+): void {
+  const canvasArea = canvasWidth * canvasHeight;
+  if (canvasArea <= 0) return;
+
+  const objectById = new Map(objects.map((obj) => [obj.objectId, obj]));
+
+  for (const textObject of objects) {
+    if (textObject.layerType !== "text") continue;
+    if (textObject.sourceText === null) continue;
+    if (textObject.backingSurfaceObjectId === null) continue;
+    const backing = objectById.get(textObject.backingSurfaceObjectId);
+    if (!backing) continue;
+
+    // Backing must be a solid surface — exclude gradients and translucent shapes.
+    if (backing.secondaryFillColorHex) continue;
+    if ((backing.sourceOpacity ?? 1) < 0.9) continue;
+
+    const backingArea = backing.bounds.width * backing.bounds.height;
+    if (backingArea <= 0) continue;
+    const backingAreaRatio = backingArea / canvasArea;
+    const backingAspect =
+      backing.bounds.height > 0 ? backing.bounds.width / backing.bounds.height : 0;
+    const charCount = textObject.sourceText.trim().length;
+
+    const isTopZone =
+      textObject.zone === "top-left" ||
+      textObject.zone === "top" ||
+      textObject.zone === "top-right";
+
+    // Badge: very small chip in a top zone with a short label.
+    if (isTopZone && backingAreaRatio < 0.03 && charCount > 0 && charCount <= 10) {
+      textObject.compositeHint = "badge";
+      continue;
+    }
+
+    // Button: compact horizontal surface with a short-to-medium label.
+    if (
+      backingAreaRatio < 0.08 &&
+      backingAspect >= 2.0 &&
+      charCount > 0 &&
+      charCount <= 24
+    ) {
+      textObject.compositeHint = "button";
+      continue;
+    }
+  }
+}
+
 function findBestBackingSurface(
   textObject: ProjectedObject,
   shapeObjects: ProjectedObject[],
@@ -602,6 +672,7 @@ export function projectTemplateObjectGraph(
   }
 
   annotateLocalSurfaceContext(projectedObjects);
+  annotateCompositeHints(projectedObjects, canvasWidth, canvasHeight);
 
   // Sort by prominence descending (most visually important first)
   projectedObjects.sort((a, b) => b.prominence - a.prominence);
