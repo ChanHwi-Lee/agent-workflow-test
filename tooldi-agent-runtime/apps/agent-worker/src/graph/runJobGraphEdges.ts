@@ -1,3 +1,10 @@
+/** Test-only export. Do not import from production runtime. */
+export function routeAfterBuildReferenceCompositionV2(
+  state: { finalizeDraft?: unknown },
+): "send_finalize" | "build_search_profile" {
+  return state.finalizeDraft ? "send_finalize" : "build_search_profile";
+}
+
 export function registerRunJobGraphEdges(graph: any) {
   return graph
     .addEdge("hydrate_input", "plan_intent_draft")
@@ -10,8 +17,9 @@ export function registerRunJobGraphEdges(graph: any) {
     .addEdge("build_template_prior_bundle", "build_scene_plans")
     .addEdge("build_scene_plans", "build_copy_and_abstract_layout_plan")
     .addEdge("build_copy_and_abstract_layout_plan", "build_reference_composition_v2")
-    .addConditionalEdges("build_reference_composition_v2", (state: any) =>
-      state.finalizeDraft ? "send_finalize" : "build_search_profile",
+    .addConditionalEdges(
+      "build_reference_composition_v2",
+      routeAfterBuildReferenceCompositionV2,
     )
     .addEdge("build_search_profile", "compute_retrieval_policy")
     .addEdge("compute_retrieval_policy", "assemble_candidates")

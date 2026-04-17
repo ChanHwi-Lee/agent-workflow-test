@@ -309,20 +309,22 @@ test("projectTemplateObjectGraph promotes small top-zone chip+text to compositeH
   const input = createInput([
     {
       type: "rect",
+      // Chip geometry: 100x60 → aspect 1.67 (below button's 2.0 floor),
+      // area 0.008 of canvas (below badge's 0.015 ceiling).
       left: 60,
       top: 60,
-      width: 120,
-      height: 36,
+      width: 100,
+      height: 60,
       opacity: 1,
       fill: "#ffd24a",
-      rx: 18,
-      ry: 18,
+      rx: 30,
+      ry: 30,
     },
     {
       type: "textbox",
       text: "NEW",
-      left: 90,
-      top: 68,
+      left: 80,
+      top: 78,
       width: 60,
       height: 20,
       originX: "left",
@@ -341,6 +343,53 @@ test("projectTemplateObjectGraph promotes small top-zone chip+text to compositeH
   assert.ok(badgeText, "badge text should be projected");
   assert.ok(badgeText.backingSurfaceObjectId, "badge text should have a backing surface");
   assert.equal(badgeText.compositeHint, "badge");
+});
+
+test("projectTemplateObjectGraph classifies a short top-zone CTA pill as button, NOT badge", () => {
+  // Regression guard against the earlier rule order: a compact horizontal
+  // CTA pill sitting in a top zone with a short label and a small backing
+  // area would greedily match the badge gate before the button gate. The
+  // button-first ordering + tightened badge thresholds must absorb this
+  // pattern as "button".
+  const input = createInput([
+    {
+      type: "rect",
+      // 180x36 → aspect 5.0 (>= button 2.0), area 0.0086 (< badge 0.015 —
+      // satisfies the OLD badge gate), rounded corners — the exact pattern
+      // the earlier rule would have greedily labeled "badge".
+      left: 510,
+      top: 40,
+      width: 180,
+      height: 36,
+      opacity: 1,
+      fill: "#ff6a00",
+      rx: 18,
+      ry: 18,
+    },
+    {
+      type: "textbox",
+      text: "지금 예약",
+      left: 600,
+      top: 52,
+      width: 120,
+      height: 20,
+      originX: "center",
+      originY: "top",
+      scaleX: 1,
+      scaleY: 1,
+      textAlign: "center",
+      opacity: 1,
+      fontSize: 14,
+      fill: "#ffffff",
+    },
+  ]);
+
+  const graph = projectTemplateObjectGraph(input);
+  const ctaText = graph.objects.find((o) => o.sourceText === "지금 예약");
+  assert.ok(ctaText, "CTA pill text should be projected");
+  assert.ok(ctaText.backingSurfaceObjectId, "CTA pill should have a backing surface");
+  assert.equal(ctaText.compositeHint, "button");
+  assert.notEqual(ctaText.compositeHint, "badge");
 });
 
 test("projectTemplateObjectGraph keeps compositeHint=null when text has no backing surface", () => {

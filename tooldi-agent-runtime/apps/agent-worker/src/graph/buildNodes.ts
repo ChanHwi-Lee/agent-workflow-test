@@ -22,9 +22,7 @@ import { projectTemplateObjectGraph } from "../phases/projectTemplateGraph.js";
 import {
   buildAdaptiveCompositionDecision,
   AdaptiveCompositionCoverageError,
-  ADAPTIVE_COMPOSITION_COVERAGE_ERROR_CODE,
 } from "../phases/buildAdaptiveCompositionDecision.js";
-import { finalizeRun } from "../phases/finalizeRun.js";
 import { emitAdaptiveCompositionMutations } from "../phases/emitAdaptiveCompositionMutations.js";
 import {
   buildTemplatePriorBundle,
@@ -45,7 +43,10 @@ import { isSpringActivationFailure } from "./nodeUtils.js";
 import { RunJobGraphState } from "./runJobGraphState.js";
 import type { RunJobGraphDependencies } from "./runJobGraphTypes.js";
 import type { createRunJobGraphTasks } from "./graphTasks.js";
-import { buildSpringActivationFailureFinalizeDraft } from "./buildFailureDrafts.js";
+import {
+  buildAdaptiveCompositionCoverageFailureFinalizeDraft,
+  buildSpringActivationFailureFinalizeDraft,
+} from "./buildFailureDrafts.js";
 
 function readFiniteNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -671,56 +672,15 @@ export function registerBuildNodes(
               // failures (network, schema parse) retain the warn-swallow
               // behavior and surface as adaptive_batch_missing as before.
               if (err instanceof AdaptiveCompositionCoverageError) {
-                const coverageLog = await appendEventTask(state.job.runId, {
-                  traceId: state.job.traceId,
-                  attempt: state.job.attemptSeq,
-                  queueJobId: state.job.queueJobId,
-                  event: {
-                    type: "log",
-                    level: "error",
-                    message: `[ssot/adaptive-composition] ${ADAPTIVE_COMPOSITION_COVERAGE_ERROR_CODE}: ${err.message}`,
-                  },
-                });
-                cooperativeStopRequested ||= coverageLog.cancelRequested;
-                const finalizeDraft = await finalizeRun(state.hydrated, [], null, {
-                  cooperativeStopRequested,
-                  ...(state.canonicalDesignBriefRef
-                    ? { canonicalDesignBriefRef: state.canonicalDesignBriefRef }
-                    : {}),
-                  ...(state.semanticBriefDraftRef
-                    ? { semanticBriefDraftRef: state.semanticBriefDraftRef }
-                    : {}),
-                  ...(state.briefCompilationReportRef
-                    ? { briefCompilationReportRef: state.briefCompilationReportRef }
-                    : {}),
-                  ...(state.copyPlanRef ? { copyPlanRef: state.copyPlanRef } : {}),
-                  ...(state.abstractLayoutPlanRef
-                    ? { abstractLayoutPlanRef: state.abstractLayoutPlanRef }
-                    : {}),
-                  ...(state.assetPlanRef ? { assetPlanRef: state.assetPlanRef } : {}),
-                  ...(state.concreteLayoutPlanRef
-                    ? { concreteLayoutPlanRef: state.concreteLayoutPlanRef }
-                    : {}),
-                  ...(state.templatePriorBundleRef
-                    ? { templatePriorBundleRef: state.templatePriorBundleRef }
-                    : {}),
-                  ...(state.sceneStylePlanRef
-                    ? { sceneStylePlanRef: state.sceneStylePlanRef }
-                    : {}),
-                  ...(state.sceneBindingPlanRef
-                    ? { sceneBindingPlanRef: state.sceneBindingPlanRef }
-                    : {}),
-                  overrideResult: {
-                    finalStatus: "failed",
-                    errorSummary: {
-                      code: ADAPTIVE_COMPOSITION_COVERAGE_ERROR_CODE,
-                      message: err.message,
-                    },
-                  },
-                });
+                const coverageFailure =
+                  await buildAdaptiveCompositionCoverageFailureFinalizeDraft(
+                    state,
+                    err,
+                    { appendEventTask },
+                  );
                 return {
-                  cooperativeStopRequested,
-                  finalizeDraft,
+                  cooperativeStopRequested: coverageFailure.cooperativeStopRequested,
+                  finalizeDraft: coverageFailure.finalizeDraft,
                 };
               }
               const compositionLog = await appendEventTask(state.job.runId, {

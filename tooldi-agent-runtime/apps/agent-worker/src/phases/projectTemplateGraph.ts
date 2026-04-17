@@ -494,13 +494,12 @@ function annotateCompositeHints(
       textObject.zone === "top" ||
       textObject.zone === "top-right";
 
-    // Badge: very small chip in a top zone with a short label.
-    if (isTopZone && backingAreaRatio < 0.03 && charCount > 0 && charCount <= 10) {
-      textObject.compositeHint = "badge";
-      continue;
-    }
-
-    // Button: compact horizontal surface with a short-to-medium label.
+    // Button evaluated BEFORE badge so that a compact horizontal CTA pill —
+    // which can legitimately sit in a top zone with a short label and a small
+    // backing surface — is absorbed as "button" rather than misclassified as
+    // "badge". Without this ordering a rule like `top-zone + small area +
+    // short label` would greedily match CTA pills; badge must therefore stay
+    // strictly below the button's aspect floor.
     if (
       backingAreaRatio < 0.08 &&
       backingAspect >= 2.0 &&
@@ -508,6 +507,20 @@ function annotateCompositeHints(
       charCount <= 24
     ) {
       textObject.compositeHint = "button";
+      continue;
+    }
+
+    // Badge: tightened to false-negative-preferred. Very small chip, very
+    // short label, top zone only. Thresholds intentionally below common CTA
+    // pill magnitudes (area ~0.02-0.06, chars ~4-8) so that a CTA pill that
+    // somehow failed the button aspect check does not slip into badge.
+    if (
+      isTopZone &&
+      backingAreaRatio < 0.015 &&
+      charCount > 0 &&
+      charCount <= 6
+    ) {
+      textObject.compositeHint = "badge";
       continue;
     }
   }
