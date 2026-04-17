@@ -266,25 +266,100 @@ export async function buildAdaptiveCompositionDecision(
     AdaptiveCompositionDecisionSchema,
   );
 
-  const result = await structuredModel.invoke([
-    { role: "system", content: buildSystemPrompt() },
-    {
-      role: "user",
-      content: buildUserPrompt(
-        input.projectedGraph,
-        input.messageAtomPlan,
-        input.sceneStylePlan,
-        input.palette,
-      ),
-    },
-  ]);
+  const baseUserPrompt = buildUserPrompt(
+    input.projectedGraph,
+    input.messageAtomPlan,
+    input.sceneStylePlan,
+    input.palette,
+  );
 
-  return finalizeAdaptiveCompositionDecision(result, {
+  const invoker: AdaptiveCompositionInvoker = async (userPrompt) =>
+    structuredModel.invoke([
+      { role: "system", content: buildSystemPrompt() },
+      { role: "user", content: userPrompt },
+    ]);
+
+  return runAdaptiveCompositionDecisionWithRetry(invoker, baseUserPrompt, {
     runId: input.runId,
     traceId: input.traceId,
     projectedGraph: input.projectedGraph,
     messageAtomPlan: input.messageAtomPlan,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Coverage contract — every `layerType === "text"` object with non-null
+// sourceText MUST receive an explicit retain/modify/remove decision. On
+// omission, finalize throws `AdaptiveCompositionCoverageError`; the planner
+// gets exactly one augmented-prompt retry, and a terminal omission surfaces
+// as the dedicated `decision_coverage_incomplete` error code (distinct from
+// executionNodes' `adaptive_batch_missing`).
+// ---------------------------------------------------------------------------
+
+export const ADAPTIVE_COMPOSITION_COVERAGE_ERROR_CODE =
+  "decision_coverage_incomplete" as const;
+
+export class AdaptiveCompositionCoverageError extends Error {
+  readonly code = ADAPTIVE_COMPOSITION_COVERAGE_ERROR_CODE;
+  readonly missingObjectIds: string[];
+  constructor(missingObjectIds: string[]) {
+    super(
+      `Adaptive composition omitted decisions for required text objects: ${missingObjectIds.join(", ")}`,
+    );
+    this.name = "AdaptiveCompositionCoverageError";
+    this.missingObjectIds = [...missingObjectIds];
+  }
+}
+
+export type AdaptiveCompositionInvoker = (
+  userPrompt: string,
+) => Promise<z.infer<typeof AdaptiveCompositionDecisionSchema>>;
+
+export async function runAdaptiveCompositionDecisionWithRetry(
+  invoker: AdaptiveCompositionInvoker,
+  baseUserPrompt: string,
+  context: FinalizeAdaptiveCompositionDecisionContext,
+): Promise<AdaptiveCompositionDecision> {
+  const firstResult = await invoker(baseUserPrompt);
+  try {
+    return finalizeAdaptiveCompositionDecision(firstResult, context);
+  } catch (err) {
+    if (!(err instanceof AdaptiveCompositionCoverageError)) throw err;
+    const retryPrompt = buildCoverageRetryUserPrompt(
+      baseUserPrompt,
+      context.projectedGraph,
+      err.missingObjectIds,
+    );
+    const retryResult = await invoker(retryPrompt);
+    return finalizeAdaptiveCompositionDecision(retryResult, context);
+  }
+}
+
+function buildCoverageRetryUserPrompt(
+  baseUserPrompt: string,
+  projectedGraph: ProjectedObjectGraph,
+  missingObjectIds: string[],
+): string {
+  const lookup = new Map(
+    projectedGraph.objects.map((obj) => [obj.objectId, obj.sourceText ?? ""]),
+  );
+  const missingLines = missingObjectIds
+    .map((objectId) => {
+      const text = (lookup.get(objectId) ?? "").replace(/\n/g, "\\n");
+      return `- ${objectId}: "${text}"`;
+    })
+    .join("\n");
+  return `${baseUserPrompt}
+
+## Retry Instruction — Decision Coverage Incomplete
+
+The previous response omitted explicit decisions for the following text
+objects that have non-null sourceText. Every such text object MUST receive
+exactly one elementDecision with operation ∈ {retain, modify, remove}.
+Re-emit the FULL decision set (do not drop previously covered objects) and
+include a decision for each of these:
+
+${missingLines}`;
 }
 
 export interface FinalizeAdaptiveCompositionDecisionContext {
@@ -312,6 +387,20 @@ export function finalizeAdaptiveCompositionDecision(
     throw new Error(
       `Adaptive composition returned unknown object ids: ${invalidObjectIds.join(", ")}`,
     );
+  }
+
+  // SSOT A2 + §4.2: every text object with non-null sourceText MUST receive an
+  // explicit retain/modify/remove decision. Non-text objects default to
+  // implicit retain (A2 leaves "how" to the executor). Omission surfaces as
+  // AdaptiveCompositionCoverageError so the planner can be retried exactly
+  // once with an augmented prompt; a terminal omission becomes the dedicated
+  // decision_coverage_incomplete error code.
+  const missingCoverageObjectIds = context.projectedGraph.objects
+    .filter((obj) => obj.layerType === "text" && obj.sourceText !== null)
+    .map((obj) => obj.objectId)
+    .filter((objectId) => !dedupedElementDecisions.has(objectId));
+  if (missingCoverageObjectIds.length > 0) {
+    throw new AdaptiveCompositionCoverageError(missingCoverageObjectIds);
   }
 
   const atomIdSet = new Set(

@@ -19,7 +19,12 @@ import { buildScenePlans } from "../phases/buildScenePlans.js";
 import { buildSceneStylePlans } from "../phases/buildSceneStylePlans.js";
 import { buildTopologyPath } from "../phases/buildTopologyPath.js";
 import { projectTemplateObjectGraph } from "../phases/projectTemplateGraph.js";
-import { buildAdaptiveCompositionDecision } from "../phases/buildAdaptiveCompositionDecision.js";
+import {
+  buildAdaptiveCompositionDecision,
+  AdaptiveCompositionCoverageError,
+  ADAPTIVE_COMPOSITION_COVERAGE_ERROR_CODE,
+} from "../phases/buildAdaptiveCompositionDecision.js";
+import { finalizeRun } from "../phases/finalizeRun.js";
 import { emitAdaptiveCompositionMutations } from "../phases/emitAdaptiveCompositionMutations.js";
 import {
   buildTemplatePriorBundle,
@@ -658,6 +663,66 @@ export function registerBuildNodes(
                 },
               );
             } catch (err) {
+              // SSOT §4.2 + scope B: decision coverage violations must fail at
+              // the L3 seam with a dedicated error code. They must NOT be
+              // warn-swallowed into a null adaptiveCompositionDecision (which
+              // would otherwise be re-labeled downstream as
+              // adaptive_batch_missing by executionNodes). Transport/LLM-level
+              // failures (network, schema parse) retain the warn-swallow
+              // behavior and surface as adaptive_batch_missing as before.
+              if (err instanceof AdaptiveCompositionCoverageError) {
+                const coverageLog = await appendEventTask(state.job.runId, {
+                  traceId: state.job.traceId,
+                  attempt: state.job.attemptSeq,
+                  queueJobId: state.job.queueJobId,
+                  event: {
+                    type: "log",
+                    level: "error",
+                    message: `[ssot/adaptive-composition] ${ADAPTIVE_COMPOSITION_COVERAGE_ERROR_CODE}: ${err.message}`,
+                  },
+                });
+                cooperativeStopRequested ||= coverageLog.cancelRequested;
+                const finalizeDraft = await finalizeRun(state.hydrated, [], null, {
+                  cooperativeStopRequested,
+                  ...(state.canonicalDesignBriefRef
+                    ? { canonicalDesignBriefRef: state.canonicalDesignBriefRef }
+                    : {}),
+                  ...(state.semanticBriefDraftRef
+                    ? { semanticBriefDraftRef: state.semanticBriefDraftRef }
+                    : {}),
+                  ...(state.briefCompilationReportRef
+                    ? { briefCompilationReportRef: state.briefCompilationReportRef }
+                    : {}),
+                  ...(state.copyPlanRef ? { copyPlanRef: state.copyPlanRef } : {}),
+                  ...(state.abstractLayoutPlanRef
+                    ? { abstractLayoutPlanRef: state.abstractLayoutPlanRef }
+                    : {}),
+                  ...(state.assetPlanRef ? { assetPlanRef: state.assetPlanRef } : {}),
+                  ...(state.concreteLayoutPlanRef
+                    ? { concreteLayoutPlanRef: state.concreteLayoutPlanRef }
+                    : {}),
+                  ...(state.templatePriorBundleRef
+                    ? { templatePriorBundleRef: state.templatePriorBundleRef }
+                    : {}),
+                  ...(state.sceneStylePlanRef
+                    ? { sceneStylePlanRef: state.sceneStylePlanRef }
+                    : {}),
+                  ...(state.sceneBindingPlanRef
+                    ? { sceneBindingPlanRef: state.sceneBindingPlanRef }
+                    : {}),
+                  overrideResult: {
+                    finalStatus: "failed",
+                    errorSummary: {
+                      code: ADAPTIVE_COMPOSITION_COVERAGE_ERROR_CODE,
+                      message: err.message,
+                    },
+                  },
+                });
+                return {
+                  cooperativeStopRequested,
+                  finalizeDraft,
+                };
+              }
               const compositionLog = await appendEventTask(state.job.runId, {
                 traceId: state.job.traceId,
                 attempt: state.job.attemptSeq,
