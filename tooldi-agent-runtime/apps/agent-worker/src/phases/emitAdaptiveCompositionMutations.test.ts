@@ -1124,3 +1124,860 @@ test("emitAdaptiveCompositionMutations forwards text sourceAngle/sourceOpacity o
   assert.equal(headlineCommand.layerBlueprint.styleTokens?.angle, 12);
   assert.equal(headlineCommand.layerBlueprint.styleTokens?.opacity, 0.75);
 });
+
+test("emitAdaptiveCompositionMutations overrides a white decorative shape fill when it collides with a white scene background", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "식당 계절메뉴",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-001",
+          layerType: "shape",
+          // rotated decorative shape ≈ 414×287, area ratio ≈ 0.158 of 1200×628
+          bounds: { x: 737, y: 109, width: 414, height: 287 },
+          sourceText: null,
+          fontSize: null,
+          fillColorHex: "#ffffff",
+          fontFamily: null,
+          fontWeight: null,
+          textAlign: null,
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 90,
+          sourceOpacity: 1,
+          visualWeight: "secondary",
+          zone: "right",
+          prominence: 120000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "white-on-white shape readability test",
+    },
+    // Scene background synthesized white → decorative white shape must be recolored
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#ffffff",
+    }),
+  });
+
+  const shapeCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.clientLayerKey === "obj-001_retain_run-test",
+  );
+  assert.ok(shapeCommand, "expected a retained shape command");
+  const fillColor = shapeCommand.layerBlueprint.styleTokens?.fillColor;
+  assert.ok(
+    typeof fillColor === "string" && fillColor.toLowerCase() !== "#ffffff",
+    `expected non-white fallback fill for white-on-white decorative shape, got ${fillColor}`,
+  );
+});
+
+test("emitAdaptiveCompositionMutations preserves a shape that another text references as its backing surface, even when contrast with the scene background is low", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "식당 계절메뉴",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 2,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-panel",
+          layerType: "shape",
+          // Large panel on a white scene background (low contrast)
+          bounds: { x: 100, y: 100, width: 600, height: 300 },
+          sourceText: null,
+          fontSize: null,
+          fillColorHex: "#ffffff",
+          fontFamily: null,
+          fontWeight: null,
+          textAlign: null,
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 0,
+          sourceOpacity: 1,
+          visualWeight: "secondary",
+          zone: "center",
+          prominence: 180000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+        {
+          objectId: "obj-cta-text",
+          layerType: "text",
+          bounds: { x: 150, y: 180, width: 500, height: 80 },
+          sourceText: "메뉴 확인하기",
+          fontSize: 48,
+          fillColorHex: "#1a1a1a",
+          fontFamily: "701_400",
+          fontWeight: 700,
+          textAlign: "center",
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 0,
+          sourceOpacity: 1,
+          visualWeight: "tertiary",
+          zone: "center",
+          prominence: 20000,
+          // Text resolves readability against #ffffff panel — preserving
+          // #1a1a1a. If we silently recolored the panel, the text/panel
+          // pair would become incoherent.
+          backingSurfaceObjectId: "obj-panel",
+          backingSurfaceColorHex: "#ffffff",
+          backingSurfaceBounds: { x: 100, y: 100, width: 600, height: 300 },
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "backing-surface shape must survive scene readability gate",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#ffffff",
+    }),
+  });
+
+  const panelCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.clientLayerKey === "obj-panel_retain_run-test",
+  );
+  assert.ok(panelCommand, "expected a retained panel command");
+  assert.equal(
+    panelCommand.layerBlueprint.styleTokens?.fillColor,
+    "#ffffff",
+    "panel used as a text backing surface must not be recolored",
+  );
+  const textCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.clientLayerKey === "obj-cta-text_retain_run-test",
+  );
+  assert.ok(textCommand, "expected a retained text command");
+  assert.equal(
+    textCommand.layerBlueprint.styleTokens?.fillColor,
+    "#1a1a1a",
+    "text readability stays coherent against the preserved panel",
+  );
+});
+
+test("emitAdaptiveCompositionMutations preserves a decorative shape fill that already contrasts with the scene background", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "식당 계절메뉴",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-001",
+          layerType: "shape",
+          bounds: { x: 737, y: 109, width: 414, height: 287 },
+          sourceText: null,
+          fontSize: null,
+          fillColorHex: "#ffffff",
+          fontFamily: null,
+          fontWeight: null,
+          textAlign: null,
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 90,
+          sourceOpacity: 1,
+          visualWeight: "secondary",
+          zone: "right",
+          prominence: 120000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "white on dark scene preserves shape fill",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#111111",
+    }),
+  });
+
+  const shapeCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.clientLayerKey === "obj-001_retain_run-test",
+  );
+  assert.ok(shapeCommand, "expected a retained shape command");
+  assert.equal(
+    shapeCommand.layerBlueprint.styleTokens?.fillColor,
+    "#ffffff",
+    "white decorative shape on dark scene background should keep its fill",
+  );
+});
+
+test("emitAdaptiveCompositionMutations preserves a gradient decorative shape even when it matches the scene background", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "식당 계절메뉴",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-001",
+          layerType: "shape",
+          bounds: { x: 737, y: 109, width: 414, height: 287 },
+          sourceText: null,
+          fontSize: null,
+          fillColorHex: "#ffffff",
+          // presence of secondaryFillColorHex flags the shape as gradient/compound
+          secondaryFillColorHex: "#f6f6f6",
+          fontFamily: null,
+          fontWeight: null,
+          textAlign: null,
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 0,
+          sourceOpacity: 1,
+          visualWeight: "secondary",
+          zone: "right",
+          prominence: 120000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "gradient shape preservation test",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#ffffff",
+    }),
+  });
+
+  const shapeCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.clientLayerKey === "obj-001_retain_run-test",
+  );
+  assert.ok(shapeCommand, "expected a retained shape command");
+  assert.equal(
+    shapeCommand.layerBlueprint.styleTokens?.fillColor,
+    "#ffffff",
+    "gradient shape should keep its source fill even when contrast is low",
+  );
+  assert.equal(
+    shapeCommand.layerBlueprint.styleTokens?.secondaryColor,
+    "#f6f6f6",
+  );
+});
+
+test("emitAdaptiveCompositionMutations preserves a subtle low-opacity decorative shape", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "식당 계절메뉴",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-001",
+          layerType: "shape",
+          bounds: { x: 737, y: 109, width: 414, height: 287 },
+          sourceText: null,
+          fontSize: null,
+          fillColorHex: "#ffffff",
+          fontFamily: null,
+          fontWeight: null,
+          textAlign: null,
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 0,
+          sourceOpacity: 0.3,
+          visualWeight: "secondary",
+          zone: "right",
+          prominence: 120000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "subtle alpha overlay preservation test",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#ffffff",
+    }),
+  });
+
+  const shapeCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.clientLayerKey === "obj-001_retain_run-test",
+  );
+  assert.ok(shapeCommand, "expected a retained shape command");
+  assert.equal(
+    shapeCommand.layerBlueprint.styleTokens?.fillColor,
+    "#ffffff",
+    "low-opacity decorative overlay should keep its source fill",
+  );
+});
+
+test("emitAdaptiveCompositionMutations skips the shape readability fallback when the shape area is tiny", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "식당 계절메뉴",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-001",
+          layerType: "shape",
+          // area ratio ≈ 0.0033 << 0.03 threshold
+          bounds: { x: 10, y: 10, width: 60, height: 40 },
+          sourceText: null,
+          fontSize: null,
+          fillColorHex: "#ffffff",
+          fontFamily: null,
+          fontWeight: null,
+          textAlign: null,
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 0,
+          sourceOpacity: 1,
+          visualWeight: "tertiary",
+          zone: "top-left",
+          prominence: 2400,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "tiny shape skip test",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#ffffff",
+    }),
+  });
+
+  const shapeCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.clientLayerKey === "obj-001_retain_run-test",
+  );
+  assert.ok(shapeCommand, "expected a retained shape command");
+  assert.equal(
+    shapeCommand.layerBlueprint.styleTokens?.fillColor,
+    "#ffffff",
+    "small decorative shape area should not trigger readability override",
+  );
+});
+
+test("emitAdaptiveCompositionMutations normalizes rgba(...) shape fills so the blend-with-surface gate fires identically to #hex", () => {
+  // Templates occasionally emit fillColorHex as "rgba(255, 255, 255, 1)".
+  // Without color normalization the luminance math yields NaN and the gate
+  // silently misfires. This test locks the rgba parity against a white
+  // scene (the blend-with-surface case the handoff explicitly calls out).
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "식당 계절메뉴",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-001",
+          layerType: "shape",
+          bounds: { x: 737, y: 109, width: 414, height: 287 },
+          sourceText: null,
+          fontSize: null,
+          fillColorHex: "rgba(255, 255, 255, 1)",
+          fontFamily: null,
+          fontWeight: null,
+          textAlign: null,
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 90,
+          sourceOpacity: 1,
+          visualWeight: "secondary",
+          zone: "right",
+          prominence: 120000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "rgba parity test",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#ffffff",
+    }),
+  });
+
+  const shapeCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.clientLayerKey === "obj-001_retain_run-test",
+  );
+  assert.ok(shapeCommand, "expected a retained shape command");
+  const fillColor = shapeCommand.layerBlueprint.styleTokens?.fillColor;
+  assert.ok(
+    typeof fillColor === "string" && fillColor.toLowerCase() !== "#ffffff" && fillColor !== "rgba(255, 255, 255, 1)",
+    `expected the rgba shape to be recolored just like the hex case, got ${fillColor}`,
+  );
+});
+
+test("emitAdaptiveCompositionMutations does NOT recolor a retained shape just because its fill matches the scene's primary text color", () => {
+  // Negative guard against a past over-correction: when the shape has ample
+  // contrast against scene/backing (blend-with-surface gate does not fire)
+  // and projection has NOT annotated any overlap evidence, L4 must preserve
+  // the shape even if its color happens to match the scene's dominant text.
+  // Overlap inference is the projection/annotation layer's job, not L4's.
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "식당 계절메뉴",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 2,
+      summary: "test graph",
+      objects: [
+        {
+          // Large white decorative shape on green scene. Contrast vs scene is
+          // 2.88 (above 1.5 threshold) so blend-with-surface does NOT fire.
+          objectId: "obj-decor",
+          layerType: "shape",
+          bounds: { x: 737, y: 109, width: 414, height: 287 },
+          sourceText: null,
+          fontSize: null,
+          fillColorHex: "#ffffff",
+          fontFamily: null,
+          fontWeight: null,
+          textAlign: null,
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 0,
+          sourceOpacity: 1,
+          visualWeight: "secondary",
+          zone: "right",
+          prominence: 120000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+        {
+          // A separate white-text headline object elsewhere on the canvas.
+          // Critically it does NOT reference obj-decor as its backing surface,
+          // so no overlap evidence exists at this layer.
+          objectId: "obj-headline",
+          layerType: "text",
+          bounds: { x: 100, y: 100, width: 500, height: 120 },
+          sourceText: "헤드라인",
+          fontSize: 96,
+          fillColorHex: "#ffffff",
+          fontFamily: "701_400",
+          fontWeight: 700,
+          textAlign: "left",
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 0,
+          sourceOpacity: 1,
+          visualWeight: "dominant",
+          zone: "top",
+          prominence: 96000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "no global recolor without overlap evidence",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#6aa84f",
+      primaryTextColorHex: "#ffffff",
+    }),
+  });
+
+  const shapeCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.clientLayerKey === "obj-decor_retain_run-test",
+  );
+  assert.ok(shapeCommand, "expected a retained shape command");
+  assert.equal(
+    shapeCommand.layerBlueprint.styleTokens?.fillColor,
+    "#ffffff",
+    "a decorative shape without overlap evidence must not be recolored just because its fill equals the scene's primary text color",
+  );
+});
+
+test("emitAdaptiveCompositionMutations shrinks customFontSize so a long headline fits its emit container width", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "식당 계절메뉴",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-headline",
+          layerType: "text",
+          bounds: { x: 100, y: 100, width: 432, height: 141 },
+          sourceText: "원본",
+          fontSize: 108,
+          fillColorHex: "#ffffff",
+          fontFamily: "869_400",
+          fontWeight: 700,
+          textAlign: "left",
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 0,
+          sourceOpacity: 1,
+          visualWeight: "dominant",
+          zone: "top",
+          prominence: 120000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [
+        {
+          objectId: "obj-headline",
+          operation: "modify",
+          newText: "봄을 한 그릇에 담았습니다, 신메뉴 출시!",
+          carriesAtomIds: [],
+          reason: "restaurant headline",
+        },
+      ],
+      addDecisions: [],
+      compositionSummary: "long headline must fit width 432",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#6aa84f",
+    }),
+  });
+
+  const headlineCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.executionSlotKey === "headline",
+  );
+  assert.ok(headlineCommand, "expected a headline command");
+  const customFontSize = headlineCommand.layerBlueprint.metadata?.customFontSize;
+  assert.ok(
+    typeof customFontSize === "number" && customFontSize < 108,
+    `expected fitted fontSize < 108, got ${customFontSize}`,
+  );
+  // Sanity: fitted size must still be legible (>= min floor)
+  assert.ok(
+    typeof customFontSize === "number" && customFontSize >= 18,
+    `expected fitted fontSize >= 18 floor, got ${customFontSize}`,
+  );
+});
+
+test("emitAdaptiveCompositionMutations keeps the original fontSize when the text already fits", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "식당 계절메뉴",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-headline",
+          layerType: "text",
+          bounds: { x: 100, y: 100, width: 800, height: 141 },
+          sourceText: "봄 한정",
+          fontSize: 48,
+          fillColorHex: "#ffffff",
+          fontFamily: "869_400",
+          fontWeight: 700,
+          textAlign: "left",
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 0,
+          sourceOpacity: 1,
+          visualWeight: "dominant",
+          zone: "top",
+          prominence: 120000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "short headline keeps fontSize",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#6aa84f",
+    }),
+  });
+
+  const headlineCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.executionSlotKey === "headline",
+  );
+  assert.ok(headlineCommand, "expected a headline command");
+  assert.equal(headlineCommand.layerBlueprint.metadata?.customFontSize, 48);
+});
