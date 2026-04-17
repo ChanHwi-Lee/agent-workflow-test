@@ -580,16 +580,14 @@ export function projectTemplateObjectGraph(
       sourceObjectScaleY: layerType === "image" ? asNumber(obj.scaleY) : null,
       sourceImageScaleX: layerType === "image" ? asNumber(obj.imageScaleX) : null,
       sourceImageScaleY: layerType === "image" ? asNumber(obj.imageScaleY) : null,
-      sourceAngle: layerType === "image" ? asNumber(obj.angle) : null,
-      sourceOpacity: layerType === "image" ? asNumber(obj.opacity) : null,
+      sourceAngle: asNumber(obj.angle),
+      sourceOpacity: asNumber(obj.opacity),
       sourceFlipX:
         layerType === "image" ? (typeof obj.flipX === "boolean" ? obj.flipX : null) : null,
       sourceFlipY:
         layerType === "image" ? (typeof obj.flipY === "boolean" ? obj.flipY : null) : null,
       ...(layerType === "shape"
         ? {
-            sourceAngle: asNumber(obj.angle),
-            sourceOpacity: asNumber(obj.opacity),
             sourceCornerRadius: readCornerRadius(obj),
           }
         : {}),

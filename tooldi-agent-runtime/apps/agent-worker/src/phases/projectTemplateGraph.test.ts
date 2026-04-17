@@ -286,6 +286,50 @@ test("projectTemplateObjectGraph does not classify large inset panels as backgro
   assert.equal(panel.zone, "center");
 });
 
+test("projectTemplateObjectGraph preserves sourceAngle and sourceOpacity for rotated/translucent text", () => {
+  const input = createInput([
+    {
+      type: "textbox",
+      left: 200,
+      top: 100,
+      width: 400,
+      height: 80,
+      angle: -8,
+      opacity: 0.85,
+      text: "회전된 헤드라인",
+      fontSize: 48,
+      fill: "#ffffff",
+    },
+    {
+      type: "text",
+      left: 800,
+      top: 300,
+      width: 200,
+      height: 40,
+      text: "일반 텍스트",
+      fontSize: 24,
+      fill: "#111111",
+    },
+  ]);
+
+  const graph = projectTemplateObjectGraph(input);
+
+  const rotatedText = graph.objects.find(
+    (obj) => obj.sourceText === "회전된 헤드라인",
+  );
+  assert.ok(rotatedText, "rotated text should be projected");
+  assert.equal(rotatedText?.sourceAngle, -8);
+  assertApproxEqual(rotatedText?.sourceOpacity ?? 0, 0.85);
+
+  const plainText = graph.objects.find(
+    (obj) => obj.sourceText === "일반 텍스트",
+  );
+  assert.ok(plainText, "plain text should be projected");
+  // non-rotated text: sourceAngle is null (no explicit angle on fixture)
+  assert.equal(plainText?.sourceAngle, null);
+  assert.equal(plainText?.sourceOpacity, null);
+});
+
 test("projectTemplateObjectGraph excludes children hidden by parent group opacity", () => {
   const input = createInput([
     {

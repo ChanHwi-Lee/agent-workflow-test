@@ -551,3 +551,221 @@ test("emitAdaptiveCompositionMutations emits badge additions as compound groups"
   assert.equal(badgeCommand.layerBlueprint.styleTokens?.surfaceColor, "#ff6a00");
   assert.equal(badgeCommand.layerBlueprint.styleTokens?.textColor, "#ffffff");
 });
+
+test("emitAdaptiveCompositionMutations forwards text sourceAngle and sourceOpacity into styleTokens on retain", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "도시락 배송받자 인스타",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-010",
+          layerType: "text",
+          bounds: { x: 100, y: 100, width: 800, height: 120 },
+          sourceText: "회전된 헤드라인",
+          fontSize: 96,
+          fillColorHex: "#111111",
+          fontFamily: "701_400",
+          fontWeight: 700,
+          textAlign: "left",
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: -8,
+          sourceOpacity: 0.85,
+          visualWeight: "dominant",
+          zone: "top",
+          prominence: 96000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "rotated headline retain test",
+    },
+    sceneBindingPlan: createSceneBindingPlan(),
+  });
+
+  const headlineCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.executionSlotKey === "headline",
+  );
+  assert.ok(headlineCommand, "expected a headline command");
+  assert.equal(headlineCommand.layerBlueprint.styleTokens?.angle, -8);
+  assert.equal(headlineCommand.layerBlueprint.styleTokens?.opacity, 0.85);
+});
+
+test("emitAdaptiveCompositionMutations omits angle/opacity styleTokens when text has identity transform", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "도시락 배송받자 인스타",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-010",
+          layerType: "text",
+          bounds: { x: 100, y: 100, width: 800, height: 120 },
+          sourceText: "일반 텍스트",
+          fontSize: 96,
+          fillColorHex: "#111111",
+          fontFamily: "701_400",
+          fontWeight: 700,
+          textAlign: "left",
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 0,
+          sourceOpacity: 1,
+          visualWeight: "dominant",
+          zone: "top",
+          prominence: 96000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "plain headline retain test",
+    },
+    sceneBindingPlan: createSceneBindingPlan(),
+  });
+
+  const headlineCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.executionSlotKey === "headline",
+  );
+  assert.ok(headlineCommand, "expected a headline command");
+  assert.equal(headlineCommand.layerBlueprint.styleTokens?.angle, undefined);
+  assert.equal(headlineCommand.layerBlueprint.styleTokens?.opacity, undefined);
+});
+
+test("emitAdaptiveCompositionMutations forwards text sourceAngle/sourceOpacity on modify", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "도시락 배송받자 인스타",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-010",
+          layerType: "text",
+          bounds: { x: 100, y: 100, width: 800, height: 120 },
+          sourceText: "기존 헤드라인",
+          fontSize: 96,
+          fillColorHex: "#111111",
+          fontFamily: "701_400",
+          fontWeight: 700,
+          textAlign: "left",
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          sourceAngle: 12,
+          sourceOpacity: 0.75,
+          visualWeight: "dominant",
+          zone: "top",
+          prominence: 96000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [
+        {
+          objectId: "obj-010",
+          operation: "modify",
+          newText: "봄 한정",
+          carriesAtomIds: [],
+          reason: "replace copy",
+        },
+      ],
+      addDecisions: [],
+      compositionSummary: "rotated headline modify test",
+    },
+    sceneBindingPlan: createSceneBindingPlan(),
+  });
+
+  const headlineCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.executionSlotKey === "headline",
+  );
+  assert.ok(headlineCommand, "expected a headline command");
+  assert.equal(headlineCommand.layerBlueprint.styleTokens?.angle, 12);
+  assert.equal(headlineCommand.layerBlueprint.styleTokens?.opacity, 0.75);
+});

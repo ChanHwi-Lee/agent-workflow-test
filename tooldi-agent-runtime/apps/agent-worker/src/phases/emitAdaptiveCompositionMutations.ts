@@ -521,6 +521,12 @@ function resolveExistingObjectStyleTokens(
       styleContext,
       fallbackFillColor,
     ),
+    ...(typeof obj.sourceAngle === "number" && obj.sourceAngle !== 0
+      ? { angle: obj.sourceAngle }
+      : {}),
+    ...(typeof obj.sourceOpacity === "number" && obj.sourceOpacity !== 1
+      ? { opacity: obj.sourceOpacity }
+      : {}),
   };
 }
 
