@@ -91,13 +91,18 @@ export function createGeminiTemplatePriorReranker(
     }
 
     try {
+      const domainPreference =
+        intent.domain !== "general_marketing"
+          ? `Prefer templates whose visual theme and keywords match the ${intent.domain} domain. `
+          : "Prefer clean, broadly applicable seasonal sale composition. ";
+
       const content: Array<{ type: "text" | "image_url"; text?: string; image_url?: string }> = [
         {
           type: "text",
           text:
             "You are reranking Korean social-ad template priors for Tooldi. " +
             "Pick the single best scaffold for a 1200x628 editable banner. " +
-            "Prefer generic ad-safe seasonal sale composition. " +
+            domainPreference +
             "Penalize wrong topic drift and seasonal mismatch. " +
             "Use only the candidate metadata and thumbnails. " +
             `Prompt=${prompt}\n` +
@@ -346,7 +351,8 @@ export async function buildTemplatePriorBundle(
     ] as const),
   );
 
-  const finalCandidates = fetchedCandidates
+  const RERANK_MIN_BREADTH = 2;
+  const scoredFinalCandidates = fetchedCandidates
     .map((candidate) => {
       const reranked = rerankMap.get(candidate.templateCode);
       const geminiScore = reranked?.relevanceScore ?? null;
@@ -361,8 +367,18 @@ export async function buildTemplatePriorBundle(
           candidate.deterministicScore * 0.65 +
           (geminiScore ?? candidate.deterministicScore) * 0.35,
       };
-    })
-    .filter((candidate) => candidate.keep)
+    });
+
+  const keptCandidates = scoredFinalCandidates.filter((c) => c.keep);
+  const finalCandidates = (keptCandidates.length >= RERANK_MIN_BREADTH
+    ? keptCandidates
+    : scoredFinalCandidates.map((c) => ({
+        ...c,
+        keep: true,
+        rejectReason: null,
+        keepReason: c.keep ? c.keepReason : "breadth floor: rerank collapse recovered",
+      }))
+  )
     .sort((left, right) => right.score - left.score)
     .slice(0, query.requestedTopK);
 
@@ -510,9 +526,10 @@ function buildCanonicalTemplateQueryPlan(
   const planned = [
     { label: "season_primary", keyword: seasonKeyword },
     { label: "offer_primary", keyword: offerKeyword },
+    { label: "domain_primary", keyword: domainKeyword },
+    { label: "domain_offer", keyword: domainKeyword ? `${domainKeyword} ${offerKeyword}` : null },
     { label: "season_offer", keyword: seasonKeyword && offerKeyword ? `${seasonKeyword} ${offerKeyword}` : null },
     { label: "offer_surface", keyword: `${offerKeyword} 광고` },
-    { label: "domain_offer", keyword: domainKeyword ? `${domainKeyword} ${offerKeyword}` : null },
     { label: "prompt_fallback", keyword: promptKeyword.length > 0 ? promptKeyword : null },
   ];
 
@@ -527,9 +544,16 @@ function buildCanonicalTemplateQueryPlan(
       seen.add(key);
       return true;
     })
-    .slice(0, 4);
+    .slice(0, 5);
 }
 
+/**
+ * 도메인별 템플릿 검색 키워드 — 실제 검색 API에서 horizontal 1200x628 결과가
+ * 존재하는 키워드여야 한다. "식당"은 DB에 존재하나 canvas=horizontal 필터에서
+ * 0건이므로 "음식"을 사용한다.
+ *
+ * ⚠️ 고도화 지점: deriveDomainSignalTokens와 동일하게 DB 기반 자동 도출로 전환 필요.
+ */
 function deriveDomainKeyword(intent: NormalizedIntent): string | null {
   if (intent.domain === "fashion_retail") {
     return "쇼핑";
@@ -538,9 +562,35 @@ function deriveDomainKeyword(intent: NormalizedIntent): string | null {
     return "카페";
   }
   if (intent.domain === "restaurant") {
-    return "식당";
+    return "음식";
   }
   return null;
+}
+
+/**
+ * 도메인별 검색 신호 토큰 — deterministic scoring에서 domainBonus를 부여할 때 사용.
+ *
+ * ⚠️ 고도화 지점 (hardcoded → DB-driven 전환 필요)
+ * 현재는 3개 도메인 × 5-6개 토큰의 정적 매핑이다.
+ * 도메인이 추가되거나 토큰 리스트가 프롬프트 실패 때마다 한 줄씩 늘어나면
+ * v2의 threshold micro-tuning 패턴과 동일한 문제가 발생한다.
+ *
+ * 향후 개선 방향:
+ * - contents_theme 또는 template_upload.keyword의 실제 분포에서 도메인 토큰을 자동 도출
+ * - 별도 domain_signal_tokens DB 테이블 또는 contents_theme 기반 매핑으로 전환
+ * - 도메인별 토큰 가중치 차등 적용은 금지 (일률 domainBonus 유지)
+ */
+function deriveDomainSignalTokens(intent: NormalizedIntent): string[] {
+  if (intent.domain === "restaurant") {
+    return ["식당", "음식", "맛집", "메뉴", "요리", "레스토랑"];
+  }
+  if (intent.domain === "cafe") {
+    return ["카페", "커피", "음료", "디저트", "브런치"];
+  }
+  if (intent.domain === "fashion_retail") {
+    return ["쇼핑", "패션", "의류", "옷", "스타일"];
+  }
+  return [];
 }
 
 function deriveTemplateCanvasFilter(
@@ -676,9 +726,15 @@ function evaluateTemplateCandidate(
   const queryCoverage = Math.min(0.12, candidate.matchedQueryLabels.length * 0.03);
   const keywordFit = Math.min(0.18, keywordMatches * 0.04);
   const seasonBonus = seasonMatch ? 0.1 : 0;
+  const domainSignalTokens = deriveDomainSignalTokens(intent);
+  const domainMatch = domainSignalTokens.length > 0
+    ? hasAnyToken(candidate, domainSignalTokens)
+    : false;
+  // ⚠️ domainBonus 값(0.15)은 모든 도메인에 일률 적용. 도메인별 차등은 v2 micro-tuning 패턴이므로 금지.
+  const domainBonus = domainMatch ? 0.15 : 0;
   const softPenalty = topicDrift.severity === "soft" ? 0.2 : 0;
 
-  const score = clamp01(categoryFit + aspectFit + queryCoverage + keywordFit + seasonBonus - softPenalty);
+  const score = clamp01(categoryFit + aspectFit + queryCoverage + keywordFit + seasonBonus + domainBonus - softPenalty);
 
   return {
     keep: true,

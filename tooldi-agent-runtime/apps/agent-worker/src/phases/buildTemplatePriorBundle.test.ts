@@ -224,7 +224,7 @@ test("buildTemplatePriorBundle uses searchable templates and extracts a scaffold
   assert.equal(bundle?.selectedScaffold?.copyAnchor, "left");
   assert.equal(bundle?.selectedScaffold?.visualAnchor, "right");
   assert.equal(bundle?.diagnostics?.failedQueryCount, 0);
-  assert.equal(bundle?.diagnostics?.successfulQueryCount, 4);
+  assert.equal(bundle?.diagnostics?.successfulQueryCount, 5);
 });
 
 test("buildTemplatePriorBundle degrades to fallback bundle when template search payloads are invalid", async () => {
@@ -249,11 +249,11 @@ test("buildTemplatePriorBundle degrades to fallback bundle when template search 
   );
 
   assert.ok(bundle);
-  assert.equal(callCount, 4);
+  assert.equal(callCount, 5);
   assert.equal(bundle?.usedFallbackToLegacy, true);
   assert.equal(bundle?.selectedTemplateCode, null);
   assert.equal(bundle?.candidates.length, 0);
-  assert.equal(bundle?.diagnostics?.failedQueryCount, 4);
+  assert.equal(bundle?.diagnostics?.failedQueryCount, 5);
   assert.equal(bundle?.diagnostics?.successfulQueryCount, 0);
   assert.equal(bundle?.diagnostics?.queryDiagnostics[0]?.errorCode, "invalid_response");
   assert.equal(
@@ -261,4 +261,174 @@ test("buildTemplatePriorBundle degrades to fallback bundle when template search 
     "{\"result\":false,\"data\":null}",
   );
   assert.match(bundle?.fallbackReason ?? "", /source contract boundary/);
+});
+
+function createRestaurantIntent(): NormalizedIntent {
+  return {
+    ...createIntent(),
+    goalSummary: "식당에서 신규 봄 계절메뉴를 만들어줘",
+    domain: "restaurant",
+    campaignGoal: "menu_discovery",
+    subjectBinding: "venue_anchored",
+    offerIntent: "launch",
+    searchKeywords: ["봄", "신상품", "식당"],
+    facets: {
+      seasonality: "spring",
+      menuType: "food_menu",
+      promotionStyle: "seasonal_menu_launch",
+      offerSpecificity: "broad_offer",
+    },
+  };
+}
+
+function createRestaurantHydratedInput(): HydratedPlanningInput {
+  const base = createHydratedPlanningInput();
+  return {
+    ...base,
+    request: {
+      ...base.request,
+      userInput: {
+        ...base.request.userInput,
+        prompt: "식당에서 신규 봄 계절메뉴를 만들어줘",
+      },
+    },
+  };
+}
+
+test("restaurant domain generates domain_primary and domain_offer queries in query plan", async () => {
+  const capturedKeywords: string[] = [];
+  const trackingSourceClient: TooldiCatalogSourceClient = {
+    ...sourceClient,
+    async searchTemplateAssets(query) {
+      capturedKeywords.push(query.keyword);
+      return sourceClient.searchTemplateAssets(query);
+    },
+  };
+
+  const bundle = await buildTemplatePriorBundle(
+    createRestaurantHydratedInput(),
+    createRestaurantIntent(),
+    trackingSourceClient,
+  );
+
+  assert.ok(bundle);
+  assert.equal(bundle?.diagnostics?.successfulQueryCount, 5);
+
+  assert.ok(
+    capturedKeywords.some((kw) => kw === "음식"),
+    `domain_primary "음식" should be in searched keywords: [${capturedKeywords.join(", ")}]`,
+  );
+  assert.ok(
+    capturedKeywords.some((kw) => kw.includes("음식") && kw.includes("신상품")),
+    `domain_offer should contain both "음식" and "신상품": [${capturedKeywords.join(", ")}]`,
+  );
+
+  const diagnosticLabels = bundle?.diagnostics?.queryDiagnostics.map((d) => d.label) ?? [];
+  assert.ok(diagnosticLabels.includes("domain_primary"), "diagnostics should include domain_primary label");
+  assert.ok(diagnosticLabels.includes("domain_offer"), "diagnostics should include domain_offer label");
+});
+
+test("domain bonus promotes restaurant template over generic template", async () => {
+  const restaurantTemplate = {
+    assetId: "template:90001",
+    sourceFamily: "template_source" as const,
+    contentType: "template" as const,
+    serial: "90001",
+    uid: "90001000001",
+    title: "봄 식당 메뉴 프로모션",
+    keywordTokens: ["봄", "식당", "메뉴", "음식", "프로모션"],
+    width: 1200,
+    height: 628,
+    thumbnailUrl: "https://thumb.test/restaurant.png",
+    originUrl: "https://thumb.test/restaurant.png",
+    priceType: "paid" as const,
+    isAi: false,
+    creatorSerial: "100001",
+    insertMode: "page_background" as const,
+    code: "90001000001",
+    pages: 1,
+    categoryName: "소셜미디어 광고",
+    price: 8000,
+    totalObjectPrice: 0,
+    isPurchased: false,
+    thumbnails: ["https://thumb.test/restaurant.png"],
+    sourcePayload: {},
+  };
+
+  const genericTemplate = {
+    ...restaurantTemplate,
+    assetId: "template:90002",
+    serial: "90002",
+    uid: "90002000001",
+    title: "봄 BIG SALE 할인 배너",
+    keywordTokens: ["봄", "세일", "할인", "배너", "이벤트"],
+    code: "90002000001",
+    thumbnailUrl: "https://thumb.test/generic.png",
+    originUrl: "https://thumb.test/generic.png",
+    thumbnails: ["https://thumb.test/generic.png"],
+  };
+
+  const dualSourceClient: TooldiCatalogSourceClient = {
+    ...sourceClient,
+    async searchTemplateAssets() {
+      return {
+        sourceFamily: "template_source",
+        page: 1,
+        hasNextPage: false,
+        traceId: "trace-dual",
+        assets: [genericTemplate, restaurantTemplate],
+      };
+    },
+    async getTemplateDocument(query) {
+      const doc = await sourceClient.getTemplateDocument(query);
+      return { ...doc, code: query.templateCode };
+    },
+  };
+
+  const bundle = await buildTemplatePriorBundle(
+    createRestaurantHydratedInput(),
+    createRestaurantIntent(),
+    dualSourceClient,
+  );
+
+  assert.ok(bundle);
+  assert.equal(
+    bundle?.selectedTemplateCode,
+    "90001000001",
+    `Restaurant template should be selected over generic; got ${bundle?.selectedTemplateCode}`,
+  );
+
+  const restaurantCandidate = bundle?.candidates.find((c) => c.templateCode === "90001000001");
+  const genericCandidate = bundle?.candidates.find((c) => c.templateCode === "90002000001");
+  assert.ok(restaurantCandidate, "restaurant candidate should be in final candidates");
+  assert.ok(genericCandidate, "generic candidate should be in final candidates");
+  assert.ok(
+    restaurantCandidate!.deterministicScore > genericCandidate!.deterministicScore,
+    `restaurant score (${restaurantCandidate!.deterministicScore}) should exceed generic score (${genericCandidate!.deterministicScore})`,
+  );
+});
+
+test("breadth floor prevents total rerank collapse", async () => {
+  const rejectAllReranker = async () => ({
+    selectedTemplateCode: null,
+    summary: "all candidates rejected",
+    candidates: [
+      { templateCode: "74091534190", relevanceScore: 0.1, keep: false, reason: "rejected by test reranker" },
+    ],
+  });
+
+  const bundle = await buildTemplatePriorBundle(
+    createHydratedPlanningInput(),
+    createIntent(),
+    sourceClient,
+    rejectAllReranker,
+  );
+
+  assert.ok(bundle);
+  assert.equal(bundle?.usedFallbackToLegacy, false, "should not fall back to legacy");
+  assert.ok(bundle?.selectedTemplateCode, "should still select a template via breadth floor");
+  assert.ok(
+    (bundle?.candidates.length ?? 0) >= 1,
+    "breadth floor should preserve at least 1 candidate",
+  );
 });
