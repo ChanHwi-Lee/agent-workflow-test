@@ -28,6 +28,7 @@ import {
   buildTemplatePriorBundle,
   createGeminiTemplatePriorReranker,
 } from "../phases/buildTemplatePriorBundle.js";
+import { createTemplatePriorVectorRecallClientFromEnv } from "../phases/templatePriorVectorRecall.js";
 import { buildTemplatePriorSummary } from "../phases/buildTemplatePriorSummary.js";
 import { buildExecutablePlan } from "../phases/buildExecutablePlan.js";
 import { buildCompositionSelection } from "../phases/compositionEngine.js";
@@ -99,6 +100,8 @@ export function registerBuildNodes(
     dependencies.env,
     dependencies.logger,
   );
+  const templatePriorVectorRecallClient =
+    createTemplatePriorVectorRecallClientFromEnv();
 
   return graph
     .addNode("build_copy_and_abstract_layout_plan", async (state) => {
@@ -1115,6 +1118,7 @@ export function registerBuildNodes(
         state.intent,
         tooldiCatalogSourceClient,
         templatePriorReranker,
+        templatePriorVectorRecallClient,
       );
 
       if (!templatePriorBundle) {

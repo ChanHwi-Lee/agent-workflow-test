@@ -8,6 +8,13 @@ import {
 } from "@tooldi/tool-adapters";
 
 import { buildTemplatePriorBundle } from "./buildTemplatePriorBundle.js";
+import {
+  mergeRecallSources,
+  type LegacyMergedCandidate,
+  type TemplateEmbeddingClient,
+  type VectorRecallCandidate,
+  type VectorRecallResult,
+} from "./templatePriorVectorRecall.js";
 import type { HydratedPlanningInput, NormalizedIntent } from "../types.js";
 
 function createHydratedPlanningInput(): HydratedPlanningInput {
@@ -432,3 +439,293 @@ test("breadth floor prevents total rerank collapse", async () => {
     "breadth floor should preserve at least 1 candidate",
   );
 });
+
+// ============================================================================
+// R1 vector recall tests (§3.6)
+// ============================================================================
+
+function legacyCand(overrides: Partial<LegacyMergedCandidate> = {}): LegacyMergedCandidate {
+  return {
+    rank: 1,
+    templateAssetId: "legacy-asset",
+    templateSerial: "100",
+    templateCode: "L001",
+    title: "legacy",
+    categoryName: "소셜미디어 광고",
+    width: 1200,
+    height: 628,
+    pages: 1,
+    keywordTokens: ["배너"],
+    thumbnailUrl: null,
+    traceId: "trace-legacy",
+    matchedQueryLabels: ["season_primary"],
+    ...overrides,
+  };
+}
+
+function vectorCand(overrides: Partial<VectorRecallCandidate> = {}): VectorRecallCandidate {
+  return {
+    rank: 1,
+    templateCode: "V001",
+    templateSerial: "200",
+    innerSerial: "2000",
+    title: "vector",
+    categoryName: "소셜미디어 광고",
+    pages: 1,
+    keywordTokens: ["이미지"],
+    sizeSerial: 7,
+    width: 1200,
+    height: 628,
+    thumbnailUrl: null,
+    relevanceScore: 0.35,
+    ...overrides,
+  };
+}
+
+test("mergeRecallSources: legacy-only pool preserves legacy ordering", () => {
+  const merged = mergeRecallSources({
+    legacyCandidates: [
+      legacyCand({ rank: 1, templateCode: "A" }),
+      legacyCand({ rank: 2, templateCode: "B" }),
+      legacyCand({ rank: 3, templateCode: "C" }),
+    ],
+    vectorCandidates: [],
+    cap: 10,
+  });
+  assert.deepEqual(merged.map((c) => c.templateCode), ["A", "B", "C"]);
+  assert.ok(merged.every((c) => c.recallSources.length === 1 && c.recallSources[0] === "legacy_keyword"));
+});
+
+test("mergeRecallSources: vector-only pool emits vector ordering", () => {
+  const merged = mergeRecallSources({
+    legacyCandidates: [],
+    vectorCandidates: [
+      vectorCand({ rank: 1, templateCode: "V1" }),
+      vectorCand({ rank: 2, templateCode: "V2" }),
+      vectorCand({ rank: 3, templateCode: "V3" }),
+    ],
+    cap: 10,
+  });
+  assert.deepEqual(merged.map((c) => c.templateCode), ["V1", "V2", "V3"]);
+  assert.ok(merged.every((c) => c.recallSources.length === 1 && c.recallSources[0] === "vector_image"));
+});
+
+test("mergeRecallSources: both-source candidate interleaves by min rank and dedupes", () => {
+  const merged = mergeRecallSources({
+    legacyCandidates: [
+      legacyCand({ rank: 2, templateCode: "SHARED" }),
+      legacyCand({ rank: 5, templateCode: "L_ONLY" }),
+    ],
+    vectorCandidates: [
+      vectorCand({ rank: 1, templateCode: "SHARED" }),
+      vectorCand({ rank: 3, templateCode: "V_ONLY" }),
+    ],
+    cap: 10,
+  });
+  // SHARED dedupes to one entry with rank = min(2,1) = 1 and both sources.
+  const shared = merged.find((c) => c.templateCode === "SHARED");
+  assert.ok(shared, "shared candidate present");
+  assert.equal(shared!.rank, 1);
+  assert.deepEqual(shared!.recallSources.sort(), ["legacy_keyword", "vector_image"]);
+  assert.deepEqual(
+    merged.map((c) => c.templateCode),
+    ["SHARED", "V_ONLY", "L_ONLY"],
+  );
+});
+
+test("mergeRecallSources: dedupe by templateCode yields single entry with union of sources", () => {
+  const merged = mergeRecallSources({
+    legacyCandidates: [legacyCand({ templateCode: "D" })],
+    vectorCandidates: [vectorCand({ templateCode: "D", rank: 1 })],
+    cap: 10,
+  });
+  assert.equal(merged.length, 1);
+  assert.deepEqual(merged[0]!.recallSources.sort(), ["legacy_keyword", "vector_image"]);
+});
+
+test("mergeRecallSources: cap is respected", () => {
+  const merged = mergeRecallSources({
+    legacyCandidates: Array.from({ length: 5 }, (_, i) =>
+      legacyCand({ rank: i + 1, templateCode: `L${i}` }),
+    ),
+    vectorCandidates: Array.from({ length: 5 }, (_, i) =>
+      vectorCand({ rank: i + 1, templateCode: `V${i}` }),
+    ),
+    cap: 3,
+  });
+  assert.equal(merged.length, 3);
+});
+
+function createEmbeddingClient(result: VectorRecallResult): TemplateEmbeddingClient {
+  return {
+    queryTemplatePreview: async () => result,
+  };
+}
+
+function createVectorOnlyRecall(
+  candidates: VectorRecallCandidate[],
+  queryText = "test",
+): VectorRecallResult {
+  return {
+    source: "vector_image",
+    queryText,
+    candidates,
+    error: null,
+  };
+}
+
+const emptySourceClient: TooldiCatalogSourceClient = {
+  async searchBackgroundAssets() {
+    return { sourceFamily: "background_source", page: 1, hasNextPage: false, traceId: null, assets: [] };
+  },
+  async searchGraphicAssets() {
+    return { sourceFamily: "graphic_source", page: 1, hasNextPage: false, traceId: null, assets: [] };
+  },
+  async searchPhotoAssets() {
+    return { sourceFamily: "photo_source", page: 1, hasNextPage: false, traceId: null, assets: [] };
+  },
+  async listFontAssets() {
+    return { sourceFamily: "font_source", page: 1, hasNextPage: false, traceId: null, assets: [] };
+  },
+  async searchTemplateAssets() {
+    return { sourceFamily: "template_source", page: 1, hasNextPage: false, traceId: null, assets: [] };
+  },
+  async getTemplateDocument() {
+    throw new TooldiCatalogSourceError({
+      code: "request_failed",
+      message: "no template",
+      url: "test",
+    });
+  },
+};
+
+test("vector recall rescues a fully collapsed legacy pool", async () => {
+  const vectorCandidates: VectorRecallCandidate[] = [
+    vectorCand({
+      rank: 1,
+      templateCode: "R1-RESCUE-A",
+      templateSerial: "9001",
+      innerSerial: "90010",
+      title: "rescue a",
+      relevanceScore: 0.6,
+    }),
+    vectorCand({
+      rank: 2,
+      templateCode: "R1-RESCUE-B",
+      templateSerial: "9002",
+      innerSerial: "90020",
+      title: "rescue b",
+      relevanceScore: 0.5,
+    }),
+    vectorCand({
+      rank: 3,
+      templateCode: "R1-RESCUE-C",
+      templateSerial: "9003",
+      innerSerial: "90030",
+      title: "rescue c",
+      relevanceScore: 0.4,
+    }),
+  ];
+  const embeddingClient = createEmbeddingClient(createVectorOnlyRecall(vectorCandidates));
+
+  const strongReranker = async (input: { candidates: Array<{ templateCode: string }> }) => ({
+    selectedTemplateCode: input.candidates[0]!.templateCode,
+    summary: "rerank approved vector rescue",
+    candidates: input.candidates.map((candidate, index) => ({
+      templateCode: candidate.templateCode,
+      relevanceScore: 0.95 - index * 0.05,
+      keep: true,
+      reason: "vector rescue ok",
+    })),
+  });
+
+  const bundle = await buildTemplatePriorBundle(
+    createHydratedPlanningInput(),
+    createIntent(),
+    emptySourceClient,
+    strongReranker,
+    embeddingClient,
+  );
+
+  assert.ok(bundle);
+  assert.ok(
+    bundle!.candidates.length > 0,
+    "vector-only rescue must produce a non-empty final pool",
+  );
+  const finalCodes = bundle!.candidates.map((c) => c.templateCode);
+  assert.ok(
+    finalCodes.some((code) => code.startsWith("R1-RESCUE-")),
+    "rescue candidates should appear in final pool",
+  );
+  const diagnostics = bundle!.diagnostics!;
+  assert.equal(diagnostics.vectorRecallDiagnostics?.status, "executed");
+  assert.ok(
+    (bundle!.candidates[0]!.recallSources ?? []).includes("vector_image"),
+    "final top-1 must have vector provenance",
+  );
+});
+
+test("reference-first gate fires when vector-only survivor is below relevance floor", async () => {
+  const vectorCandidates: VectorRecallCandidate[] = [
+    vectorCand({
+      rank: 1,
+      templateCode: "R1-GATE-A",
+      templateSerial: "9101",
+      innerSerial: "91010",
+      title: "weak vector",
+      relevanceScore: 0.2,
+    }),
+  ];
+  const embeddingClient = createEmbeddingClient(createVectorOnlyRecall(vectorCandidates));
+
+  const lowRelevanceReranker = async (input: { candidates: Array<{ templateCode: string }> }) => ({
+    selectedTemplateCode: input.candidates[0]!.templateCode,
+    summary: "rerank kept single weak vector candidate",
+    candidates: [
+      {
+        templateCode: input.candidates[0]!.templateCode,
+        relevanceScore: 0.3,
+        keep: true,
+        reason: "weak kept",
+      },
+    ],
+  });
+
+  const bundle = await buildTemplatePriorBundle(
+    createHydratedPlanningInput(),
+    createIntent(),
+    emptySourceClient,
+    lowRelevanceReranker,
+    embeddingClient,
+  );
+
+  assert.ok(bundle);
+  assert.equal(
+    bundle!.usedFallbackToLegacy,
+    true,
+    "ref-first gate must flag fallback when vector-only + low relevance",
+  );
+  assert.match(
+    bundle!.fallbackReason ?? "",
+    /reference-first gate/,
+    "fallbackReason must explicitly name the gate",
+  );
+});
+
+test("graceful degrade: missing embedding client reverts to pre-R1 diagnostics", async () => {
+  const bundle = await buildTemplatePriorBundle(
+    createHydratedPlanningInput(),
+    createIntent(),
+    sourceClient,
+    // no rerank, no embedding client → pre-R1 behavior exactly
+  );
+  assert.ok(bundle);
+  // When no embedding client is wired, vector recall is treated as
+  // "canvas_out_of_r1_scope" equivalent — skipped entirely.
+  assert.equal(
+    bundle!.diagnostics?.vectorRecallDiagnostics?.status,
+    "skipped",
+    "skipped when no embedding client provided",
+  );
+});
+

@@ -17,11 +17,42 @@ import type {
   TemplatePriorDiagnostics,
   TemplatePriorQueryDiagnostic,
   TemplatePriorScaffold,
+  VectorRecallDiagnostics,
 } from "../types.js";
 import {
   deriveCanvasPreset,
   deriveWorkflowVariant,
 } from "./planningContext.js";
+import {
+  CANVAS_OUT_OF_R1_SCOPE,
+  buildVectorRecallDiagnostics,
+  mergeRecallSources,
+  searchTemplatePriorVector,
+  type LegacyMergedCandidate,
+  type MergedRecallCandidate,
+  type TemplateEmbeddingClient,
+  type VectorRecallResult,
+} from "./templatePriorVectorRecall.js";
+
+const VECTOR_RECALL_TOP_K = 100;
+const VECTOR_RECALL_TIMEOUT_MS = 250;
+const MERGED_POOL_CAP = 120;
+const REF_FIRST_RERANK_RELEVANCE_MIN = 0.5;
+
+/**
+ * canvasPreset → size_serial mapping for R1 vector recall (§3.4.1).
+ * R1 ingestion only indexed size_serial=7 (소셜미디어 광고 1200×628, 551 templates).
+ * Any other canvas preset must skip vector recall entirely — see
+ * docs/handoff/2026-04-17-agw-retrieval-embedding-v1-impl-handoff.md §2.1/§3.4.1.
+ */
+function deriveVectorSizeSerial(
+  canvasPreset: NormalizedIntent["canvasPreset"],
+): number | null {
+  if (canvasPreset === "wide_1200x628") {
+    return 7;
+  }
+  return null;
+}
 
 const TARGET_RATIO = 1200 / 628;
 const ALLOWED_CATEGORY_NAMES = new Set(["소셜미디어 광고", "웹 배너 가로"]);
@@ -165,6 +196,7 @@ export async function buildTemplatePriorBundle(
   intent: NormalizedIntent,
   sourceClient: TooldiCatalogSourceClient,
   rerank?: TemplatePriorReranker | null,
+  embeddingClient?: TemplateEmbeddingClient | null,
 ): Promise<TemplatePriorBundle | null> {
   const workflowVariant = deriveWorkflowVariant(input);
   if (
@@ -178,32 +210,75 @@ export async function buildTemplatePriorBundle(
   }
 
   const queryPlan = buildCanonicalTemplateQueryPlan(intent, input.request.userInput.prompt);
+  const canvasPreset = deriveCanvasPreset(
+    input.request.editorContext.canvasWidth,
+    input.request.editorContext.canvasHeight,
+  );
   const query = {
     keyword: queryPlan[0]?.keyword ?? input.request.userInput.prompt.trim(),
-    canvas: deriveTemplateCanvasFilter(
-      deriveCanvasPreset(
-        input.request.editorContext.canvasWidth,
-        input.request.editorContext.canvasHeight,
-      ),
-    ),
+    canvas: deriveTemplateCanvasFilter(canvasPreset),
     requestedTopK: 3,
   } as const;
 
-  const searchResults = await Promise.all(
-    queryPlan.map(async (plannedQuery) => ({
-      plannedQuery,
-      ...(await searchTemplatePriorQuery(
-        sourceClient,
+  // (§3.4.1) R1 vector recall is scoped to 1200×628 (size_serial=7).
+  // Other canvas presets deliberately skip vector recall; this is a scope
+  // limit, not an error.
+  const vectorSizeSerial = deriveVectorSizeSerial(canvasPreset);
+  const vectorRecallStart = Date.now();
+  let vectorRecallPromise: Promise<VectorRecallResult> | null = null;
+  let vectorRecallDiagnostics: VectorRecallDiagnostics;
+  if (embeddingClient && vectorSizeSerial !== null) {
+    vectorRecallPromise = searchTemplatePriorVector(embeddingClient, {
+      intent,
+      prompt: input.request.userInput.prompt,
+      canvasFilter: query.canvas,
+      sizeSerial: vectorSizeSerial,
+      topK: VECTOR_RECALL_TOP_K,
+      timeoutMs: VECTOR_RECALL_TIMEOUT_MS,
+    });
+    vectorRecallDiagnostics = {
+      status: "executed",
+      topK: VECTOR_RECALL_TOP_K,
+      candidateCount: 0,
+      latencyMs: 0,
+      error: null,
+    };
+  } else if (vectorSizeSerial === null) {
+    vectorRecallDiagnostics = CANVAS_OUT_OF_R1_SCOPE;
+  } else {
+    vectorRecallDiagnostics = CANVAS_OUT_OF_R1_SCOPE;
+  }
+
+  const [searchResults, vectorRecallResult] = await Promise.all([
+    Promise.all(
+      queryPlan.map(async (plannedQuery) => ({
         plannedQuery,
-        query.canvas,
-      )),
-    })),
-  );
+        ...(await searchTemplatePriorQuery(
+          sourceClient,
+          plannedQuery,
+          query.canvas,
+        )),
+      })),
+    ),
+    vectorRecallPromise ?? Promise.resolve<VectorRecallResult | null>(null),
+  ]);
+
+  if (vectorRecallResult) {
+    vectorRecallDiagnostics = buildVectorRecallDiagnostics(vectorRecallResult, {
+      topK: VECTOR_RECALL_TOP_K,
+      startedAt: vectorRecallStart,
+    });
+  }
 
   const successfulSearchResults = searchResults.filter(
     (entry): entry is TemplatePriorSearchSuccess => entry.result !== null,
   );
-  const merged = mergeTemplateSearchResults(successfulSearchResults);
+  const legacyMerged: LegacyMergedCandidate[] = mergeTemplateSearchResults(successfulSearchResults);
+  const merged: MergedRecallCandidate[] = mergeRecallSources({
+    legacyCandidates: legacyMerged,
+    vectorCandidates: vectorRecallResult?.candidates ?? [],
+    cap: MERGED_POOL_CAP,
+  });
   const queryDiagnostics = buildTemplatePriorQueryDiagnostics(searchResults);
   const scoredCandidates = merged
     .map((candidate) => {
@@ -265,12 +340,14 @@ export async function buildTemplatePriorBundle(
         traceId: candidate.traceId,
         fetchedDocument: null,
         scaffold: null,
+        recallSources: candidate.recallSources,
       })),
       diagnostics: buildTemplatePriorDiagnostics({
         queryDiagnostics,
         mergedCandidateCount: merged.length,
         keptCandidateCount: 0,
         rerankedCandidateCount: 0,
+        vectorRecallDiagnostics,
       }),
       summary:
         sourceFailureCount > 0
@@ -324,6 +401,7 @@ export async function buildTemplatePriorBundle(
         traceId: candidate.traceId,
         fetchedDocument,
         scaffold,
+        recallSources: candidate.recallSources,
       } satisfies TemplatePriorCandidate;
     }),
   );
@@ -384,6 +462,39 @@ export async function buildTemplatePriorBundle(
 
   const selectedCandidate = finalCandidates[0] ?? null;
 
+  // §3.5 reference-first gate — contract change to SSOT §6.4.
+  // Today's reference-first gate implicitly assumes "if legacy recall
+  // returned survivors that passed rerank, the reference is passable."
+  // With vector recall rescuing collapsed legacy pools, that assumption
+  // no longer holds: a vector-only survivor with weak Gemini relevance
+  // can pass downstream even though no legacy provenance confirmed it.
+  // The gate below re-asserts reference-first in that new world by
+  // firing the existing reference-first failure/warning surface
+  // (`usedFallbackToLegacy` + `fallbackReason`) with a new reason
+  // string. No new error code, no graph-edge change, no buildFailureDrafts
+  // change.
+  const rerankedKeptAllVectorOnly =
+    keptCandidates.length > 0 &&
+    keptCandidates.length < RERANK_MIN_BREADTH &&
+    keptCandidates.every((candidate) => {
+      const sources = candidate.recallSources ?? [];
+      return sources.length === 1 && sources[0] === "vector_image";
+    }) &&
+    keptCandidates.every(
+      (candidate) =>
+        (candidate.geminiScore ?? 0) < REF_FIRST_RERANK_RELEVANCE_MIN,
+    );
+
+  const refFirstGateFallbackReason = rerankedKeptAllVectorOnly
+    ? `reference-first gate: post-rerank breadth ${keptCandidates.length} < ${RERANK_MIN_BREADTH}; all survivors vector-only with relevance < ${REF_FIRST_RERANK_RELEVANCE_MIN}`
+    : null;
+
+  const usedFallbackToLegacy = selectedCandidate === null || rerankedKeptAllVectorOnly;
+  const fallbackReason =
+    selectedCandidate === null
+      ? "No template prior remained after Gemini rerank."
+      : refFirstGateFallbackReason;
+
   return {
     bundleId: createRequestId(),
     runId: intent.runId,
@@ -391,11 +502,8 @@ export async function buildTemplatePriorBundle(
     workflowVariant,
     query,
     queryPlan,
-    usedFallbackToLegacy: selectedCandidate === null,
-    fallbackReason:
-      selectedCandidate === null
-        ? "No template prior remained after Gemini rerank."
-        : null,
+    usedFallbackToLegacy,
+    fallbackReason,
     selectedTemplateCode: selectedCandidate?.templateCode ?? null,
     selectedTemplateTitle: selectedCandidate?.title ?? null,
     selectedScaffold: selectedCandidate?.scaffold ?? null,
@@ -408,10 +516,13 @@ export async function buildTemplatePriorBundle(
         finalCandidates.length > 0
           ? finalCandidates.length
           : fetchedCandidates.length,
+      vectorRecallDiagnostics,
     }),
     summary:
       selectedCandidate !== null
-        ? `Selected ${selectedCandidate.templateCode} as the template scaffold prior after strong filter and rerank.`
+        ? rerankedKeptAllVectorOnly
+          ? `Selected ${selectedCandidate.templateCode} but reference-first gate flagged vector-only low-relevance survivors (see fallbackReason).`
+          : `Selected ${selectedCandidate.templateCode} as the template scaffold prior after strong filter and rerank.`
         : `No searchable template prior remained after rerank; ${workflowVariant} has no stable primary reference.`,
   };
 }
@@ -493,6 +604,7 @@ function buildTemplatePriorDiagnostics(input: {
   mergedCandidateCount: number;
   keptCandidateCount: number;
   rerankedCandidateCount: number;
+  vectorRecallDiagnostics?: VectorRecallDiagnostics;
 }): TemplatePriorDiagnostics {
   return {
     totalQueryCount: input.queryDiagnostics.length,
@@ -506,6 +618,9 @@ function buildTemplatePriorDiagnostics(input: {
     keptCandidateCount: input.keptCandidateCount,
     rerankedCandidateCount: input.rerankedCandidateCount,
     queryDiagnostics: input.queryDiagnostics,
+    ...(input.vectorRecallDiagnostics
+      ? { vectorRecallDiagnostics: input.vectorRecallDiagnostics }
+      : {}),
   };
 }
 

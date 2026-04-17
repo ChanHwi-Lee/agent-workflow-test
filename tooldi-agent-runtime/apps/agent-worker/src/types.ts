@@ -91,6 +91,8 @@ export interface TemplatePriorScaffold {
   summary: string;
 }
 
+export type TemplateRecallSource = "legacy_keyword" | "vector_image";
+
 export interface TemplatePriorCandidate {
   rank: number;
   score: number;
@@ -113,6 +115,13 @@ export interface TemplatePriorCandidate {
   traceId: string | null;
   fetchedDocument: TooldiTemplateDocument | null;
   scaffold: TemplatePriorScaffold | null;
+  /**
+   * R1 addition. Marks which recall source surfaced this candidate.
+   * Absent on pre-R1 fixtures; runtime callers should treat `undefined`
+   * as `["legacy_keyword"]` (the pre-R1 default behavior). Populated
+   * consistently by `buildTemplatePriorBundle`.
+   */
+  recallSources?: TemplateRecallSource[];
 }
 
 export interface TemplatePriorBundle {
@@ -166,7 +175,31 @@ export interface TemplatePriorDiagnostics {
   keptCandidateCount: number;
   rerankedCandidateCount: number;
   queryDiagnostics: TemplatePriorQueryDiagnostic[];
+  vectorRecallDiagnostics?: VectorRecallDiagnostics;
 }
+
+export type VectorRecallDiagnostics =
+  | {
+      status: "executed";
+      topK: number;
+      candidateCount: number;
+      latencyMs: number;
+      error: null;
+    }
+  | {
+      status: "error";
+      topK: number;
+      candidateCount: 0;
+      latencyMs: number;
+      error: {
+        code: "timeout" | "transport" | "invalid_response";
+        message: string;
+      };
+    }
+  | {
+      status: "skipped";
+      reason: "canvas_out_of_r1_scope";
+    };
 
 export interface IntentConsistencyFlag {
   code: string;
