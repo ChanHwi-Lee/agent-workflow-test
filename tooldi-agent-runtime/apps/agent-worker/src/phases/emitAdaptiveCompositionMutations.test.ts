@@ -263,7 +263,8 @@ test("emitAdaptiveCompositionMutations preserves source fill for plain adaptive 
       addDecisions: [],
       compositionSummary: "headline contrast test",
     },
-    sceneBindingPlan: createSceneBindingPlan(),
+    // Dark scene background so the white source fill stays readable and is preserved
+    sceneBindingPlan: createSceneBindingPlan({ backgroundColorHex: "#1a1a1a" }),
   });
 
   const headlineCommand = batch.proposals[0]?.mutation.commands.find(
@@ -550,6 +551,360 @@ test("emitAdaptiveCompositionMutations emits badge additions as compound groups"
   assert.equal(badgeCommand.layerBlueprint.layerType, "group");
   assert.equal(badgeCommand.layerBlueprint.styleTokens?.surfaceColor, "#ff6a00");
   assert.equal(badgeCommand.layerBlueprint.styleTokens?.textColor, "#ffffff");
+});
+
+test("emitAdaptiveCompositionMutations synthesizes a background shape when the projected graph has no background and sceneBindingPlan is present", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "도시락 배송받자 인스타",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-010",
+          layerType: "text",
+          bounds: { x: 100, y: 100, width: 800, height: 120 },
+          sourceText: "헤드라인",
+          fontSize: 96,
+          fillColorHex: "#ffffff",
+          fontFamily: "701_400",
+          fontWeight: 700,
+          textAlign: "left",
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          visualWeight: "dominant",
+          zone: "top",
+          prominence: 96000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "background synthesis test",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#6aa84f",
+    }),
+  });
+
+  const commands = batch.proposals[0]?.mutation.commands ?? [];
+  const backgroundCommand = commands.find(
+    (
+      command,
+    ): command is Extract<(typeof commands)[number], { op: "createLayer" }> =>
+      command.op === "createLayer" && command.executionSlotKey === "background",
+  );
+  assert.ok(backgroundCommand, "expected a synthesized background command");
+  assert.equal(backgroundCommand.layerBlueprint.layerType, "shape");
+  assert.deepEqual(backgroundCommand.layerBlueprint.bounds, {
+    x: 0,
+    y: 0,
+    width: 1200,
+    height: 628,
+  });
+  assert.equal(
+    backgroundCommand.layerBlueprint.styleTokens?.fillColor,
+    "#6aa84f",
+  );
+  // Background must be rendered first (bottom z-order)
+  assert.equal(commands[0]?.clientLayerKey, backgroundCommand.clientLayerKey);
+});
+
+test("emitAdaptiveCompositionMutations does not synthesize a background when the projected graph already has one", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "도시락 배송받자 인스타",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-bg",
+          layerType: "image",
+          bounds: { x: 0, y: 0, width: 1200, height: 628 },
+          sourceText: null,
+          fontSize: null,
+          fillColorHex: null,
+          fontFamily: null,
+          fontWeight: null,
+          textAlign: null,
+          sourceOriginUrl: "https://file.tooldi.com/bg.png",
+          sourceWidth: 1200,
+          sourceHeight: 628,
+          visualWeight: "background",
+          zone: "full",
+          prominence: 753600,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "no synthesis when template has background",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#6aa84f",
+    }),
+  });
+
+  const commands = batch.proposals[0]?.mutation.commands ?? [];
+  const backgroundCommands = commands.filter(
+    (command) =>
+      command.op === "createLayer" && command.executionSlotKey === "background",
+  );
+  assert.equal(
+    backgroundCommands.length,
+    1,
+    "only the template's background should be emitted",
+  );
+  const retained = backgroundCommands[0];
+  assert.ok(retained && retained.op === "createLayer");
+  // Retained from obj-bg, not the synthesis prefix
+  assert.ok(retained.clientLayerKey?.startsWith("obj-bg"));
+});
+
+test("emitAdaptiveCompositionMutations passes pastel_gradient backgroundVisualMode when sceneBindingPlan requests gradient", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "test",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 0,
+      summary: "test graph",
+      objects: [],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "gradient bg synthesis",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "pastel_gradient",
+      backgroundColorHex: "#ffd1dc",
+      secondaryBackgroundColorHex: "#ffffff",
+    }),
+  });
+
+  const commands = batch.proposals[0]?.mutation.commands ?? [];
+  const backgroundCommand = commands.find(
+    (command) =>
+      command.op === "createLayer" && command.executionSlotKey === "background",
+  );
+  assert.ok(backgroundCommand && backgroundCommand.op === "createLayer");
+  assert.equal(
+    backgroundCommand.layerBlueprint.styleTokens?.backgroundVisualMode,
+    "pastel_gradient",
+  );
+  assert.equal(
+    backgroundCommand.layerBlueprint.styleTokens?.secondaryColor,
+    "#ffffff",
+  );
+});
+
+test("emitAdaptiveCompositionMutations overrides unreadable text fill when contrast against the scene background is insufficient", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "test",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-headline",
+          layerType: "text",
+          bounds: { x: 100, y: 100, width: 800, height: 120 },
+          sourceText: "보이지 않던 헤드라인",
+          fontSize: 96,
+          fillColorHex: "#ffffff",
+          fontFamily: "701_400",
+          fontWeight: 700,
+          textAlign: "left",
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          visualWeight: "dominant",
+          zone: "top",
+          prominence: 96000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "scene contrast fallback",
+    },
+    // Scene background is white; white headline must be overridden
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#ffffff",
+    }),
+  });
+
+  const headlineCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.executionSlotKey === "headline",
+  );
+  assert.ok(headlineCommand, "expected a headline command");
+  const fillColor = headlineCommand.layerBlueprint.styleTokens?.fillColor;
+  assert.ok(fillColor && fillColor !== "#ffffff", `expected non-white fill, got ${fillColor}`);
+});
+
+test("emitAdaptiveCompositionMutations preserves a readable source text fill when contrast against the scene background is sufficient", () => {
+  const batch = emitAdaptiveCompositionMutations({
+    runId: "run-test",
+    traceId: "trace-test",
+    documentId: "document-test",
+    pageId: "page-test",
+    targetCanvasWidth: 1200,
+    targetCanvasHeight: 628,
+    projectedGraph: {
+      graphId: "graph-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      templateTitle: "test",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      objectCount: 1,
+      summary: "test graph",
+      objects: [
+        {
+          objectId: "obj-headline",
+          layerType: "text",
+          bounds: { x: 100, y: 100, width: 800, height: 120 },
+          sourceText: "잘 보이는 헤드라인",
+          fontSize: 96,
+          fillColorHex: "#ffffff",
+          fontFamily: "701_400",
+          fontWeight: 700,
+          textAlign: "left",
+          sourceOriginUrl: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          visualWeight: "dominant",
+          zone: "top",
+          prominence: 96000,
+          backingSurfaceObjectId: null,
+          backingSurfaceColorHex: null,
+          backingSurfaceBounds: null,
+          compositeHint: null,
+        },
+      ],
+    },
+    compositionDecision: {
+      decisionId: "decision-test",
+      runId: "run-test",
+      traceId: "trace-test",
+      templateCode: "82945706194",
+      projectedGraphId: "graph-test",
+      elementDecisions: [],
+      addDecisions: [],
+      compositionSummary: "scene contrast preserve",
+    },
+    sceneBindingPlan: createSceneBindingPlan({
+      backgroundMode: "generated_solid",
+      backgroundColorHex: "#111111",
+    }),
+  });
+
+  const headlineCommand = batch.proposals[0]?.mutation.commands.find(
+    (
+      command,
+    ): command is Extract<
+      (typeof batch.proposals)[number]["mutation"]["commands"][number],
+      { op: "createLayer" }
+    > => command.op === "createLayer" && command.executionSlotKey === "headline",
+  );
+  assert.ok(headlineCommand, "expected a headline command");
+  assert.equal(
+    headlineCommand.layerBlueprint.styleTokens?.fillColor,
+    "#ffffff",
+    "white text on dark scene background should be preserved",
+  );
 });
 
 test("emitAdaptiveCompositionMutations forwards text sourceAngle and sourceOpacity into styleTokens on retain", () => {

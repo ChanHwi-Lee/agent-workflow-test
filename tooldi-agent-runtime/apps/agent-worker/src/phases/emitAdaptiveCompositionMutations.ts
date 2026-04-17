@@ -536,13 +536,20 @@ function resolveExistingTextFillColor(
   styleContext: AdaptiveStyleContext,
   preferredFillColor: string,
 ): string {
-  if (!obj.backingSurfaceColorHex) {
+  // Prefer local backing surface as the readability reference.
+  // Fall back to scene background so that text without a backing surface
+  // is still guarded against low-contrast emission on the canvas.
+  const readabilitySurface =
+    obj.backingSurfaceColorHex ??
+    styleContext.sceneBindingPlan?.backgroundColorHex ??
+    null;
+  if (!readabilitySurface) {
     return preferredFillColor;
   }
   return resolveReadablePreferredColor(
     preferredFillColor,
-    obj.backingSurfaceColorHex,
-    resolveSlotFallbackTextColor(executionSlotKey, styleContext, obj.backingSurfaceColorHex),
+    readabilitySurface,
+    resolveSlotFallbackTextColor(executionSlotKey, styleContext, readabilitySurface),
   );
 }
 
@@ -653,6 +660,53 @@ function contrastRatio(
 }
 
 // ---------------------------------------------------------------------------
+// Background synthesis
+// ---------------------------------------------------------------------------
+
+/**
+ * True iff the projected graph already contains a full-bleed background object
+ * (e.g. a retained template image covering the canvas). When true, do not
+ * synthesize a background — defer to A1 (template object graph is structural truth).
+ */
+function hasProjectedBackground(projectedGraph: ProjectedObjectGraph): boolean {
+  return projectedGraph.objects.some((obj) => obj.visualWeight === "background");
+}
+
+/**
+ * Emit a synthesized background rect from sceneBindingPlan when the template
+ * did not contribute a background object. Mirrors the skeleton path foundation
+ * pattern so FE handles fill/gradient identically.
+ */
+function buildSynthesizedBackgroundCommand(
+  runId: string,
+  targetCanvas: { width: number; height: number },
+  sceneBindingPlan: SceneBindingPlan,
+): CanvasMutationCommand {
+  const isGradient =
+    sceneBindingPlan.backgroundMode === "pastel_gradient" &&
+    sceneBindingPlan.secondaryBackgroundColorHex !== null;
+  return buildCreateLayerCommand(runId, "adaptive-background-synth", {
+    executionSlotKey: "background",
+    clientLayerKey: `adaptive_background_${runId}`,
+    layerType: "shape",
+    bounds: {
+      x: 0,
+      y: 0,
+      width: targetCanvas.width,
+      height: targetCanvas.height,
+    },
+    role: "background",
+    variantKey: sceneBindingPlan.backgroundMode,
+    candidateId: "adaptive_background_synth",
+    styleTokens: {
+      fillColor: sceneBindingPlan.backgroundColorHex,
+      secondaryColor: sceneBindingPlan.secondaryBackgroundColorHex,
+      backgroundVisualMode: isGradient ? "pastel_gradient" : null,
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Main function
 // ---------------------------------------------------------------------------
 
@@ -684,6 +738,25 @@ export function emitAdaptiveCompositionMutations(
   );
 
   const taggedCommands: Array<{ command: CanvasMutationCommand; zWeight: number }> = [];
+
+  // Synthesize a background when the template contributed none.
+  // SSOT §6.5 permits bounded fallback (shape treatment) when the reference lacks
+  // a full-bleed object, and the scene binding plan already carries the solved
+  // backgroundColorHex / backgroundMode derived from the selected template's style.
+  if (
+    !hasProjectedBackground(projectedGraph) &&
+    styleContext.sceneBindingPlan
+  ) {
+    const backgroundCommand = buildSynthesizedBackgroundCommand(
+      input.runId,
+      targetCanvas,
+      styleContext.sceneBindingPlan,
+    );
+    taggedCommands.push({
+      command: backgroundCommand,
+      zWeight: zOrderWeight("background", "background"),
+    });
+  }
 
   // Process element decisions (retain/modify/remove)
   const decidedObjectIds = new Set(
