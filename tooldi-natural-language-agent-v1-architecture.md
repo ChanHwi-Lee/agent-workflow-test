@@ -1,5 +1,9 @@
 # Tooldi 자연어 에이전트/워크플로우 v1 아키텍처 초안
 
+> ⚠️ **철학 SSOT 참조 갱신 (2026-04-20)** — 설계 철학/파이프라인 SSOT는 이제 [`tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md`](./tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md) 가 닫는다.
+>
+> 이 문서의 runtime semantic contract(artifact identity, counted completion moment, Canvas Mutation Protocol 구조, lifecycle ownership, ordering, rollback)는 v5와 정합하며 계속 **normative**다. 단, "template-aware adaptive composition" 참조는 historical로 읽는다.
+
 ## 문서 정보
 
 | 항목 | 값 |

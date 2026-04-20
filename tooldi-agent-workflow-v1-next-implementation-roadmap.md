@@ -1,5 +1,9 @@
 # Tooldi Agent Workflow v1 Next Implementation Roadmap
 
+> ⚠️ **v5 전환 반영 필요 (2026-04-20~)** — 설계 철학 SSOT는 [`tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md`](./tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md) 로 교체되었다. 이 문서의 §1 "sibling 문서 충돌 순서" 및 adaptive composition / representation-design-lock / template-intelligence-design-lock 참조는 historical이다.
+>
+> 새 구현 우선순위는 **v5 SSOT §5 "구현 로드맵 (5단계)"**를 따른다: (1) 프롬프트 하드닝 → (2) DOM → Tooldi Layer Graph 결정적 transpiler → (3) Text Overflow Post-Processor → (4) Legacy 코드 삭제 plan → (5) 철학/아키텍처 문서 Lock.
+
 ## 문서 정보
 
 | 항목 | 값 |

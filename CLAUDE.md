@@ -7,7 +7,7 @@
 Claude Code가 `AGENTS.md` 를 자동으로 읽지 않으면 아래 순서로 먼저 읽어라.
 
 1. [AGENTS.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/AGENTS.md)
-2. [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md)
+2. [tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md)
 3. [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md)
 4. [tooldi-agent-workflow-v1-doc-index.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-doc-index.md)
 

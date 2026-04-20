@@ -1,12 +1,18 @@
-# Tooldi Agent Workflow — Template-Aware Adaptive Composition
+# Tooldi Agent Workflow — Template-Aware Adaptive Composition (Historical)
+
+> ⚠️ **SUPERSEDED 2026-04-20** — 이 문서는 더 이상 normative authority가 아니다.
+>
+> 현재 설계 철학/파이프라인 SSOT는 [`tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md`](./tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md) 다.
+>
+> 아래 A1~A5 axiom, retain/modify/remove/add decision DSL, addable vocabulary registry, projected template object graph 개념은 **전부 폐기**되었다. 이 문서는 adaptive composition 시도의 배경을 이해할 때만 참조하라.
 
 ## 문서 정보
 
 | 항목 | 값 |
 | --- | --- |
-| 문서명 | Template-Aware Adaptive Composition SSOT |
+| 문서명 | Template-Aware Adaptive Composition SSOT (Historical) |
 | 문서 목적 | 에이전트 워크플로우의 설계 철학과 아키텍처 계약을 확정하고, 모든 후속 개발의 기준선(Single Source of Truth)으로 삼는다. |
-| 상태 | **Authority / Design Lock** |
+| 상태 | **Historical — 2026-04-20자로 v5 SSOT에 의해 대체됨** |
 | 작성일 | 2026-04-16 |
 | 대상 시스템 | `agent-workflow-test/tooldi-agent-runtime` (agent-worker, agent-api), `toolditor` (FE agent-workflow-spike) |
 | 대상 독자 | Agent Backend, FE, PM, QA, Reviewer |

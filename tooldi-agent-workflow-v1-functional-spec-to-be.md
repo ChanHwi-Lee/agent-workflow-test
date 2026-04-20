@@ -1,5 +1,9 @@
 # Tooldi 자연어 Agent Workflow v1 기능명세서 (TO-BE)
 
+> ⚠️ **v5 SSOT 반영 진행 중 (2026-04-20~)** — 이 문서는 public/API/persistence projection authority이지만, 설계 철학과 파이프라인 계약은 [`tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md`](./tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md) 가 닫는다.
+>
+> 아래 섹션 중 "template-aware adaptive composition", "retain/modify/remove/add", "addable vocabulary", "projected object graph", "reference template" 언급은 **historical reference**로 읽고, 새로운 FR/BR은 v5 파이프라인(제약 HTML → 결정적 transpiler → Tooldi layer graph)을 전제로 작성한다.
+
 ## 문서 정보
 
 | 항목 | 값 |

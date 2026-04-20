@@ -1,4 +1,8 @@
-# Tooldi Agent Workflow v1 Template Intelligence Design Lock
+# Tooldi Agent Workflow v1 Template Intelligence Design Lock (Historical)
+
+> ⚠️ **SUPERSEDED 2026-04-20** — 이 문서는 adaptive composition SSOT의 intelligence projection이었고, base SSOT가 [`tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md`](./tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md) 로 대체되면서 함께 폐기되었다.
+>
+> reference discovery, source family registry, addable vocabulary registry, executor capability registry 개념은 **전부 폐기**. v5에서는 LLM 출력이 제약된 DOM grammar whitelist로 유일하게 정의되고, 에셋 매칭은 RAG(Qdrant + jina-clip-v2)로만 수행된다.
 
 ## 문서 정보
 

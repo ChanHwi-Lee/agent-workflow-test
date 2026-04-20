@@ -1,5 +1,7 @@
 # Tooldi Agent Workflow v1 Semantic Retrieval Checklist
 
+> ⚠️ **v5 맥락 갱신 (2026-04-20)** — 이 체크리스트는 adaptive composition 시절에 작성됐으나, v5 SSOT([`tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md`](./tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md))에서도 RAG/Stage 4 에셋 매칭 설계 시 참고 가치가 있다. 단 `template-intelligence-design-lock` 참조는 historical로 읽고, semantic retrieval 은 v5 Stage 4(`placeholder → Tooldi asset ID`)를 위해 재해석한다.
+
 ## 문서 정보
 
 | 항목 | 값 |

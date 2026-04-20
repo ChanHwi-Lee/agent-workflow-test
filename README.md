@@ -11,12 +11,22 @@
 ## 먼저 읽을 문서
 
 - 문서 인덱스: [tooldi-agent-workflow-v1-doc-index.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-doc-index.md)
-- 설계 철학 SSOT: [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md)
+- **설계 철학 SSOT (v5, 2026-04-20 제정)**: [tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md)
 - 현재 구현 상태: [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
-- 표현 전략 lock: [tooldi-agent-workflow-v1-create-template-representation-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-representation-design-lock.md)
-- intelligence lock: [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md)
-- historical object-native 배경 참고: [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md)
+- runtime semantic contract: [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md)
 - 다음 작업 우선순위: [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
+- historical (adaptive composition / object-native / topology 배경 참고):
+  - [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md)
+  - [tooldi-agent-workflow-v1-create-template-representation-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-representation-design-lock.md)
+  - [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md)
+  - [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md)
+
+## 2026-04-20 철학 전환 노트 (v5 SSOT)
+
+- 2026-04-20자로 설계 철학이 `Template-Aware Adaptive Composition` → `Constrained HTML Pipeline (v5)` 로 전환되었다.
+- default 모델은 `gemini-3.1-flash-lite-preview` 로 고정 (bench 증거: `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/bench/method-compare-phase1/`).
+- 구현 전환은 진행 중이다. 현재 코드는 아직 adaptive composition 잔재(`buildObjectNativePath`, `ReferenceBlockKind`, `resolveRequiredExecutionSlots`, addable vocabulary 등)를 들고 있다. v5 §3.2 폐기 목록 기준 순차 제거 예정.
+- 설계 철학/파이프라인/재사용·폐기·신설 경계는 [v5 SSOT](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md)만 normative.
 
 ## 2026-04-09 현재 구현 스냅샷
 

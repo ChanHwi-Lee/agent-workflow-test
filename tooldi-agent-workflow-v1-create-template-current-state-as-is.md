@@ -1,5 +1,9 @@
 # Tooldi Agent Workflow v1 Create Template Current State (AS-IS)
 
+> ⚠️ **v5 전환 진행 중 (2026-04-20~)** — 설계 철학 SSOT는 [`tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md`](./tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md) 로 교체되었다.
+>
+> 현재 코드는 아래 기록 시점(2026-04-09~16)의 adaptive composition 잔재를 여전히 포함한다. v5 §3.2 폐기 목록(`buildObjectNativePath`, `buildReferenceResetPath`, `ReferenceBlockKind`, `resolveRequiredExecutionSlots`, addable vocabulary registry, `ruleJudge`/`refineDecision` 등)은 순차 제거 대상이며, 이 문서는 제거 완료까지 current-state를 기록한다. gap 해석 시 이 점을 감안할 것.
+
 ## 문서 정보
 
 | 항목 | 값 |

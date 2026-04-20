@@ -1,4 +1,8 @@
-# Tooldi Agent Workflow v1 Create Template Representation Design Lock
+# Tooldi Agent Workflow v1 Create Template Representation Design Lock (Historical)
+
+> ⚠️ **SUPERSEDED 2026-04-20** — 이 문서는 adaptive composition SSOT의 projection이었고, base SSOT가 [`tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md`](./tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md) 로 대체되면서 함께 폐기되었다.
+>
+> template object graph, retain/modify/remove/add decision projection, executor materialization 계약은 **전부 폐기**. adaptive composition 시도의 표현 전략을 배경 참고로만 활용할 수 있다.
 
 ## 문서 정보
 
