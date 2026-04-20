@@ -109,3 +109,36 @@ Canvas: 1200 x 628 · Prompts: 20 · temperature=0.2 top_p=0.95 · concurrency p
 - Preview model pricing is estimated; update `MODELS[*].price` in multi-report.mjs once Google publishes final numbers.
 - Single sample per prompt @ T=0.2 — variance bounded but not zero.
 - Thinking tokens (`thoughtsTokenCount`) are included in output-side cost accounting to reflect actual billing.
+
+## 9. Step 1 프롬프트 하드닝 delta (AGW v5)
+
+`method-b-system.txt` 에 (a) `<br>` 금지 명시, (b) 줄바꿈은 별도 absolutely-positioned 형제 요소로 분리, (c) 텍스트 overflow 정량 힌트 (font-size × char_count × 0.6 ≤ width) 3가지 규칙을 추가한 뒤 `gemini-3.1-flash-lite-preview` 로 재벤치한 결과.
+
+| Metric | Baseline (`outputs-3.1-flash-lite`) | Hardened (`outputs-3.1-flash-lite-v2`) | Delta |
+| --- | --- | --- | --- |
+| Weighted pass rate (Method B) | 92.8% | **100.0%** | +7.2pp |
+| `dom_grammar_ok` | 7/20 (35%) | **20/20 (100%)** | +65pp |
+| `bounds_ok` | 20/20 | 20/20 | 0 (비악화 ✓) |
+| `html_parse_ok` | 20/20 | 20/20 | 0 |
+| `css_whitelist_ok` | 20/20 | 20/20 | 0 |
+| Median latency (Method B) | 3.10s | 3.04s | -0.06s |
+| Input tokens (Method B, 20p sum) | 21,296 | 30,396 | +9,100 (프롬프트 확장) |
+| Output tokens (Method B, 20p sum) | 13,105 | 13,397 | +292 |
+| Cost (Method B, $/20p) | $0.0074 | $0.0084 | +$0.0010 |
+
+### Acceptance 결과
+
+- ✅ `dom_grammar_ok ≥ 97%` — 달성 (100%)
+- ✅ Weighted ≥ 95% — 달성 (100%)
+- ✅ `bounds_ok` 비악화 — 동점 유지
+
+### Baseline 실패 샘플 3개 (전부 `<br>` 원인)
+
+- `outputs-3.1-flash-lite/method-b/prompt_01.json` — `<h1>봄의 향기,<br>신선한 식탁</h1>` + `<p>... <br> 봄 한정 ...</p>`. Hardened 결과 (`outputs-3.1-flash-lite-v2/method-b/prompt_01.json`) 에서는 `<h1>` 2개 sibling 으로 분리됨.
+- `outputs-3.1-flash-lite/method-b/prompt_02.json` — `bad_tags:br,br` 두 건. Hardened 에서 0건.
+- `outputs-3.1-flash-lite/method-b/prompt_10.json` — 동일 패턴. Hardened 에서 0건.
+
+### 잔여 long-tail
+
+- Hardened 재벤치에서 `<br>` 외 추가 실패 패턴 **0건** (R-1 해소). `calc()` / `translate()` / inline-block 등 잠재 패턴이 실제로 드러나지 않음.
+- 비용 증가 +$0.001/20p 는 R-3 허용 범위.

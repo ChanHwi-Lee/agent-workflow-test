@@ -1,0 +1,21 @@
+{
+  "id": "prompt_14",
+  "domain": "pet",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "반려동물 프리미엄 사료 신상품 런칭 배너",
+  "latencyMs": 3140,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FDFBF7\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 150,\n      \"width\": 550,\n      \"height\": 100,\n      \"text\": \"우리 아이를 위한\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 40,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#8B5E3C\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 210,\n      \"width\": 550,\n      \"height\": 150,\n      \"text\": \"프리미엄 맞춤 사료\\n신상품 런칭\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#2D2926\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 380,\n      \"width\": 500,\n      \"height\": 60,\n      \"text\": \"엄선된 원료로 건강하게 채우는 매일의 식사\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#666666\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 220,\n      \"height\": 60,\n      \"fill\": \"#FF8C00\",\n      \"rx\": 30,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 475,\n      \"width\": 220,\n      \"height\": 60,\n      \"text\": \"구매하러 가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 22,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1754,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 742,
+    "totalTokenCount": 1947,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T06:42:31.190Z"
+}

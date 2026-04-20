@@ -1,0 +1,21 @@
+{
+  "id": "prompt_02",
+  "domain": "cafe",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘",
+  "latencyMs": 3547,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FFF0F5;\"></div>\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #FFD1DC, #FFFFFF); opacity:0.6;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"strawberry drink\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:650px; top:80px; width:450px; height:450px;\" />\n  <h1 style=\"position:absolute; left:80px; top:120px; width:550px; height:90px; font-family:sans-serif; font-size:72px; font-weight:900; color:#D81B60; text-align:left; line-height:1.2;\">상큼한 봄을</h1>\n  <h1 style=\"position:absolute; left:80px; top:210px; width:550px; height:90px; font-family:sans-serif; font-size:72px; font-weight:900; color:#D81B60; text-align:left; line-height:1.2;\">마셔보세요</h1>\n  <p style=\"position:absolute; left:80px; top:330px; width:500px; height:40px; font-family:sans-serif; font-size:32px; font-weight:500; color:#4A148C; text-align:left; line-height:1.2;\">100% 생딸기로 만든</p>\n  <p style=\"position:absolute; left:80px; top:370px; width:500px; height:40px; font-family:sans-serif; font-size:32px; font-weight:500; color:#4A148C; text-align:left; line-height:1.2;\">시그니처 딸기 라떼 출시</p>\n  <div style=\"position:absolute; left:80px; top:460px; width:280px; height:70px; background-color:#D81B60; border-radius:35px;\"></div>\n  <span style=\"position:absolute; left:80px; top:478px; width:280px; height:40px; font-family:sans-serif; font-size:24px; font-weight:700; color:#FFFFFF; text-align:center;\">지금 바로 맛보기</span>\n</div>",
+  "outputBytes": 1733,
+  "usage": {
+    "promptTokenCount": 1522,
+    "candidatesTokenCount": 703,
+    "totalTokenCount": 2225,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T06:42:41.143Z"
+}

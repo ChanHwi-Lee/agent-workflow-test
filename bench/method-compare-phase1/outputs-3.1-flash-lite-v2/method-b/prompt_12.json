@@ -1,0 +1,21 @@
+{
+  "id": "prompt_12",
+  "domain": "hotel",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "제주도 럭셔리 호텔 여름 성수기 특가 배너",
+  "latencyMs": 2850,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#1A2B3C;\"></div>\n  <img data-tooldi-role=\"background\" data-hint=\"luxury jeju hotel pool view\" data-aspect=\"16:9\" src=\"placeholder://\" style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; opacity:0.4;\" />\n  <h1 style=\"position:absolute; left:80px; top:120px; width:800px; height:90px; font-family:sans-serif; font-size:72px; font-weight:700; color:#FFFFFF; text-align:left; line-height:1.2;\">제주 럭셔리 여름 휴가</h1>\n  <h2 style=\"position:absolute; left:80px; top:220px; width:800px; height:60px; font-family:sans-serif; font-size:40px; font-weight:400; color:#E0E0E0; text-align:left; line-height:1.2;\">성수기 한정 특별 패키지 오픈</h2>\n  <p style=\"position:absolute; left:80px; top:350px; width:500px; height:40px; font-family:sans-serif; font-size:28px; font-weight:300; color:#FFD700; text-align:left; line-height:1.2;\">지금 예약 시 최대 30% 할인</p>\n  <div style=\"position:absolute; left:80px; top:450px; width:280px; height:70px; background-color:#C5A059; border-radius:8px;\"></div>\n  <span style=\"position:absolute; left:80px; top:468px; width:280px; height:40px; font-family:sans-serif; font-size:24px; font-weight:600; color:#FFFFFF; text-align:center;\">예약 바로가기</span>\n  <img data-tooldi-role=\"logo\" data-hint=\"hotel logo\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:1000px; top:40px; width:120px; height:120px;\" />\n</div>",
+  "outputBytes": 1595,
+  "usage": {
+    "promptTokenCount": 1521,
+    "candidatesTokenCount": 627,
+    "totalTokenCount": 2148,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T06:42:49.984Z"
+}

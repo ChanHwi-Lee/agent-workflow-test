@@ -1,0 +1,21 @@
+{
+  "id": "prompt_13",
+  "domain": "travel",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "동남아 패키지 여행 얼리버드 예약 배너",
+  "latencyMs": 3038,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#E0F7FA\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 600,\n      \"top\": 0,\n      \"width\": 600,\n      \"height\": 628,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 500,\n      \"height\": 100,\n      \"text\": \"동남아 여행\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#006064\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 220,\n      \"width\": 500,\n      \"height\": 80,\n      \"text\": \"얼리버드 특가 예약 오픈!\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 40,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#00838F\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 320,\n      \"width\": 450,\n      \"height\": 60,\n      \"text\": \"지금 예약하면 최대 30% 할인 혜택\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#455A64\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 420,\n      \"width\": 240,\n      \"height\": 70,\n      \"fill\": \"#FF9800\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 435,\n      \"width\": 240,\n      \"height\": 70,\n      \"text\": \"예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1714,
+  "usage": {
+    "promptTokenCount": 1203,
+    "candidatesTokenCount": 728,
+    "totalTokenCount": 1931,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T06:42:30.988Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_09",
+  "domain": "education",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "코딩 부트캠프 수강생 모집 배너 - 얼리버드 40% 할인",
+  "latencyMs": 2971,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#0F172A;\"></div>\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #1E293B, #0F172A);\"></div>\n  <h1 style=\"position:absolute; left:80px; top:120px; width:700px; height:90px; font-family:sans-serif; font-size:72px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.2;\">개발자로 성장하는</h1>\n  <h1 style=\"position:absolute; left:80px; top:210px; width:700px; height:90px; font-family:sans-serif; font-size:72px; font-weight:900; color:#38BDF8; text-align:left; line-height:1.2;\">가장 빠른 길</h1>\n  <p style=\"position:absolute; left:80px; top:340px; width:600px; height:40px; font-family:sans-serif; font-size:32px; font-weight:500; color:#E2E8F0; text-align:left; line-height:1.2;\">코딩 부트캠프 12기 수강생 모집</p>\n  <div style=\"position:absolute; left:80px; top:440px; width:320px; height:80px; background-color:#F43F5E; border-radius:12px;\"></div>\n  <span style=\"position:absolute; left:80px; top:460px; width:320px; height:40px; font-family:sans-serif; font-size:32px; font-weight:800; color:#FFFFFF; text-align:center; line-height:1.2;\">얼리버드 40% 할인</span>\n  <img data-tooldi-role=\"hero\" data-hint=\"coding illustration\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:750px; top:120px; width:380px; height:380px;\" />\n  <div style=\"position:absolute; left:80px; top:540px; width:400px; height:30px; font-family:sans-serif; font-size:20px; font-weight:400; color:#94A3B8; text-align:left; line-height:1.2;\">선착순 20명 한정 혜택을 놓치지 마세요</div>\n</div>",
+  "outputBytes": 1793,
+  "usage": {
+    "promptTokenCount": 1527,
+    "candidatesTokenCount": 725,
+    "totalTokenCount": 2252,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T06:42:47.133Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_18",
+  "domain": "bakery",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "베이커리 신제품 크루아상 소개 배너",
+  "latencyMs": 4217,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FDF6EC\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 600,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 150,\n      \"width\": 500,\n      \"height\": 100,\n      \"text\": \"갓 구운 크루아상\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#5D4037\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 260,\n      \"width\": 450,\n      \"height\": 120,\n      \"text\": \"프랑스산 버터의 풍미가 가득한\\n겉바속촉 신제품을 만나보세요.\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#8D6E63\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 420,\n      \"width\": 220,\n      \"height\": 60,\n      \"fill\": \"#8D6E63\",\n      \"rx\": 30,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 435,\n      \"width\": 220,\n      \"height\": 60,\n      \"text\": \"구매하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1469,
+  "usage": {
+    "promptTokenCount": 1202,
+    "candidatesTokenCount": 627,
+    "totalTokenCount": 1829,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T06:42:36.012Z"
+}

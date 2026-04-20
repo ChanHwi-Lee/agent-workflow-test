@@ -1,0 +1,21 @@
+{
+  "id": "prompt_04",
+  "domain": "generic_sale",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "봄 세일 배너를 만들어줘",
+  "latencyMs": 3131,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FFF0F5;\"></div>\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #FFD1DC, #FFB7C5); opacity:0.5;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"spring flowers\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:700px; top:100px; width:400px; height:400px;\" />\n  <h1 style=\"position:absolute; left:80px; top:150px; width:600px; height:100px; font-family:sans-serif; font-size:80px; font-weight:900; color:#D81B60; text-align:left; line-height:1.0;\">봄맞이 대축제</h1>\n  <h2 style=\"position:absolute; left:80px; top:260px; width:600px; height:60px; font-family:sans-serif; font-size:48px; font-weight:700; color:#4A148C; text-align:left; line-height:1.0;\">전 품목 최대 50% 할인</h2>\n  <p style=\"position:absolute; left:80px; top:350px; width:500px; height:40px; font-family:sans-serif; font-size:30px; font-weight:400; color:#333333; text-align:left; line-height:1.0;\">따뜻한 봄, 새로운 시작을 준비하세요</p>\n  <div style=\"position:absolute; left:80px; top:450px; width:280px; height:80px; background-color:#D81B60; border-radius:40px;\"></div>\n  <span style=\"position:absolute; left:80px; top:472px; width:280px; height:40px; font-family:sans-serif; font-size:32px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1.0;\">지금 쇼핑하기</span>\n</div>",
+  "outputBytes": 1564,
+  "usage": {
+    "promptTokenCount": 1513,
+    "candidatesTokenCount": 630,
+    "totalTokenCount": 2143,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T06:42:42.695Z"
+}

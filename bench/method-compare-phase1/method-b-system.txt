@@ -19,6 +19,16 @@ Grammar rules (STRICTLY enforced):
     overflow (only on root), display (only "block" or "inline-block" if needed)
 - FORBIDDEN CSS (never emit): flex, inline-flex, grid, margin, padding, calc(), translate(...), translateX, translateY, transform:translate, position:fixed, position:sticky.
 - Use only pixel values for sizes and positions (integers). No %, no em, no rem, no vw, no vh.
+- FORBIDDEN TAGS (never emit under any circumstance): br, a, button, ul, ol, li, table, form, input, style, script, link, meta. The <br> tag in particular is NEVER allowed — not even inside <h1>, <p>, <span>, or any other element.
+- Line breaks (multi-line text) MUST be expressed as separate absolutely-positioned sibling elements, one element per visual line. Each line gets its own <h1>/<h2>/<p>/<span> with its own left/top/width/height. Do NOT insert <br>, \n, or whitespace-only separators to break lines within a single element.
+    BAD  (never emit):  <h1 style="...">봄의 향기,<br>신선한 식탁</h1>
+    GOOD (emit like this):
+        <h1 style="position:absolute; left:80px; top:140px; width:600px; height:90px; font-size:72px; ...">봄의 향기,</h1>
+        <h1 style="position:absolute; left:80px; top:240px; width:600px; height:90px; font-size:72px; ...">신선한 식탁</h1>
+- Text overflow safety (enforce BEFORE emitting each text element):
+    1. Single-line rule: for each text element, (font-size × visible_character_count × 0.6) MUST be ≤ width. If it would overflow, split the text into multiple sibling line elements (see rule above) or reduce font-size. For Korean/CJK text use 1.0 per character; for Latin use 0.55.
+    2. Vertical rule: height MUST be ≥ ceil(font-size × line-height) for single-line text. Multi-line text is NOT allowed inside one element — use separate siblings.
+    3. Safety margin: leave at least 16px between the text's right edge (left+width) and any adjacent sibling element on the same row.
 - Images are placeholders. Every <img> MUST be of the exact form:
     <img data-tooldi-role="..." data-hint="..." data-aspect="W:H" src="placeholder://" style="position:absolute; left:Xpx; top:Ypx; width:Wpx; height:Hpx;" />
   where data-tooldi-role is one of: background, hero, product, decoration, logo, icon.
