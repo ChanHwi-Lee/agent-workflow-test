@@ -1,0 +1,21 @@
+{
+  "id": "prompt_10",
+  "domain": "real_estate",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "신규 아파트 분양 오픈하우스 초대 배너",
+  "latencyMs": 25095,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#1A2B4C\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 0,\n      \"width\": 550,\n      \"height\": 628,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 100,\n      \"width\": 60,\n      \"height\": 4,\n      \"fill\": \"#D4AF37\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 130,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"프리미엄 주거의 새로운 기준\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#D4AF37\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 190,\n      \"width\": 550,\n      \"height\": 75,\n      \"text\": \"신규 아파트 분양\",\n      \"fontFamily\": \"NanumSquare\",\n      \"fontSize\": 60,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 275,\n      \"width\": 550,\n      \"height\": 75,\n      \"text\": \"오픈하우스 초대\",\n      \"fontFamily\": \"NanumSquare\",\n      \"fontSize\": 60,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 380,\n      \"width\": 550,\n      \"height\": 35,\n      \"text\": \"일시: 11.10(금) - 11.12(일)  |  장소: 강남 모델하우스\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E2E8F0\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 260,\n      \"height\": 64,\n      \"fill\": \"#D4AF37\",\n      \"rx\": 4,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 476,\n      \"width\": 260,\n      \"height\": 32,\n      \"text\": \"사전예약 바로가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#1A2B4C\"\n    }\n  ]\n}",
+  "outputBytes": 2210,
+  "usage": {
+    "promptTokenCount": 1201,
+    "candidatesTokenCount": 941,
+    "totalTokenCount": 4161,
+    "thoughtsTokenCount": 2019,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:44:08.752Z"
+}

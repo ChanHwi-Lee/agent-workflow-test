@@ -1,0 +1,21 @@
+{
+  "id": "prompt_06",
+  "domain": "fitness",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "헬스장 신규 회원 3개월 30% 할인 프로모션 배너",
+  "latencyMs": 20362,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#121212\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 0,\n      \"width\": 550,\n      \"height\": 628,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 220,\n      \"height\": 40,\n      \"fill\": \"#FF4500\",\n      \"rx\": 20,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 126,\n      \"width\": 220,\n      \"height\": 28,\n      \"text\": \"신규 회원 한정 특가\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 20,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 190,\n      \"width\": 550,\n      \"height\": 80,\n      \"text\": \"헬스장 3개월 등록 시\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 60,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 280,\n      \"width\": 550,\n      \"height\": 90,\n      \"text\": \"30% 파격 할인\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 80,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FF4500\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 400,\n      \"width\": 500,\n      \"height\": 60,\n      \"text\": \"올해는 꼭 다이어트 성공! 최고급 시설에서 시작하세요.\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 22,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#AAAAAA\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 490,\n      \"width\": 280,\n      \"height\": 64,\n      \"fill\": \"#FFFFFF\",\n      \"rx\": 8,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 506,\n      \"width\": 280,\n      \"height\": 32,\n      \"text\": \"할인받고 시작하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#121212\"\n    }\n  ]\n}",
+  "outputBytes": 2213,
+  "usage": {
+    "promptTokenCount": 1208,
+    "candidatesTokenCount": 918,
+    "totalTokenCount": 3535,
+    "thoughtsTokenCount": 1409,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:43:15.829Z"
+}

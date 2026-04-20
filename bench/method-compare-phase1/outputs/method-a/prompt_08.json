@@ -1,0 +1,18 @@
+{
+  "id": "prompt_08",
+  "domain": "product_launch",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "신제품 무선 이어폰 런칭 프로모션 배너 - 사전 예약 10% 할인",
+  "latencyMs": 19327,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#1A1A2E\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 620,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 540,\n      \"height\": 100,\n      \"text\": \"새로운 차원의 사운드\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 225,\n      \"width\": 540,\n      \"height\": 60,\n      \"text\": \"AURA BUDS PRO 출시\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 40,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E0E0E0\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 320,\n      \"width\": 380,\n      \"height\": 60,\n      \"fill\": \"#F9A826\",\n      \"rx\": 10,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 95,\n      \"top\": 328,\n      \"width\": 350,\n      \"height\": 45,\n      \"text\": \"사전 예약 10% 특별 할인\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 32,\n      \"fontWeight\": 900,\n      \"textAlign\": \"center\",\n      \"fill\": \"#1A1A2E\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 280,\n      \"height\": 70,\n      \"fill\": \"#3F72AF\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 280,\n      \"height\": 70,\n      \"text\": \"지금 예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1880,
+  "usage": {
+    "promptTokenCount": 1211,
+    "candidatesTokenCount": 804,
+    "totalTokenCount": 3814
+  },
+  "finishedAt": "2026-04-20T05:07:19.867Z"
+}

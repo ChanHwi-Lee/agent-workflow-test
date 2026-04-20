@@ -1,0 +1,21 @@
+{
+  "id": "prompt_15",
+  "domain": "healthcare",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "건강검진센터 봄맞이 종합검진 할인 배너",
+  "latencyMs": 2822,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#F0F9F4;\"></div>\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #E8F5E9, #C8E6C9); opacity:0.5;\"></div>\n  <img data-tooldi-role=\"decoration\" data-hint=\"spring flowers\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:850px; top:100px; width:300px; height:300px;\" />\n  <h1 style=\"position:absolute; left:80px; top:120px; width:700px; height:100px; font-family:sans-serif; font-size:64px; font-weight:900; color:#2E7D32; text-align:left; line-height:1.2;\">봄맞이 종합검진</h1>\n  <p style=\"position:absolute; left:80px; top:220px; width:600px; height:80px; font-family:sans-serif; font-size:32px; font-weight:500; color:#424242; text-align:left; line-height:1.4;\">따스한 봄, 건강을 챙기는 가장 현명한 방법</p>\n  <div style=\"position:absolute; left:80px; top:350px; width:350px; height:80px; background-color:#2E7D32; border-radius:40px;\"></div>\n  <span style=\"position:absolute; left:80px; top:370px; width:350px; height:40px; font-family:sans-serif; font-size:30px; font-weight:700; color:#FFFFFF; text-align:center;\">최대 30% 할인 혜택</span>\n  <div style=\"position:absolute; left:80px; top:480px; width:500px; height:60px; font-family:sans-serif; font-size:24px; font-weight:400; color:#616161; text-align:left;\">예약 기간: 3월 1일 ~ 4월 30일까지</div>\n  <img data-tooldi-role=\"logo\" data-hint=\"hospital logo\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:1050px; top:500px; width:100px; height:100px;\" />\n</div>",
+  "outputBytes": 1746,
+  "usage": {
+    "promptTokenCount": 1064,
+    "candidatesTokenCount": 706,
+    "totalTokenCount": 1770,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:50.023Z"
+}

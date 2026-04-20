@@ -1,0 +1,18 @@
+{
+  "id": "prompt_01",
+  "domain": "restaurant",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "식당에서 신규 봄 계절메뉴를 만들어줘",
+  "latencyMs": 24361,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n<div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#F1F8E9;\"></div>\n<div style=\"position:absolute; left:-150px; top:-150px; width:400px; height:400px; background-color:#A5D6A7; border-radius:200px; opacity:0.3;\"></div>\n<div style=\"position:absolute; left:950px; top:428px; width:300px; height:300px; background-color:#C8E6C9; border-radius:150px; opacity:0.5;\"></div>\n<img data-tooldi-role=\"hero\" data-hint=\"A fresh and appetizing spring seasonal dish, like a salad with edible flowers or a light pasta\" data-aspect=\"4:3\" src=\"placeholder://\" style=\"position:absolute; left:580px; top:114px; width:540px; height:400px; box-shadow:0px 10px 30px rgba(0,0,0,0.1); border-radius:20px;\" />\n<h1 style=\"position:absolute; left:80px; top:160px; width:480px; height:160px; font-family:'Gmarket Sans', sans-serif; font-size:68px; font-weight:700; color:#2E7D32; text-align:left; line-height:1.2;\">싱그러운 봄, 새로운 맛</h1>\n<p style=\"position:absolute; left:80px; top:330px; width:450px; height:70px; font-family:'Pretendard', sans-serif; font-size:24px; font-weight:400; color:#333333; text-align:left; line-height:1.5;\">제철 식재료로 차려낸 건강한 봄 시즌 한정 메뉴를 만나보세요.</p>\n<img data-tooldi-role=\"logo\" data-hint=\"Your restaurant logo\" data-aspect=\"2:1\" src=\"placeholder://\" style=\"position:absolute; left:80px; top:80px; width:120px; height:60px;\" />\n<div style=\"position:absolute; left:80px; top:450px; width:220px; height:60px; background-color:#4CAF50; border-radius:30px;\"></div>\n<span style=\"position:absolute; left:80px; top:465px; width:220px; height:30px; font-family:'Pretendard', sans-serif; font-size:22px; font-weight:700; color:#FFFFFF; text-align:center;\">메뉴 보러가기</span>\n</div>",
+  "outputBytes": 1863,
+  "usage": {
+    "promptTokenCount": 1063,
+    "candidatesTokenCount": 721,
+    "totalTokenCount": 4308
+  },
+  "finishedAt": "2026-04-20T05:08:32.961Z"
+}

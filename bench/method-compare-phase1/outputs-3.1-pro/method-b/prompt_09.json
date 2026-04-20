@@ -1,0 +1,21 @@
+{
+  "id": "prompt_09",
+  "domain": "education",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "코딩 부트캠프 수강생 모집 배너 - 얼리버드 40% 할인",
+  "latencyMs": 42932,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#0F172A;\"></div>\n  <div style=\"position:absolute; left:620px; top:50px; width:120px; height:120px; background-color:#38BDF8; border-radius:60px; opacity:0.8;\"></div>\n  <div style=\"position:absolute; left:1050px; top:478px; width:150px; height:150px; background-color:#818CF8; border-radius:75px; opacity:0.6;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"person coding on laptop\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:640px; top:80px; width:480px; height:480px;\" />\n  <div style=\"position:absolute; left:80px; top:110px; width:260px; height:48px; background-color:#FBBF24; border-radius:24px;\"></div>\n  <span style=\"position:absolute; left:80px; top:120px; width:260px; height:28px; font-family:Pretendard; font-size:22px; font-weight:800; color:#0F172A; text-align:center; line-height:1.2;\">얼리버드 40% 할인</span>\n  <h1 style=\"position:absolute; left:80px; top:190px; width:500px; height:72px; font-family:Pretendard; font-size:60px; font-weight:900; color:#F8FAFC; text-align:left; line-height:1.2;\">코딩 부트캠프</h1>\n  <h1 style=\"position:absolute; left:80px; top:270px; width:500px; height:72px; font-family:Pretendard; font-size:60px; font-weight:900; color:#F8FAFC; text-align:left; line-height:1.2;\">수강생 모집</h1>\n  <p style=\"position:absolute; left:80px; top:370px; width:500px; height:36px; font-family:Pretendard; font-size:26px; font-weight:500; color:#94A3B8; text-align:left; line-height:1.2;\">비전공자도 6개월 만에 개발자로 취업!</p>\n  <div style=\"position:absolute; left:80px; top:450px; width:220px; height:60px; background-color:#3B82F6; border-radius:8px;\"></div>\n  <span style=\"position:absolute; left:80px; top:466px; width:220px; height:28px; font-family:Pretendard; font-size:22px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1.2;\">수강 신청하기</span>\n</div>",
+  "outputBytes": 2055,
+  "usage": {
+    "promptTokenCount": 1072,
+    "candidatesTokenCount": 830,
+    "totalTokenCount": 6449,
+    "thoughtsTokenCount": 4547,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:49:26.553Z"
+}

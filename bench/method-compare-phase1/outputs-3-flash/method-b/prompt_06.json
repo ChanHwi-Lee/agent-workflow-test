@@ -1,0 +1,21 @@
+{
+  "id": "prompt_06",
+  "domain": "fitness",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "헬스장 신규 회원 3개월 30% 할인 프로모션 배너",
+  "latencyMs": 14598,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#111111;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"fitness person training in gym\" data-aspect=\"600:628\" src=\"placeholder://\" style=\"position:absolute; left:600px; top:0px; width:600px; height:628px;\" />\n  <div style=\"position:absolute; left:500px; top:0px; width:200px; height:628px; background-image:linear-gradient(to right, #111111, transparent); z-index:1;\"></div>\n  <div style=\"position:absolute; left:80px; top:100px; width:100px; height:8px; background-color:#FFD700;\"></div>\n  <h2 style=\"position:absolute; left:80px; top:130px; width:500px; height:40px; font-family:Pretendard; font-size:28px; font-weight:700; color:#FFD700; text-align:left;\">NEW MEMBER PROMOTION</h2>\n  <h1 style=\"position:absolute; left:80px; top:180px; width:650px; height:200px; font-family:Pretendard; font-size:84px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.1; z-index:2;\">신규 회원 3개월<br>30% 특별 할인</h1>\n  <p style=\"position:absolute; left:80px; top:400px; width:500px; height:40px; font-family:Pretendard; font-size:26px; font-weight:400; color:#CCCCCC; text-align:left; z-index:2;\">지금 가입하고 최상의 시설을 경험하세요</p>\n  <div style=\"position:absolute; left:80px; top:480px; width:300px; height:80px; background-color:#FFD700; border-radius:10px; z-index:2;\"></div>\n  <span style=\"position:absolute; left:80px; top:502px; width:300px; height:36px; font-family:Pretendard; font-size:32px; font-weight:800; color:#111111; text-align:center; z-index:3;\">상담 예약하기</span>\n  <div style=\"position:absolute; left:1050px; top:50px; width:100px; height:100px; background-color:#FFD700; opacity:0.2; border-radius:50px; transform:rotate(45deg);\"></div>\n</div>",
+  "outputBytes": 1889,
+  "usage": {
+    "promptTokenCount": 1069,
+    "candidatesTokenCount": 746,
+    "totalTokenCount": 4290,
+    "thoughtsTokenCount": 2475,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:29:28.416Z"
+}

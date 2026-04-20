@@ -1,0 +1,21 @@
+{
+  "id": "prompt_20",
+  "domain": "generic_event",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "여름 휴가 시즌 프로모션 배너 만들어줘",
+  "latencyMs": 7143,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#E0F7FA\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 528,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 150,\n      \"width\": 550,\n      \"height\": 100,\n      \"text\": \"여름 휴가 특가 세일\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#006064\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 270,\n      \"width\": 550,\n      \"height\": 60,\n      \"text\": \"전 품목 최대 50% 할인 혜택\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 36,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#00838F\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 400,\n      \"width\": 280,\n      \"height\": 80,\n      \"fill\": \"#FF7043\",\n      \"rx\": 40,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 400,\n      \"width\": 280,\n      \"height\": 80,\n      \"text\": \"지금 바로 떠나기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1433,
+  "usage": {
+    "promptTokenCount": 1201,
+    "candidatesTokenCount": 617,
+    "totalTokenCount": 2775,
+    "thoughtsTokenCount": 957,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:28:43.799Z"
+}

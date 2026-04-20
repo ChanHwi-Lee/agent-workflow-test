@@ -1,0 +1,21 @@
+{
+  "id": "prompt_08",
+  "domain": "product_launch",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "신제품 무선 이어폰 런칭 프로모션 배너 - 사전 예약 10% 할인",
+  "latencyMs": 8151,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#0F172A\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 89,\n      \"width\": 450,\n      \"height\": 450,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 160,\n      \"width\": 500,\n      \"height\": 80,\n      \"text\": \"NEXT-GEN SOUND\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 56,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#38BDF8\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 250,\n      \"width\": 500,\n      \"height\": 70,\n      \"text\": \"무선 이어폰 정식 런칭\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 42,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 330,\n      \"width\": 500,\n      \"height\": 50,\n      \"text\": \"사전 예약 구매 시 10% 할인 혜택\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#94A3B8\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 440,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#38BDF8\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 440,\n      \"width\": 240,\n      \"height\": 64,\n      \"text\": \"지금 예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#0F172A\"\n    }\n  ]\n}",
+  "outputBytes": 1717,
+  "usage": {
+    "promptTokenCount": 1211,
+    "candidatesTokenCount": 734,
+    "totalTokenCount": 3008,
+    "thoughtsTokenCount": 1063,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:28:07.339Z"
+}

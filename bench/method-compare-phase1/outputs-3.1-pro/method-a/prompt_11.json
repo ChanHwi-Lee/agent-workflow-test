@@ -1,0 +1,21 @@
+{
+  "id": "prompt_11",
+  "domain": "automotive",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "전기차 시승 이벤트 배너 만들어줘",
+  "latencyMs": 21219,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#0F172A\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 100,\n      \"width\": 60,\n      \"height\": 8,\n      \"fill\": \"#38BDF8\",\n      \"rx\": 4,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 140,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"미래를 경험하는 가장 빠른 방법\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#94A3B8\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 200,\n      \"width\": 600,\n      \"height\": 140,\n      \"text\": \"2024 전기차\\n특별 시승 이벤트\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 64,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 370,\n      \"width\": 600,\n      \"height\": 30,\n      \"text\": \"기간: 2024.05.01 ~ 05.31   |   장소: 전국 공식 전시장\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 22,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#CBD5E1\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#0284C7\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 476,\n      \"width\": 240,\n      \"height\": 32,\n      \"text\": \"시승 신청하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 120,\n      \"width\": 500,\n      \"height\": 400,\n      \"assetId\": \"photo:1002\"\n    }\n  ]\n}",
+  "outputBytes": 1942,
+  "usage": {
+    "promptTokenCount": 1199,
+    "candidatesTokenCount": 828,
+    "totalTokenCount": 3694,
+    "thoughtsTokenCount": 1667,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:44:17.872Z"
+}

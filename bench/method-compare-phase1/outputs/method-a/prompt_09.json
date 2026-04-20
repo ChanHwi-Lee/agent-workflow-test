@@ -1,0 +1,18 @@
+{
+  "id": "prompt_09",
+  "domain": "education",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "코딩 부트캠프 수강생 모집 배너 - 얼리버드 40% 할인",
+  "latencyMs": 19559,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#0D1117\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 40,\n      \"width\": 520,\n      \"height\": 548,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 110,\n      \"width\": 600,\n      \"height\": 90,\n      \"text\": \"코딩 부트캠프\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 82,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 200,\n      \"width\": 600,\n      \"height\": 90,\n      \"text\": \"수강생 모집\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 82,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 330,\n      \"width\": 450,\n      \"height\": 80,\n      \"fill\": \"#FFC107\",\n      \"rx\": 12,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 75,\n      \"top\": 342,\n      \"width\": 420,\n      \"height\": 56,\n      \"text\": \"얼리버드 40% 특별 할인\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 42,\n      \"fontWeight\": 900,\n      \"textAlign\": \"center\",\n      \"fill\": \"#0D1117\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 460,\n      \"width\": 280,\n      \"height\": 72,\n      \"fill\": \"#3B82F6\",\n      \"rx\": 36,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 460,\n      \"width\": 280,\n      \"height\": 72,\n      \"text\": \"지금 바로 지원하기\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1874,
+  "usage": {
+    "promptTokenCount": 1211,
+    "candidatesTokenCount": 797,
+    "totalTokenCount": 3790
+  },
+  "finishedAt": "2026-04-20T05:07:31.839Z"
+}

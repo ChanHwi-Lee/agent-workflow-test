@@ -1,0 +1,21 @@
+{
+  "id": "prompt_03",
+  "domain": "fashion",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "패션 리테일 봄 세일 배너 만들어줘",
+  "latencyMs": 36178,
+  "outputText": " and `p` are allowed. I'll use them.\n\n    *   Wait, I'll use `div` for the text containers to be safer, but the prompt specifically lists `h1`, `h2`, `p`, `span` as allowed. I'll use them as they are more semantic.\n\n    *   Let's double check the `line-height`. `line-height:1.1;`. (OK).\n\n    *   Final check on the `color`. `#222222`. (OK).\n\n    *   Final check on the `background-color`. `#FFF5F7`. (OK).\n\n    *   Final check on the `border-radius`. `75px`. (OK).\n\n    *   Final check on the `opacity`. `0.6`. (OK).\n\n    *   Final check on the `text-align`. `left`. (OK).\n\n    *   Final check on the `font-weight`. `900`. (OK).\n\n    *   Final check on the `font-size`. `80px`. (OK).\n\n    *   Final check on the `width`. `1200px`. (OK).\n\n    *   Final check on the `height`. `628px`. (OK).\n\n    *   Final check on the `position`. `relative`. (OK).\n\n    *   Final check on the `overflow`. `hidden`. (OK).\n\n    *   Final check on the `left`, `top",
+  "outputBytes": 945,
+  "usage": {
+    "promptTokenCount": 1062,
+    "candidatesTokenCount": 328,
+    "totalTokenCount": 9250,
+    "thoughtsTokenCount": 7860,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "MAX_TOKENS",
+  "finishedAt": "2026-04-20T05:29:25.736Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_01",
+  "domain": "restaurant",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "식당에서 신규 봄 계절메뉴를 만들어줘",
+  "latencyMs": 47946,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FFF9F5;\"></div>\n  <div style=\"position:absolute; left:700px; top:40px; width:460px; height:460px; background-color:#FFE4E1; border-radius:230px;\"></div>\n  <img data-tooldi-role=\"logo\" data-hint=\"restaurant logo\" data-aspect=\"3:1\" src=\"placeholder://\" style=\"position:absolute; left:100px; top:60px; width:120px; height:40px;\" />\n  <img data-tooldi-role=\"decoration\" data-hint=\"spring flower illustration\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:580px; top:120px; width:100px; height:100px;\" />\n  <img data-tooldi-role=\"hero\" data-hint=\"fresh spring seasonal food plate\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:680px; top:80px; width:420px; height:420px;\" />\n  <p style=\"position:absolute; left:100px; top:160px; width:400px; height:40px; font-family:Pretendard; font-size:32px; font-weight:700; color:#FF6B6B; text-align:left; line-height:1.2;\">봄을 가득 담은 한 그릇</p>\n  <h1 style=\"position:absolute; left:100px; top:220px; width:500px; height:70px; font-family:BlackHanSans; font-size:60px; font-weight:900; color:#222222; text-align:left; line-height:1.1;\">신규 봄 계절메뉴</h1>\n  <h1 style=\"position:absolute; left:100px; top:300px; width:500px; height:70px; font-family:BlackHanSans; font-size:60px; font-weight:900; color:#222222; text-align:left; line-height:1.1;\">새롭게 출시</h1>\n  <p style=\"position:absolute; left:100px; top:400px; width:450px; height:30px; font-family:Pretendard; font-size:24px; font-weight:400; color:#555555; text-align:left; line-height:1.2;\">입안 가득 퍼지는 봄의 향기를 만나보세요.</p>\n  <p style=\"position:absolute; left:100px; top:435px; width:450px; height:30px; font-family:Pretendard; font-size:24px; font-weight:400; color:#555555; text-align:left; line-height:1.2;\">신선한 제철 식재료로 정성껏 준비했습니다.</p>\n  <div style=\"position:absolute; left:100px; top:490px; width:220px; height:64px; background-color:#FF6B6B; border-radius:32px; box-shadow:0px 4px 10px rgba(0,0,0,0.1);\"></div>\n  <span style=\"position:absolute; left:100px; top:508px; width:220px; height:30px; font-family:Pretendard; font-size:24px; font-weight:700; color:#FFFFFF; text-align:center;\">예약하기</span>\n</div>",
+  "outputBytes": 2426,
+  "usage": {
+    "promptTokenCount": 1063,
+    "candidatesTokenCount": 965,
+    "totalTokenCount": 7049,
+    "thoughtsTokenCount": 5021,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:46:55.511Z"
+}

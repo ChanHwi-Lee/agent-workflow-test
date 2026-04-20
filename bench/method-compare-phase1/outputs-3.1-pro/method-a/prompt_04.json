@@ -1,0 +1,21 @@
+{
+  "id": "prompt_04",
+  "domain": "generic_sale",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "봄 세일 배너를 만들어줘",
+  "latencyMs": 27939,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFF0F5\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 550,\n      \"top\": 80,\n      \"width\": 120,\n      \"height\": 120,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 150,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"따뜻한 봄맞이 특가\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FF6B6B\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 200,\n      \"width\": 500,\n      \"height\": 90,\n      \"text\": \"SPRING SALE\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 80,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#333333\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 300,\n      \"width\": 500,\n      \"height\": 70,\n      \"text\": \"최대 50% 할인\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 56,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FF6B6B\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 390,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"새로운 계절, 화사한 스타일을 만나보세요.\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#666666\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 470,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#FF6B6B\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 486,\n      \"width\": 240,\n      \"height\": 32,\n      \"text\": \"쇼핑하러 가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 2151,
+  "usage": {
+    "promptTokenCount": 1197,
+    "candidatesTokenCount": 917,
+    "totalTokenCount": 4643,
+    "thoughtsTokenCount": 2529,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:42:55.456Z"
+}

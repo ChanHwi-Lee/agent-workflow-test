@@ -1,0 +1,21 @@
+{
+  "id": "prompt_16",
+  "domain": "mobile_app",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "가계부 앱 신규 가입 첫달 무료 프로모션 배너",
+  "latencyMs": 6882,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#F4F7FA\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 700,\n      \"top\": 114,\n      \"width\": 400,\n      \"height\": 400,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 150,\n      \"width\": 600,\n      \"height\": 60,\n      \"text\": \"가계부 앱 신규 가입 이벤트\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 40,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#333333\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 220,\n      \"width\": 600,\n      \"height\": 100,\n      \"text\": \"첫 달 무료 체험\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 80,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#1A73E8\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 330,\n      \"width\": 600,\n      \"height\": 50,\n      \"text\": \"똑똑한 소비 습관의 시작\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#666666\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 430,\n      \"width\": 240,\n      \"height\": 70,\n      \"fill\": \"#1A73E8\",\n      \"rx\": 10,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 445,\n      \"width\": 240,\n      \"height\": 40,\n      \"text\": \"지금 시작하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1727,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 734,
+    "totalTokenCount": 2914,
+    "thoughtsTokenCount": 975,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:28:35.692Z"
+}

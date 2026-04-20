@@ -1,0 +1,21 @@
+{
+  "id": "prompt_01",
+  "domain": "restaurant",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "식당에서 신규 봄 계절메뉴를 만들어줘",
+  "latencyMs": 11740,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#F7FFF7\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 680,\n      \"top\": 64,\n      \"width\": 460,\n      \"height\": 500,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 80,\n      \"height\": 8,\n      \"fill\": \"#FF8C00\",\n      \"rx\": 4,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 150,\n      \"width\": 550,\n      \"height\": 100,\n      \"text\": \"봄의 미식 여행\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 80,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#2D5A27\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 270,\n      \"width\": 550,\n      \"height\": 60,\n      \"text\": \"제철 나물로 차려낸 건강한 한 상\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#4A7C44\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 400,\n      \"width\": 240,\n      \"height\": 70,\n      \"fill\": \"#FF8C00\",\n      \"rx\": 10,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 418,\n      \"width\": 240,\n      \"height\": 34,\n      \"text\": \"메뉴 보기\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1594,
+  "usage": {
+    "promptTokenCount": 1202,
+    "candidatesTokenCount": 688,
+    "totalTokenCount": 3955,
+    "thoughtsTokenCount": 2065,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:27:51.916Z"
+}

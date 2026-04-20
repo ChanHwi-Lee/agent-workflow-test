@@ -1,0 +1,21 @@
+{
+  "id": "prompt_06",
+  "domain": "fitness",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "헬스장 신규 회원 3개월 30% 할인 프로모션 배너",
+  "latencyMs": 8524,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#121212\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 528,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 550,\n      \"height\": 80,\n      \"text\": \"신규 회원 한정\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 42,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFD700\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 200,\n      \"width\": 550,\n      \"height\": 110,\n      \"text\": \"3개월 등록 시\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 82,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 310,\n      \"width\": 550,\n      \"height\": 110,\n      \"text\": \"30% 파격 할인\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 82,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 430,\n      \"width\": 550,\n      \"height\": 40,\n      \"text\": \"선착순 50명 마감 임박!\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#AAAAAA\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 500,\n      \"width\": 300,\n      \"height\": 70,\n      \"fill\": \"#FFD700\",\n      \"rx\": 10,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 500,\n      \"width\": 300,\n      \"height\": 70,\n      \"text\": \"지금 상담하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#000000\"\n    }\n  ]\n}",
+  "outputBytes": 1977,
+  "usage": {
+    "promptTokenCount": 1208,
+    "candidatesTokenCount": 833,
+    "totalTokenCount": 3132,
+    "thoughtsTokenCount": 1091,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:28:00.446Z"
+}

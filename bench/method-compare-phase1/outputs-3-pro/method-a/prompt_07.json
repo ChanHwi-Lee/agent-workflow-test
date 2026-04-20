@@ -1,0 +1,21 @@
+{
+  "id": "prompt_07",
+  "domain": "event_sale",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "블랙프라이데이 최대 70% 할인 이벤트 배너 만들어줘",
+  "latencyMs": 18974,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#111111\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 80,\n      \"width\": 120,\n      \"height\": 10,\n      \"fill\": \"#E50914\",\n      \"rx\": 5,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 600,\n      \"height\": 100,\n      \"text\": \"BLACK FRIDAY\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 80,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 240,\n      \"width\": 600,\n      \"height\": 80,\n      \"text\": \"최대 70% 할인\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 64,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFD700\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 350,\n      \"width\": 500,\n      \"height\": 60,\n      \"text\": \"일년에 단 한 번뿐인 역대급 세일!\\n지금 바로 확인하세요.\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#AAAAAA\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#E50914\",\n      \"rx\": 8,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 476,\n      \"width\": 240,\n      \"height\": 32,\n      \"text\": \"쇼핑하러 가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 700,\n      \"top\": 114,\n      \"width\": 400,\n      \"height\": 400,\n      \"assetId\": \"photo:1002\"\n    }\n  ]\n}",
+  "outputBytes": 1904,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 808,
+    "totalTokenCount": 3542,
+    "thoughtsTokenCount": 1529,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:33:21.081Z"
+}

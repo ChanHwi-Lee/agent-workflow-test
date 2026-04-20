@@ -1,0 +1,21 @@
+{
+  "id": "prompt_19",
+  "domain": "kids",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "어린이날 완구 특별 할인 이벤트 배너",
+  "latencyMs": 2869,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFF9C4\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 600,\n      \"height\": 100,\n      \"text\": \"어린이날 선물 대축제\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FF5722\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 240,\n      \"width\": 500,\n      \"height\": 80,\n      \"text\": \"인기 완구 최대 50% 할인!\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 40,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#333333\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 380,\n      \"width\": 300,\n      \"height\": 80,\n      \"fill\": \"#4CAF50\",\n      \"rx\": 40,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 400,\n      \"width\": 300,\n      \"height\": 80,\n      \"text\": \"할인 쿠폰 받기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1432,
+  "usage": {
+    "promptTokenCount": 1200,
+    "candidatesTokenCount": 613,
+    "totalTokenCount": 1813,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:34.614Z"
+}

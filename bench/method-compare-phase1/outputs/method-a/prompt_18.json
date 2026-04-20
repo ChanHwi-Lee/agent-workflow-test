@@ -1,0 +1,18 @@
+{
+  "id": "prompt_18",
+  "domain": "bakery",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "베이커리 신제품 크루아상 소개 배너",
+  "latencyMs": 26729,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FDF6E3\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 620,\n      \"top\": 40,\n      \"width\": 540,\n      \"height\": 548,\n      \"fill\": \"#EFEBE9\",\n      \"rx\": 20,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 64,\n      \"width\": 480,\n      \"height\": 500,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 140,\n      \"width\": 500,\n      \"height\": 60,\n      \"text\": \"매일 아침, 따끈하게\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 42,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#A1887F\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 200,\n      \"width\": 500,\n      \"height\": 160,\n      \"text\": \"골든\\n크루아상 출시\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 90,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#6D4C41\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 380,\n      \"width\": 500,\n      \"height\": 80,\n      \"text\": \"프랑스 AOP 인증 버터의 깊은 풍미를\\n가득 담아 만들었습니다.\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#5D4037\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 500,\n      \"width\": 280,\n      \"height\": 64,\n      \"fill\": \"#6D4C41\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 500,\n      \"width\": 280,\n      \"height\": 64,\n      \"text\": \"지금 바로 맛보기\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1939,
+  "usage": {
+    "promptTokenCount": 1202,
+    "candidatesTokenCount": 826,
+    "totalTokenCount": 4970
+  },
+  "finishedAt": "2026-04-20T05:08:16.950Z"
+}

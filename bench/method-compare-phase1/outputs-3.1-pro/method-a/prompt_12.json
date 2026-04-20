@@ -1,0 +1,21 @@
+{
+  "id": "prompt_12",
+  "domain": "hotel",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "제주도 럭셔리 호텔 여름 성수기 특가 배너",
+  "latencyMs": 18384,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#0A192F\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 600,\n      \"top\": 0,\n      \"width\": 600,\n      \"height\": 628,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 160,\n      \"width\": 480,\n      \"height\": 40,\n      \"text\": \"제주에서 만나는 완벽한 휴식\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#D4AF37\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 220,\n      \"width\": 480,\n      \"height\": 100,\n      \"text\": \"여름 성수기 특가\",\n      \"fontFamily\": \"NanumSquare\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 340,\n      \"width\": 480,\n      \"height\": 40,\n      \"text\": \"럭셔리 오션뷰 객실 최대 40% 할인\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E0E0E0\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 440,\n      \"width\": 200,\n      \"height\": 60,\n      \"fill\": \"#D4AF37\",\n      \"rx\": 8,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 455,\n      \"width\": 200,\n      \"height\": 30,\n      \"text\": \"지금 예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 20,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#0A192F\"\n    }\n  ]\n}",
+  "outputBytes": 1731,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 734,
+    "totalTokenCount": 3333,
+    "thoughtsTokenCount": 1394,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:44:27.148Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_17",
+  "domain": "delivery",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "배달앱 첫 주문 5천원 할인 쿠폰 배너",
+  "latencyMs": 35040,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FF5A00\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 680,\n      \"top\": 89,\n      \"width\": 450,\n      \"height\": 450,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 110,\n      \"width\": 140,\n      \"height\": 46,\n      \"fill\": \"#FFFFFF\",\n      \"rx\": 23,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 110,\n      \"width\": 140,\n      \"height\": 46,\n      \"text\": \"웰컴 혜택\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 22,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FF5A00\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 180,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"배달앱 첫 주문 고객이라면 누구나\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 30,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 95,\n      \"top\": 240,\n      \"width\": 500,\n      \"height\": 90,\n      \"text\": \"5,000원\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 86,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFE600\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 95,\n      \"top\": 340,\n      \"width\": 500,\n      \"height\": 90,\n      \"text\": \"할인 쿠폰 증정\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 80,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 470,\n      \"width\": 260,\n      \"height\": 68,\n      \"fill\": \"#222222\",\n      \"rx\": 34,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 470,\n      \"width\": 260,\n      \"height\": 68,\n      \"text\": \"쿠폰 다운받기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 2155,
+  "usage": {
+    "promptTokenCount": 1203,
+    "candidatesTokenCount": 911,
+    "totalTokenCount": 5567,
+    "thoughtsTokenCount": 3453,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:35:24.274Z"
+}

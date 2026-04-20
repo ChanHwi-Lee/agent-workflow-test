@@ -1,0 +1,21 @@
+{
+  "id": "prompt_15",
+  "domain": "healthcare",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "건강검진센터 봄맞이 종합검진 할인 배너",
+  "latencyMs": 21224,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#F0FDF4\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 500,\n      \"fill\": \"#DCFCE7\",\n      \"rx\": 250,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 700,\n      \"top\": 80,\n      \"width\": 400,\n      \"height\": 468,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 130,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"우리 가족 건강 지킴이\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#16A34A\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 180,\n      \"width\": 600,\n      \"height\": 100,\n      \"text\": \"봄맞이 종합건강검진\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 64,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#111827\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 290,\n      \"width\": 600,\n      \"height\": 60,\n      \"text\": \"최대 40% 특별 할인\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 48,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#EA580C\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 380,\n      \"width\": 550,\n      \"height\": 40,\n      \"text\": \"기간: 2024.03.01 ~ 05.31 | 대상: 20세 이상 성인\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#4B5563\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 460,\n      \"width\": 280,\n      \"height\": 70,\n      \"fill\": \"#16A34A\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 475,\n      \"width\": 280,\n      \"height\": 40,\n      \"text\": \"예약 상담하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 2205,
+  "usage": {
+    "promptTokenCount": 1203,
+    "candidatesTokenCount": 955,
+    "totalTokenCount": 3830,
+    "thoughtsTokenCount": 1672,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:34:49.209Z"
+}

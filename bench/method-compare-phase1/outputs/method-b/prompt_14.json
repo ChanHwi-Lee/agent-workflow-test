@@ -1,0 +1,18 @@
+{
+  "id": "prompt_14",
+  "domain": "pet",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "반려동물 프리미엄 사료 신상품 런칭 배너",
+  "latencyMs": 25382,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n<div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FBF9F6;\"></div>\n<div style=\"position:absolute; left:620px; top:54px; width:520px; height:520px; background-color:#EFEBE9; border-radius:260px;\"></div>\n<img data-tooldi-role=\"hero\" data-hint=\"A happy and healthy dog or cat next to a bowl of premium pet food\" data-aspect=\"4:5\" src=\"placeholder://\" style=\"position:absolute; left:680px; top:64px; width:440px; height:550px;\"/>\n<img data-tooldi-role=\"logo\" data-hint=\"Brand logo for the premium pet food\" data-aspect=\"3:1\" src=\"placeholder://\" style=\"position:absolute; left:80px; top:80px; width:150px; height:50px;\"/>\n<h1 style=\"position:absolute; left:80px; top:180px; width:500px; height:150px; font-family:GmarketSans; font-size:56px; font-weight:700; color:#3E2723; text-align:left; line-height:1.3;\">우리아이를 위한 첫 프리미엄 사료</h1>\n<p style=\"position:absolute; left:80px; top:340px; width:500px; height:70px; font-family:Pretendard; font-size:24px; font-weight:400; color:#6D4C41; text-align:left; line-height:1.5;\">수의사가 직접 설계한<br/>100% 휴먼그레이드 레시피</p>\n<div style=\"position:absolute; left:80px; top:450px; width:280px; height:64px; background-color:#795548; border-radius:32px;\"></div>\n<span style=\"position:absolute; left:80px; top:468px; width:280px; height:30px; font-family:Pretendard; font-size:22px; font-weight:700; color:#FFFFFF; text-align:center;\">신제품 런칭 혜택 보기</span>\n</div>",
+  "outputBytes": 1585,
+  "usage": {
+    "promptTokenCount": 1066,
+    "candidatesTokenCount": 609,
+    "totalTokenCount": 4396
+  },
+  "finishedAt": "2026-04-20T05:09:47.906Z"
+}

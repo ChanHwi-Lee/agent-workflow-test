@@ -1,0 +1,21 @@
+{
+  "id": "prompt_09",
+  "domain": "education",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "코딩 부트캠프 수강생 모집 배너 - 얼리버드 40% 할인",
+  "latencyMs": 13896,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#0F172A\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 680,\n      \"top\": 114,\n      \"width\": 400,\n      \"height\": 400,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 140,\n      \"width\": 550,\n      \"height\": 180,\n      \"text\": \"코딩 부트캠프\\n수강생 모집\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 330,\n      \"width\": 80,\n      \"height\": 8,\n      \"fill\": \"#38BDF8\",\n      \"rx\": 4,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 360,\n      \"width\": 550,\n      \"height\": 50,\n      \"text\": \"얼리버드 40% 할인 혜택\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 36,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#38BDF8\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 450,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#38BDF8\",\n      \"rx\": 8,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 450,\n      \"width\": 240,\n      \"height\": 64,\n      \"text\": \"지금 신청하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#0F172A\"\n    }\n  ]\n}",
+  "outputBytes": 1608,
+  "usage": {
+    "promptTokenCount": 1211,
+    "candidatesTokenCount": 698,
+    "totalTokenCount": 4261,
+    "thoughtsTokenCount": 2352,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:28:14.355Z"
+}

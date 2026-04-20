@@ -1,0 +1,21 @@
+{
+  "id": "prompt_13",
+  "domain": "travel",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "동남아 패키지 여행 얼리버드 예약 배너",
+  "latencyMs": 31691,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#F0F8FF\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 640,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 110,\n      \"width\": 110,\n      \"height\": 40,\n      \"fill\": \"#00838F\",\n      \"rx\": 20,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 118,\n      \"width\": 110,\n      \"height\": 40,\n      \"text\": \"여름휴가\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 20,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 205,\n      \"top\": 116,\n      \"width\": 300,\n      \"height\": 40,\n      \"text\": \"미리 준비하는 완벽한 휴식\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#00838F\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 180,\n      \"width\": 550,\n      \"height\": 160,\n      \"text\": \"동남아 패키지\\n얼리버드 특가\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#112233\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 360,\n      \"width\": 550,\n      \"height\": 50,\n      \"text\": \"최대 30% 할인 + 룸 업그레이드 혜택\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 30,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#556677\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 240,\n      \"height\": 70,\n      \"fill\": \"#FF6B6B\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 477,\n      \"width\": 240,\n      \"height\": 70,\n      \"text\": \"지금 예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 2196,
+  "usage": {
+    "promptTokenCount": 1203,
+    "candidatesTokenCount": 936,
+    "totalTokenCount": 5141,
+    "thoughtsTokenCount": 3002,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:44:49.580Z"
+}

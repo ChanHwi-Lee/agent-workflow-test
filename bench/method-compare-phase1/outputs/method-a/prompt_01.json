@@ -1,0 +1,18 @@
+{
+  "id": "prompt_01",
+  "domain": "restaurant",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "식당에서 신규 봄 계절메뉴를 만들어줘",
+  "latencyMs": 16929,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#F1F8E9\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 620,\n      \"top\": 64,\n      \"width\": 520,\n      \"height\": 500,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 130,\n      \"width\": 500,\n      \"height\": 180,\n      \"text\": \"봄의 맛,\\n식탁 위에 오르다\",\n      \"fontFamily\": \"Cafe24Ssurround\",\n      \"fontSize\": 78,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#2E7D32\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 85,\n      \"top\": 330,\n      \"width\": 480,\n      \"height\": 80,\n      \"text\": \"향긋한 봄나물과 제철 재료로 만든\\n2024년 봄 한정 신메뉴 출시!\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 26,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#333333\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 260,\n      \"height\": 68,\n      \"fill\": \"#FF7043\",\n      \"rx\": 34,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 260,\n      \"height\": 68,\n      \"text\": \"자세히 보기\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1487,
+  "usage": {
+    "promptTokenCount": 1202,
+    "candidatesTokenCount": 638,
+    "totalTokenCount": 3395
+  },
+  "finishedAt": "2026-04-20T05:06:57.348Z"
+}

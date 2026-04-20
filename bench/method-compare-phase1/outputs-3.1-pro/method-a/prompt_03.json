@@ -1,0 +1,21 @@
+{
+  "id": "prompt_03",
+  "domain": "fashion",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "패션 리테일 봄 세일 배너 만들어줘",
+  "latencyMs": 21658,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFF2F4\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 40,\n      \"width\": 500,\n      \"height\": 548,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 160,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"2024 SPRING COLLECTION\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FF6B81\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 210,\n      \"width\": 550,\n      \"height\": 100,\n      \"text\": \"봄맞이 패션 세일\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#2D3436\"\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 560,\n      \"top\": 190,\n      \"width\": 60,\n      \"height\": 60,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 330,\n      \"width\": 380,\n      \"height\": 70,\n      \"fill\": \"#FF4757\",\n      \"rx\": 8,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 348,\n      \"width\": 380,\n      \"height\": 34,\n      \"text\": \"최대 50% 할인 + 무료배송\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 220,\n      \"height\": 60,\n      \"fill\": \"#2D3436\",\n      \"rx\": 30,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 468,\n      \"width\": 220,\n      \"height\": 24,\n      \"text\": \"기획전 보러가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 20,\n      \"fontWeight\": 500,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 2023,
+  "usage": {
+    "promptTokenCount": 1201,
+    "candidatesTokenCount": 872,
+    "totalTokenCount": 3861,
+    "thoughtsTokenCount": 1788,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:42:46.890Z"
+}

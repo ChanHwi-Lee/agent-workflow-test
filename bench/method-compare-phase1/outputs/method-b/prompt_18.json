@@ -1,0 +1,18 @@
+{
+  "id": "prompt_18",
+  "domain": "bakery",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "베이커리 신제품 크루아상 소개 배너",
+  "latencyMs": 30059,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FBF8F1;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"a close-up shot of a golden, flaky croissant against a clean background\" data-aspect=\"310:314\" src=\"placeholder://\" style=\"position:absolute; left:580px; top:0px; width:620px; height:628px;\" />\n  <img data-tooldi-role=\"logo\" data-hint=\"bakery brand logo with a simple design\" data-aspect=\"3:1\" src=\"placeholder://\" style=\"position:absolute; left:60px; top:60px; width:180px; height:60px;\" />\n  <h1 style=\"position:absolute; left:60px; top:190px; width:480px; height:180px; font-family:GmarketSans; font-size:72px; font-weight:700; color:#6D4C41; text-align:left; line-height:1.3;\">매일 아침,<br>첫 번째 크루아상</h1>\n  <p style=\"position:absolute; left:60px; top:380px; width:450px; height:80px; font-family:Pretendard; font-size:22px; font-weight:400; color:#8D6E63; text-align:left; line-height:1.5;\">프랑스산 최고급 버터로 매장에서 직접 구워 첫 입부터 마지막까지 바삭함과 풍미가 가득합니다.</p>\n  <div style=\"position:absolute; left:60px; top:500px; width:240px; height:64px; background-color:#6D4C41; border-radius:8px;\"></div>\n  <span style=\"position:absolute; left:60px; top:518px; width:240px; height:28px; font-family:Pretendard; font-size:24px; font-weight:700; color:#FFFFFF; text-align:center;\">자세히 보기</span>\n</div>",
+  "outputBytes": 1520,
+  "usage": {
+    "promptTokenCount": 1063,
+    "candidatesTokenCount": 571,
+    "totalTokenCount": 4988
+  },
+  "finishedAt": "2026-04-20T05:10:17.965Z"
+}

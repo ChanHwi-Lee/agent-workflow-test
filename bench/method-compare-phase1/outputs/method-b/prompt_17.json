@@ -1,0 +1,18 @@
+{
+  "id": "prompt_17",
+  "domain": "delivery",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "배달앱 첫 주문 5천원 할인 쿠폰 배너",
+  "latencyMs": 28444,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FFF7E6;\"></div>\n  <div style=\"position:absolute; left:650px; top:64px; width:500px; height:500px; background-color:#FFCC80; border-radius:250px;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"A variety of delicious delivery foods like pizza, chicken, and burgers\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:680px; top:94px; width:440px; height:440px; border-radius:220px;\"/>\n  <h1 style=\"position:absolute; left:80px; top:140px; width:560px; height:70px; font-family:GmarketSans; font-size:58px; font-weight:700; color:#333333; text-align:left; line-height:1.2;\">배달앱 첫 주문이라면?</h1>\n  <h2 style=\"position:absolute; left:80px; top:220px; width:560px; height:120px; font-family:GmarketSans; font-size:96px; font-weight:900; color:#FF5722; text-align:left; line-height:1.1;\">5,000원 할인</h2>\n  <p style=\"position:absolute; left:85px; top:350px; width:560px; height:40px; font-family:Pretendard; font-size:28px; font-weight:500; color:#555555; text-align:left;\">지금 바로 쿠폰 받고 주문하세요!</p>\n  <div style=\"position:absolute; left:80px; top:450px; width:320px; height:80px; background-color:#FF5722; border-radius:40px; box-shadow:0px 5px 15px rgba(0,0,0,0.15);\"></div>\n  <span style=\"position:absolute; left:80px; top:472px; width:320px; height:36px; font-family:Pretendard; font-size:32px; font-weight:700; color:#FFFFFF; text-align:center;\">쿠폰 받기</span>\n</div>",
+  "outputBytes": 1611,
+  "usage": {
+    "promptTokenCount": 1064,
+    "candidatesTokenCount": 641,
+    "totalTokenCount": 5103
+  },
+  "finishedAt": "2026-04-20T05:10:06.066Z"
+}

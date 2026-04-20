@@ -1,0 +1,18 @@
+{
+  "id": "prompt_04",
+  "domain": "generic_sale",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "봄 세일 배너를 만들어줘",
+  "latencyMs": 16743,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFF0F5\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 620,\n      \"top\": 50,\n      \"width\": 530,\n      \"height\": 528,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 140,\n      \"width\": 500,\n      \"height\": 180,\n      \"text\": \"설레는 봄,\\n설레는 세일!\",\n      \"fontFamily\": \"Cafe24Ssurround\",\n      \"fontSize\": 80,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E91E63\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 85,\n      \"top\": 340,\n      \"width\": 450,\n      \"height\": 50,\n      \"text\": \"UP TO 40% OFF\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 42,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#333333\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 280,\n      \"height\": 70,\n      \"fill\": \"#FF4081\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 280,\n      \"height\": 70,\n      \"text\": \"쇼핑하러 가기\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1416,
+  "usage": {
+    "promptTokenCount": 1197,
+    "candidatesTokenCount": 618,
+    "totalTokenCount": 3282
+  },
+  "finishedAt": "2026-04-20T05:06:57.184Z"
+}

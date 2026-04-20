@@ -1,0 +1,21 @@
+{
+  "id": "prompt_07",
+  "domain": "event_sale",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "블랙프라이데이 최대 70% 할인 이벤트 배너 만들어줘",
+  "latencyMs": 34514,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#0A0A0A;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"black friday shopping bags and boxes\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:650px; top:64px; width:500px; height:500px;\" />\n  <div style=\"position:absolute; left:550px; top:80px; width:140px; height:140px; background-color:#E60012; border-radius:70px;\"></div>\n  <span style=\"position:absolute; left:550px; top:130px; width:140px; height:40px; font-family:BlackHanSans; font-size:32px; font-weight:900; color:#FFFFFF; text-align:center; line-height:1.2;\">SALE</span>\n  <h1 style=\"position:absolute; left:80px; top:120px; width:500px; height:90px; font-family:BlackHanSans; font-size:80px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.1;\">BLACK</h1>\n  <h1 style=\"position:absolute; left:80px; top:210px; width:500px; height:90px; font-family:BlackHanSans; font-size:80px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.1;\">FRIDAY</h1>\n  <h2 style=\"position:absolute; left:80px; top:320px; width:450px; height:60px; font-family:Pretendard; font-size:50px; font-weight:800; color:#FFD700; text-align:left; line-height:1.2;\">최대 70% 할인</h2>\n  <p style=\"position:absolute; left:80px; top:400px; width:500px; height:40px; font-family:Pretendard; font-size:24px; font-weight:500; color:#CCCCCC; text-align:left; line-height:1.5;\">단 7일간 진행되는 역대급 쇼핑 찬스!</p>\n  <div style=\"position:absolute; left:80px; top:480px; width:240px; height:64px; background-color:#E60012; border-radius:8px;\"></div>\n  <span style=\"position:absolute; left:80px; top:496px; width:240px; height:32px; font-family:Pretendard; font-size:24px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1.2;\">쇼핑하러 가기</span>\n</div>",
+  "outputBytes": 1941,
+  "usage": {
+    "promptTokenCount": 1066,
+    "candidatesTokenCount": 773,
+    "totalTokenCount": 5350,
+    "thoughtsTokenCount": 3511,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:48:43.590Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_11",
+  "domain": "automotive",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "전기차 시승 이벤트 배너 만들어줘",
+  "latencyMs": 14104,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#0F172A\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 620,\n      \"top\": 80,\n      \"width\": 500,\n      \"height\": 468,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 80,\n      \"height\": 8,\n      \"fill\": \"#38BDF8\",\n      \"rx\": 4,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 160,\n      \"width\": 500,\n      \"height\": 90,\n      \"text\": \"전기차\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 80,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 250,\n      \"width\": 500,\n      \"height\": 90,\n      \"text\": \"시승 이벤트\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 80,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 370,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"미래의 드라이빙을 직접 경험하세요\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#94A3B8\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 260,\n      \"height\": 70,\n      \"fill\": \"#38BDF8\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 260,\n      \"height\": 70,\n      \"text\": \"시승 신청하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#0F172A\"\n    }\n  ]\n}",
+  "outputBytes": 1868,
+  "usage": {
+    "promptTokenCount": 1199,
+    "candidatesTokenCount": 792,
+    "totalTokenCount": 4317,
+    "thoughtsTokenCount": 2326,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:28:21.456Z"
+}

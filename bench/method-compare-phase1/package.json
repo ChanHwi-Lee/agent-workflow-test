@@ -1,0 +1,21 @@
+{
+  "name": "method-compare-phase1",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Phase-1 bench: Method A (native JSON) vs Method B (constrained HTML) for 1200x628 Korean banner prompts (Gemini 2.5 Pro).",
+  "scripts": {
+    "run": "node run.mjs",
+    "grade": "node grade.mjs",
+    "report": "node report.mjs",
+    "multi-report": "node multi-report.mjs",
+    "viewer": "node build-viewer.mjs",
+    "viewer-multi": "node build-viewer-multi.mjs",
+    "all": "node run.mjs && node grade.mjs && node report.mjs"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^16.4.5",
+    "parse5": "^7.2.1"
+  }
+}

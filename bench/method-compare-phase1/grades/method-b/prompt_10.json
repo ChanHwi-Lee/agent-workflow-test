@@ -1,0 +1,33 @@
+{
+  "id": "prompt_10",
+  "domain": "real_estate",
+  "method": "method-b",
+  "callOk": true,
+  "latencyMs": 18748,
+  "outputBytes": 2016,
+  "promptTokenCount": 1062,
+  "candidatesTokenCount": 776,
+  "totalTokenCount": 3517,
+  "thoughtsTokenCount": 1679,
+  "model": "gemini-2.5-pro",
+  "elementCount": 10,
+  "checks": {
+    "html_parse_ok": true,
+    "dom_grammar_ok": false,
+    "css_whitelist_ok": true,
+    "root_structure_ok": true,
+    "positioning_ok": true,
+    "no_forbidden": true,
+    "placeholder_annotated_ok": true,
+    "bounds_ok": true,
+    "element_count_ok": true
+  },
+  "scorecard": {
+    "passed": 8,
+    "total": 9,
+    "ratio": 0.8888888888888888
+  },
+  "failureReasons": [
+    "bad_tags:br"
+  ]
+}

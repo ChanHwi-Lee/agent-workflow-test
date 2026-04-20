@@ -1,0 +1,21 @@
+{
+  "id": "prompt_05",
+  "domain": "beauty",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "여름 신상 립스틱 출시 배너 - 20% 할인 쿠폰",
+  "latencyMs": 16560,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #FFF0F5, #FFE4E1);\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"summer lipstick product\" data-aspect=\"9:10\" src=\"placeholder://\" style=\"position:absolute; left:680px; top:64px; width:450px; height:500px;\" />\n  <h1 style=\"position:absolute; left:80px; top:140px; width:600px; height:90px; font-family:Pretendard; font-size:72px; font-weight:900; color:#C2185B; text-align:left; line-height:1.2;\">여름 신상 립스틱</h1>\n  <p style=\"position:absolute; left:80px; top:240px; width:600px; height:40px; font-family:Pretendard; font-size:32px; font-weight:500; color:#444444; text-align:left; line-height:1.2;\">눈부신 여름을 위한 완벽한 컬러</p>\n  <div style=\"position:absolute; left:80px; top:320px; width:340px; height:80px; background-color:#C2185B; border-radius:8px;\"></div>\n  <span style=\"position:absolute; left:80px; top:342px; width:340px; height:36px; font-family:Pretendard; font-size:32px; font-weight:800; color:#FFFFFF; text-align:center;\">20% 할인 쿠폰 증정</span>\n  <div style=\"position:absolute; left:80px; top:440px; width:240px; height:64px; background-color:#333333; border-radius:32px;\"></div>\n  <span style=\"position:absolute; left:80px; top:458px; width:240px; height:28px; font-family:Pretendard; font-size:24px; font-weight:700; color:#FFFFFF; text-align:center;\">지금 확인하기</span>\n  <div style=\"position:absolute; left:1020px; top:40px; width:120px; height:120px; background-color:#FFD54F; border-radius:60px; opacity:0.4;\"></div>\n</div>",
+  "outputBytes": 1694,
+  "usage": {
+    "promptTokenCount": 1069,
+    "candidatesTokenCount": 674,
+    "totalTokenCount": 5196,
+    "thoughtsTokenCount": 3453,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:29:13.803Z"
+}

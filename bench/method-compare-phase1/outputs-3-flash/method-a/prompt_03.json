@@ -1,0 +1,21 @@
+{
+  "id": "prompt_03",
+  "domain": "fashion",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "패션 리테일 봄 세일 배너 만들어줘",
+  "latencyMs": 10940,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FDF2F8\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 528,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 140,\n      \"width\": 520,\n      \"height\": 120,\n      \"text\": \"SPRING SALE\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 96,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#DB2777\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 270,\n      \"width\": 520,\n      \"height\": 60,\n      \"text\": \"봄 신상 컬렉션 최대 50% 할인\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 36,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#4B5563\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 400,\n      \"width\": 260,\n      \"height\": 70,\n      \"fill\": \"#DB2777\",\n      \"rx\": 10,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 418,\n      \"width\": 260,\n      \"height\": 34,\n      \"text\": \"지금 쇼핑하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 110,\n      \"width\": 100,\n      \"height\": 8,\n      \"fill\": \"#DB2777\",\n      \"rx\": 4,\n      \"opacity\": 1\n    }\n  ]\n}",
+  "outputBytes": 1585,
+  "usage": {
+    "promptTokenCount": 1201,
+    "candidatesTokenCount": 687,
+    "totalTokenCount": 3408,
+    "thoughtsTokenCount": 1520,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:27:51.134Z"
+}

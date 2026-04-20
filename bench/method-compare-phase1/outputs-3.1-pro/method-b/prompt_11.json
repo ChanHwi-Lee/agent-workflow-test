@@ -1,0 +1,21 @@
+{
+  "id": "prompt_11",
+  "domain": "automotive",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "전기차 시승 이벤트 배너 만들어줘",
+  "latencyMs": 33803,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#0F172A;\"></div>\n  <div style=\"position:absolute; left:700px; top:50px; width:450px; height:450px; background-image:linear-gradient(135deg, #38BDF8, #3B82F6); border-radius:225px; opacity:0.2;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"sleek modern electric car\" data-aspect=\"12:7\" src=\"placeholder://\" style=\"position:absolute; left:550px; top:150px; width:600px; height:350px;\" />\n  <h2 style=\"position:absolute; left:80px; top:150px; width:500px; height:40px; font-family:Pretendard; font-size:32px; font-weight:700; color:#38BDF8; text-align:left; line-height:1.2;\">미래를 경험하다</h2>\n  <h1 style=\"position:absolute; left:80px; top:200px; width:500px; height:70px; font-family:Pretendard; font-size:64px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.1;\">전기차 시승 이벤트</h1>\n  <p style=\"position:absolute; left:80px; top:300px; width:500px; height:40px; font-family:Pretendard; font-size:24px; font-weight:400; color:#94A3B8; text-align:left; line-height:1.5;\">지금 예약하고 특별한 사은품을 받으세요.</p>\n  <div style=\"position:absolute; left:80px; top:360px; width:320px; height:50px; background-color:#1E293B; border-radius:8px;\"></div>\n  <p style=\"position:absolute; left:100px; top:372px; width:280px; height:30px; font-family:Pretendard; font-size:20px; font-weight:500; color:#E2E8F0; text-align:left; line-height:1.2;\">기간: 2023.11.01 - 11.30</p>\n  <div style=\"position:absolute; left:80px; top:460px; width:240px; height:64px; background-color:#3B82F6; border-radius:32px; box-shadow:0px 8px 16px rgba(59,130,246,0.4);\"></div>\n  <span style=\"position:absolute; left:80px; top:478px; width:240px; height:30px; font-family:Pretendard; font-size:24px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1.2;\">시승 예약하기</span>\n</div>",
+  "outputBytes": 2003,
+  "usage": {
+    "promptTokenCount": 1060,
+    "candidatesTokenCount": 829,
+    "totalTokenCount": 5357,
+    "thoughtsTokenCount": 3468,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:50:00.381Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_15",
+  "domain": "healthcare",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "건강검진센터 봄맞이 종합검진 할인 배너",
+  "latencyMs": 27590,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#F0FDF4\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 680,\n      \"top\": 64,\n      \"width\": 450,\n      \"height\": 500,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"🌸 2024 봄맞이 특별 이벤트\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#16A34A\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 180,\n      \"width\": 550,\n      \"height\": 70,\n      \"text\": \"봄맞이 종합 건강검진\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 56,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#111827\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 260,\n      \"width\": 550,\n      \"height\": 70,\n      \"text\": \"최대 40% 특별 할인\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 56,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#16A34A\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 360,\n      \"width\": 550,\n      \"height\": 60,\n      \"text\": \"미루지 마세요! 따뜻한 봄날, 가족의 건강을 챙기세요.\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 22,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#4B5563\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#16A34A\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 476,\n      \"width\": 240,\n      \"height\": 32,\n      \"text\": \"검진 예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 22,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 2049,
+  "usage": {
+    "promptTokenCount": 1203,
+    "candidatesTokenCount": 862,
+    "totalTokenCount": 4587,
+    "thoughtsTokenCount": 2522,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:45:17.189Z"
+}

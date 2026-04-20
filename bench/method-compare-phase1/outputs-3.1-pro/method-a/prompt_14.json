@@ -1,0 +1,21 @@
+{
+  "id": "prompt_14",
+  "domain": "pet",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "반려동물 프리미엄 사료 신상품 런칭 배너",
+  "latencyMs": 26029,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#1A2B4C\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 120,\n      \"width\": 160,\n      \"height\": 40,\n      \"fill\": \"#D4AF37\",\n      \"rx\": 20,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 128,\n      \"width\": 160,\n      \"height\": 32,\n      \"text\": \"NEW LAUNCH\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 18,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#1A2B4C\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 190,\n      \"width\": 550,\n      \"height\": 140,\n      \"text\": \"우리 아이를 위한\\n프리미엄 자연식\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 56,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 350,\n      \"width\": 550,\n      \"height\": 40,\n      \"text\": \"100% 휴먼그레이드 원료, 합성 첨가물 ZERO\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E0E0E0\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 450,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#D4AF37\",\n      \"rx\": 8,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 468,\n      \"width\": 240,\n      \"height\": 46,\n      \"text\": \"사전예약 혜택받기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 22,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#1A2B4C\"\n    }\n  ]\n}",
+  "outputBytes": 1920,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 829,
+    "totalTokenCount": 4318,
+    "thoughtsTokenCount": 2284,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:44:53.195Z"
+}

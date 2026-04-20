@@ -1,0 +1,21 @@
+{
+  "id": "prompt_09",
+  "domain": "education",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "코딩 부트캠프 수강생 모집 배너 - 얼리버드 40% 할인",
+  "latencyMs": 2886,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#1A1A2E\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 700,\n      \"top\": 50,\n      \"width\": 450,\n      \"height\": 528,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 600,\n      \"height\": 100,\n      \"text\": \"개발자로 성장하는 가장 빠른 길\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E94560\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 180,\n      \"width\": 600,\n      \"height\": 150,\n      \"text\": \"코딩 부트캠프\\n수강생 모집\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 380,\n      \"width\": 320,\n      \"height\": 80,\n      \"fill\": \"#E94560\",\n      \"rx\": 40,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 400,\n      \"width\": 320,\n      \"height\": 60,\n      \"text\": \"얼리버드 40% 할인\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 900,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 480,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"선착순 20명 한정, 지금 바로 신청하세요!\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 20,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#AAAAAA\"\n    }\n  ]\n}",
+  "outputBytes": 1768,
+  "usage": {
+    "promptTokenCount": 1211,
+    "candidatesTokenCount": 738,
+    "totalTokenCount": 1949,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:22.856Z"
+}

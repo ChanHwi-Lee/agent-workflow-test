@@ -1,0 +1,21 @@
+{
+  "id": "prompt_08",
+  "domain": "product_launch",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "신제품 무선 이어폰 런칭 프로모션 배너 - 사전 예약 10% 할인",
+  "latencyMs": 29840,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #0F172A, #1E293B);\"></div>\n  <div style=\"position:absolute; left:100px; top:100px; width:80px; height:4px; background-color:#38BDF8;\"></div>\n  <h1 style=\"position:absolute; left:100px; top:130px; width:600px; height:180px; font-family:Pretendard; font-size:72px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.2;\">SOUND PRO MAX<br/>런칭 프로모션</h1>\n  <p style=\"position:absolute; left:100px; top:330px; width:500px; height:40px; font-family:Pretendard; font-size:32px; font-weight:400; color:#94A3B8; text-align:left;\">차원이 다른 몰입감의 시작</p>\n  <div style=\"position:absolute;",
+  "outputBytes": 815,
+  "usage": {
+    "promptTokenCount": 1072,
+    "candidatesTokenCount": 327,
+    "totalTokenCount": 9260,
+    "thoughtsTokenCount": 7861,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "MAX_TOKENS",
+  "finishedAt": "2026-04-20T05:29:58.132Z"
+}

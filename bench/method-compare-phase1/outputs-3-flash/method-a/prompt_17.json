@@ -1,0 +1,21 @@
+{
+  "id": "prompt_17",
+  "domain": "delivery",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "배달앱 첫 주문 5천원 할인 쿠폰 배너",
+  "latencyMs": 7169,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFD100\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 680,\n      \"top\": 80,\n      \"width\": 460,\n      \"height\": 460,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 140,\n      \"width\": 600,\n      \"height\": 100,\n      \"text\": \"첫 주문 한정\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 48,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#222222\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 220,\n      \"width\": 600,\n      \"height\": 120,\n      \"text\": \"5,000원 할인\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 96,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E53935\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 350,\n      \"width\": 600,\n      \"height\": 60,\n      \"text\": \"지금 바로 배달 주문하고 혜택 받으세요!\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#444444\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 280,\n      \"height\": 80,\n      \"fill\": \"#222222\",\n      \"rx\": 12,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 280,\n      \"height\": 80,\n      \"text\": \"쿠폰 받기\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 32,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1712,
+  "usage": {
+    "promptTokenCount": 1203,
+    "candidatesTokenCount": 731,
+    "totalTokenCount": 2825,
+    "thoughtsTokenCount": 891,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:28:36.650Z"
+}

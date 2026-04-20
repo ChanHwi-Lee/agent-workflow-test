@@ -1,0 +1,21 @@
+{
+  "id": "prompt_10",
+  "domain": "real_estate",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "신규 아파트 분양 오픈하우스 초대 배너",
+  "latencyMs": 3117,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#1A237E;\"></div>\n  <img data-tooldi-role=\"background\" data-hint=\"modern apartment exterior\" data-aspect=\"16:9\" src=\"placeholder://\" style=\"position:absolute; left:600px; top:0px; width:600px; height:628px; opacity:0.4;\" />\n  <h1 style=\"position:absolute; left:80px; top:120px; width:500px; height:120px; font-family:sans-serif; font-size:64px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.2;\">프리미엄 주거<br>오픈하우스 초대</h1>\n  <p style=\"position:absolute; left:80px; top:280px; width:500px; height:100px; font-family:sans-serif; font-size:28px; font-weight:400; color:#E0E0E0; text-align:left; line-height:1.5;\">당신이 꿈꾸던 완벽한 공간을<br>직접 확인하실 수 있는 특별한 기회</p>\n  <div style=\"position:absolute; left:80px; top:420px; width:300px; height:80px; background-color:#FFC107; border-radius:40px;\"></div>\n  <span style=\"position:absolute; left:80px; top:442px; width:300px; height:40px; font-family:sans-serif; font-size:24px; font-weight:700; color:#000000; text-align:center;\">사전 방문 예약하기</span>\n  <div style=\"position:absolute; left:80px; top:540px; width:400px; height:40px; font-family:sans-serif; font-size:20px; font-weight:400; color:#BDBDBD; text-align:left;\">일시: 2024. 11. 15 (금) ~ 17 (일)</div>\n  <img data-tooldi-role=\"logo\" data-hint=\"construction company logo\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:1050px; top:40px; width:100px; height:100px;\" />\n</div>",
+  "outputBytes": 1671,
+  "usage": {
+    "promptTokenCount": 1062,
+    "candidatesTokenCount": 658,
+    "totalTokenCount": 1720,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:44.682Z"
+}

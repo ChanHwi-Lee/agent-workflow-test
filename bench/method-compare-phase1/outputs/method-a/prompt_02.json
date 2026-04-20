@@ -1,0 +1,18 @@
+{
+  "id": "prompt_02",
+  "domain": "cafe",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘",
+  "latencyMs": 20098,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFF0F5\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 620,\n      \"top\": 50,\n      \"width\": 530,\n      \"height\": 528,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 120,\n      \"width\": 550,\n      \"height\": 60,\n      \"text\": \"상큼달콤 딸기 시즌 OPEN\",\n      \"fontFamily\": \"Cafe24Ssurround\",\n      \"fontSize\": 48,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E91E63\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 200,\n      \"width\": 500,\n      \"height\": 160,\n      \"text\": \"봄을 닮은\\n딸기 신메뉴 출시!\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#333333\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 420,\n      \"width\": 12,\n      \"height\": 80,\n      \"fill\": \"#F06292\",\n      \"rx\": 6,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 90,\n      \"top\": 425,\n      \"width\": 450,\n      \"height\": 70,\n      \"text\": \"리얼 생딸기 라떼\\n요거트 딸기 스무디\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#555555\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 520,\n      \"width\": 280,\n      \"height\": 64,\n      \"fill\": \"#D81B60\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 520,\n      \"width\": 280,\n      \"height\": 64,\n      \"text\": \"자세히 보기\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1920,
+  "usage": {
+    "promptTokenCount": 1206,
+    "candidatesTokenCount": 825,
+    "totalTokenCount": 3873
+  },
+  "finishedAt": "2026-04-20T05:07:00.539Z"
+}

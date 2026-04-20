@@ -1,0 +1,21 @@
+{
+  "id": "prompt_12",
+  "domain": "hotel",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "제주도 럭셔리 호텔 여름 성수기 특가 배너",
+  "latencyMs": 20752,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#0B3B60\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 640,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"올 여름, 가장 완벽한 휴식\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFD700\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 180,\n      \"width\": 520,\n      \"height\": 70,\n      \"text\": \"제주 럭셔리 호텔\",\n      \"fontFamily\": \"NanumSquare\",\n      \"fontSize\": 64,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 260,\n      \"width\": 520,\n      \"height\": 70,\n      \"text\": \"여름 성수기 특가\",\n      \"fontFamily\": \"NanumSquare\",\n      \"fontSize\": 64,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 360,\n      \"width\": 520,\n      \"height\": 60,\n      \"text\": \"오션뷰 객실 업그레이드 & 조식 2인 무료 제공\\n단 7일간의 특별한 혜택을 놓치지 마세요.\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 22,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E0E0E0\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 220,\n      \"height\": 64,\n      \"fill\": \"#FFD700\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 476,\n      \"width\": 220,\n      \"height\": 32,\n      \"text\": \"지금 예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#0B3B60\"\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 520,\n      \"top\": 100,\n      \"width\": 80,\n      \"height\": 80,\n      \"assetId\": \"graphic:2001\"\n    }\n  ]\n}",
+  "outputBytes": 2230,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 934,
+    "totalTokenCount": 3873,
+    "thoughtsTokenCount": 1734,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:34:13.188Z"
+}

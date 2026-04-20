@@ -1,0 +1,21 @@
+{
+  "id": "prompt_05",
+  "domain": "beauty",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "여름 신상 립스틱 출시 배너 - 20% 할인 쿠폰",
+  "latencyMs": 20582,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FF6F61\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 150,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"2023 SUMMER COLLECTION\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFE5E5\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 210,\n      \"width\": 550,\n      \"height\": 80,\n      \"text\": \"여름 신상 립스틱\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 64,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 290,\n      \"width\": 550,\n      \"height\": 80,\n      \"text\": \"단독 선공개 출시\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 64,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 400,\n      \"width\": 320,\n      \"height\": 60,\n      \"fill\": \"#FFFFFF\",\n      \"rx\": 30,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 412,\n      \"width\": 320,\n      \"height\": 36,\n      \"text\": \"전 고객 20% 할인 쿠폰\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FF6F61\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 490,\n      \"width\": 200,\n      \"height\": 60,\n      \"fill\": \"#222222\",\n      \"rx\": 8,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 505,\n      \"width\": 200,\n      \"height\": 30,\n      \"text\": \"쿠폰 다운받기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 20,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 2163,
+  "usage": {
+    "promptTokenCount": 1208,
+    "candidatesTokenCount": 915,
+    "totalTokenCount": 3733,
+    "thoughtsTokenCount": 1610,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:43:07.483Z"
+}

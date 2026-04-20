@@ -1,0 +1,21 @@
+{
+  "id": "prompt_12",
+  "domain": "hotel",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "제주도 럭셔리 호텔 여름 성수기 특가 배너",
+  "latencyMs": 3205,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#1A2B3C;\"></div>\n  <img data-tooldi-role=\"background\" data-hint=\"luxury jeju hotel pool view\" data-aspect=\"16:9\" src=\"placeholder://\" style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; opacity:0.4;\" />\n  <div style=\"position:absolute; left:60px; top:150px; width:600px; height:100px; font-family:sans-serif; font-size:72px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.2;\">JEJU LUXURY</div>\n  <h1 style=\"position:absolute; left:60px; top:240px; width:600px; height:80px; font-family:sans-serif; font-size:60px; font-weight:300; color:#FFD700; text-align:left; line-height:1.2;\">SUMMER SPECIAL</h1>\n  <p style=\"position:absolute; left:60px; top:350px; width:500px; height:100px; font-family:sans-serif; font-size:28px; font-weight:400; color:#E0E0E0; text-align:left; line-height:1.5;\">올여름, 제주에서 경험하는 완벽한 휴식. 성수기 한정 특별 패키지를 만나보세요.</p>\n  <div style=\"position:absolute; left:60px; top:480px; width:280px; height:70px; background-color:#FFD700; border-radius:35px;\"></div>\n  <span style=\"position:absolute; left:60px; top:500px; width:280px; height:40px; font-family:sans-serif; font-size:24px; font-weight:700; color:#1A2B3C; text-align:center;\">예약하기</span>\n  <img data-tooldi-role=\"logo\" data-hint=\"hotel logo\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:1050px; top:50px; width:100px; height:100px;\" />\n  <div style=\"position:absolute; left:800px; top:200px; width:300px; height:300px; background-image:linear-gradient(45deg, #FFD700, #FFA500); border-radius:150px; opacity:0.2;\"></div>\n</div>",
+  "outputBytes": 1805,
+  "usage": {
+    "promptTokenCount": 1066,
+    "candidatesTokenCount": 715,
+    "totalTokenCount": 1781,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:47.199Z"
+}

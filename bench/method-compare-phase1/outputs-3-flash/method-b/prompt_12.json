@@ -1,0 +1,21 @@
+{
+  "id": "prompt_12",
+  "domain": "hotel",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "제주도 럭셔리 호텔 여름 성수기 특가 배너",
+  "latencyMs": 21328,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#F0F9FF;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"luxury hotel infinity pool with ocean view\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:600px; top:0px; width:600px; height:628px;\" />\n  <img data-tooldi-role=\"logo\" data-hint=\"hotel brand logo\" data-aspect=\"3:1\" src=\"placeholder://\" style=\"position:absolute; left:80px; top:60px; width:180px; height:60px;\" />\n  <h1 style=\"position:absolute; left:80px; top:180px; width:500px; height:90px; font-family:Pretendard; font-size:72px; font-weight:900; color:#003366; text-align:left; line-height:1.2;\">제주 럭셔리 호텔</h1>\n  <h2 style=\"position:absolute; left:80px; top:270px; width:500px; height:80px; font-family:Pretendard; font-size:54px; font-weight:700; color:#0056b3; text-align:left; line-height:1.2;\">성수기 특별 할인</h2>\n  <p style=\"position:absolute; left:80px; top:370px; width:500px; height:40px; font-family:Pretendard; font-size:28px; font-weight:400; color:#555555; text-align:left;\">에메랄드빛 바다와 함께하는 완벽한 휴식</p>\n  <div style=\"position:absolute; left:80px; top:460px; width:260px; height:72px; background-color:#007BFF; border-radius:12px; box-shadow:0px 4px 10px rgba(0,0,0,0.1);\"></div>\n  <span style=\"position:absolute; left:80px; top:480px; width:260px; height:32px; font-family:Pretendard; font-size:28px; font-weight:700; color:#FFFFFF; text-align:center;\">지금 예약하기</span>\n  <div style=\"position:absolute; left:520px; top:60px; width:160px; height:160px; background-color:#FFD700; border-radius:80px; z-index:10;\"></div>\n  <span style=\"position:absolute; left:520px; top:110px; width:160px; height:60px; font-family:Pretendard; font-size:24px; font-weight:800; color:#333333; text-align:center; line-height:1.2;\">최대 40%<br>OFF</span>\n</div>",
+  "outputBytes": 1980,
+  "usage": {
+    "promptTokenCount": 1066,
+    "candidatesTokenCount": 797,
+    "totalTokenCount": 6253,
+    "thoughtsTokenCount": 4390,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:30:22.373Z"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "prompt_15",
+  "domain": "healthcare",
+  "method": "method-a",
+  "callOk": true,
+  "latencyMs": 9685,
+  "outputBytes": 1744,
+  "promptTokenCount": 1203,
+  "candidatesTokenCount": 737,
+  "totalTokenCount": 3605,
+  "thoughtsTokenCount": 1665,
+  "model": "gemini-3-flash-preview",
+  "elementCount": 7,
+  "checks": {
+    "json_parse_ok": true,
+    "schema_valid": true,
+    "bounds_ok": true,
+    "no_overlap_critical": true,
+    "font_enum_ok": true,
+    "asset_id_ok": true,
+    "element_count_ok": true
+  },
+  "scorecard": {
+    "passed": 7,
+    "total": 7,
+    "ratio": 1
+  },
+  "failureReasons": []
+}

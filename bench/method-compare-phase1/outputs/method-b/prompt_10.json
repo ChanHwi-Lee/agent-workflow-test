@@ -1,0 +1,18 @@
+{
+  "id": "prompt_10",
+  "domain": "real_estate",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "신규 아파트 분양 오픈하우스 초대 배너",
+  "latencyMs": 18748,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(to right, #1F2937, #111827);\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"a modern, luxurious apartment building exterior at twilight\" data-aspect=\"65:62\" src=\"placeholder://\" style=\"position:absolute; left:550px; top:0px; width:650px; height:628px; opacity:0.8;\">\n  <div style=\"position:absolute; left:550px; top:0px; width:650px; height:628px; background-image:linear-gradient(to right, #1F2937, transparent);\"></div>\n  <img data-tooldi-role=\"logo\" data-hint=\"construction company or apartment brand logo in white\" data-aspect=\"5:2\" src=\"placeholder://\" style=\"position:absolute; left:80px; top:60px; width:150px; height:60px;\">\n  <h1 style=\"position:absolute; left:80px; top:160px; width:500px; height:160px; font-family:GmarketSans; font-size:64px; font-weight:700; color:#FFFFFF; text-align:left; line-height:1.2;\">프리미엄 아파트<br>오픈하우스</h1>\n  <p style=\"position:absolute; left:80px; top:330px; width:450px; height:70px; font-family:Pretendard; font-size:24px; font-weight:400; color:#D1D5DB; text-align:left; line-height:1.5;\">새로운 주거의 기준, 당신의 품격을 높일 공간으로 초대합니다.</p>\n  <div style=\"position:absolute; left:80px; top:450px; width:200px; height:4px; background-color:#FBBF24;\"></div>\n  <h2 style=\"position:absolute; left:80px; top:470px; width:400px; height:40px; font-family:Pretendard; font-size:28px; font-weight:500; color:#FBBF24; text-align:left;\">2023. 10. 28 (SAT) GRAND OPEN</h2>\n  <div style=\"position:absolute; left:80px; top:540px; width:260px; height:60px; background-color:#FBBF24; border-radius:30px;\"></div>\n  <span style=\"position:absolute; left:80px; top:555px; width:260px; height:30px; font-family:Pretendard; font-size:22px; font-weight:700; color:#111827; text-align:center; line-height:1.2;\">방문 예약하기</span>\n</div>",
+  "outputBytes": 2016,
+  "usage": {
+    "promptTokenCount": 1062,
+    "candidatesTokenCount": 776,
+    "totalTokenCount": 3517
+  },
+  "finishedAt": "2026-04-20T05:09:22.524Z"
+}

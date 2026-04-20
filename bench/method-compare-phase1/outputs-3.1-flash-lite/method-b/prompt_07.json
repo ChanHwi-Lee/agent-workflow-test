@@ -1,0 +1,21 @@
+{
+  "id": "prompt_07",
+  "domain": "event_sale",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "블랙프라이데이 최대 70% 할인 이벤트 배너 만들어줘",
+  "latencyMs": 3253,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#000000;\"></div>\n  <div style=\"position:absolute; left:600px; top:0px; width:600px; height:628px; background-image:linear-gradient(45deg, #333333, #000000);\"></div>\n  <h1 style=\"position:absolute; left:80px; top:120px; width:1040px; height:120px; font-family:sans-serif; font-size:96px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.2;\">BLACK FRIDAY</h1>\n  <p style=\"position:absolute; left:80px; top:260px; width:600px; height:80px; font-family:sans-serif; font-size:48px; font-weight:700; color:#FFD700; text-align:left; line-height:1.2;\">전 품목 최대 70% 할인</p>\n  <div style=\"position:absolute; left:80px; top:400px; width:320px; height:80px; background-color:#FFD700; border-radius:40px;\"></div>\n  <span style=\"position:absolute; left:80px; top:420px; width:320px; height:40px; font-family:sans-serif; font-size:32px; font-weight:800; color:#000000; text-align:center;\">지금 바로 쇼핑하기</span>\n  <img data-tooldi-role=\"hero\" data-hint=\"shopping bag icon\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:750px; top:150px; width:350px; height:350px;\" />\n  <div style=\"position:absolute; left:0px; top:580px; width:1200px; height:48px; background-color:#333333;\"></div>\n  <span style=\"position:absolute; left:0px; top:590px; width:1200px; height:30px; font-family:sans-serif; font-size:20px; font-weight:400; color:#AAAAAA; text-align:center;\">본 이벤트는 재고 소진 시 조기 종료될 수 있습니다.</span>\n</div>",
+  "outputBytes": 1661,
+  "usage": {
+    "promptTokenCount": 1066,
+    "candidatesTokenCount": 659,
+    "totalTokenCount": 1725,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:41.563Z"
+}

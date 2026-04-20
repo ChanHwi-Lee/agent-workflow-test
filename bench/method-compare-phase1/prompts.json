@@ -1,0 +1,22 @@
+[
+  { "id": "prompt_01", "domain": "restaurant", "prompt": "식당에서 신규 봄 계절메뉴를 만들어줘" },
+  { "id": "prompt_02", "domain": "cafe", "prompt": "카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘" },
+  { "id": "prompt_03", "domain": "fashion", "prompt": "패션 리테일 봄 세일 배너 만들어줘" },
+  { "id": "prompt_04", "domain": "generic_sale", "prompt": "봄 세일 배너를 만들어줘" },
+  { "id": "prompt_05", "domain": "beauty", "prompt": "여름 신상 립스틱 출시 배너 - 20% 할인 쿠폰" },
+  { "id": "prompt_06", "domain": "fitness", "prompt": "헬스장 신규 회원 3개월 30% 할인 프로모션 배너" },
+  { "id": "prompt_07", "domain": "event_sale", "prompt": "블랙프라이데이 최대 70% 할인 이벤트 배너 만들어줘" },
+  { "id": "prompt_08", "domain": "product_launch", "prompt": "신제품 무선 이어폰 런칭 프로모션 배너 - 사전 예약 10% 할인" },
+  { "id": "prompt_09", "domain": "education", "prompt": "코딩 부트캠프 수강생 모집 배너 - 얼리버드 40% 할인" },
+  { "id": "prompt_10", "domain": "real_estate", "prompt": "신규 아파트 분양 오픈하우스 초대 배너" },
+  { "id": "prompt_11", "domain": "automotive", "prompt": "전기차 시승 이벤트 배너 만들어줘" },
+  { "id": "prompt_12", "domain": "hotel", "prompt": "제주도 럭셔리 호텔 여름 성수기 특가 배너" },
+  { "id": "prompt_13", "domain": "travel", "prompt": "동남아 패키지 여행 얼리버드 예약 배너" },
+  { "id": "prompt_14", "domain": "pet", "prompt": "반려동물 프리미엄 사료 신상품 런칭 배너" },
+  { "id": "prompt_15", "domain": "healthcare", "prompt": "건강검진센터 봄맞이 종합검진 할인 배너" },
+  { "id": "prompt_16", "domain": "mobile_app", "prompt": "가계부 앱 신규 가입 첫달 무료 프로모션 배너" },
+  { "id": "prompt_17", "domain": "delivery", "prompt": "배달앱 첫 주문 5천원 할인 쿠폰 배너" },
+  { "id": "prompt_18", "domain": "bakery", "prompt": "베이커리 신제품 크루아상 소개 배너" },
+  { "id": "prompt_19", "domain": "kids", "prompt": "어린이날 완구 특별 할인 이벤트 배너" },
+  { "id": "prompt_20", "domain": "generic_event", "prompt": "여름 휴가 시즌 프로모션 배너 만들어줘" }
+]

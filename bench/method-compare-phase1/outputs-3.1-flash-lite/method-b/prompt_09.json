@@ -1,0 +1,21 @@
+{
+  "id": "prompt_09",
+  "domain": "education",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "코딩 부트캠프 수강생 모집 배너 - 얼리버드 40% 할인",
+  "latencyMs": 2900,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#0F172A;\"></div>\n  <div style=\"position:absolute; left:600px; top:0px; width:600px; height:628px; background-image:linear-gradient(135deg, #3B82F6, #8B5CF6); opacity:0.2;\"></div>\n  <h1 style=\"position:absolute; left:80px; top:120px; width:700px; height:160px; font-family:sans-serif; font-size:72px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.2;\">개발자로 성장할<br>마지막 기회</h1>\n  <p style=\"position:absolute; left:80px; top:320px; width:600px; height:60px; font-family:sans-serif; font-size:32px; font-weight:400; color:#94A3B8; text-align:left;\">실무 중심 코딩 부트캠프 12기 모집</p>\n  <div style=\"position:absolute; left:80px; top:420px; width:320px; height:80px; background-color:#3B82F6; border-radius:12px;\"></div>\n  <span style=\"position:absolute; left:80px; top:440px; width:320px; height:40px; font-family:sans-serif; font-size:32px; font-weight:700; color:#FFFFFF; text-align:center;\">얼리버드 40% 할인</span>\n  <img data-tooldi-role=\"decoration\" data-hint=\"code icon\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:850px; top:150px; width:250px; height:250px;\" />\n  <div style=\"position:absolute; left:420px; top:420px; width:280px; height:80px; background-color:#1E293B; border-radius:12px;\"></div>\n  <span style=\"position:absolute; left:420px; top:440px; width:280px; height:40px; font-family:sans-serif; font-size:28px; font-weight:500; color:#E2E8F0; text-align:center;\">선착순 20명 한정</span>\n</div>",
+  "outputBytes": 1675,
+  "usage": {
+    "promptTokenCount": 1072,
+    "candidatesTokenCount": 677,
+    "totalTokenCount": 1749,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:43.991Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_19",
+  "domain": "kids",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "어린이날 완구 특별 할인 이벤트 배너",
+  "latencyMs": 25550,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(180deg, #FFF9C4, #FFECB3);\"></div>\n  <div style=\"position:absolute; left:850px; top:50px; width:300px; height:300px; background-color:#FFEB3B; border-radius:150px; opacity:0.6;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"어린이날 장난감 선물 세트\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:620px; top:64px; width:500px; height:500px;\" />\n  <h1 style=\"position:absolute; left:80px; top:100px; width:600px; height:200px; font-family:Pretendard; font-size:80px; font-weight:900; color:#E91E63; text-align:left; line-height:1.2;\">어린이날 완구<br>특별 할인전</h1>\n  <p style=\"position:absolute; left:80px; top:310px; width:600px; height:50px; font-family:Pretendard; font-size:32px; font-weight:600; color:#424242; text-align:left; line-height:1;\">우리 아이가 꿈꾸던 선물을 만나보세요</p>\n  <div style=\"position:absolute; left:80px; top:390px; width:240px; height:80px; background-color:#2196F3; border-radius:10px;\"></div>\n  <span style=\"position:absolute; left:80px; top:412px; width:240px; height:36px; font-family:Pretendard; font-size:36px; font-weight:800; color:#FFFFFF; text-align:center; line-height:1;\">최대 50% OFF</span>\n  <div style=\"position:absolute; left:80px; top:500px; width:300px; height:70px; background-color:#4CAF50; border-radius:35px; box-shadow:0px 4px 10px rgba(0,0,0,0.1);\"></div>\n  <span style=\"position:absolute; left:80px; top:521px; width:300px; height:28px; font-family:Pretendard; font-size:28px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1;\">선물 고르러 가기</span>\n  <img data-tooldi-role=\"decoration\" data-hint=\"알록달록한 풍선\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:1050px; top:40px; width:100px; height:100px;\" />\n  <img data-tooldi-role=\"icon\" data-hint=\"반짝이는 별 아이콘\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:550px; top:450px; width:60px; height:60px; transform:rotate(15deg);\" />\n</div>",
+  "outputBytes": 2199,
+  "usage": {
+    "promptTokenCount": 1061,
+    "candidatesTokenCount": 871,
+    "totalTokenCount": 6839,
+    "thoughtsTokenCount": 4907,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:10.447Z"
+}

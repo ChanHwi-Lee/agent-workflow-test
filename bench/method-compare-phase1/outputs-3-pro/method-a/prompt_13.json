@@ -1,0 +1,21 @@
+{
+  "id": "prompt_13",
+  "domain": "travel",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "동남아 패키지 여행 얼리버드 예약 배너",
+  "latencyMs": 23124,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#E0F7FA\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"미리 준비하는 완벽한 휴가\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#0077B6\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 180,\n      \"width\": 550,\n      \"height\": 80,\n      \"text\": \"동남아 패키지\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#023E8A\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 270,\n      \"width\": 550,\n      \"height\": 80,\n      \"text\": \"얼리버드 특가\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#023E8A\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 380,\n      \"width\": 550,\n      \"height\": 40,\n      \"text\": \"지금 예약하고 최대 30% 추가 할인 받으세요!\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#0096C7\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#FF7F50\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 476,\n      \"width\": 240,\n      \"height\": 32,\n      \"text\": \"특가 확인하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 520,\n      \"top\": 100,\n      \"width\": 80,\n      \"height\": 80,\n      \"assetId\": \"graphic:2001\"\n    }\n  ]\n}",
+  "outputBytes": 2164,
+  "usage": {
+    "promptTokenCount": 1203,
+    "candidatesTokenCount": 915,
+    "totalTokenCount": 3980,
+    "thoughtsTokenCount": 1862,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:34:27.970Z"
+}

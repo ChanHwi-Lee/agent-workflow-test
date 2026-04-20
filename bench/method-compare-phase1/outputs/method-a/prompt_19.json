@@ -1,0 +1,18 @@
+{
+  "id": "prompt_19",
+  "domain": "kids",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "어린이날 완구 특별 할인 이벤트 배너",
+  "latencyMs": 24435,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#E3F2FD\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": -50,\n      \"top\": 450,\n      \"width\": 250,\n      \"height\": 250,\n      \"fill\": \"#FFD54F\",\n      \"rx\": 125,\n      \"opacity\": 0.8\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 980,\n      \"top\": -40,\n      \"width\": 260,\n      \"height\": 260,\n      \"fill\": \"#81C784\",\n      \"rx\": 50,\n      \"opacity\": 0.7\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 80,\n      \"width\": 1080,\n      \"height\": 120,\n      \"text\": \"어린이날 특별 세일!\",\n      \"fontFamily\": \"Cafe24Ssurround\",\n      \"fontSize\": 96,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#1976D2\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 200,\n      \"width\": 1080,\n      \"height\": 60,\n      \"text\": \"우리 아이를 위한 최고의 선물, 최대 50% 할인\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 36,\n      \"fontWeight\": 500,\n      \"textAlign\": \"center\",\n      \"fill\": \"#424242\"\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 280,\n      \"width\": 490,\n      \"height\": 310,\n      \"assetId\": \"graphic:2002\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 150,\n      \"top\": 380,\n      \"width\": 360,\n      \"height\": 90,\n      \"fill\": \"#F44336\",\n      \"rx\": 45,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 150,\n      \"top\": 380,\n      \"width\": 360,\n      \"height\": 90,\n      \"text\": \"장난감 보러가기\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 38,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1821,
+  "usage": {
+    "promptTokenCount": 1200,
+    "candidatesTokenCount": 795,
+    "totalTokenCount": 4514
+  },
+  "finishedAt": "2026-04-20T05:08:20.216Z"
+}

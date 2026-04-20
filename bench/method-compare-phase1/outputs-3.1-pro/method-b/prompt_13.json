@@ -1,0 +1,21 @@
+{
+  "id": "prompt_13",
+  "domain": "travel",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "동남아 패키지 여행 얼리버드 예약 배너",
+  "latencyMs": 33635,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#E0F7FA;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"beautiful southeast asia beach resort\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:650px; top:64px; width:500px; height:500px; border-radius:250px;\" />\n  <div style=\"position:absolute; left:80px; top:120px; width:200px; height:50px; background-color:#FF7043; border-radius:25px;\"></div>\n  <span style=\"position:absolute; left:80px; top:130px; width:200px; height:30px; font-family:Pretendard; font-size:24px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1.2;\">얼리버드 특가</span>\n  <h1 style=\"position:absolute; left:80px; top:200px; width:550px; height:70px; font-family:BlackHanSans; font-size:60px; font-weight:900; color:#004D40; text-align:left; line-height:1.1;\">완벽한 휴양지,</h1>\n  <h1 style=\"position:absolute; left:80px; top:280px; width:550px; height:70px; font-family:BlackHanSans; font-size:60px; font-weight:900; color:#004D40; text-align:left; line-height:1.1;\">동남아 패키지</h1>\n  <p style=\"position:absolute; left:80px; top:380px; width:500px; height:40px; font-family:Pretendard; font-size:30px; font-weight:500; color:#00695C; text-align:left; line-height:1.2;\">미리 예약하고 최대 30% 할인!</p>\n  <div style=\"position:absolute; left:80px; top:470px; width:240px; height:64px; background-color:#00897B; border-radius:32px;\"></div>\n  <span style=\"position:absolute; left:80px; top:486px; width:240px; height:32px; font-family:Pretendard; font-size:26px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1.2;\">지금 예약하기</span>\n  <img data-tooldi-role=\"decoration\" data-hint=\"tropical palm leaf\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:950px; top:0px; width:250px; height:250px; opacity:0.8;\" />\n</div>",
+  "outputBytes": 1980,
+  "usage": {
+    "promptTokenCount": 1064,
+    "candidatesTokenCount": 782,
+    "totalTokenCount": 5053,
+    "thoughtsTokenCount": 3207,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:50:34.040Z"
+}

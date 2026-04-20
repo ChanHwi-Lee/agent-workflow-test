@@ -1,0 +1,34 @@
+{
+  "id": "prompt_01",
+  "domain": "restaurant",
+  "method": "method-b",
+  "callOk": true,
+  "latencyMs": 13496,
+  "outputBytes": 1569,
+  "promptTokenCount": 1063,
+  "candidatesTokenCount": 613,
+  "totalTokenCount": 4154,
+  "thoughtsTokenCount": 2478,
+  "model": "gemini-3-flash-preview",
+  "elementCount": 8,
+  "checks": {
+    "html_parse_ok": true,
+    "dom_grammar_ok": false,
+    "css_whitelist_ok": true,
+    "root_structure_ok": true,
+    "positioning_ok": true,
+    "no_forbidden": true,
+    "placeholder_annotated_ok": true,
+    "bounds_ok": false,
+    "element_count_ok": true
+  },
+  "scorecard": {
+    "passed": 7,
+    "total": 9,
+    "ratio": 0.7777777777777778
+  },
+  "failureReasons": [
+    "bad_tags:br",
+    "bounds_oob:div(1000,-50,300,300)"
+  ]
+}

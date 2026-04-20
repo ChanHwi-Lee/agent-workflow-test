@@ -1,0 +1,21 @@
+{
+  "id": "prompt_19",
+  "domain": "kids",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "어린이날 완구 특별 할인 이벤트 배너",
+  "latencyMs": 29112,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFF176\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 90,\n      \"width\": 450,\n      \"height\": 450,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 120,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"우리아이 취향저격\",\n      \"fontFamily\": \"Cafe24Ssurround\",\n      \"fontSize\": 32,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FF4081\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 180,\n      \"width\": 500,\n      \"height\": 80,\n      \"text\": \"어린이날 완구\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#1E88E5\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 270,\n      \"width\": 500,\n      \"height\": 80,\n      \"text\": \"특별 할인전\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#1E88E5\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 380,\n      \"width\": 280,\n      \"height\": 60,\n      \"fill\": \"#FF4081\",\n      \"rx\": 30,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 380,\n      \"width\": 280,\n      \"height\": 60,\n      \"text\": \"최대 50% 할인\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 480,\n      \"width\": 240,\n      \"height\": 70,\n      \"fill\": \"#1E88E5\",\n      \"rx\": 10,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 480,\n      \"width\": 240,\n      \"height\": 70,\n      \"text\": \"상품 보러가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 2154,
+  "usage": {
+    "promptTokenCount": 1200,
+    "candidatesTokenCount": 923,
+    "totalTokenCount": 5047,
+    "thoughtsTokenCount": 2924,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:35:53.297Z"
+}

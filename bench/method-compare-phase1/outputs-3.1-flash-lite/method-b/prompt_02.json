@@ -1,0 +1,21 @@
+{
+  "id": "prompt_02",
+  "domain": "cafe",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘",
+  "latencyMs": 3223,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FFF0F5;\"></div>\n  <div style=\"position:absolute; left:600px; top:0px; width:600px; height:628px; background-image:linear-gradient(135deg, #FFC0CB, #FF69B4);\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"strawberry drink\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:650px; top:64px; width:500px; height:500px;\" />\n  <h1 style=\"position:absolute; left:80px; top:150px; width:500px; height:120px; font-family:sans-serif; font-size:72px; font-weight:900; color:#D81B60; text-align:left; line-height:1.2;\">딸기 가득<br>봄 신메뉴</h1>\n  <p style=\"position:absolute; left:80px; top:320px; width:450px; height:100px; font-family:sans-serif; font-size:32px; font-weight:400; color:#4A148C; text-align:left; line-height:1.4;\">상큼한 딸기의 계절이 왔어요.<br>지금 바로 매장에서 만나보세요!</p>\n  <div style=\"position:absolute; left:80px; top:450px; width:280px; height:80px; background-color:#D81B60; border-radius:40px;\"></div>\n  <span style=\"position:absolute; left:80px; top:472px; width:280px; height:40px; font-family:sans-serif; font-size:28px; font-weight:700; color:#FFFFFF; text-align:center;\">메뉴 보러가기</span>\n  <div style=\"position:absolute; left:1000px; top:50px; width:100px; height:100px; background-color:#FF8A80; border-radius:50px; opacity:0.5;\"></div>\n  <div style=\"position:absolute; left:550px; top:400px; width:60px; height:60px; background-color:#FF8A80; border-radius:30px; opacity:0.3;\"></div>\n</div>",
+  "outputBytes": 1662,
+  "usage": {
+    "promptTokenCount": 1067,
+    "candidatesTokenCount": 664,
+    "totalTokenCount": 1731,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:37.839Z"
+}

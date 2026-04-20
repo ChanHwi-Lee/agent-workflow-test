@@ -1,0 +1,21 @@
+{
+  "id": "prompt_14",
+  "domain": "pet",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "반려동물 프리미엄 사료 신상품 런칭 배너",
+  "latencyMs": 23201,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#F9F6F0\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 480,\n      \"top\": 130,\n      \"width\": 80,\n      \"height\": 80,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 150,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"우리 아이를 위한 완벽한 한 끼\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#8B5A2B\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 210,\n      \"width\": 500,\n      \"height\": 80,\n      \"text\": \"프리미엄 펫푸드\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#2C1E16\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 300,\n      \"width\": 500,\n      \"height\": 80,\n      \"text\": \"신상품 런칭\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#2C1E16\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 410,\n      \"width\": 500,\n      \"height\": 35,\n      \"text\": \"100% 휴먼그레이드 원료로 만든 건강한 사료\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#5A4A42\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 480,\n      \"width\": 280,\n      \"height\": 60,\n      \"fill\": \"#D4A373\",\n      \"rx\": 30,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 495,\n      \"width\": 280,\n      \"height\": 30,\n      \"text\": \"런칭 특가 확인하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 2181,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 930,
+    "totalTokenCount": 4009,
+    "thoughtsTokenCount": 1874,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:34:36.401Z"
+}

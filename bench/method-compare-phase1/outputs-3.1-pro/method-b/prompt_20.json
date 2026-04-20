@@ -1,0 +1,21 @@
+{
+  "id": "prompt_20",
+  "domain": "generic_event",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "여름 휴가 시즌 프로모션 배너 만들어줘",
+  "latencyMs": 43146,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#E1F5FE;\"></div>\n  <div style=\"position:absolute; left:750px; top:20px; width:400px; height:400px; background-color:#FFF59D; border-radius:200px;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"summer vacation beach items\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:700px; top:114px; width:400px; height:400px;\" />\n  <div style=\"position:absolute; left:100px; top:80px; width:60px; height:8px; background-color:#FF8F00; border-radius:4px;\"></div>\n  <div style=\"position:absolute; left:100px; top:120px; width:160px; height:48px; background-color:#0288D1; border-radius:24px;\"></div>\n  <span style=\"position:absolute; left:100px; top:130px; width:160px; height:28px; font-family:Pretendard; font-size:22px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1.2;\">SUMMER</span>\n  <h1 style=\"position:absolute; left:100px; top:200px; width:550px; height:80px; font-family:BlackHanSans; font-size:76px; font-weight:900; color:#01579B; text-align:left; line-height:1.0;\">여름 휴가 준비</h1>\n  <h2 style=\"position:absolute; left:100px; top:290px; width:550px; height:80px; font-family:BlackHanSans; font-size:76px; font-weight:900; color:#01579B; text-align:left; line-height:1.0;\">빅세일 프로모션</h2>\n  <p style=\"position:absolute; left:100px; top:400px; width:550px; height:40px; font-family:Pretendard; font-size:32px; font-weight:500; color:#0277BD; text-align:left; line-height:1.2;\">바캉스 인기 상품 최대 50% 할인</p>\n  <div style=\"position:absolute; left:100px; top:480px; width:240px; height:64px; background-color:#FF8F00; border-radius:32px; box-shadow:4px 4px 10px rgba(0,0,0,0.1);\"></div>\n  <span style=\"position:absolute; left:100px; top:496px; width:240px; height:32px; font-family:Pretendard; font-size:26px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1.2;\">기획전 보러가기</span>\n</div>",
+  "outputBytes": 2065,
+  "usage": {
+    "promptTokenCount": 1062,
+    "candidatesTokenCount": 839,
+    "totalTokenCount": 6389,
+    "thoughtsTokenCount": 4488,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:52:43.667Z"
+}

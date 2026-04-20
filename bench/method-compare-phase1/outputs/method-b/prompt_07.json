@@ -1,0 +1,18 @@
+{
+  "id": "prompt_07",
+  "domain": "event_sale",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "블랙프라이데이 최대 70% 할인 이벤트 배너 만들어줘",
+  "latencyMs": 22496,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n<div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#111111;\"></div>\n<div style=\"position:absolute; left:780px; top:154px; width:320px; height:320px; background-color:#FFD600; border-radius:160px; opacity:0.1;\"></div>\n<h2 style=\"position:absolute; left:80px; top:120px; width:600px; height:40px; font-family:Anton; font-size:36px; font-weight:400; color:#FFD600; text-align:left; line-height:1.2;\">SALE EVENT</h2>\n<h1 style=\"position:absolute; left:75px; top:170px; width:700px; height:130px; font-family:Anton; font-size:140px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1;\">BLACK</h1>\n<h1 style=\"position:absolute; left:75px; top:300px; width:700px; height:130px; font-family:Anton; font-size:140px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1;\">FRIDAY</h1>\n<p style=\"position:absolute; left:800px; top:180px; width:280px; height:60px; font-family:Pretendard; font-size:50px; font-weight:700; color:#FFFFFF; text-align:center;\">최대</p>\n<h3 style=\"position:absolute; left:800px; top:230px; width:280px; height:180px; font-family:Anton; font-size:190px; font-weight:900; color:#FFD600; text-align:center; line-height:1;\">70%</h3>\n<p style=\"position:absolute; left:800px; top:410px; width:280px; height:60px; font-family:Pretendard; font-size:50px; font-weight:700; color:#FFFFFF; text-align:center;\">할인</p>\n<div style=\"position:absolute; left:80px; top:490px; width:300px; height:68px; background-color:#FFD600; border-radius:34px;\"></div>\n<span style=\"position:absolute; left:80px; top:507px; width:300px; height:34px; font-family:Pretendard; font-size:26px; font-weight:700; color:#111111; text-align:center;\">지금 바로 확인하기</span>\n</div>",
+  "outputBytes": 1817,
+  "usage": {
+    "promptTokenCount": 1066,
+    "candidatesTokenCount": 746,
+    "totalTokenCount": 3813
+  },
+  "finishedAt": "2026-04-20T05:09:04.439Z"
+}

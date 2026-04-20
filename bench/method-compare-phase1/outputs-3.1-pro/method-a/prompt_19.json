@@ -1,0 +1,21 @@
+{
+  "id": "prompt_19",
+  "domain": "kids",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "어린이날 완구 특별 할인 이벤트 배너",
+  "latencyMs": 45161,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFFDE7\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 89,\n      \"width\": 480,\n      \"height\": 480,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 120,\n      \"width\": 220,\n      \"height\": 46,\n      \"fill\": \"#FF4081\",\n      \"rx\": 23,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 128,\n      \"width\": 220,\n      \"height\": 30,\n      \"text\": \"우리아이 취향저격\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 22,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 190,\n      \"width\": 500,\n      \"height\": 80,\n      \"text\": \"어린이날\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 76,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#1976D2\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 280,\n      \"width\": 500,\n      \"height\": 80,\n      \"text\": \"완구 대축제\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 76,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E53935\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 380,\n      \"width\": 500,\n      \"height\": 50,\n      \"text\": \"최대 50% 특별 할인\",\n      \"fontFamily\": \"Cafe24Ssurround\",\n      \"fontSize\": 42,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#F57C00\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 470,\n      \"width\": 260,\n      \"height\": 70,\n      \"fill\": \"#43A047\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 485,\n      \"width\": 260,\n      \"height\": 40,\n      \"text\": \"선물 보러가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 2152,
+  "usage": {
+    "promptTokenCount": 1200,
+    "candidatesTokenCount": 925,
+    "totalTokenCount": 6992,
+    "thoughtsTokenCount": 4867,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:46:22.097Z"
+}

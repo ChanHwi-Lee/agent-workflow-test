@@ -1,0 +1,33 @@
+{
+  "id": "prompt_20",
+  "domain": "generic_event",
+  "method": "method-b",
+  "callOk": true,
+  "latencyMs": 21203,
+  "outputBytes": 1678,
+  "promptTokenCount": 1062,
+  "candidatesTokenCount": 655,
+  "totalTokenCount": 3869,
+  "thoughtsTokenCount": 2152,
+  "model": "gemini-2.5-pro",
+  "elementCount": 8,
+  "checks": {
+    "html_parse_ok": true,
+    "dom_grammar_ok": false,
+    "css_whitelist_ok": true,
+    "root_structure_ok": true,
+    "positioning_ok": true,
+    "no_forbidden": true,
+    "placeholder_annotated_ok": true,
+    "bounds_ok": true,
+    "element_count_ok": true
+  },
+  "scorecard": {
+    "passed": 8,
+    "total": 9,
+    "ratio": 0.8888888888888888
+  },
+  "failureReasons": [
+    "bad_tags:br"
+  ]
+}

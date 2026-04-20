@@ -1,0 +1,33 @@
+{
+  "id": "prompt_09",
+  "domain": "education",
+  "method": "method-b",
+  "callOk": true,
+  "latencyMs": 2900,
+  "outputBytes": 1675,
+  "promptTokenCount": 1072,
+  "candidatesTokenCount": 677,
+  "totalTokenCount": 1749,
+  "thoughtsTokenCount": 0,
+  "model": "gemini-3.1-flash-lite-preview",
+  "elementCount": 9,
+  "checks": {
+    "html_parse_ok": true,
+    "dom_grammar_ok": false,
+    "css_whitelist_ok": true,
+    "root_structure_ok": true,
+    "positioning_ok": true,
+    "no_forbidden": true,
+    "placeholder_annotated_ok": true,
+    "bounds_ok": true,
+    "element_count_ok": true
+  },
+  "scorecard": {
+    "passed": 8,
+    "total": 9,
+    "ratio": 0.8888888888888888
+  },
+  "failureReasons": [
+    "bad_tags:br"
+  ]
+}

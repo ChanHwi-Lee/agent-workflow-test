@@ -1,0 +1,21 @@
+{
+  "id": "prompt_07",
+  "domain": "event_sale",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "블랙프라이데이 최대 70% 할인 이벤트 배너 만들어줘",
+  "latencyMs": 27920,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#0A0A0A\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 600,\n      \"top\": 0,\n      \"width\": 600,\n      \"height\": 628,\n      \"fill\": \"#1A1A1A\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"연중 단 한 번의 역대급 혜택\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#CCCCCC\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 180,\n      \"width\": 550,\n      \"height\": 100,\n      \"text\": \"BLACK FRIDAY\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 90,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 300,\n      \"width\": 380,\n      \"height\": 90,\n      \"fill\": \"#E50914\",\n      \"rx\": 8,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 316,\n      \"width\": 380,\n      \"height\": 90,\n      \"text\": \"최대 70% 할인\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 52,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#FFFFFF\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 478,\n      \"width\": 240,\n      \"height\": 64,\n      \"text\": \"지금 바로가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#000000\"\n    }\n  ]\n}",
+  "outputBytes": 2038,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 875,
+    "totalTokenCount": 4671,
+    "thoughtsTokenCount": 2591,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:43:35.421Z"
+}

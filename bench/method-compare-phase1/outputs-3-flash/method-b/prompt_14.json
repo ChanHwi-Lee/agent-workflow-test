@@ -1,0 +1,21 @@
+{
+  "id": "prompt_14",
+  "domain": "pet",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "반려동물 프리미엄 사료 신상품 런칭 배너",
+  "latencyMs": 12315,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FDFBF7;\"></div>\n  <div style=\"position:absolute; left:1000px; top:0px; width:200px; height:628px; background-color:#F2E8DF;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"premium pet food in a bowl\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:600px; top:64px; width:500px; height:500px;\" />\n  <img data-tooldi-role=\"logo\" data-hint=\"pet brand logo\" data-aspect=\"2:1\" src=\"placeholder://\" style=\"position:absolute; left:80px; top:60px; width:140px; height:70px;\" />\n  <h1 style=\"position:absolute; left:80px; top:160px; width:520px; height:180px; font-family:Pretendard; font-size:68px; font-weight:800; color:#2C3E50; text-align:left; line-height:1.2;\">우리 아이를 위한<br>프리미엄 건강 사료</h1>\n  <p style=\"position:absolute; left:80px; top:360px; width:500px; height:60px; font-family:Pretendard; font-size:28px; font-weight:400; color:#555555; text-align:left; line-height:1.4;\">100% 유기농 원료로 완성한 균형 잡힌 한 끼</p>\n  <div style=\"position:absolute; left:80px; top:460px; width:260px; height:72px; background-color:#8B735B; border-radius:8px;\"></div>\n  <span style=\"position:absolute; left:80px; top:482px; width:260px; height:30px; font-family:Pretendard; font-size:24px; font-weight:700; color:#FFFFFF; text-align:center;\">신제품 런칭 혜택보기</span>\n  <div style=\"position:absolute; left:580px; top:480px; width:120px; height:120px; background-color:#E67E22; border-radius:60px; opacity:0.9;\"></div>\n  <span style=\"position:absolute; left:580px; top:525px; width:120px; height:30px; font-family:Pretendard; font-size:22px; font-weight:800; color:#FFFFFF; text-align:center;\">20% OFF</span>\n</div>",
+  "outputBytes": 1855,
+  "usage": {
+    "promptTokenCount": 1066,
+    "candidatesTokenCount": 736,
+    "totalTokenCount": 3619,
+    "thoughtsTokenCount": 1817,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:30:21.778Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_06",
+  "domain": "fitness",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "헬스장 신규 회원 3개월 30% 할인 프로모션 배너",
+  "latencyMs": 3368,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#1A1A1A\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 600,\n      \"top\": 0,\n      \"width\": 600,\n      \"height\": 628,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 500,\n      \"height\": 100,\n      \"text\": \"신규 회원 한정\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 40,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFD700\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 180,\n      \"width\": 500,\n      \"height\": 150,\n      \"text\": \"3개월 등록 시\\n30% 파격 할인\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 400,\n      \"width\": 280,\n      \"height\": 80,\n      \"fill\": \"#FFD700\",\n      \"rx\": 40,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 420,\n      \"width\": 280,\n      \"height\": 60,\n      \"text\": \"상담 예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#000000\"\n    }\n  ]\n}",
+  "outputBytes": 1425,
+  "usage": {
+    "promptTokenCount": 1208,
+    "candidatesTokenCount": 613,
+    "totalTokenCount": 1821,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:19.969Z"
+}

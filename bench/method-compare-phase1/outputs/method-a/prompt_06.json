@@ -1,0 +1,18 @@
+{
+  "id": "prompt_06",
+  "domain": "fitness",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "헬스장 신규 회원 3개월 30% 할인 프로모션 배너",
+  "latencyMs": 20925,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#000000\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 600,\n      \"top\": 0,\n      \"width\": 600,\n      \"height\": 628,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 600,\n      \"top\": 0,\n      \"width\": 600,\n      \"height\": 628,\n      \"fill\": \"#000000\",\n      \"rx\": 0,\n      \"opacity\": 0.5\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 120,\n      \"width\": 500,\n      \"height\": 60,\n      \"text\": \"헬스장 신규 회원 프로모션\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#CCCCCC\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 190,\n      \"width\": 500,\n      \"height\": 180,\n      \"text\": \"3개월 등록시\\n30% 파격할인\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 380,\n      \"width\": 180,\n      \"height\": 4,\n      \"fill\": \"#F59E0B\",\n      \"rx\": 2,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 410,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"선착순 100명 한정, 지금 바로 시작하세요!\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#AFAFAF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 498,\n      \"width\": 260,\n      \"height\": 70,\n      \"fill\": \"#F59E0B\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 498,\n      \"width\": 260,\n      \"height\": 70,\n      \"text\": \"상담 예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#000000\"\n    }\n  ]\n}",
+  "outputBytes": 2093,
+  "usage": {
+    "promptTokenCount": 1208,
+    "candidatesTokenCount": 897,
+    "totalTokenCount": 3948
+  },
+  "finishedAt": "2026-04-20T05:07:18.110Z"
+}

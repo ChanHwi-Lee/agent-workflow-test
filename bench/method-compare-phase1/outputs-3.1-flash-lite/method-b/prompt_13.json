@@ -1,0 +1,21 @@
+{
+  "id": "prompt_13",
+  "domain": "travel",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "동남아 패키지 여행 얼리버드 예약 배너",
+  "latencyMs": 3099,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #00C6FF, #0072FF);\"></div>\n  <img data-tooldi-role=\"background\" data-hint=\"tropical beach scene\" data-aspect=\"16:9\" src=\"placeholder://\" style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; opacity:0.3;\" />\n  <h1 style=\"position:absolute; left:80px; top:120px; width:700px; height:120px; font-family:sans-serif; font-size:72px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.2;\">동남아 여행<br>얼리버드 특가</h1>\n  <p style=\"position:absolute; left:80px; top:280px; width:600px; height:60px; font-family:sans-serif; font-size:32px; font-weight:400; color:#E0F7FA; text-align:left;\">지금 예약하면 최대 40% 할인 혜택!</p>\n  <div style=\"position:absolute; left:80px; top:400px; width:320px; height:80px; background-color:#FFD700; border-radius:40px;\"></div>\n  <span style=\"position:absolute; left:80px; top:422px; width:320px; height:40px; font-family:sans-serif; font-size:30px; font-weight:800; color:#333333; text-align:center;\">예약하기</span>\n  <img data-tooldi-role=\"hero\" data-hint=\"travel luggage and hat\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:750px; top:150px; width:350px; height:350px;\" />\n  <div style=\"position:absolute; left:850px; top:50px; width:200px; height:50px; background-color:#FF5722; border-radius:25px;\"></div>\n  <span style=\"position:absolute; left:850px; top:62px; width:200px; height:30px; font-family:sans-serif; font-size:20px; font-weight:700; color:#FFFFFF; text-align:center;\">한정 수량 이벤트</span>\n</div>",
+  "outputBytes": 1738,
+  "usage": {
+    "promptTokenCount": 1064,
+    "candidatesTokenCount": 681,
+    "totalTokenCount": 1745,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:47.784Z"
+}

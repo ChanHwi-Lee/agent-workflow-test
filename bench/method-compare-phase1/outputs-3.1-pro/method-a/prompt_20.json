@@ -1,0 +1,21 @@
+{
+  "id": "prompt_20",
+  "domain": "generic_event",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "여름 휴가 시즌 프로모션 배너 만들어줘",
+  "latencyMs": 21989,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#E0F7FA\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"올여름 완벽한 휴가를 위한\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#006064\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 180,\n      \"width\": 500,\n      \"height\": 90,\n      \"text\": \"여름 휴가 시즌\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#00838F\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 280,\n      \"width\": 500,\n      \"height\": 90,\n      \"text\": \"특가 프로모션\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#00838F\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 400,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"최대 50% 할인 + 추가 쿠폰 증정\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FF6F00\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 480,\n      \"width\": 280,\n      \"height\": 64,\n      \"fill\": \"#00BCD4\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 496,\n      \"width\": 280,\n      \"height\": 32,\n      \"text\": \"혜택 받으러 가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 2009,
+  "usage": {
+    "promptTokenCount": 1201,
+    "candidatesTokenCount": 849,
+    "totalTokenCount": 3716,
+    "thoughtsTokenCount": 1666,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:46:07.528Z"
+}

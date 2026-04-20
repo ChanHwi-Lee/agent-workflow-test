@@ -1,0 +1,18 @@
+{
+  "id": "prompt_10",
+  "domain": "real_estate",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "신규 아파트 분양 오픈하우스 초대 배너",
+  "latencyMs": 20386,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#1A237E\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 600,\n      \"top\": 0,\n      \"width\": 600,\n      \"height\": 628,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 600,\n      \"top\": 0,\n      \"width\": 600,\n      \"height\": 628,\n      \"fill\": \"#000000\",\n      \"rx\": 0,\n      \"opacity\": 0.3\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 140,\n      \"width\": 500,\n      \"height\": 60,\n      \"text\": \"PREMIUM APARTMENT\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#F5D042\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 200,\n      \"width\": 500,\n      \"height\": 160,\n      \"text\": \"신규 아파트\\n오픈하우스\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 380,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"지금 방문을 예약하고 특별한 혜택을 받으세요.\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 22,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E0E0E0\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 480,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#F5D042\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 480,\n      \"width\": 240,\n      \"height\": 64,\n      \"text\": \"방문 예약하기\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#1A237E\"\n    }\n  ]\n}",
+  "outputBytes": 1911,
+  "usage": {
+    "promptTokenCount": 1201,
+    "candidatesTokenCount": 818,
+    "totalTokenCount": 3939
+  },
+  "finishedAt": "2026-04-20T05:07:38.496Z"
+}

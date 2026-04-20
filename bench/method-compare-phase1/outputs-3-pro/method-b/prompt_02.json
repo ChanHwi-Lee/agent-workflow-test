@@ -1,0 +1,21 @@
+{
+  "id": "prompt_02",
+  "domain": "cafe",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘",
+  "latencyMs": 42102,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FFF0F5;\"></div>\n  <div style=\"position:absolute; left:20px; top:20px; width:150px; height:150px; background-color:#FFE4E1; border-radius:75px;\"></div>\n  <div style=\"position:absolute; left:850px; top:278px; width:350px; height:350px; background-color:#FFC0CB; border-radius:175px;\"></div>\n  <img data-tooldi-role=\"logo\" data-hint=\"cafe brand logo\" data-aspect=\"3:1\" src=\"placeholder://\" style=\"position:absolute; left:80px; top:60px; width:150px; height:50px;\" />\n  <p style=\"position:absolute; left:80px; top:180px; width:500px; height:40px; font-family:Pretendard; font-size:32px; font-weight:600; color:#D81B60; text-align:left; line-height:1.2;\">상큼한 봄을 마시다</p>\n  <h1 style=\"position:absolute; left:80px; top:240px; width:600px; height:100px; font-family:BlackHanSans; font-size:80px; font-weight:900; color:#222222; text-align:left; line-height:1.1;\">리얼 딸기 라떼</h1>\n  <p style=\"position:absolute; left:80px; top:360px; width:500px; height:40px; font-family:Pretendard; font-size:26px; font-weight:400; color:#555555; text-align:left; line-height:1.3;\">생딸기가 듬뿍 들어간 시즌 한정 메뉴</p>\n  <div style=\"position:absolute; left:80px; top:460px; width:240px; height:64px; background-color:#E53935; border-radius:32px; box-shadow:0px 4px 12px rgba(229,57,53,0.4);\"></div>\n  <span style=\"position:absolute; left:80px; top:476px; width:240px; height:32px; font-family:Pretendard; font-size:24px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1.2;\">신메뉴 보러가기</span>\n  <img data-tooldi-role=\"hero\" data-hint=\"fresh strawberry latte glass\" data-aspect=\"4:5\" src=\"placeholder://\" style=\"position:absolute; left:700px; top:64px; width:400px; height:500px;\" />\n</div>",
+  "outputBytes": 1911,
+  "usage": {
+    "promptTokenCount": 1067,
+    "candidatesTokenCount": 772,
+    "totalTokenCount": 6543,
+    "thoughtsTokenCount": 4704,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:36:35.430Z"
+}

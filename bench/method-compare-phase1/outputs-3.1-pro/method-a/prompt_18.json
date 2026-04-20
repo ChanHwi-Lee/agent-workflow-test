@@ -1,0 +1,21 @@
+{
+  "id": "prompt_18",
+  "domain": "bakery",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "베이커리 신제품 크루아상 소개 배너",
+  "latencyMs": 20666,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FAF3E0\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 140,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"매일 아침 굽는 신선함\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#8B5A2B\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 200,\n      \"width\": 550,\n      \"height\": 160,\n      \"text\": \"프리미엄 버터\\n크루아상 출시\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#3E2723\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 380,\n      \"width\": 60,\n      \"height\": 4,\n      \"fill\": \"#D35400\",\n      \"rx\": 2,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 410,\n      \"width\": 550,\n      \"height\": 40,\n      \"text\": \"프랑스산 고메 버터의 풍미를 그대로 담았습니다.\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#5D4037\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 480,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#D35400\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 496,\n      \"width\": 240,\n      \"height\": 32,\n      \"text\": \"신제품 맛보기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1931,
+  "usage": {
+    "promptTokenCount": 1202,
+    "candidatesTokenCount": 823,
+    "totalTokenCount": 3671,
+    "thoughtsTokenCount": 1646,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:45:45.528Z"
+}

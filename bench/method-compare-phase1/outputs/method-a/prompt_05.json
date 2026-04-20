@@ -1,0 +1,18 @@
+{
+  "id": "prompt_05",
+  "domain": "beauty",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "여름 신상 립스틱 출시 배너 - 20% 할인 쿠폰",
+  "latencyMs": 16361,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FEECEF\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 620,\n      \"top\": 50,\n      \"width\": 530,\n      \"height\": 528,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 140,\n      \"width\": 500,\n      \"height\": 60,\n      \"text\": \"SUMMER NEW ARRIVAL\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E5398D\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 190,\n      \"width\": 520,\n      \"height\": 180,\n      \"text\": \"여름 신상\\n립스틱 출시\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 80,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#222222\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 380,\n      \"width\": 520,\n      \"height\": 45,\n      \"text\": \"지금 구매 시 20% 할인 쿠폰 증정\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 28,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#555555\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 280,\n      \"height\": 72,\n      \"fill\": \"#E5398D\",\n      \"rx\": 36,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 280,\n      \"height\": 72,\n      \"text\": \"쿠폰 받기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1712,
+  "usage": {
+    "promptTokenCount": 1208,
+    "candidatesTokenCount": 733,
+    "totalTokenCount": 3386
+  },
+  "finishedAt": "2026-04-20T05:07:12.278Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_12",
+  "domain": "hotel",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "제주도 럭셔리 호텔 여름 성수기 특가 배너",
+  "latencyMs": 34358,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #0B2031, #1A405D);\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"luxury hotel infinity pool ocean view\" data-aspect=\"540:500\" src=\"placeholder://\" style=\"position:absolute; left:600px; top:64px; width:540px; height:500px; border-radius:24px; box-shadow:0px 20px 40px rgba(0,0,0,0.5);\" />\n  <div style=\"position:absolute; left:540px; top:40px; width:120px; height:120px; background-color:#D4AF37; border-radius:60px; box-shadow:0px 10px 20px rgba(0,0,0,0.3); z-index:10;\"></div>\n  <span style=\"position:absolute; left:540px; top:65px; width:120px; height:26px; font-family:Pretendard; font-size:20px; font-weight:700; color:#0B2031; text-align:center; line-height:1.2; z-index:11;\">최대</span>\n  <span style=\"position:absolute; left:540px; top:91px; width:120px; height:36px; font-family:Pretendard; font-size:32px; font-weight:900; color:#0B2031; text-align:center; line-height:1.2; z-index:11;\">40%</span>\n  <p style=\"position:absolute; left:80px; top:160px; width:450px; height:40px; font-family:Pretendard; font-size:28px; font-weight:600; color:#D4AF37; text-align:left; line-height:1.2;\">여름 성수기 얼리버드 특가</p>\n  <h1 style=\"position:absolute; left:80px; top:210px; width:500px; height:75px; font-family:Noto Serif KR; font-size:64px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.1;\">제주도 럭셔리</h1>\n  <h1 style=\"position:absolute; left:80px; top:290px; width:500px; height:75px; font-family:Noto Serif KR; font-size:64px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.1;\">프라이빗 호캉스</h1>\n  <p style=\"position:absolute; left:80px; top:390px; width:480px; height:30px; font-family:Pretendard; font-size:22px; font-weight:400; color:#B0BEC5; text-align:left; line-height:1.2;\">전 객실 오션뷰 & 인피니티 풀 무료 이용 혜택</p>\n  <div style=\"position:absolute; left:80px; top:460px; width:220px; height:64px; background-color:#FFFFFF; border-radius:8px;\"></div>\n  <span style=\"position:absolute; left:80px; top:477px; width:220px; height:30px; font-family:Pretendard; font-size:24px; font-weight:700; color:#0B2031; text-align:center; line-height:1.2;\">지금 예약하기</span>\n</div>",
+  "outputBytes": 2381,
+  "usage": {
+    "promptTokenCount": 1066,
+    "candidatesTokenCount": 985,
+    "totalTokenCount": 5300,
+    "thoughtsTokenCount": 3249,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:39:40.497Z"
+}

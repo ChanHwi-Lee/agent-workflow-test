@@ -1,0 +1,34 @@
+{
+  "id": "prompt_16",
+  "domain": "mobile_app",
+  "method": "method-b",
+  "callOk": true,
+  "latencyMs": 18149,
+  "outputBytes": 1767,
+  "promptTokenCount": 1066,
+  "candidatesTokenCount": 668,
+  "totalTokenCount": 3186,
+  "thoughtsTokenCount": 1452,
+  "model": "gemini-2.5-pro",
+  "elementCount": 8,
+  "checks": {
+    "html_parse_ok": true,
+    "dom_grammar_ok": false,
+    "css_whitelist_ok": true,
+    "root_structure_ok": true,
+    "positioning_ok": true,
+    "no_forbidden": true,
+    "placeholder_annotated_ok": true,
+    "bounds_ok": false,
+    "element_count_ok": true
+  },
+  "scorecard": {
+    "passed": 7,
+    "total": 9,
+    "ratio": 0.7777777777777778
+  },
+  "failureReasons": [
+    "bad_tags:br",
+    "bounds_oob:img(750,64,342,608)"
+  ]
+}

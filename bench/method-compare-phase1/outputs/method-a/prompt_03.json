@@ -1,0 +1,18 @@
+{
+  "id": "prompt_03",
+  "domain": "fashion",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "패션 리테일 봄 세일 배너 만들어줘",
+  "latencyMs": 15476,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FDF2F8\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 620,\n      \"top\": 50,\n      \"width\": 530,\n      \"height\": 528,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 130,\n      \"width\": 500,\n      \"height\": 60,\n      \"text\": \"SPRING SEASON SALE\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 36,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E5398D\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 190,\n      \"width\": 540,\n      \"height\": 160,\n      \"text\": \"봄맞이\\n특별 할인\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 96,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#212121\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 360,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"신상품 포함 전품목 최대 50% OFF\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 28,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#555555\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 460,\n      \"width\": 260,\n      \"height\": 72,\n      \"fill\": \"#E5398D\",\n      \"rx\": 36,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 460,\n      \"width\": 260,\n      \"height\": 72,\n      \"text\": \"지금 쇼핑하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1710,
+  "usage": {
+    "promptTokenCount": 1201,
+    "candidatesTokenCount": 729,
+    "totalTokenCount": 3169
+  },
+  "finishedAt": "2026-04-20T05:06:55.916Z"
+}

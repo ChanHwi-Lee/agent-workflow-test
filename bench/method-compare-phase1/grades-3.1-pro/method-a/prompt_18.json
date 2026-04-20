@@ -1,0 +1,29 @@
+{
+  "id": "prompt_18",
+  "domain": "bakery",
+  "method": "method-a",
+  "callOk": true,
+  "latencyMs": 20666,
+  "outputBytes": 1931,
+  "promptTokenCount": 1202,
+  "candidatesTokenCount": 823,
+  "totalTokenCount": 3671,
+  "thoughtsTokenCount": 1646,
+  "model": "gemini-3.1-pro-preview",
+  "elementCount": 8,
+  "checks": {
+    "json_parse_ok": true,
+    "schema_valid": true,
+    "bounds_ok": true,
+    "no_overlap_critical": true,
+    "font_enum_ok": true,
+    "asset_id_ok": true,
+    "element_count_ok": true
+  },
+  "scorecard": {
+    "passed": 7,
+    "total": 7,
+    "ratio": 1
+  },
+  "failureReasons": []
+}

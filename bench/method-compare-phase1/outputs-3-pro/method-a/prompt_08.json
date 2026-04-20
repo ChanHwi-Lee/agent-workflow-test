@@ -1,0 +1,21 @@
+{
+  "id": "prompt_08",
+  "domain": "product_launch",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "신제품 무선 이어폰 런칭 프로모션 배너 - 사전 예약 10% 할인",
+  "latencyMs": 19734,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#121212\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 680,\n      \"top\": 89,\n      \"width\": 450,\n      \"height\": 450,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 160,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"NEW ARRIVAL\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#00E5FF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 220,\n      \"width\": 550,\n      \"height\": 70,\n      \"text\": \"차원이 다른 사운드\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 60,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 290,\n      \"width\": 550,\n      \"height\": 70,\n      \"text\": \"무선 이어폰 런칭\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 60,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 390,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"사전 예약 시 10% 특별 할인\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#CCCCCC\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 470,\n      \"width\": 260,\n      \"height\": 70,\n      \"fill\": \"#00E5FF\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 488,\n      \"width\": 260,\n      \"height\": 34,\n      \"text\": \"사전예약 바로가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#121212\"\n    }\n  ]\n}",
+  "outputBytes": 1995,
+  "usage": {
+    "promptTokenCount": 1211,
+    "candidatesTokenCount": 840,
+    "totalTokenCount": 3724,
+    "thoughtsTokenCount": 1673,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:33:28.803Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_16",
+  "domain": "mobile_app",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "가계부 앱 신규 가입 첫달 무료 프로모션 배너",
+  "latencyMs": 2818,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#F0F4FF\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 528,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 150,\n      \"width\": 550,\n      \"height\": 120,\n      \"text\": \"똑똑한 가계부 시작\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 64,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#1A237E\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 280,\n      \"width\": 550,\n      \"height\": 80,\n      \"text\": \"신규 가입 시 첫 달 프리미엄 무료!\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#3949AB\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 400,\n      \"width\": 280,\n      \"height\": 70,\n      \"fill\": \"#3949AB\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 418,\n      \"width\": 280,\n      \"height\": 70,\n      \"text\": \"지금 바로 시작하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1447,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 613,
+    "totalTokenCount": 1818,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:31.744Z"
+}

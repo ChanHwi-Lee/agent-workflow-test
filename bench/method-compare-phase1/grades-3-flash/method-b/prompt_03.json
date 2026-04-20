@@ -1,0 +1,33 @@
+{
+  "id": "prompt_03",
+  "domain": "fashion",
+  "method": "method-b",
+  "callOk": true,
+  "latencyMs": 36178,
+  "outputBytes": 945,
+  "promptTokenCount": 1062,
+  "candidatesTokenCount": 328,
+  "totalTokenCount": 9250,
+  "thoughtsTokenCount": 7860,
+  "model": "gemini-3-flash-preview",
+  "elementCount": 0,
+  "checks": {
+    "html_parse_ok": true,
+    "dom_grammar_ok": false,
+    "css_whitelist_ok": false,
+    "root_structure_ok": false,
+    "positioning_ok": false,
+    "no_forbidden": false,
+    "placeholder_annotated_ok": false,
+    "bounds_ok": false,
+    "element_count_ok": false
+  },
+  "scorecard": {
+    "passed": 1,
+    "total": 9,
+    "ratio": 0.1111111111111111
+  },
+  "failureReasons": [
+    "root_missing_or_siblings:0"
+  ]
+}

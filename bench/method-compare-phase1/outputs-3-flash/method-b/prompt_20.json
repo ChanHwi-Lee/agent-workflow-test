@@ -1,0 +1,21 @@
+{
+  "id": "prompt_20",
+  "domain": "generic_event",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "여름 휴가 시즌 프로모션 배너 만들어줘",
+  "latencyMs": 13253,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(180deg, #E0F7FA, #80DEEA);\"></div>\n  <div style=\"position:absolute; left:1000px; top:-50px; width:300px; height:300px; background-color:#FFF176; border-radius:150px; opacity:0.5;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"tropical beach with palm trees\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:650px; top:64px; width:500px; height:500px; border-radius:250px; z-index:2;\" />\n  <h1 style=\"position:absolute; left:80px; top:160px; width:550px; height:160px; font-family:Pretendard; font-size:72px; font-weight:900; color:#006064; text-align:left; line-height:1.2; z-index:3;\">여름 휴가 시즌<br>얼리버드 특가</h1>\n  <p style=\"position:absolute; left:80px; top:340px; width:500px; height:40px; font-family:Pretendard; font-size:32px; font-weight:500; color:#00838F; text-align:left; z-index:3;\">지금 예약하면 전 객실 최대 50% 할인</p>\n  <div style=\"position:absolute; left:80px; top:440px; width:280px; height:80px; background-color:#FF8F00; border-radius:40px; box-shadow:0px 4px 15px #00000033; z-index:3;\"></div>\n  <span style=\"position:absolute; left:80px; top:462px; width:280px; height:36px; font-family:Pretendard; font-size:28px; font-weight:700; color:#FFFFFF; text-align:center; display:block; z-index:4;\">지금 바로 예약하기</span>\n  <div style=\"position:absolute; left:580px; top:480px; width:120px; height:120px; background-color:#FFFFFF; border-radius:60px; opacity:0.3; z-index:1;\"></div>\n  <div style=\"position:absolute; left:1100px; top:520px; width:60px; height:60px; background-color:#4DD0E1; border-radius:30px; z-index:1;\"></div>\n</div>",
+  "outputBytes": 1812,
+  "usage": {
+    "promptTokenCount": 1062,
+    "candidatesTokenCount": 736,
+    "totalTokenCount": 3997,
+    "thoughtsTokenCount": 2199,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:07.006Z"
+}

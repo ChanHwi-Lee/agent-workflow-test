@@ -1,0 +1,21 @@
+{
+  "id": "prompt_19",
+  "domain": "kids",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "어린이날 완구 특별 할인 이벤트 배너",
+  "latencyMs": 8002,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFF9C4\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 680,\n      \"top\": 114,\n      \"width\": 400,\n      \"height\": 400,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 600,\n      \"height\": 100,\n      \"text\": \"어린이날 완구 특별 할인\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#333333\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 230,\n      \"width\": 600,\n      \"height\": 50,\n      \"text\": \"우리 아이를 위한 최고의 선물!\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#666666\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 320,\n      \"width\": 320,\n      \"height\": 80,\n      \"fill\": \"#FF5252\",\n      \"rx\": 10,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 320,\n      \"width\": 320,\n      \"height\": 80,\n      \"text\": \"최대 50% OFF\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 42,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#4CAF50\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 240,\n      \"height\": 64,\n      \"text\": \"지금 구경하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1893,
+  "usage": {
+    "promptTokenCount": 1200,
+    "candidatesTokenCount": 801,
+    "totalTokenCount": 3105,
+    "thoughtsTokenCount": 1104,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:28:43.705Z"
+}

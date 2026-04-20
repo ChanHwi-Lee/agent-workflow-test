@@ -1,0 +1,29 @@
+{
+  "id": "prompt_08",
+  "domain": "product_launch",
+  "method": "method-a",
+  "callOk": true,
+  "latencyMs": 27794,
+  "outputBytes": 2328,
+  "promptTokenCount": 1211,
+  "candidatesTokenCount": 999,
+  "totalTokenCount": 4732,
+  "thoughtsTokenCount": 2522,
+  "model": "gemini-3.1-pro-preview",
+  "elementCount": 10,
+  "checks": {
+    "json_parse_ok": true,
+    "schema_valid": true,
+    "bounds_ok": true,
+    "no_overlap_critical": true,
+    "font_enum_ok": true,
+    "asset_id_ok": true,
+    "element_count_ok": true
+  },
+  "scorecard": {
+    "passed": 7,
+    "total": 7,
+    "ratio": 1
+  },
+  "failureReasons": []
+}

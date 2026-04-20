@@ -1,0 +1,21 @@
+{
+  "id": "prompt_02",
+  "domain": "cafe",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘",
+  "latencyMs": 12038,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #FFF0F3 0%, #FFCCD5 100%);\"></div>\n  <div style=\"position:absolute; left:1050px; top:50px; width:100px; height:100px; background-color:#FFB3C1; border-radius:50px; opacity:0.5;\"></div>\n  <div style=\"position:absolute; left:50px; top:500px; width:60px; height:60px; background-color:#FF8FA3; border-radius:30px; opacity:0.3;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"strawberry latte with cream\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:650px; top:64px; width:500px; height:500px;\" />\n  <h1 style=\"position:absolute; left:80px; top:140px; width:550px; height:180px; font-family:Pretendard; font-size:76px; font-weight:900; color:#C9184A; text-align:left; line-height:1.2;\">상큼한 봄의 맛,<br>딸기 신메뉴</h1>\n  <p style=\"position:absolute; left:80px; top:340px; width:550px; height:40px; font-family:Pretendard; font-size:30px; font-weight:500; color:#590D22; text-align:left; line-height:1.4;\">제철 딸기를 듬뿍 담은 달콤한 유혹</p>\n  <div style=\"position:absolute; left:80px; top:440px; width:240px; height:72px; background-color:#FF4D6D; border-radius:36px; box-shadow:0px 4px 10px #FF8FA3;\"></div>\n  <span style=\"position:absolute; left:80px; top:460px; width:240px; height:32px; font-family:Pretendard; font-size:26px; font-weight:700; color:#FFFFFF; text-align:center;\">지금 주문하기</span>\n</div>",
+  "outputBytes": 1568,
+  "usage": {
+    "promptTokenCount": 1067,
+    "candidatesTokenCount": 634,
+    "totalTokenCount": 3653,
+    "thoughtsTokenCount": 1952,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:28:55.849Z"
+}

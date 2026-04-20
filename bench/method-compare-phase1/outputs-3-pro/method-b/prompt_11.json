@@ -1,0 +1,21 @@
+{
+  "id": "prompt_11",
+  "domain": "automotive",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "전기차 시승 이벤트 배너 만들어줘",
+  "latencyMs": 33488,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#0B192C;\"></div>\n  <div style=\"position:absolute; left:750px; top:100px; width:400px; height:400px; background-color:#00D2FF; border-radius:200px; opacity:0.1;\"></div>\n  <img data-tooldi-role=\"logo\" data-hint=\"car brand logo\" data-aspect=\"3:1\" src=\"placeholder://\" style=\"position:absolute; left:80px; top:50px; width:120px; height:40px;\" />\n  <div style=\"position:absolute; left:80px; top:150px; width:80px; height:6px; background-color:#00D2FF;\"></div>\n  <h1 style=\"position:absolute; left:80px; top:180px; width:500px; height:150px; font-family:Pretendard; font-size:60px; font-weight:800; color:#FFFFFF; text-align:left; line-height:1.2;\">프리미엄 전기차 시승 이벤트</h1>\n  <p style=\"position:absolute; left:80px; top:350px; width:500px; height:30px; font-family:Pretendard; font-size:24px; font-weight:500; color:#B0C4DE; text-align:left; line-height:1.2;\">압도적인 퍼포먼스, 지금 직접 경험해보세요.</p>\n  <p style=\"position:absolute; left:80px; top:390px; width:500px; height:24px; font-family:Pretendard; font-size:18px; font-weight:400; color:#829AB1; text-align:left; line-height:1.2;\">기간: 2023.11.01 - 11.30 | 장소: 전국 공식 전시장</p>\n  <div style=\"position:absolute; left:80px; top:460px; width:240px; height:64px; background-color:#00D2FF; border-radius:32px;\"></div>\n  <span style=\"position:absolute; left:80px; top:478px; width:240px; height:28px; font-family:Pretendard; font-size:24px; font-weight:700; color:#0B192C; text-align:center; line-height:1.2;\">시승 예약하기</span>\n  <img data-tooldi-role=\"hero\" data-hint=\"sleek modern electric car\" data-aspect=\"16:9\" src=\"placeholder://\" style=\"position:absolute; left:540px; top:160px; width:600px; height:337px;\" />\n</div>",
+  "outputBytes": 1913,
+  "usage": {
+    "promptTokenCount": 1060,
+    "candidatesTokenCount": 765,
+    "totalTokenCount": 5191,
+    "thoughtsTokenCount": 3366,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:39:38.934Z"
+}

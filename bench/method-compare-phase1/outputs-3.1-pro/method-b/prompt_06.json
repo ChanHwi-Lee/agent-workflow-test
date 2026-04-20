@@ -1,0 +1,21 @@
+{
+  "id": "prompt_06",
+  "domain": "fitness",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "헬스장 신규 회원 3개월 30% 할인 프로모션 배너",
+  "latencyMs": 36817,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(90deg, #111111 55%, #222222 100%);\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"muscular person working out at gym\" data-aspect=\"500:548\" src=\"placeholder://\" style=\"position:absolute; left:650px; top:40px; width:500px; height:548px; border-radius:16px;\" />\n  <div style=\"position:absolute; left:580px; top:80px; width:140px; height:140px; background-color:#FF3333; border-radius:70px; box-shadow:4px 4px 10px rgba(0,0,0,0.5); z-index:10;\"></div>\n  <span style=\"position:absolute; left:580px; top:115px; width:140px; height:30px; font-family:Pretendard; font-size:22px; font-weight:800; color:#FFFFFF; text-align:center; line-height:1.2; z-index:11;\">3개월</span>\n  <span style=\"position:absolute; left:580px; top:145px; width:140px; height:40px; font-family:BlackHanSans; font-size:36px; font-weight:900; color:#FFFFFF; text-align:center; line-height:1.2; z-index:11;\">-30%</span>\n  <p style=\"position:absolute; left:80px; top:150px; width:500px; height:30px; font-family:Pretendard; font-size:24px; font-weight:700; color:#D4FF00; text-align:left; line-height:1.2;\">신규 회원 특별 프로모션</p>\n  <h1 style=\"position:absolute; left:80px; top:200px; width:550px; height:70px; font-family:BlackHanSans; font-size:64px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.1;\">3개월 등록 시</h1>\n  <h1 style=\"position:absolute; left:80px; top:280px; width:550px; height:70px; font-family:BlackHanSans; font-size:64px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.1;\">30% 파격 할인</h1>\n  <p style=\"position:absolute; left:80px; top:380px; width:500px; height:30px; font-family:Pretendard; font-size:22px; font-weight:500; color:#CCCCCC; text-align:left; line-height:1.2;\">올해는 반드시 득근하자! 선착순 50명 마감</p>\n  <div style=\"position:absolute; left:80px; top:450px; width:260px; height:70px; background-color:#D4FF00; border-radius:8px;\"></div>\n  <span style=\"position:absolute; left:80px; top:468px; width:260px; height:34px; font-family:Pretendard; font-size:26px; font-weight:800; color:#111111; text-align:center; line-height:1.2;\">상담 예약하기</span>\n</div>",
+  "outputBytes": 2334,
+  "usage": {
+    "promptTokenCount": 1069,
+    "candidatesTokenCount": 955,
+    "totalTokenCount": 5407,
+    "thoughtsTokenCount": 3383,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:48:13.361Z"
+}

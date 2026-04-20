@@ -1,0 +1,21 @@
+{
+  "id": "prompt_08",
+  "domain": "product_launch",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "신제품 무선 이어폰 런칭 프로모션 배너 - 사전 예약 10% 할인",
+  "latencyMs": 40530,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(90deg, #0f172a, #1e1b4b);\"></div>\n  <div style=\"position:absolute; left:670px; top:114px; width:400px; height:400px; background-color:#4f46e5; border-radius:200px; opacity:0.5; box-shadow:0px 0px 40px #4f46e5;\"></div>\n  <img data-tooldi-role=\"product\" data-hint=\"sleek wireless earbuds\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:620px; top:64px; width:500px; height:500px;\" />\n  <div style=\"position:absolute; left:80px; top:120px; width:200px; height:44px; background-color:#4f46e5; border-radius:22px;\"></div>\n  <span style=\"position:absolute; left:80px; top:130px; width:200px; height:24px; font-family:Pretendard; font-size:18px; font-weight:700; color:#ffffff; text-align:center; line-height:1.2;\">사전 예약 프로모션</span>\n  <h1 style=\"position:absolute; left:80px; top:200px; width:500px; height:65px; font-family:Pretendard; font-size:56px; font-weight:800; color:#ffffff; text-align:left; line-height:1.1;\">차원이 다른 몰입감</h1>\n  <h1 style=\"position:absolute; left:80px; top:275px; width:500px; height:65px; font-family:Pretendard; font-size:56px; font-weight:800; color:#ffffff; text-align:left; line-height:1.1;\">신제품 무선 이어폰</h1>\n  <p style=\"position:absolute; left:80px; top:370px; width:500px; height:40px; font-family:Pretendard; font-size:32px; font-weight:600; color:#a5b4fc; text-align:left; line-height:1.2;\">사전 예약 시 10% 특별 할인</p>\n  <div style=\"position:absolute; left:80px; top:460px; width:240px; height:64px; background-color:#ffffff; border-radius:32px; box-shadow:0px 8px 16px rgba(0,0,0,0.3);\"></div>\n  <span style=\"position:absolute; left:80px; top:478px; width:240px; height:28px; font-family:Pretendard; font-size:22px; font-weight:800; color:#0f172a; text-align:center; line-height:1.2;\">지금 사전 예약하기</span>\n</div>",
+  "outputBytes": 2027,
+  "usage": {
+    "promptTokenCount": 1072,
+    "candidatesTokenCount": 819,
+    "totalTokenCount": 6081,
+    "thoughtsTokenCount": 4190,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:38:32.670Z"
+}

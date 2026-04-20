@@ -1,0 +1,21 @@
+{
+  "id": "prompt_07",
+  "domain": "event_sale",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "블랙프라이데이 최대 70% 할인 이벤트 배너 만들어줘",
+  "latencyMs": 9662,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#000000\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 700,\n      \"top\": 80,\n      \"width\": 420,\n      \"height\": 468,\n      \"assetId\": \"graphic:2002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 140,\n      \"width\": 600,\n      \"height\": 120,\n      \"text\": \"BLACK FRIDAY\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 110,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 270,\n      \"width\": 600,\n      \"height\": 80,\n      \"text\": \"최대 70% 할인\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FF0000\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 370,\n      \"width\": 600,\n      \"height\": 40,\n      \"text\": \"단 7일간 진행되는 역대급 세일 페스타\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#AAAAAA\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 280,\n      \"height\": 70,\n      \"fill\": \"#FFFFFF\",\n      \"rx\": 10,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 280,\n      \"height\": 70,\n      \"text\": \"지금 쇼핑하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 30,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#000000\"\n    }\n  ]\n}",
+  "outputBytes": 1712,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 724,
+    "totalTokenCount": 3347,
+    "thoughtsTokenCount": 1418,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:28:03.812Z"
+}

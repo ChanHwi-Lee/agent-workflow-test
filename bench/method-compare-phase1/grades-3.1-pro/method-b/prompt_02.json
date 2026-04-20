@@ -1,0 +1,33 @@
+{
+  "id": "prompt_02",
+  "domain": "cafe",
+  "method": "method-b",
+  "callOk": true,
+  "latencyMs": 29579,
+  "outputBytes": 2192,
+  "promptTokenCount": 1067,
+  "candidatesTokenCount": 853,
+  "totalTokenCount": 4757,
+  "thoughtsTokenCount": 2837,
+  "model": "gemini-3.1-pro-preview",
+  "elementCount": 11,
+  "checks": {
+    "html_parse_ok": true,
+    "dom_grammar_ok": false,
+    "css_whitelist_ok": true,
+    "root_structure_ok": true,
+    "positioning_ok": true,
+    "no_forbidden": true,
+    "placeholder_annotated_ok": true,
+    "bounds_ok": true,
+    "element_count_ok": true
+  },
+  "scorecard": {
+    "passed": 8,
+    "total": 9,
+    "ratio": 0.8888888888888888
+  },
+  "failureReasons": [
+    "bad_tags:br"
+  ]
+}

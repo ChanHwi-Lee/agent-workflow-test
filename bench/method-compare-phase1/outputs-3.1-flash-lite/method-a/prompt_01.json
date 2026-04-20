@@ -1,0 +1,21 @@
+{
+  "id": "prompt_01",
+  "domain": "restaurant",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "식당에서 신규 봄 계절메뉴를 만들어줘",
+  "latencyMs": 3247,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FDF6F0\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 528,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 150,\n      \"width\": 550,\n      \"height\": 100,\n      \"text\": \"봄을 담은 신메뉴\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#2D3436\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 260,\n      \"width\": 500,\n      \"height\": 120,\n      \"text\": \"싱그러운 봄의 맛을 식탁에서 만나보세요.\\n제철 식재료로 정성껏 준비했습니다.\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#636E72\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 420,\n      \"width\": 240,\n      \"height\": 70,\n      \"fill\": \"#FF7675\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 435,\n      \"width\": 240,\n      \"height\": 50,\n      \"text\": \"메뉴 확인하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1498,
+  "usage": {
+    "promptTokenCount": 1202,
+    "candidatesTokenCount": 630,
+    "totalTokenCount": 1832,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:16.307Z"
+}

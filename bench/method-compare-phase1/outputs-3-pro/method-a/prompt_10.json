@@ -1,0 +1,21 @@
+{
+  "id": "prompt_10",
+  "domain": "real_estate",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "신규 아파트 분양 오픈하우스 초대 배너",
+  "latencyMs": 23610,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#1A2B4C\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"PREMIUM RESIDENCE\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#D4AF37\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 180,\n      \"width\": 550,\n      \"height\": 140,\n      \"text\": \"더 팰리스 하이츠\\n오픈하우스 초대\",\n      \"fontFamily\": \"NanumSquare\",\n      \"fontSize\": 64,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 340,\n      \"width\": 550,\n      \"height\": 60,\n      \"text\": \"당신이 꿈꾸던 완벽한 주거공간을 만나보세요.\\n방문 고객 전원 특별 사은품 증정\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 22,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E0E0E0\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 430,\n      \"width\": 400,\n      \"height\": 60,\n      \"fill\": \"#2A3B5C\",\n      \"rx\": 8,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 448,\n      \"width\": 400,\n      \"height\": 30,\n      \"text\": \"일시: 11.10(금) - 11.12(일) | 장소: VIP 라운지\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 18,\n      \"fontWeight\": 500,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 510,\n      \"width\": 220,\n      \"height\": 60,\n      \"fill\": \"#D4AF37\",\n      \"rx\": 30,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 526,\n      \"width\": 220,\n      \"height\": 30,\n      \"text\": \"사전예약 바로가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 20,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#1A2B4C\"\n    }\n  ]\n}",
+  "outputBytes": 2293,
+  "usage": {
+    "promptTokenCount": 1201,
+    "candidatesTokenCount": 972,
+    "totalTokenCount": 4020,
+    "thoughtsTokenCount": 1847,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:33:52.425Z"
+}

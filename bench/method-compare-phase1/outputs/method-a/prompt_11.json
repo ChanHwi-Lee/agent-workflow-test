@@ -1,0 +1,18 @@
+{
+  "id": "prompt_11",
+  "domain": "automotive",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "전기차 시승 이벤트 배너 만들어줘",
+  "latencyMs": 14124,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#0D1B2A\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 500,\n      \"top\": 0,\n      \"width\": 700,\n      \"height\": 628,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 700,\n      \"height\": 628,\n      \"fill\": \"#0D1B2A\",\n      \"rx\": 0,\n      \"opacity\": 0.5\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 140,\n      \"width\": 500,\n      \"height\": 60,\n      \"text\": \"미래를 먼저 경험하세요\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 36,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#A9D6E5\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 200,\n      \"width\": 550,\n      \"height\": 180,\n      \"text\": \"최신 전기차\\n시승 이벤트\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 88,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 300,\n      \"height\": 70,\n      \"fill\": \"#4CAF50\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 300,\n      \"height\": 70,\n      \"text\": \"지금 신청하기\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1601,
+  "usage": {
+    "promptTokenCount": 1199,
+    "candidatesTokenCount": 684,
+    "totalTokenCount": 3142
+  },
+  "finishedAt": "2026-04-20T05:07:32.606Z"
+}

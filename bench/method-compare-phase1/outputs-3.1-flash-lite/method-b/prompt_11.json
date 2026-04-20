@@ -1,0 +1,21 @@
+{
+  "id": "prompt_11",
+  "domain": "automotive",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "전기차 시승 이벤트 배너 만들어줘",
+  "latencyMs": 2897,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#1A1A1A;\"></div>\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #0055FF, #001133);\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"electric vehicle\" data-aspect=\"16:9\" src=\"placeholder://\" style=\"position:absolute; left:500px; top:150px; width:650px; height:365px;\" />\n  <h1 style=\"position:absolute; left:80px; top:120px; width:500px; height:120px; font-family:sans-serif; font-size:64px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.2;\">전기차 시승<br>특별 이벤트</h1>\n  <p style=\"position:absolute; left:80px; top:280px; width:450px; height:100px; font-family:sans-serif; font-size:28px; font-weight:400; color:#E0E0E0; text-align:left; line-height:1.5;\">지금 바로 신청하고<br>최신 전기차를 직접 경험해보세요.</p>\n  <div style=\"position:absolute; left:80px; top:420px; width:280px; height:70px; background-color:#FFFFFF; border-radius:35px;\"></div>\n  <span style=\"position:absolute; left:80px; top:438px; width:280px; height:40px; font-family:sans-serif; font-size:24px; font-weight:700; color:#0055FF; text-align:center;\">시승 신청하기</span>\n  <div style=\"position:absolute; left:80px; top:540px; width:400px; height:30px; font-family:sans-serif; font-size:18px; font-weight:400; color:#AAAAAA; text-align:left;\">* 선착순 마감될 수 있습니다.</div>\n</div>",
+  "outputBytes": 1577,
+  "usage": {
+    "promptTokenCount": 1060,
+    "candidatesTokenCount": 614,
+    "totalTokenCount": 1674,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:46.693Z"
+}

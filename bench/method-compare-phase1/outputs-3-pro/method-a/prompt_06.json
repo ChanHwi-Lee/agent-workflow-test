@@ -1,0 +1,21 @@
+{
+  "id": "prompt_06",
+  "domain": "fitness",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "헬스장 신규 회원 3개월 30% 할인 프로모션 배너",
+  "latencyMs": 21701,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#121212\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 600,\n      \"top\": 0,\n      \"width\": 600,\n      \"height\": 628,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 150,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"신규 회원 한정 프로모션\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#CCFF00\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 210,\n      \"width\": 500,\n      \"height\": 80,\n      \"text\": \"3개월 등록 시\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 300,\n      \"width\": 500,\n      \"height\": 100,\n      \"text\": \"30% 파격 할인\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 84,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 280,\n      \"height\": 70,\n      \"fill\": \"#CCFF00\",\n      \"rx\": 8,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 465,\n      \"width\": 280,\n      \"height\": 40,\n      \"text\": \"상담 예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#121212\"\n    }\n  ]\n}",
+  "outputBytes": 1696,
+  "usage": {
+    "promptTokenCount": 1208,
+    "candidatesTokenCount": 715,
+    "totalTokenCount": 3984,
+    "thoughtsTokenCount": 2061,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:33:09.058Z"
+}

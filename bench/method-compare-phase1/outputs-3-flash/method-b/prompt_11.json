@@ -1,0 +1,21 @@
+{
+  "id": "prompt_11",
+  "domain": "automotive",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "전기차 시승 이벤트 배너 만들어줘",
+  "latencyMs": 11015,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #0a0e17, #1a253a);\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"sleek modern electric car side view\" data-aspect=\"16:9\" src=\"placeholder://\" style=\"position:absolute; left:420px; top:140px; width:740px; height:416px;\" />\n  <h1 style=\"position:absolute; left:80px; top:120px; width:600px; height:180px; font-family:Pretendard; font-size:76px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.1;\">전기차 시승<br>이벤트</h1>\n  <p style=\"position:absolute; left:80px; top:310px; width:500px; height:40px; font-family:Pretendard; font-size:32px; font-weight:500; color:#00D1FF; text-align:left; line-height:1.0;\">미래의 드라이빙을 경험하세요</p>\n  <p style=\"position:absolute; left:80px; top:365px; width:500px; height:30px; font-family:Pretendard; font-size:22px; font-weight:400; color:#94A3B8; text-align:left; line-height:1.0;\">2024.05.01 - 05.31 | 전국 시승 센터</p>\n  <div style=\"position:absolute; left:80px; top:460px; width:280px; height:76px; background-color:#00D1FF; border-radius:8px;\"></div>\n  <span style=\"position:absolute; left:80px; top:482px; width:280px; height:32px; font-family:Pretendard; font-size:28px; font-weight:800; color:#0a0e17; text-align:center; line-height:1.0;\">지금 신청하기</span>\n  <div style=\"position:absolute; left:80px; top:80px; width:60px; height:6px; background-color:#00D1FF;\"></div>\n  <img data-tooldi-role=\"logo\" data-hint=\"electric vehicle brand logo\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:1080px; top:40px; width:60px; height:60px;\" />\n</div>",
+  "outputBytes": 1770,
+  "usage": {
+    "promptTokenCount": 1060,
+    "candidatesTokenCount": 712,
+    "totalTokenCount": 3455,
+    "thoughtsTokenCount": 1683,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:30:09.154Z"
+}

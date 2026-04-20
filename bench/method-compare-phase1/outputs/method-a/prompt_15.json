@@ -1,0 +1,18 @@
+{
+  "id": "prompt_15",
+  "domain": "healthcare",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "건강검진센터 봄맞이 종합검진 할인 배너",
+  "latencyMs": 20138,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#F1F8E9\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 528,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 100,\n      \"width\": 550,\n      \"height\": 60,\n      \"text\": \"새로운 시작, 건강한 봄\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 42,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#2E7D32\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 160,\n      \"width\": 550,\n      \"height\": 160,\n      \"text\": \"종합검진\\n특별 할인\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 88,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#1B5E20\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 350,\n      \"width\": 550,\n      \"height\": 80,\n      \"text\": \"우리 가족의 건강을 위한 최고의 선택\\n지금 바로 상담 신청하세요.\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#333333\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 480,\n      \"width\": 260,\n      \"height\": 70,\n      \"fill\": \"#4CAF50\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 480,\n      \"width\": 260,\n      \"height\": 70,\n      \"text\": \"이벤트 자세히 보기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1781,
+  "usage": {
+    "promptTokenCount": 1203,
+    "candidatesTokenCount": 737,
+    "totalTokenCount": 3653
+  },
+  "finishedAt": "2026-04-20T05:07:56.935Z"
+}

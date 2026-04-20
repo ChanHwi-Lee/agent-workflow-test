@@ -1,0 +1,21 @@
+{
+  "id": "prompt_02",
+  "domain": "cafe",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘",
+  "latencyMs": 6733,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFF0F5\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 528,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 140,\n      \"width\": 550,\n      \"height\": 160,\n      \"text\": \"상큼 달콤,\\n딸기 신메뉴 출시\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#D32F2F\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 330,\n      \"width\": 550,\n      \"height\": 50,\n      \"text\": \"제철 딸기의 진한 풍미를 느껴보세요\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#5D4037\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 440,\n      \"width\": 240,\n      \"height\": 70,\n      \"fill\": \"#D32F2F\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 440,\n      \"width\": 240,\n      \"height\": 70,\n      \"text\": \"지금 맛보기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1452,
+  "usage": {
+    "promptTokenCount": 1206,
+    "candidatesTokenCount": 619,
+    "totalTokenCount": 2751,
+    "thoughtsTokenCount": 926,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:27:46.929Z"
+}

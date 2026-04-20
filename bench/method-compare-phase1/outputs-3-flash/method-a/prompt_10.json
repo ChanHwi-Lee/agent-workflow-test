@@ -1,0 +1,21 @@
+{
+  "id": "prompt_10",
+  "domain": "real_estate",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "신규 아파트 분양 오픈하우스 초대 배너",
+  "latencyMs": 13486,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFFFFF\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 480,\n      \"height\": 628,\n      \"fill\": \"#002147\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 520,\n      \"top\": 40,\n      \"width\": 640,\n      \"height\": 548,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 100,\n      \"width\": 360,\n      \"height\": 40,\n      \"text\": \"PREMIUM RESIDENCE\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#90CAF9\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 160,\n      \"width\": 360,\n      \"height\": 160,\n      \"text\": \"신규 분양\\n오픈하우스 초대\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 52,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 350,\n      \"width\": 360,\n      \"height\": 80,\n      \"text\": \"일시: 2023.12.01 - 12.03\\n장소: 모델하우스 홍보관\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 20,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E3F2FD\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 480,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#FFD700\",\n      \"rx\": 8,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 480,\n      \"width\": 240,\n      \"height\": 64,\n      \"text\": \"사전 예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#002147\"\n    }\n  ]\n}",
+  "outputBytes": 1909,
+  "usage": {
+    "promptTokenCount": 1201,
+    "candidatesTokenCount": 823,
+    "totalTokenCount": 4154,
+    "thoughtsTokenCount": 2130,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:28:17.315Z"
+}

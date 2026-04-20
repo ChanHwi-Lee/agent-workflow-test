@@ -1,0 +1,21 @@
+{
+  "id": "prompt_20",
+  "domain": "generic_event",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "여름 휴가 시즌 프로모션 배너 만들어줘",
+  "latencyMs": 29814,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #E1F5FE, #81D4FA);\"></div>\n  <div style=\"position:absolute; left:0px; top:528px; width:1200px; height:100px; background-color:#29B6F6; opacity:0.4; border-radius:50px 50px 0px 0px;\"></div>\n  <div style=\"position:absolute; left:80px; top:80px; width:120px; height:120px; background-color:#FFCA28; border-radius:60px;\"></div>\n  <img data-tooldi-role=\"decoration\" data-hint=\"palm tree illustration\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:480px; top:90px; width:140px; height:140px;\" />\n  <h1 style=\"position:absolute; left:80px; top:220px; width:550px; height:80px; font-family:BlackHanSans; font-size:68px; font-weight:900; color:#01579B; text-align:left; line-height:1.1;\">여름 휴가 완벽 준비</h1>\n  <p style=\"position:absolute; left:80px; top:320px; width:550px; height:40px; font-family:Pretendard; font-size:32px; font-weight:700; color:#0288D1; text-align:left; line-height:1.2;\">최대 50% 바캉스 특가 할인</p>\n  <div style=\"position:absolute; left:80px; top:420px; width:240px; height:64px; background-color:#FF7043; border-radius:32px; box-shadow:4px 4px 12px rgba(255,112,67,0.4);\"></div>\n  <span style=\"position:absolute; left:80px; top:436px; width:240px; height:32px; font-family:Pretendard; font-size:24px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1.0;\">특가 상품 보기</span>\n  <img data-tooldi-role=\"hero\" data-hint=\"summer vacation beach\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:640px; top:64px; width:500px; height:500px; border-radius:40px; box-shadow:8px 8px 24px rgba(0,0,0,0.15);\" />\n</div>",
+  "outputBytes": 1811,
+  "usage": {
+    "promptTokenCount": 1062,
+    "candidatesTokenCount": 745,
+    "totalTokenCount": 4693,
+    "thoughtsTokenCount": 2886,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:42:00.014Z"
+}

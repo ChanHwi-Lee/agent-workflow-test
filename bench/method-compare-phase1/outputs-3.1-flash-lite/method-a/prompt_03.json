@@ -1,0 +1,21 @@
+{
+  "id": "prompt_03",
+  "domain": "fashion",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "패션 리테일 봄 세일 배너 만들어줘",
+  "latencyMs": 3409,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FDF6F0\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 528,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 150,\n      \"width\": 500,\n      \"height\": 100,\n      \"text\": \"SPRING SALE\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 80,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#D35400\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 260,\n      \"width\": 500,\n      \"height\": 60,\n      \"text\": \"봄 신상 최대 50% 할인\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 40,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#333333\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 380,\n      \"width\": 240,\n      \"height\": 70,\n      \"fill\": \"#333333\",\n      \"rx\": 35,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 400,\n      \"width\": 240,\n      \"height\": 40,\n      \"text\": \"쇼핑하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1398,
+  "usage": {
+    "promptTokenCount": 1201,
+    "candidatesTokenCount": 607,
+    "totalTokenCount": 1808,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:16.492Z"
+}

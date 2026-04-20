@@ -1,0 +1,21 @@
+{
+  "id": "prompt_05",
+  "domain": "beauty",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "여름 신상 립스틱 출시 배너 - 20% 할인 쿠폰",
+  "latencyMs": 37377,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #FF758C, #FF7EB3);\"></div>\n  <div style=\"position:absolute; left:650px; top:89px; width:450px; height:450px; background-color:#FFFFFF; border-radius:225px; opacity:0.2;\"></div>\n  <div style=\"position:absolute; left:1020px; top:80px; width:60px; height:60px; background-color:#FFD700; border-radius:30px; opacity:0.9;\"></div>\n  <img data-tooldi-role=\"product\" data-hint=\"summer vibrant lipstick\" data-aspect=\"4:5\" src=\"placeholder://\" style=\"position:absolute; left:675px; top:64px; width:400px; height:500px;\" />\n  <p style=\"position:absolute; left:100px; top:140px; width:500px; height:40px; font-family:Pretendard; font-size:28px; font-weight:700; color:#FFE0E5; text-align:left; line-height:1.2;\">SUMMER NEW ARRIVAL</p>\n  <h1 style=\"position:absolute; left:100px; top:190px; width:550px; height:70px; font-family:BlackHanSans; font-size:64px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.1;\">여름 신상 립스틱</h1>\n  <h2 style=\"position:absolute; left:100px; top:270px; width:550px; height:70px; font-family:BlackHanSans; font-size:64px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.1;\">출시 기념 이벤트</h2>\n  <div style=\"position:absolute; left:100px; top:370px; width:340px; height:60px; background-color:#FFD700; border-radius:30px; box-shadow:2px 4px 10px rgba(0,0,0,0.15);\"></div>\n  <span style=\"position:absolute; left:100px; top:382px; width:340px; height:36px; font-family:Pretendard; font-size:28px; font-weight:800; color:#D81B60; text-align:center; line-height:1.2;\">전상품 20% 할인 쿠폰</span>\n  <div style=\"position:absolute; left:100px; top:470px; width:220px; height:64px; background-color:#FFFFFF; border-radius:32px; box-shadow:0px 4px 12px rgba(0,0,0,0.1);\"></div>\n  <span style=\"position:absolute; left:100px; top:486px; width:220px; height:32px; font-family:Pretendard; font-size:24px; font-weight:700; color:#FF758C; text-align:center; line-height:1.2;\">지금 다운받기</span>\n</div>",
+  "outputBytes": 2167,
+  "usage": {
+    "promptTokenCount": 1069,
+    "candidatesTokenCount": 883,
+    "totalTokenCount": 5681,
+    "thoughtsTokenCount": 3729,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:48:09.052Z"
+}

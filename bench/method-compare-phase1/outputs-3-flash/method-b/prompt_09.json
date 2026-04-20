@@ -1,0 +1,21 @@
+{
+  "id": "prompt_09",
+  "domain": "education",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "코딩 부트캠프 수강생 모집 배너 - 얼리버드 40% 할인",
+  "latencyMs": 29380,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #0F172A, #1E293B); z-index:1;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"coding student with laptop\" data-aspect=\"440:468\" src=\"placeholder://\" style=\"position:absolute; left:680px; top:80px; width:440px; height:468px; z-index:2;\" />\n  <img data-tooldi-role=\"logo\" data-hint=\"tech academy logo\" data-aspect=\"4:1\" src=\"placeholder://\" style=\"position:absolute; left:80px; top:60px; width:120px; height:30px; z-index:2;\" />\n  <div style=\"position:absolute; left:80px; top:120px; width:550px; height:160px; font-family:Pretendard; font-size:64px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.2; display:",
+  "outputBytes": 824,
+  "usage": {
+    "promptTokenCount": 1072,
+    "candidatesTokenCount": 328,
+    "totalTokenCount": 9260,
+    "thoughtsTokenCount": 7860,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "MAX_TOKENS",
+  "finishedAt": "2026-04-20T05:29:57.851Z"
+}

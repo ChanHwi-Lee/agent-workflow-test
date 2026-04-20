@@ -1,0 +1,21 @@
+{
+  "id": "prompt_15",
+  "domain": "healthcare",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "건강검진센터 봄맞이 종합검진 할인 배너",
+  "latencyMs": 3511,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#F0F9F4\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 528,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 120,\n      \"width\": 550,\n      \"height\": 100,\n      \"text\": \"봄맞이 종합검진\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#2D6A4F\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 230,\n      \"width\": 500,\n      \"height\": 60,\n      \"text\": \"건강한 일상을 위한 특별한 혜택\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#40916C\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 350,\n      \"width\": 280,\n      \"height\": 80,\n      \"fill\": \"#2D6A4F\",\n      \"rx\": 40,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 372,\n      \"width\": 280,\n      \"height\": 40,\n      \"text\": \"할인 예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 460,\n      \"width\": 400,\n      \"height\": 40,\n      \"text\": \"* 선착순 100명 한정 이벤트\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 20,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#777777\"\n    }\n  ]\n}",
+  "outputBytes": 1727,
+  "usage": {
+    "promptTokenCount": 1203,
+    "candidatesTokenCount": 736,
+    "totalTokenCount": 1939,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:29.301Z"
+}

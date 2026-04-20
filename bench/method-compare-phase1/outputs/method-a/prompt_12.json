@@ -1,0 +1,18 @@
+{
+  "id": "prompt_12",
+  "domain": "hotel",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "제주도 럭셔리 호텔 여름 성수기 특가 배너",
+  "latencyMs": 16928,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#0D1B2A\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 620,\n      \"top\": 0,\n      \"width\": 580,\n      \"height\": 628,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 620,\n      \"top\": 0,\n      \"width\": 580,\n      \"height\": 628,\n      \"fill\": \"#000000\",\n      \"rx\": 0,\n      \"opacity\": 0.2\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 120,\n      \"width\": 500,\n      \"height\": 60,\n      \"text\": \"JEJU LUXURY HOTEL\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#D4AF37\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 180,\n      \"width\": 520,\n      \"height\": 180,\n      \"text\": \"가장 완벽한 여름휴가\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 360,\n      \"width\": 500,\n      \"height\": 50,\n      \"text\": \"여름 성수기 단독 특가\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 36,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E0E0E0\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 480,\n      \"width\": 260,\n      \"height\": 64,\n      \"fill\": \"#D4AF37\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 480,\n      \"width\": 260,\n      \"height\": 64,\n      \"text\": \"예약하기\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#0D1B2A\"\n    }\n  ]\n}",
+  "outputBytes": 1867,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 808,
+    "totalTokenCount": 3404
+  },
+  "finishedAt": "2026-04-20T05:07:36.797Z"
+}

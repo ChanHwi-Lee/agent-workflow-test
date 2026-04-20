@@ -1,0 +1,21 @@
+{
+  "id": "prompt_01",
+  "domain": "restaurant",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "식당에서 신규 봄 계절메뉴를 만들어줘",
+  "latencyMs": 2860,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FDFBF7;\"></div>\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #E8F5E9, #FFFFFF);\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"spring salad with flowers\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:650px; top:80px; width:450px; height:450px;\" />\n  <h1 style=\"position:absolute; left:80px; top:150px; width:550px; height:120px; font-family:sans-serif; font-size:72px; font-weight:900; color:#2E7D32; text-align:left; line-height:1.2;\">봄의 향기,<br>신선한 식탁</h1>\n  <p style=\"position:absolute; left:80px; top:300px; width:500px; height:100px; font-family:sans-serif; font-size:32px; font-weight:400; color:#555555; text-align:left; line-height:1.5;\">제철 나물과 꽃잎으로 완성한<br>봄 한정 스페셜 메뉴를 만나보세요.</p>\n  <div style=\"position:absolute; left:80px; top:450px; width:280px; height:80px; background-color:#2E7D32; border-radius:40px;\"></div>\n  <span style=\"position:absolute; left:80px; top:472px; width:280px; height:40px; font-family:sans-serif; font-size:28px; font-weight:700; color:#FFFFFF; text-align:center;\">메뉴 확인하기</span>\n  <div style=\"position:absolute; left:1050px; top:30px; width:100px; height:100px; background-color:#FFCCBC; border-radius:50px; opacity:0.5;\"></div>\n</div>",
+  "outputBytes": 1529,
+  "usage": {
+    "promptTokenCount": 1063,
+    "candidatesTokenCount": 603,
+    "totalTokenCount": 1666,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:31:35.280Z"
+}

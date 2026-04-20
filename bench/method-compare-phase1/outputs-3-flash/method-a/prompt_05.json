@@ -1,0 +1,21 @@
+{
+  "id": "prompt_05",
+  "domain": "beauty",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "여름 신상 립스틱 출시 배너 - 20% 할인 쿠폰",
+  "latencyMs": 8039,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFF0F5\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 50,\n      \"width\": 500,\n      \"height\": 528,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 140,\n      \"width\": 550,\n      \"height\": 100,\n      \"text\": \"여름 신상 립스틱 출시\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#D81B60\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 250,\n      \"width\": 550,\n      \"height\": 50,\n      \"text\": \"올 여름, 당신을 빛낼 가장 선명한 컬러\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#444444\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 340,\n      \"width\": 340,\n      \"height\": 90,\n      \"fill\": \"#FF4081\",\n      \"rx\": 12,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 340,\n      \"width\": 340,\n      \"height\": 90,\n      \"text\": \"20% 할인 쿠폰\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 40,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 470,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#333333\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 470,\n      \"width\": 240,\n      \"height\": 64,\n      \"text\": \"지금 쇼핑하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1901,
+  "usage": {
+    "promptTokenCount": 1208,
+    "candidatesTokenCount": 808,
+    "totalTokenCount": 3065,
+    "thoughtsTokenCount": 1049,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:27:59.181Z"
+}

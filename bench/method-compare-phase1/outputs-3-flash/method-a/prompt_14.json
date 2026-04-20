@@ -1,0 +1,21 @@
+{
+  "id": "prompt_14",
+  "domain": "pet",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-flash-preview",
+  "prompt": "반려동물 프리미엄 사료 신상품 런칭 배너",
+  "latencyMs": 8012,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FDFCF0\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 150,\n      \"width\": 550,\n      \"height\": 120,\n      \"text\": \"프리미엄 펫푸드 런칭\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#3E2723\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 280,\n      \"width\": 550,\n      \"height\": 60,\n      \"text\": \"엄선된 원료로 만든 건강한 한 끼\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#5D4037\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 420,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#8D6E63\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 420,\n      \"width\": 240,\n      \"height\": 64,\n      \"text\": \"자세히 보기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1437,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 618,
+    "totalTokenCount": 3023,
+    "thoughtsTokenCount": 1200,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:28:29.475Z"
+}

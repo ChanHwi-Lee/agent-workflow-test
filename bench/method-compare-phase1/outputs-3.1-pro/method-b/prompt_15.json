@@ -1,0 +1,21 @@
+{
+  "id": "prompt_15",
+  "domain": "healthcare",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "건강검진센터 봄맞이 종합검진 할인 배너",
+  "latencyMs": 48169,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #F1F8E9, #DCEDC8);\"></div>\n  <img data-tooldi-role=\"logo\" data-hint=\"medical center logo\" data-aspect=\"4:1\" src=\"placeholder://\" style=\"position:absolute; left:80px; top:50px; width:160px; height:40px;\" />\n  <div style=\"position:absolute; left:80px; top:130px; width:140px; height:36px; background-color:#A5D6A7; border-radius:18px;\"></div>\n  <span style=\"position:absolute; left:80px; top:137px; width:140px; height:22px; font-family:Pretendard; font-size:18px; font-weight:700; color:#1B5E20; text-align:center;\">봄맞이 특별기획</span>\n  <h1 style=\"position:absolute; left:80px; top:190px; width:550px; height:75px; font-family:Pretendard; font-size:64px; font-weight:800; color:#2E7D32; text-align:left;\">따스한 봄날의</h1>\n  <h1 style=\"position:absolute; left:80px; top:275px; width:550px; height:75px; font-family:Pretendard; font-size:64px; font-weight:800; color:#1B5E20; text-align:left;\">종합 건강검진</h1>\n  <p style=\"position:absolute; left:80px; top:380px; width:550px; height:35px; font-family:Pretendard; font-size:26px; font-weight:500; color:#558B2F; text-align:left;\">우리 가족 건강, 미리미리 챙기세요</p>\n  <div style=\"position:absolute; left:80px; top:460px; width:320px; height:72px; background-color:#FF7043; border-radius:36px; box-shadow:4px 4px 15px rgba(255,112,67,0.3);\"></div>\n  <span style=\"position:absolute; left:80px; top:478px; width:320px; height:36px; font-family:Pretendard; font-size:30px; font-weight:800; color:#FFFFFF; text-align:center;\">패키지 최대 40% 할인</span>\n  <img data-tooldi-role=\"hero\" data-hint=\"smiling doctor and family spring concept\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:660px; top:84px; width:460px; height:460px; border-radius:230px; box-shadow:10px 10px 30px rgba(0,0,0,0.1);\" />\n  <img data-tooldi-role=\"decoration\" data-hint=\"spring cherry blossom leaves\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:580px; top:60px; width:100px; height:100px; transform:rotate(15deg);\" />\n</div>",
+  "outputBytes": 2238,
+  "usage": {
+    "promptTokenCount": 1064,
+    "candidatesTokenCount": 896,
+    "totalTokenCount": 6889,
+    "thoughtsTokenCount": 4929,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:51:22.240Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_01",
+  "domain": "restaurant",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "식당에서 신규 봄 계절메뉴를 만들어줘",
+  "latencyMs": 27502,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFF7F5\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 640,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 100,\n      \"top\": 100,\n      \"width\": 80,\n      \"height\": 80,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 200,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"봄을 담은 한 그릇\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FF6B6B\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 250,\n      \"width\": 550,\n      \"height\": 90,\n      \"text\": \"봄 시즌 한정 신메뉴\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 68,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#2D2D2D\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 360,\n      \"width\": 550,\n      \"height\": 60,\n      \"text\": \"신선한 제철 식재료로 만든 특별한 요리를 만나보세요.\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 22,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#666666\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 460,\n      \"width\": 220,\n      \"height\": 60,\n      \"fill\": \"#FF6B6B\",\n      \"rx\": 30,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 460,\n      \"width\": 220,\n      \"height\": 60,\n      \"text\": \"메뉴 보러가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 20,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1900,
+  "usage": {
+    "promptTokenCount": 1202,
+    "candidatesTokenCount": 808,
+    "totalTokenCount": 4555,
+    "thoughtsTokenCount": 2545,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:32:23.347Z"
+}

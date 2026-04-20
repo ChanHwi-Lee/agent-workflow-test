@@ -1,0 +1,21 @@
+{
+  "id": "prompt_02",
+  "domain": "cafe",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘",
+  "latencyMs": 27406,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFF0F5\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 600,\n      \"top\": 54,\n      \"width\": 520,\n      \"height\": 520,\n      \"fill\": \"#FFC0CB\",\n      \"rx\": 260,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 650,\n      \"top\": 104,\n      \"width\": 420,\n      \"height\": 420,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 150,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"상큼 달콤한 봄의 맛\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 32,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FF1493\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 210,\n      \"width\": 500,\n      \"height\": 160,\n      \"text\": \"리얼 딸기 라떼\\n신메뉴 출시\",\n      \"fontFamily\": \"Cafe24Ssurround\",\n      \"fontSize\": 64,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#333333\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 390,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"생딸기가 듬뿍 들어간 시즌 한정 음료를 만나보세요!\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 22,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#666666\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 470,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#FF3366\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 486,\n      \"width\": 240,\n      \"height\": 32,\n      \"text\": \"주문하러 가기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1940,
+  "usage": {
+    "promptTokenCount": 1206,
+    "candidatesTokenCount": 828,
+    "totalTokenCount": 4440,
+    "thoughtsTokenCount": 2406,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:42:27.499Z"
+}

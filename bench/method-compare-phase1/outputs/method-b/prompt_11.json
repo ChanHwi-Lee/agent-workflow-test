@@ -1,0 +1,18 @@
+{
+  "id": "prompt_11",
+  "domain": "automotive",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "전기차 시승 이벤트 배너 만들어줘",
+  "latencyMs": 21040,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(to right, #111827, #374151);\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"A sleek, modern electric car on a dark background\" data-aspect=\"700:628\" src=\"placeholder://\" style=\"position:absolute; left:500px; top:0px; width:700px; height:628px; opacity:0.8;\">\n  <div style=\"position:absolute; left:60px; top:160px; width:5px; height:120px; background-color:#3B82F6;\"></div>\n  <h1 style=\"position:absolute; left:85px; top:155px; width:450px; height:130px; font-family:Pretendard; font-size:54px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.2;\">차세대 전기차<br>시승 이벤트</h1>\n  <p style=\"position:absolute; left:85px; top:305px; width:450px; height:60px; font-family:Pretendard; font-size:22px; font-weight:400; color:#E5E7EB; text-align:left; line-height:1.5;\">미래의 드라이빙을 가장 먼저 경험해보세요.</p>\n  <div style=\"position:absolute; left:85px; top:420px; width:260px; height:64px; background-color:#3B82F6; border-radius:32px;\"></div>\n  <span style=\"position:absolute; left:85px; top:438px; width:260px; height:28px; font-family:Pretendard; font-size:24px; font-weight:700; color:#FFFFFF; text-align:center;\">지금 신청하기</span>\n  <img data-tooldi-role=\"logo\" data-hint=\"Electric vehicle brand logo\" data-aspect=\"3:1\" src=\"placeholder://\" style=\"position:absolute; left:85px; top:60px; width:150px; height:50px;\">\n</div>",
+  "outputBytes": 1577,
+  "usage": {
+    "promptTokenCount": 1060,
+    "candidatesTokenCount": 604,
+    "totalTokenCount": 3871
+  },
+  "finishedAt": "2026-04-20T05:09:25.480Z"
+}

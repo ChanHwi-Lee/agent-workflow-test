@@ -1,0 +1,18 @@
+{
+  "id": "prompt_20",
+  "domain": "generic_event",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "여름 휴가 시즌 프로모션 배너 만들어줘",
+  "latencyMs": 18343,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"image\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"assetId\": \"photo:1002\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#0D47A1\",\n      \"rx\": 0,\n      \"opacity\": 0.5\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 140,\n      \"width\": 800,\n      \"height\": 120,\n      \"text\": \"올 여름, 최고의 휴가\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 92,\n      \"fontWeight\": 900,\n      \"textAlign\": \"left\",\n      \"fill\": \"#FFFFFF\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 65,\n      \"top\": 270,\n      \"width\": 700,\n      \"height\": 80,\n      \"text\": \"항공권부터 숙소까지, 최대 40% 할인 혜택!\\n지금 바로 여행을 계획해보세요.\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 30,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#E3F2FD\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 60,\n      \"top\": 450,\n      \"width\": 320,\n      \"height\": 72,\n      \"fill\": \"#FFD600\",\n      \"rx\": 36,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 60,\n      \"top\": 450,\n      \"width\": 320,\n      \"height\": 72,\n      \"text\": \"프로모션 확인하기\",\n      \"fontFamily\": \"NotoSansKR\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#111111\"\n    }\n  ]\n}",
+  "outputBytes": 1500,
+  "usage": {
+    "promptTokenCount": 1201,
+    "candidatesTokenCount": 628,
+    "totalTokenCount": 3447
+  },
+  "finishedAt": "2026-04-20T05:08:15.279Z"
+}

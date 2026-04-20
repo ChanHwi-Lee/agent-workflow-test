@@ -1,0 +1,18 @@
+{
+  "id": "prompt_03",
+  "domain": "fashion",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-2.5-pro",
+  "prompt": "패션 리테일 봄 세일 배너 만들어줘",
+  "latencyMs": 32169,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #F5F5F5, #E8EAF6);\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"model wearing a stylish spring outfit like a trench coat or floral dress\" data-aspect=\"45:59\" src=\"placeholder://\" style=\"position:absolute; left:680px; top:40px; width:450px; height:590px;\"/>\n  <h1 style=\"position:absolute; left:80px; top:160px; width:560px; height:100px; font-family:Georgia; font-size:90px; font-weight:700; color:#37474F; text-align:left; line-height:1.1;\">Spring Sale</h1>\n  <p style=\"position:absolute; left:85px; top:280px; width:550px; height:80px; font-family:Helvetica; font-size:28px; font-weight:400; color:#546E7A; text-align:left; line-height:1.4;\">새로운 시즌을 위한 컬렉션,<br>최대 50% 할인 혜택을 만나보세요.</p>\n  <div style=\"position:absolute; left:80px; top:420px; width:260px; height:60px; background-color:#37474F; border-radius:30px;\"></div>\n  <span style=\"position:absolute; left:80px; top:435px; width:260px; height:30px; font-family:Helvetica; font-size:22px; font-weight:700; color:#FFFFFF; text-align:center;\">SHOP NOW</span>\n  <p style=\"position:absolute; left:80px; top:100px; width:400px; height:30px; font-family:Helvetica; font-size:20px; font-weight:700; color:#78909C; text-align:left;\">2024 S/S COLLECTION</p>\n</div>",
+  "outputBytes": 1460,
+  "usage": {
+    "promptTokenCount": 1062,
+    "candidatesTokenCount": 578,
+    "totalTokenCount": 5483
+  },
+  "finishedAt": "2026-04-20T05:08:49.120Z"
+}

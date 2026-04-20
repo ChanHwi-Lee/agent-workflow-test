@@ -1,0 +1,21 @@
+{
+  "id": "prompt_02",
+  "domain": "cafe",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘",
+  "latencyMs": 29579,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FFF0F5;\"></div>\n  <div style=\"position:absolute; left:600px; top:40px; width:540px; height:540px; background-color:#FFE4E1; border-radius:270px;\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"fresh strawberry latte drink\" data-aspect=\"4:5\" src=\"placeholder://\" style=\"position:absolute; left:645px; top:64px; width:450px; height:500px;\" />\n  <img data-tooldi-role=\"decoration\" data-hint=\"small strawberry illustration\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:520px; top:120px; width:80px; height:80px; transform:rotate(-15deg);\" />\n  <div style=\"position:absolute; left:100px; top:130px; width:160px; height:46px; background-color:#FF4B6A; border-radius:23px;\"></div>\n  <span style=\"position:absolute; left:100px; top:140px; width:160px; height:26px; font-family:Pretendard; font-size:20px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1.2;\">SEASON LIMITED</span>\n  <p style=\"position:absolute; left:100px; top:200px; width:500px; height:40px; font-family:Pretendard; font-size:32px; font-weight:600; color:#FF4B6A; text-align:left; line-height:1.2;\">입안 가득 퍼지는 봄의 향기</p>\n  <h1 style=\"position:absolute; left:96px; top:250px; width:550px; height:120px; font-family:BlackHanSans; font-size:88px; font-weight:900; color:#222222; text-align:left; line-height:1.2;\">리얼 딸기 라떼</h1>\n  <p style=\"position:absolute; left:100px; top:380px; width:500px; height:70px; font-family:Pretendard; font-size:24px; font-weight:400; color:#555555; text-align:left; line-height:1.4;\">매일 아침 들어오는 신선한 생딸기를<br>듬뿍 넣어 만든 달콤한 시즌 한정 음료</p>\n  <div style=\"position:absolute; left:100px; top:490px; width:220px; height:64px; background-color:#222222; border-radius:8px;\"></div>\n  <span style=\"position:absolute; left:100px; top:508px; width:220px; height:28px; font-family:Pretendard; font-size:24px; font-weight:700; color:#FFFFFF; text-align:center; line-height:1.2;\">신메뉴 맛보기</span>\n</div>",
+  "outputBytes": 2192,
+  "usage": {
+    "promptTokenCount": 1067,
+    "candidatesTokenCount": 853,
+    "totalTokenCount": 4757,
+    "thoughtsTokenCount": 2837,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:46:51.693Z"
+}

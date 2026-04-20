@@ -1,0 +1,21 @@
+{
+  "id": "prompt_17",
+  "domain": "delivery",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "배달앱 첫 주문 5천원 할인 쿠폰 배너",
+  "latencyMs": 32125,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-image:linear-gradient(135deg, #FF512F, #F09819);\"></div>\n  <img data-tooldi-role=\"hero\" data-hint=\"delicious delivery food like fried chicken or pizza\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:680px; top:89px; width:450px; height:450px; z-index:2;\" />\n  <img data-tooldi-role=\"decoration\" data-hint=\"3d gold coin\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:580px; top:120px; width:90px; height:90px; transform:rotate(-15deg); z-index:1;\" />\n  <img data-tooldi-role=\"decoration\" data-hint=\"3d star\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:1080px; top:480px; width:80px; height:80px; transform:rotate(20deg); z-index:3;\" />\n  <p style=\"position:absolute; left:80px; top:160px; width:500px; height:40px; font-family:Pretendard; font-size:32px; font-weight:600; color:#FFFFFF; text-align:left; line-height:1.2; z-index:2;\">배달앱이 처음이라면?</p>\n  <h1 style=\"position:absolute; left:80px; top:210px; width:600px; height:80px; font-family:BlackHanSans; font-size:72px; font-weight:900; color:#FFFFFF; text-align:left; line-height:1.1; z-index:2;\">첫 주문 누구나</h1>\n  <h2 style=\"position:absolute; left:80px; top:290px; width:600px; height:90px; font-family:BlackHanSans; font-size:80px; font-weight:900; color:#FFE600; text-align:left; line-height:1.1; z-index:2;\">5,000원 할인</h2>\n  <div style=\"position:absolute; left:80px; top:430px; width:280px; height:76px; background-color:#222222; border-radius:38px; box-shadow:0px 8px 16px rgba(0,0,0,0.25); z-index:2;\"></div>\n  <span style=\"position:absolute; left:80px; top:450px; width:280px; height:36px; font-family:Pretendard; font-size:28px; font-weight:800; color:#FFFFFF; text-align:center; line-height:1.2; z-index:3;\">쿠폰 다운받기</span>\n</div>",
+  "outputBytes": 1978,
+  "usage": {
+    "promptTokenCount": 1064,
+    "candidatesTokenCount": 790,
+    "totalTokenCount": 5095,
+    "thoughtsTokenCount": 3241,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:41:25.912Z"
+}

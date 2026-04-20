@@ -1,0 +1,21 @@
+{
+  "id": "prompt_01",
+  "domain": "restaurant",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "식당에서 신규 봄 계절메뉴를 만들어줘",
+  "latencyMs": 25160,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#FFF9F0\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 640,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"assetId\": \"photo:1001\"\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 80,\n      \"top\": 80,\n      \"width\": 60,\n      \"height\": 60,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 160,\n      \"width\": 500,\n      \"height\": 40,\n      \"text\": \"입안 가득 퍼지는 봄의 향기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 28,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#4CAF50\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 220,\n      \"width\": 550,\n      \"height\": 90,\n      \"text\": \"봄 시즌 한정 신메뉴\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 64,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#222222\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 330,\n      \"width\": 550,\n      \"height\": 80,\n      \"text\": \"향긋한 봄나물과 신선한 제철 식재료로 만든\\n특별한 봄맞이 한 상을 즐겨보세요.\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#666666\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 80,\n      \"top\": 450,\n      \"width\": 240,\n      \"height\": 64,\n      \"fill\": \"#FF7F50\",\n      \"rx\": 32,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 80,\n      \"top\": 466,\n      \"width\": 240,\n      \"height\": 32,\n      \"text\": \"예약하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 1933,
+  "usage": {
+    "promptTokenCount": 1202,
+    "candidatesTokenCount": 813,
+    "totalTokenCount": 4096,
+    "thoughtsTokenCount": 2081,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:42:25.220Z"
+}

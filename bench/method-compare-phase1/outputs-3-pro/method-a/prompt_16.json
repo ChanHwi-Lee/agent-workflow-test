@@ -1,0 +1,21 @@
+{
+  "id": "prompt_16",
+  "domain": "mobile_app",
+  "method": "method-a",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3-pro-preview",
+  "prompt": "가계부 앱 신규 가입 첫달 무료 프로모션 배너",
+  "latencyMs": 21707,
+  "outputText": "{\n  \"canvas\": {\n    \"width\": 1200,\n    \"height\": 628\n  },\n  \"objects\": [\n    {\n      \"type\": \"rect\",\n      \"left\": 0,\n      \"top\": 0,\n      \"width\": 1200,\n      \"height\": 628,\n      \"fill\": \"#F4FBF7\",\n      \"rx\": 0,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 650,\n      \"top\": 64,\n      \"width\": 500,\n      \"height\": 500,\n      \"fill\": \"#D1FAE5\",\n      \"rx\": 250,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"image\",\n      \"left\": 700,\n      \"top\": 114,\n      \"width\": 400,\n      \"height\": 400,\n      \"assetId\": \"graphic:2001\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 150,\n      \"width\": 300,\n      \"height\": 40,\n      \"text\": \"스마트한 자산 관리의 시작\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 24,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#059669\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 210,\n      \"width\": 500,\n      \"height\": 70,\n      \"text\": \"가계부 앱 신규 가입\",\n      \"fontFamily\": \"GmarketSans\",\n      \"fontSize\": 56,\n      \"fontWeight\": 700,\n      \"textAlign\": \"left\",\n      \"fill\": \"#111827\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 290,\n      \"width\": 500,\n      \"height\": 80,\n      \"text\": \"첫 달 무료 혜택!\",\n      \"fontFamily\": \"BlackHanSans\",\n      \"fontSize\": 72,\n      \"fontWeight\": 400,\n      \"textAlign\": \"left\",\n      \"fill\": \"#059669\"\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 390,\n      \"width\": 550,\n      \"height\": 40,\n      \"text\": \"지금 가입하면 프리미엄 기능을 한 달간 무료로!\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 26,\n      \"fontWeight\": 500,\n      \"textAlign\": \"left\",\n      \"fill\": \"#4B5563\"\n    },\n    {\n      \"type\": \"rect\",\n      \"left\": 100,\n      \"top\": 470,\n      \"width\": 280,\n      \"height\": 72,\n      \"fill\": \"#059669\",\n      \"rx\": 36,\n      \"opacity\": 1\n    },\n    {\n      \"type\": \"text\",\n      \"left\": 100,\n      \"top\": 490,\n      \"width\": 280,\n      \"height\": 32,\n      \"text\": \"무료로 시작하기\",\n      \"fontFamily\": \"Pretendard\",\n      \"fontSize\": 26,\n      \"fontWeight\": 700,\n      \"textAlign\": \"center\",\n      \"fill\": \"#FFFFFF\"\n    }\n  ]\n}",
+  "outputBytes": 2223,
+  "usage": {
+    "promptTokenCount": 1205,
+    "candidatesTokenCount": 940,
+    "totalTokenCount": 3731,
+    "thoughtsTokenCount": 1586,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:34:58.120Z"
+}

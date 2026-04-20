@@ -1,0 +1,21 @@
+{
+  "id": "prompt_19",
+  "domain": "kids",
+  "method": "method-b",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-pro-preview",
+  "prompt": "어린이날 완구 특별 할인 이벤트 배너",
+  "latencyMs": 37896,
+  "outputText": "<div style=\"position:relative; width:1200px; height:628px; overflow:hidden;\">\n  <div style=\"position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FFF48F;\"></div>\n  <img data-tooldi-role=\"decoration\" data-hint=\"party bunting garland\" data-aspect=\"8:3\" src=\"placeholder://\" style=\"position:absolute; left:0px; top:0px; width:400px; height:150px;\" />\n  <img data-tooldi-role=\"hero\" data-hint=\"pile of colorful toys and gifts\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:650px; top:80px; width:500px; height:500px;\" />\n  <img data-tooldi-role=\"decoration\" data-hint=\"floating colorful balloons\" data-aspect=\"1:1\" src=\"placeholder://\" style=\"position:absolute; left:520px; top:100px; width:120px; height:120px;\" />\n  <div style=\"position:absolute; left:80px; top:150px; width:180px; height:46px; background-color:#FF5252; border-radius:23px;\"></div>\n  <span style=\"position:absolute; left:80px; top:160px; width:180px; height:26px; font-family:Pretendard; font-size:22px; font-weight:800; color:#FFFFFF; text-align:center; line-height:1.2;\">SPECIAL SALE</span>\n  <h1 style=\"position:absolute; left:80px; top:220px; width:550px; height:80px; font-family:BlackHanSans; font-size:68px; font-weight:900; color:#1E88E5; text-align:left; line-height:1.1;\">어린이날 완구</h1>\n  <h1 style=\"position:absolute; left:80px; top:300px; width:550px; height:80px; font-family:BlackHanSans; font-size:68px; font-weight:900; color:#FF5252; text-align:left; line-height:1.1;\">특별 할인전</h1>\n  <p style=\"position:absolute; left:80px; top:400px; width:550px; height:40px; font-family:Pretendard; font-size:30px; font-weight:700; color:#333333; text-align:left; line-height:1.2;\">인기 장난감 최대 70% 특가 찬스!</p>\n  <div style=\"position:absolute; left:80px; top:480px; width:280px; height:64px; background-color:#FF9800; border-radius:32px; box-shadow:0px 8px 16px rgba(255,152,0,0.4);\"></div>\n  <span style=\"position:absolute; left:80px; top:496px; width:280px; height:32px; font-family:Pretendard; font-size:24px; font-weight:800; color:#FFFFFF; text-align:center; line-height:1.2;\">선물 고르러 가기 &gt;</span>\n</div>",
+  "outputBytes": 2183,
+  "usage": {
+    "promptTokenCount": 1061,
+    "candidatesTokenCount": 863,
+    "totalTokenCount": 5920,
+    "thoughtsTokenCount": 3996,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-20T05:52:37.381Z"
+}
