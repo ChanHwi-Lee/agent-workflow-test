@@ -229,7 +229,11 @@ async function startRun(apiBaseUrl) {
     headers: {
       "content-type": "application/json",
     },
-    body: JSON.stringify(createStartRunRequest("smoke")),
+    body: JSON.stringify(
+      createStartRunRequest("smoke", {
+        workflowVariant: "object_native_v1",
+      }),
+    ),
   });
 
   if (!response.ok) {

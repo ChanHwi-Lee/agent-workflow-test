@@ -18,6 +18,7 @@ export type MaterializedArtifacts = {
   bundle: LiveDraftArtifactBundle;
   bundleRef: string;
   completionRecord: RunCompletionRecord;
+  result: AgentRunResultSummary;
 };
 
 type MaterializeRunArtifactsInput = {
@@ -372,6 +373,7 @@ export async function materializeRunArtifacts(
     bundle,
     bundleRef,
     completionRecord,
+    result: canonicalResult,
   };
 }
 
@@ -412,7 +414,7 @@ function enforceMinimumDraft(
   const issue = {
     code: "minimum_draft_not_satisfied",
     message:
-      "Completed status requires at least one editable root layer and one editable layer in the mutation ledger",
+      "Completed status requires at least one live draft layer and one editable draft layer after replaying the mutation ledger",
   };
   return {
     ...result,

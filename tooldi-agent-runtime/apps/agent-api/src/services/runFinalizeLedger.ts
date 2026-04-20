@@ -33,19 +33,15 @@ export function buildRunLedgerProjection(
 ): RunLedgerProjection {
   const orderedEntries = buildMutationLedgerEntries(rangedRecords);
   const slotBindings = buildSlotBindings(rangedRecords);
-  const rootLayerIds = slotBindings.map((binding) => binding.primaryLayerId);
-  const editableLayerIds = slotBindings
-    .filter((binding) => binding.editable)
-    .flatMap((binding) => binding.layerIds);
+  const liveLayerProjection = buildLiveLayerProjection(rangedRecords);
 
   return {
     rangedRecords,
     orderedEntries,
     slotBindings,
-    rootLayerIds,
-    editableLayerIds,
-    minimumDraftSatisfied:
-      rootLayerIds.length > 0 && editableLayerIds.length > 0,
+    rootLayerIds: liveLayerProjection.rootLayerIds,
+    editableLayerIds: liveLayerProjection.editableLayerIds,
+    minimumDraftSatisfied: liveLayerProjection.minimumDraftSatisfied,
     maxMutationEventSequence: Math.max(
       ...rangedRecords.map((record) => record.seq),
     ),
@@ -158,6 +154,92 @@ function buildSlotBindings(
   return [...bindingsBySlot.values()];
 }
 
+function buildLiveLayerProjection(records: MutationLedgerRecord[]): {
+  rootLayerIds: string[];
+  editableLayerIds: string[];
+  minimumDraftSatisfied: boolean;
+} {
+  const liveLayers = new Map<string, { editable: boolean }>();
+
+  for (const record of records) {
+    if (!isLiveMutationRecord(record)) {
+      continue;
+    }
+
+    const commandResults = new Map(
+      (record.ackRecord?.commandResults ?? []).map((commandResult) => [
+        commandResult.commandId,
+        commandResult,
+      ]),
+    );
+
+    for (const command of record.mutation.commands) {
+      const commandResult = commandResults.get(command.commandId);
+      if (commandResult?.status === "rejected") {
+        continue;
+      }
+
+      switch (command.op) {
+        case "createLayer": {
+          const layerId =
+            commandResult?.resolvedLayerId ??
+            resolveCommandLayerId(record, command);
+          if (!layerId) {
+            continue;
+          }
+          liveLayers.set(layerId, { editable: command.editable });
+          break;
+        }
+        case "updateLayer": {
+          const layerId =
+            commandResult?.resolvedLayerId ??
+            resolveCommandLayerId(record, command);
+          if (!layerId) {
+            continue;
+          }
+          liveLayers.set(layerId, {
+            editable: liveLayers.get(layerId)?.editable ?? true,
+          });
+          break;
+        }
+        case "deleteLayer": {
+          const removedLayerIds =
+            commandResult?.removedLayerIds?.filter(
+              (layerId): layerId is string => layerId.length > 0,
+            ) ?? [];
+
+          if (removedLayerIds.length > 0) {
+            for (const layerId of removedLayerIds) {
+              liveLayers.delete(layerId);
+            }
+            break;
+          }
+
+          const layerId = resolveCommandLayerId(record, command);
+          if (layerId) {
+            liveLayers.delete(layerId);
+          }
+          break;
+        }
+        case "saveTemplate":
+          break;
+      }
+    }
+  }
+
+  const rootLayerIds = [...liveLayers.keys()];
+  const editableLayerIds = rootLayerIds.filter(
+    (layerId) => liveLayers.get(layerId)?.editable,
+  );
+
+  return {
+    rootLayerIds,
+    editableLayerIds,
+    minimumDraftSatisfied:
+      rootLayerIds.length > 0 && editableLayerIds.length > 0,
+  };
+}
+
 function resolvePrimaryLayerId(
   record: MutationLedgerRecord,
   command: Extract<CanvasMutationCommand, { op: "createLayer" }>,
@@ -167,6 +249,34 @@ function resolvePrimaryLayerId(
     return record.ackRecord.resolvedLayerIds[clientLayerKey];
   }
   return clientLayerKey;
+}
+
+function resolveCommandLayerId(
+  record: MutationLedgerRecord,
+  command: Extract<
+    CanvasMutationCommand,
+    { op: "createLayer" | "updateLayer" | "deleteLayer" }
+  >,
+): string | null {
+  if (command.targetRef.layerId) {
+    return command.targetRef.layerId;
+  }
+
+  const clientLayerKey =
+    command.targetRef.clientLayerKey ??
+    ("clientLayerKey" in command ? command.clientLayerKey ?? null : null);
+
+  if (clientLayerKey && record.ackRecord?.resolvedLayerIds?.[clientLayerKey]) {
+    return record.ackRecord.resolvedLayerIds[clientLayerKey];
+  }
+
+  return clientLayerKey;
+}
+
+function isLiveMutationRecord(record: MutationLedgerRecord): boolean {
+  return (
+    record.ackStatus === "applied" || record.ackStatus === "noop_already_applied"
+  );
 }
 
 function toApplyStatus(

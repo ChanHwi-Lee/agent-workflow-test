@@ -100,6 +100,7 @@ export class RunFinalizeService {
     const normalized = normalizeFinalizeInput(command);
     let updatedRun;
     let completionRecordRef: string | undefined;
+    let finalizedResult = normalized.result;
 
     if (normalized.materialization) {
       const ledgerRecords = await this.mutationLedgerRepository.listByRunId(run.runId);
@@ -130,6 +131,7 @@ export class RunFinalizeService {
         ledgerProjection,
         objectStore: this.objectStore,
       });
+      finalizedResult = materialized.result;
       await this.draftBundleRepository.save({
         bundleId: materialized.bundle.bundleId,
         runId: materialized.bundle.runId,
@@ -142,49 +144,49 @@ export class RunFinalizeService {
       });
       await this.completionRepository.save(materialized.completionRecord);
       updatedRun = await this.runRepository.bindFinalization(command.runId, {
-        status: normalized.result.finalStatus,
+        status: finalizedResult.finalStatus,
         statusReasonCode: null,
-        draftId: normalized.result.draftId,
+        draftId: finalizedResult.draftId,
         finalArtifactRef: materialized.bundle.bundleId,
         completionRecordRef: materialized.completionRecord.completionRecordId,
-        latestSaveReceiptId: normalized.result.latestSaveReceiptId,
+        latestSaveReceiptId: finalizedResult.latestSaveReceiptId,
         latestSavedRevision: materialized.completionRecord.latestSaveEvidence
           ? materialized.completionRecord.finalRevision
           : null,
-        finalRevision: normalized.result.finalRevision,
+        finalRevision: finalizedResult.finalRevision,
       });
       completionRecordRef = materialized.completionRecord.completionRecordId;
     } else {
       updatedRun = await this.runRepository.updateStatus(
         command.runId,
-        normalized.result.finalStatus,
+        finalizedResult.finalStatus,
       );
     }
 
     await this.runAttemptRepository.updateAttemptState(
       command.runId,
       command.attemptSeq,
-      this.mapFinalStatusToAttemptState(normalized.result.finalStatus),
+      this.mapFinalStatusToAttemptState(finalizedResult.finalStatus),
       attempt.workerId ?? undefined,
       attempt.lastHeartbeatAt ?? undefined,
     );
     await this.costSummaryRepository.upsertPlaceholder(
       command.runId,
       command.traceId,
-      normalized.result,
+      finalizedResult,
     );
 
-    if (normalized.result.finalStatus === "failed") {
+    if (finalizedResult.finalStatus === "failed") {
       await this.runEventService.appendFailed(
         command.runId,
         command.traceId,
-        normalized.result.errorSummary ?? {
+        finalizedResult.errorSummary ?? {
           code: "run_failed_without_error_summary",
           message: "Run finalized as failed without an explicit error summary",
         },
         command.at,
       );
-    } else if (normalized.result.finalStatus === "cancelled") {
+    } else if (finalizedResult.finalStatus === "cancelled") {
       await this.runEventService.appendCancelled(
         command.runId,
         command.traceId,
@@ -194,7 +196,7 @@ export class RunFinalizeService {
       await this.runEventService.appendCompleted(
         command.runId,
         command.traceId,
-        normalized.result,
+        finalizedResult,
         command.at,
       );
     }
@@ -202,14 +204,14 @@ export class RunFinalizeService {
     this.logger.info("Finalized run placeholder", {
       runId: command.runId,
       traceId: command.traceId,
-      finalStatus: normalized.result.finalStatus,
+      finalStatus: finalizedResult.finalStatus,
       existingStatus: run.status,
       ...(completionRecordRef ? { completionRecordRef } : {}),
     });
 
     return {
       accepted: true,
-      runStatus: updatedRun?.status ?? normalized.result.finalStatus,
+      runStatus: updatedRun?.status ?? finalizedResult.finalStatus,
       ...(completionRecordRef ? { completionRecordRef } : {}),
     };
   }

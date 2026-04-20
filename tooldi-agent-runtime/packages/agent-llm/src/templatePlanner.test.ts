@@ -27,7 +27,9 @@ test("heuristic template planner keeps current safe spring defaults", async () =
   assert.equal(result.tone, "bright_playful");
   assert.deepEqual(
     result.assetPolicy,
-    normalizeTemplateAssetPolicy("graphic_allowed_photo_optional"),
+    normalizeTemplateAssetPolicy({
+      primaryVisualPolicy: "graphic_preferred",
+    }),
   );
   assert.equal(result.subjectBinding, "subjectless");
   assert.equal(result.offerIntent, "sale");

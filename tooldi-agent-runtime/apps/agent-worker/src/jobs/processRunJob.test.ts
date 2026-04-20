@@ -37,7 +37,13 @@ import type {
 } from "@tooldi/tool-adapters";
 
 import type { BackendCallbackClient } from "../clients/backendCallbackClient.js";
+import { prepareExecutionNode } from "../graph/executionNodes.js";
+import type {
+  AdaptiveCompositionDecisionBuilderInput,
+} from "../graph/runJobGraphTypes.js";
+import type { RunJobGraphStateType } from "../graph/runJobGraphState.js";
 import { createWorkerLogger } from "../lib/logger.js";
+import { finalizeAdaptiveCompositionDecision } from "../phases/buildAdaptiveCompositionDecision.js";
 import { processRunJob } from "./processRunJob.js";
 import { createWorkerToolRegistry } from "../tools/registry.js";
 import { createAssetStorageClient } from "../tools/adapters/assetStorageAdapter.js";
@@ -88,6 +94,172 @@ function createRealSourceEnv(): AgentWorkerEnv {
     ...createEnv(),
     tooldiCatalogSourceMode: "tooldi_api_direct",
     tooldiContentApiBaseUrl: "http://localhost:8080",
+  };
+}
+
+function visualWeightRank(weight: string | null) {
+  switch (weight) {
+    case "dominant":
+      return 0;
+    case "secondary":
+      return 1;
+    case "tertiary":
+      return 2;
+    case "decorative":
+      return 3;
+    case "background":
+      return 4;
+    default:
+      return 5;
+  }
+}
+
+function pickBestTextObject(
+  textObjects: AdaptiveCompositionDecisionBuilderInput["projectedGraph"]["objects"],
+  usedObjectIds: Set<string>,
+  predicate: (
+    object: AdaptiveCompositionDecisionBuilderInput["projectedGraph"]["objects"][number],
+  ) => boolean,
+) {
+  return (
+    textObjects.find(
+      (object) => !usedObjectIds.has(object.objectId) && predicate(object),
+    ) ?? null
+  );
+}
+
+function createDeterministicAdaptiveCompositionDecisionBuilder() {
+  return async (input: AdaptiveCompositionDecisionBuilderInput) => {
+    const textObjects = [...input.projectedGraph.objects]
+      .filter(
+        (object) => object.layerType === "text" && object.sourceText !== null,
+      )
+      .sort((left, right) => {
+        const weightDelta =
+          visualWeightRank(left.visualWeight) - visualWeightRank(right.visualWeight);
+        if (weightDelta !== 0) {
+          return weightDelta;
+        }
+        return left.bounds.y - right.bounds.y;
+      });
+
+    const usedObjectIds = new Set<string>();
+    const rawResult: Parameters<typeof finalizeAdaptiveCompositionDecision>[0] = {
+      compositionSummary: "deterministic adaptive composition decision for tests",
+      elementDecisions: [],
+      addDecisions: [],
+    };
+    const atomsByKind = new Map(
+      input.messageAtomPlan.atoms.map((atom) => [atom.kind, atom]),
+    );
+
+    const assignAtomToTextObject = (
+      atom: AdaptiveCompositionDecisionBuilderInput["messageAtomPlan"]["atoms"][number] | undefined,
+      preferredObject:
+        | AdaptiveCompositionDecisionBuilderInput["projectedGraph"]["objects"][number]
+        | null,
+    ) => {
+      if (!atom) {
+        return false;
+      }
+      const selectedObject =
+        preferredObject ??
+        pickBestTextObject(textObjects, usedObjectIds, () => true);
+      if (!selectedObject) {
+        return false;
+      }
+      usedObjectIds.add(selectedObject.objectId);
+      rawResult.elementDecisions.push({
+        objectId: selectedObject.objectId,
+        operation: "modify",
+        newText: atom.text,
+        carriesAtomIds: [atom.atomId],
+        reason: `deterministic test mapping for ${atom.kind}`,
+      });
+      return true;
+    };
+
+    const primaryAtom = atomsByKind.get("primary");
+    const primaryAssigned = assignAtomToTextObject(
+      primaryAtom,
+      pickBestTextObject(
+        textObjects,
+        usedObjectIds,
+        (object) => object.visualWeight === "dominant",
+      ) ?? textObjects[0] ?? null,
+    );
+    if (!primaryAssigned && primaryAtom) {
+      rawResult.addDecisions.push({
+        vocabularyId: "badge_chip",
+        text: primaryAtom.text,
+        placementZone: "top-right",
+        carriesAtomIds: [primaryAtom.atomId],
+        reason: "deterministic test fallback for primary atom",
+      });
+    }
+
+    assignAtomToTextObject(
+      atomsByKind.get("offer"),
+      pickBestTextObject(
+        textObjects,
+        usedObjectIds,
+        (object) =>
+          object.visualWeight === "secondary" ||
+          String(object.objectId).includes("offer"),
+      ),
+    );
+
+    const ctaAtom = atomsByKind.get("cta");
+    const ctaAssigned = assignAtomToTextObject(
+      ctaAtom,
+      pickBestTextObject(
+        textObjects,
+        usedObjectIds,
+        (object) =>
+          String(object.objectId).includes("cta") ||
+          object.compositeHint === "button",
+      ),
+    );
+    if (!ctaAssigned && ctaAtom) {
+      rawResult.addDecisions.push({
+        vocabularyId: "cta_button",
+        text: ctaAtom.text,
+        placementZone: "bottom",
+        carriesAtomIds: [ctaAtom.atomId],
+        reason: "deterministic test CTA fallback",
+      });
+    }
+
+    assignAtomToTextObject(
+      atomsByKind.get("detail") ?? atomsByKind.get("support"),
+      pickBestTextObject(
+        textObjects,
+        usedObjectIds,
+        (object) =>
+          object.visualWeight === "tertiary" ||
+          String(object.objectId).includes("footer"),
+      ),
+    );
+
+    for (const object of textObjects) {
+      if (usedObjectIds.has(object.objectId)) {
+        continue;
+      }
+      rawResult.elementDecisions.push({
+        objectId: object.objectId,
+        operation: "retain",
+        newText: null,
+        carriesAtomIds: [],
+        reason: "deterministic retain for uncovered text object",
+      });
+    }
+
+    return finalizeAdaptiveCompositionDecision(rawResult, {
+      runId: input.runId,
+      traceId: input.traceId,
+      projectedGraph: input.projectedGraph,
+      messageAtomPlan: input.messageAtomPlan,
+    });
   };
 }
 
@@ -275,6 +447,128 @@ async function seedRunInputArtifacts(
       ref: testRun.snapshotRef,
     },
   });
+}
+
+function createPrepareExecutionState(
+  overrides: Partial<RunJobGraphStateType> = {},
+): RunJobGraphStateType {
+  const testRun = createTestRun();
+
+  return {
+    job: testRun.job,
+    cooperativeStopRequested: false,
+    hydrated: {
+      job: testRun.job,
+      request: testRun.request,
+      snapshot: testRun.snapshot,
+      requestRef: testRun.requestRef,
+      snapshotRef: testRun.snapshotRef,
+      repairContext: null,
+    },
+    intent: {
+      intentId: "intent-test",
+      runId: testRun.runId,
+      traceId: testRun.traceId,
+      plannerMode: "heuristic",
+      operationFamily: "create_template",
+      artifactType: "LiveDraftArtifactBundle",
+      goalSummary: "테스트 배너",
+      requestedOutputCount: 1,
+      templateKind: "promo_banner",
+      domain: "general_marketing",
+      audience: "general_consumers",
+      campaignGoal: "promotion_awareness",
+      canvasPreset: "square_1080",
+      layoutIntent: "copy_focused",
+      tone: "bright_playful",
+      subjectBinding: "subjectless",
+      offerIntent: "announcement",
+      backgroundColorHex: "#ffffff",
+      assetPolicy: normalizeTemplateAssetPolicy("graphic_allowed_photo_optional"),
+      primaryVisualPolicy: "graphic_preferred",
+      searchKeywords: ["테스트"],
+      facets: {
+        seasonality: "spring",
+        menuType: null,
+        promotionStyle: "general_campaign",
+        offerSpecificity: "broad_offer",
+      },
+      brandConstraints: {
+        palette: [],
+        typographyHint: null,
+        forbiddenStyles: [],
+      },
+      consistencyFlags: [],
+      normalizationNotes: [],
+      supportedInV1: true,
+      futureCapableOperations: ["create_template"],
+    },
+    plan: {
+      planId: "plan-test",
+      planVersion: 1,
+      planSchemaVersion: "v1",
+      runId: testRun.runId,
+      traceId: testRun.traceId,
+      attemptSeq: 1,
+      intent: {
+        operationFamily: "create_template",
+        artifactType: "LiveDraftArtifactBundle",
+      },
+      constraintsRef: "constraints-test",
+      actions: [
+        {
+          actionId: "action-1",
+          kind: "canvas_mutation",
+          operation: "prepare_background_and_foundation",
+          toolName: "background-catalog",
+          toolVersion: "1",
+          commitGroup: "group-test",
+          liveCommit: true,
+          idempotencyKey: "idempotency-test",
+          dependsOn: [],
+          targetRef: {
+            documentId: testRun.request.editorContext.documentId,
+            pageId: testRun.request.editorContext.pageId,
+            layerId: null,
+          },
+          inputs: {
+            executionMode: "object_native_freeform",
+          },
+          rollback: {
+            strategy: "delete_created_layers",
+          },
+        },
+      ],
+    },
+    freeformLayoutPlan: {
+      planId: "freeform-test",
+      runId: testRun.runId,
+      traceId: testRun.traceId,
+      workflowVariant: "object_native_v1",
+      selectedTemplateCode: "template-test",
+      selectedTemplateTitle: "template test",
+      compositionStatus: "stable",
+      copyBlocks: [],
+      polishBlocks: [],
+      summary: "object-native freeform plan",
+    },
+    adaptiveSkeletonBatch: null,
+    canonicalDesignBriefRef: null,
+    semanticBriefDraftRef: null,
+    briefCompilationReportRef: null,
+    copyPlanRef: null,
+    abstractLayoutPlanRef: null,
+    assetPlanRef: null,
+    concreteLayoutPlanRef: null,
+    templatePriorBundleRef: null,
+    sceneStylePlanRef: null,
+    sceneBindingPlanRef: null,
+    emittedMutationIds: [],
+    assignedSeqs: [],
+    stageAckHistory: [],
+    refineAttempt: 0,
+    ...overrides,
+  } as unknown as RunJobGraphStateType;
 }
 
 function findObjectStoreOperationIndex(
@@ -676,6 +970,9 @@ test("processRunJob persists the raw planner draft before normalized intent", as
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    adaptiveCompositionDecisionBuilder:
+      createDeterministicAdaptiveCompositionDecisionBuilder(),
+    tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
     templatePlanner,
   });
 
@@ -851,6 +1148,9 @@ test("processRunJob normalizes from the persisted planner draft artifact", async
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    adaptiveCompositionDecisionBuilder:
+      createDeterministicAdaptiveCompositionDecisionBuilder(),
+    tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
     templatePlanner,
   });
 
@@ -987,6 +1287,9 @@ test("processRunJob uses the persisted normalized intent artifact as downstream 
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    adaptiveCompositionDecisionBuilder:
+      createDeterministicAdaptiveCompositionDecisionBuilder(),
+    tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
     templatePlanner,
   });
 
@@ -1243,6 +1546,9 @@ test("processRunJob keeps structured and legacy asset-policy inputs compatible t
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
+      adaptiveCompositionDecisionBuilder:
+        createDeterministicAdaptiveCompositionDecisionBuilder(),
+      tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
       templatePlanner,
     });
 
@@ -1403,12 +1709,15 @@ test("processRunJob emits template-prior-summary for the Tooldi taxonomy fixture
     objectStore,
     callbackClient,
     toolRegistry: createWorkerToolRegistry(),
-    imagePrimitiveClient: createImagePrimitiveClient(),
-    assetStorageClient: createAssetStorageClient(),
-    textLayoutHelper: createTextLayoutHelper(),
-    templateCatalogClient: createTemplateCatalogClient(),
-    templatePlanner,
-  });
+      imagePrimitiveClient: createImagePrimitiveClient(),
+      assetStorageClient: createAssetStorageClient(),
+      textLayoutHelper: createTextLayoutHelper(),
+      templateCatalogClient: createTemplateCatalogClient(),
+      adaptiveCompositionDecisionBuilder:
+        createDeterministicAdaptiveCompositionDecisionBuilder(),
+      tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
+      templatePlanner,
+    });
   const templatePriorSummaryRef =
     `runs/${testRun.runId}/attempts/1/template-prior-summary.json`;
   const persistedTemplatePriorSummary = JSON.parse(
@@ -1518,6 +1827,9 @@ test(
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
+      adaptiveCompositionDecisionBuilder:
+        createDeterministicAdaptiveCompositionDecisionBuilder(),
+      tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
       templatePlanner,
     });
 
@@ -1535,6 +1847,10 @@ test(
         "layout-plan-normalization-report.json",
         "template-prior-summary.json",
         "template-prior-bundle.json",
+        "scene-role-plan.json",
+        "scene-layout-plan.json",
+        "scene-style-plan.json",
+        "scene-binding-plan.json",
         "search-profile.json",
         "retrieval-stage.json",
         "template-candidate-set.json",
@@ -1570,6 +1886,14 @@ test(
       artifactRefsByFileName["template-prior-summary.json"]!;
     const templatePriorBundleRef =
       artifactRefsByFileName["template-prior-bundle.json"]!;
+    const sceneRolePlanRef =
+      artifactRefsByFileName["scene-role-plan.json"]!;
+    const sceneLayoutPlanRef =
+      artifactRefsByFileName["scene-layout-plan.json"]!;
+    const sceneStylePlanRef =
+      artifactRefsByFileName["scene-style-plan.json"]!;
+    const sceneBindingPlanRef =
+      artifactRefsByFileName["scene-binding-plan.json"]!;
     const searchProfileRef = artifactRefsByFileName["search-profile.json"]!;
     const retrievalStageRef = artifactRefsByFileName["retrieval-stage.json"]!;
     const candidateSetRef =
@@ -1611,6 +1935,10 @@ test(
       concreteLayoutPlanRef,
       templatePriorSummaryRef,
       templatePriorBundleRef,
+      sceneRolePlanRef,
+      sceneLayoutPlanRef,
+      sceneStylePlanRef,
+      sceneBindingPlanRef,
       searchProfileRef,
       executablePlanRef,
       candidateSetRef,
@@ -1646,6 +1974,10 @@ test(
           callbackClient.finalizations[0]?.concreteLayoutPlanRef,
         templatePriorSummaryRef: callbackClient.finalizations[0]?.templatePriorSummaryRef,
         templatePriorBundleRef: callbackClient.finalizations[0]?.templatePriorBundleRef,
+        sceneRolePlanRef: callbackClient.finalizations[0]?.sceneRolePlanRef,
+        sceneLayoutPlanRef: callbackClient.finalizations[0]?.sceneLayoutPlanRef,
+        sceneStylePlanRef: callbackClient.finalizations[0]?.sceneStylePlanRef,
+        sceneBindingPlanRef: callbackClient.finalizations[0]?.sceneBindingPlanRef,
         searchProfileRef: callbackClient.finalizations[0]?.searchProfileRef,
         executablePlanRef: callbackClient.finalizations[0]?.executablePlanRef,
         candidateSetRef: callbackClient.finalizations[0]?.candidateSetRef,
@@ -1671,6 +2003,10 @@ test(
         concreteLayoutPlanRef,
         templatePriorSummaryRef,
         templatePriorBundleRef,
+        sceneRolePlanRef,
+        sceneLayoutPlanRef,
+        sceneStylePlanRef,
+        sceneBindingPlanRef,
         searchProfileRef,
         executablePlanRef,
         candidateSetRef,
@@ -1909,6 +2245,9 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     assetStorageClient,
     textLayoutHelper,
     templateCatalogClient: createTemplateCatalogClient(),
+    adaptiveCompositionDecisionBuilder:
+      createDeterministicAdaptiveCompositionDecisionBuilder(),
+    tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
   });
   const plan = result.plan;
   const selectionDecision = result.selectionDecision;
@@ -1953,11 +2292,11 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   );
   assert.ok(plan);
   assert.equal(plan.actions.length, 3);
-  assert.equal(result.emittedMutationIds.length >= 3, true);
+  assert.equal(result.emittedMutationIds.length >= 2, true);
   assert.ok(selectionDecision);
   assert.equal(selectionDecision.retrievalMode, "none");
   assert.equal(selectionDecision.backgroundMode, "generated_solid");
-  assert.equal(selectionDecision.layoutMode, "center_stack_promo");
+  assert.equal(selectionDecision.layoutMode, "left_copy_right_graphic");
   assert.equal(selectionDecision.decorationMode, "promo_multi_graphic");
   assert.ok(selectionDecision.graphicCompositionSet);
   assert.equal(selectionDecision.graphicCompositionSet?.roles.length >= 3, true);
@@ -2054,8 +2393,8 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
       (event) => event.event.type === "mutation.proposed",
     ),
   );
-  assert.equal(result.emittedMutationIds.length >= 3, true);
-  assert.equal(callbackClient.ackWaits.length >= 3, true);
+  assert.equal(result.emittedMutationIds.length >= 2, true);
+  assert.equal(callbackClient.ackWaits.length >= 2, true);
   assert.equal(callbackClient.finalizations.length, 1);
   assert.equal(
     callbackClient.finalizations[0]?.lastAckedSeq,
@@ -2361,6 +2700,148 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   );
 });
 
+test(
+  "processRunJob fails with adaptive_batch_missing for object-native execution even when request.workflowVariant is omitted",
+  async () => {
+    const env = createEnv();
+    const logger = createWorkerLogger(env);
+    const objectStore = new TrackingObjectStoreClient(
+      createObjectStoreClient({
+        bucket: env.objectStoreBucket,
+      }),
+    );
+    const callbackClient = new RecordingBackendCallbackClient();
+    const testRun = createTestRun();
+
+    await seedRunInputArtifacts(objectStore, testRun);
+
+    assert.equal("workflowVariant" in testRun.request, false);
+
+    const result = await processRunJob(testRun.job, {
+      env,
+      logger,
+      objectStore,
+      callbackClient,
+      toolRegistry: createWorkerToolRegistry(),
+      imagePrimitiveClient: createImagePrimitiveClient(),
+      assetStorageClient: createAssetStorageClient(),
+      textLayoutHelper: createTextLayoutHelper(),
+      templateCatalogClient: createTemplateCatalogClient(),
+      adaptiveCompositionDecisionBuilder: async () => null,
+    });
+
+    assert.equal(result.finalizeDraft.request.finalStatus, "failed");
+    assert.equal(
+      result.finalizeDraft.request.errorSummary?.code,
+      "adaptive_batch_missing",
+    );
+    assert.equal(
+      callbackClient.appendedEvents.some(
+        (event) =>
+          event.event.type === "log" &&
+          event.event.message.includes(
+            "refusing any slot-era fallback",
+          ),
+      ),
+      true,
+    );
+    assert.equal(
+      callbackClient.appendedEvents.some(
+        (event) => event.event.type === "mutation.proposed",
+      ),
+      false,
+    );
+  },
+);
+
+test(
+  "prepareExecutionNode keeps the adaptive object-native path when request.workflowVariant is omitted but an adaptive batch exists",
+  async () => {
+    const state = createPrepareExecutionState();
+    let estimateCalled = false;
+    const adaptiveBatch = {
+      commitGroup: "group-test",
+      proposals: [
+        {
+          mutationId: "mutation-adaptive",
+          rollbackGroupId: "rollback-adaptive",
+          stageLabel: "adaptive-composition",
+          stageDescription: "Retain projected template objects",
+          mutation: {
+            mutationId: "mutation-adaptive",
+            mutationVersion: "v1",
+            traceId: state.job.traceId,
+            runId: state.job.runId,
+            draftId: `draft_${state.job.runId}`,
+            documentId: state.hydrated!.request.editorContext.documentId,
+            pageId: state.hydrated!.request.editorContext.pageId,
+            seq: 1,
+            commitGroup: "group-test",
+            idempotencyKey: `adaptive_composition_${state.job.runId}`,
+            expectedBaseRevision: 0,
+            ownershipScope: "draft_only" as const,
+            commands: [],
+            rollbackHint: {
+              rollbackGroupId: "rollback-adaptive",
+              strategy: "delete_created_layers" as const,
+            },
+            emittedAt: "2026-04-20T00:00:00.000Z",
+            deliveryDeadlineAt: "2026-04-20T00:00:10.000Z",
+          },
+        },
+      ],
+    };
+
+    const result = await prepareExecutionNode(
+      {
+        ...state,
+        adaptiveSkeletonBatch: adaptiveBatch as RunJobGraphStateType["adaptiveSkeletonBatch"],
+      } as RunJobGraphStateType,
+      {
+        textLayoutHelper: {
+          async estimate() {
+            estimateCalled = true;
+            throw new Error("prepareExecutionNode should not reopen emitSkeletonMutations");
+          },
+        } as TextLayoutHelper,
+      },
+      {
+        heartbeatTask: async () => ({
+          accepted: true,
+          cancelRequested: false,
+          stopAfterCurrentAction: false,
+          runStatus: "planning_queued",
+          deadlineAt: "2026-04-20T00:00:30.000Z",
+        }),
+        appendEventTask: async () => ({
+          accepted: true,
+          cancelRequested: false,
+        }),
+      } as any,
+    );
+
+    assert.equal("workflowVariant" in state.hydrated!.request, false);
+    assert.equal(estimateCalled, false);
+    assert.equal(result.finalizeDraft ?? null, null);
+    assert.equal(
+      result.skeletonBatch?.proposals[0]?.mutation.idempotencyKey,
+      `adaptive_composition_${state.job.runId}`,
+    );
+    assert.equal(
+      result.currentProposal?.stageLabel,
+      "adaptive-composition",
+    );
+    assert.equal(
+      result.skeletonBatch?.proposals.some(
+        (proposal) =>
+          proposal.mutation.idempotencyKey ===
+          `mutation_foundation_${state.job.runId}`,
+      ),
+      false,
+    );
+  },
+);
+
 test("processRunJob covers taxonomy-grounded general, cafe, and fashion create-template acceptance scenarios", async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
@@ -2425,6 +2906,9 @@ test("processRunJob covers taxonomy-grounded general, cafe, and fashion create-t
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
+      adaptiveCompositionDecisionBuilder:
+        createDeterministicAdaptiveCompositionDecisionBuilder(),
+      tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
     });
 
     assert.equal(result.intent.domain, scenario.expectedDomain);
@@ -2849,6 +3333,8 @@ test("processRunJob can activate the photo hero execution path on the wide prese
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    adaptiveCompositionDecisionBuilder:
+      createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: photoPreferredSourceClient,
   });
 
@@ -3391,6 +3877,9 @@ test("processRunJob does not treat unconfirmed mutation ack as success", async (
     assetStorageClient,
     textLayoutHelper,
     templateCatalogClient: createTemplateCatalogClient(),
+    adaptiveCompositionDecisionBuilder:
+      createDeterministicAdaptiveCompositionDecisionBuilder(),
+    tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
   });
 
   assert.equal(result.finalizeDraft.request.finalStatus, "failed");
@@ -3456,6 +3945,9 @@ test("processRunJob preserves rejected mutation reason in stage log and finalize
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    adaptiveCompositionDecisionBuilder:
+      createDeterministicAdaptiveCompositionDecisionBuilder(),
+    tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
   });
 
   assert.equal(result.finalizeDraft.request.finalStatus, "failed");
@@ -3483,7 +3975,7 @@ test("processRunJob preserves rejected mutation reason in stage log and finalize
       (event) =>
         event.event.type === "log" &&
         event.event.message.includes(
-          "Stopped remaining stages after copy stage returned rejected",
+          "Save stage result: rejected",
         ),
     ),
     true,
@@ -3600,6 +4092,8 @@ test("processRunJob stops immediately after a rejected photo stage under fail-fa
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    adaptiveCompositionDecisionBuilder:
+      createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: photoPreferredSourceClient,
   });
 

@@ -596,7 +596,7 @@ test("normalizeFinalizeInput downgrades completed runs when save receipt is miss
   );
 });
 
-test("RunFinalizeService accepts object-native execution-slot minimum draft without legacy supporting or decoration slots", async () => {
+test("RunFinalizeService accepts object-native completed runs without slotBindings", async () => {
   const db = createPgClient({
     connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
   });
@@ -694,7 +694,7 @@ test("RunFinalizeService accepts object-native execution-slot minimum draft with
             {
               commandId: "command-background",
               op: "createLayer",
-              executionSlotKey: "background",
+              executionSlotKey: null,
               clientLayerKey: "background-layer",
               targetRef: {
                 layerId: null,
@@ -715,7 +715,7 @@ test("RunFinalizeService accepts object-native execution-slot minimum draft with
             {
               commandId: "command-headline",
               op: "createLayer",
-              executionSlotKey: "headline",
+              executionSlotKey: null,
               clientLayerKey: "headline-layer",
               targetRef: {
                 layerId: null,
@@ -736,7 +736,7 @@ test("RunFinalizeService accepts object-native execution-slot minimum draft with
             {
               commandId: "command-offer",
               op: "createLayer",
-              executionSlotKey: "offer_line",
+              executionSlotKey: null,
               clientLayerKey: "offer-layer",
               targetRef: {
                 layerId: null,
@@ -759,7 +759,7 @@ test("RunFinalizeService accepts object-native execution-slot minimum draft with
             {
               commandId: "command-cta",
               op: "createLayer",
-              executionSlotKey: "cta",
+              executionSlotKey: null,
               clientLayerKey: "cta-layer",
               targetRef: {
                 layerId: null,
@@ -873,11 +873,249 @@ test("RunFinalizeService accepts object-native execution-slot minimum draft with
       bundle.payload.saveMetadata.completionSnapshot.minimumDraftSatisfied,
       true,
     );
+    assert.deepEqual(bundle.payload.editableCanvasState.draftManifest.slotBindings, []);
+    assert.deepEqual(bundle.payload.editableCanvasState.draftManifest.rootLayerIds, [
+      "background-layer",
+      "headline-layer",
+      "offer-layer",
+      "cta-layer",
+    ]);
+    assert.deepEqual(bundle.payload.editableCanvasState.draftManifest.editableLayerIds, [
+      "background-layer",
+      "headline-layer",
+      "offer-layer",
+      "cta-layer",
+    ]);
     assert.equal(
       bundle.payload.saveMetadata.latestSaveEvidence?.code,
       "template_draft_run-object-native",
     );
     assert.equal(bundle.payload.editableCanvasState.commitPayload.firstRenderableSeq, 1);
+  } finally {
+    await db.end();
+  }
+});
+
+test("RunFinalizeService rejects completed runs with no live draft layers", async () => {
+  const db = createPgClient({
+    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
+  });
+  await db.connect();
+
+  try {
+    const runRepository = new RunRepository(db);
+    const runAttemptRepository = new RunAttemptRepository(db);
+    const mutationLedgerRepository = new MutationLedgerRepository(db);
+    const costSummaryRepository = new CostSummaryRepository(db);
+    const draftBundleRepository = new DraftBundleRepository(db);
+    const completionRepository = new CompletionRepository(db);
+    const runEventService = new RunEventService(
+      new InMemoryRunEventRepository() as never,
+      new SilentSseHub() as never,
+      new RecordingLogger(),
+    );
+    const objectStore = createObjectStoreClient({
+      bucket: "finalize-service-test-no-draft",
+      mode: "memory",
+    });
+    const service = new RunFinalizeService(
+      runRepository,
+      runAttemptRepository,
+      mutationLedgerRepository,
+      costSummaryRepository,
+      draftBundleRepository,
+      completionRepository,
+      objectStore,
+      runEventService,
+      new RecordingLogger(),
+    );
+
+    const now = new Date().toISOString();
+    await runRepository.create({
+      runId: "run-no-draft",
+      traceId: "trace-no-draft",
+      requestId: "request-no-draft",
+      documentId: "document-1",
+      pageId: "page-1",
+      status: "finalizing",
+      statusReasonCode: null,
+      attemptSeq: 1,
+      queueJobId: "run-no-draft__attempt_1",
+      requestRef: "request_ref_request-no-draft",
+      snapshotRef: "snapshot_ref_run-no-draft",
+      deadlineAt: new Date(Date.now() + 60000).toISOString(),
+      lastAckedSeq: 1,
+      pageLockToken: "page-lock-no-draft",
+      cancelRequestedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await runAttemptRepository.create({
+      attemptId: "attempt-no-draft",
+      runId: "run-no-draft",
+      traceId: "trace-no-draft",
+      attemptSeq: 1,
+      retryOfAttemptSeq: null,
+      queueJobId: "run-no-draft__attempt_1",
+      acceptedHttpRequestId: "http-no-draft",
+      attemptState: "finalizing",
+      statusReasonCode: null,
+      workerId: "worker-1",
+      startedAt: now,
+      leaseRecognizedAt: now,
+      lastHeartbeatAt: now,
+      createdAt: now,
+    });
+
+    await mutationLedgerRepository.recordProposal({
+      runId: "run-no-draft",
+      traceId: "trace-no-draft",
+      attemptSeq: 1,
+      queueJobId: "run-no-draft__attempt_1",
+      event: {
+        type: "mutation.proposed",
+        mutationId: "mutation-no-draft-1",
+        rollbackGroupId: "plan-step-no-draft-1",
+        expectedBaseRevision: 0,
+        mutation: {
+          mutationId: "mutation-no-draft-1",
+          mutationVersion: "v1",
+          traceId: "trace-no-draft",
+          runId: "run-no-draft",
+          draftId: "draft_run-no-draft",
+          documentId: "document-1",
+          pageId: "page-1",
+          seq: 1,
+          commitGroup: "plan-step-no-draft-1",
+          idempotencyKey: "mutation-no-draft-1",
+          expectedBaseRevision: 0,
+          ownershipScope: "draft_only",
+          commands: [
+            {
+              commandId: "command-save-only",
+              op: "saveTemplate",
+              targetRef: {},
+              targetLayerVersion: null,
+              allowNoop: false,
+              metadataTags: {},
+              reason: "run_completed",
+            },
+          ],
+          rollbackHint: {
+            rollbackGroupId: "plan-step-no-draft-1",
+            strategy: "restore_snapshot",
+          },
+          emittedAt: now,
+          deliveryDeadlineAt: new Date(Date.now() + 10000).toISOString(),
+        },
+      },
+    });
+
+    await mutationLedgerRepository.recordAck({
+      runId: "run-no-draft",
+      traceId: "trace-no-draft",
+      mutationId: "mutation-no-draft-1",
+      seq: 1,
+      status: "applied",
+      targetPageId: "page-1",
+      baseRevision: 0,
+      resultingRevision: 1,
+      commandResults: [
+        {
+          commandId: "command-save-only",
+          op: "saveTemplate",
+          status: "applied",
+          saveEvidence: {
+            code: "template_draft_run-no-draft",
+            serial: 198099,
+            modified: "2026-04-15T08:00:00.000Z",
+            version: "2",
+          },
+          saveReceipt: {
+            saveReceiptId: "save-receipt-no-draft-1",
+            outputTemplateCode: "template_draft_run-no-draft",
+            savedRevision: 1,
+            savedAt: "2026-04-15T08:00:00.000Z",
+            reason: "run_completed",
+          },
+        },
+      ],
+      clientObservedAt: now,
+    } satisfies MutationApplyAckRequest);
+
+    const result = await service.finalizeRun({
+      runId: "run-no-draft",
+      traceId: "trace-no-draft",
+      attemptSeq: 1,
+      queueJobId: "run-no-draft__attempt_1",
+      result: {
+        finalStatus: "completed",
+        draftId: "draft_run-no-draft",
+        finalRevision: 1,
+        durabilityState: "final_saved",
+        latestSaveEvidence: {
+          code: "template_draft_run-no-draft",
+          serial: 198099,
+          modified: "2026-04-15T08:00:00.000Z",
+          version: "2",
+        },
+        latestSaveReceiptId: "save-receipt-no-draft-1",
+        warningCount: 0,
+        fallbackCount: 0,
+        warnings: [],
+        errorSummary: null,
+      },
+      request: createFinalizeRequest({
+        traceId: "trace-no-draft",
+        queueJobId: "run-no-draft__attempt_1",
+        draftId: "draft_run-no-draft",
+        latestSaveEvidence: {
+          code: "template_draft_run-no-draft",
+          serial: 198099,
+          modified: "2026-04-15T08:00:00.000Z",
+          version: "2",
+        },
+        latestSaveReceipt: {
+          saveReceiptId: "save-receipt-no-draft-1",
+          outputTemplateCode: "template_draft_run-no-draft",
+          savedRevision: 1,
+          savedAt: "2026-04-15T08:00:00.000Z",
+          reason: "run_completed",
+        },
+        latestSaveReceiptId: "save-receipt-no-draft-1",
+        outputTemplateCode: "template_draft_run-no-draft",
+        canonicalDesignBriefRef:
+          "runs/run-no-draft/attempts/1/canonical-design-brief.json",
+        executablePlanRef: "runs/run-no-draft/attempts/1/executable-plan.json",
+        createdLayerIds: [],
+        updatedLayerIds: [],
+        deletedLayerIds: [],
+      }),
+      at: now,
+    });
+
+    assert.equal(result.runStatus, "failed");
+
+    const storedRun = await runRepository.findById("run-no-draft");
+    assert.equal(storedRun?.status, "failed");
+
+    const bundle = await draftBundleRepository.findByRunId("run-no-draft");
+    assert.ok(bundle);
+    assert.equal(
+      bundle.payload.saveMetadata.completionSnapshot.minimumDraftSatisfied,
+      false,
+    );
+    assert.equal(bundle.payload.saveMetadata.latestSaveEvidence, null);
+    assert.equal(
+      bundle.payload.saveMetadata.completionSnapshot.terminalStatus,
+      "failed",
+    );
+
+    const completion = await completionRepository.findByRunId("run-no-draft");
+    assert.ok(completion);
+    assert.equal(completion.terminalStatus, "failed");
+    assert.equal(completion.latestSaveEvidence, null);
+    assert.equal(completion.minimumDraftSatisfied, false);
   } finally {
     await db.end();
   }

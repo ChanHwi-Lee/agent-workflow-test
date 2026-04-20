@@ -51,7 +51,7 @@ const startedAt = new Date().toISOString();
 const results = [];
 
 console.log(
-  `[object-native-real-eval] base=${baseUrl} prompts=${limitedPrompts.length} objectStore=${resolve(
+  `[object-native-real-eval] base=${baseUrl} workflowVariant=${workflowVariant} prompts=${limitedPrompts.length} objectStore=${resolve(
     objectStoreRootDir,
     objectStoreBucket,
     objectStorePrefix,
@@ -68,6 +68,7 @@ for (const [index, prompt] of limitedPrompts.entries()) {
     canvasWidth: options.canvasWidth,
     canvasHeight: options.canvasHeight,
     sizeSerial: options.sizeSerial,
+    workflowVariant,
     objectStoreRootDir,
     objectStoreBucket,
     objectStorePrefix,

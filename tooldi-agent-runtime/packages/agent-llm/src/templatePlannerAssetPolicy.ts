@@ -7,22 +7,18 @@ import type {
 } from "./templatePlannerSchemas.js";
 import { resolvePrimaryVisualFamily } from "./templatePlannerSchemas.js";
 
-const legacyTemplateAssetPolicyMap: Record<
-  LegacyTemplateAssetPolicy,
-  TemplateAssetPolicy
-> = {
-  graphic_allowed_photo_optional: {
-    allowedFamilies: ["background", "graphic", "photo"],
-    preferredFamilies: ["graphic"],
-    primaryVisualPolicy: "graphic_preferred",
-    avoidFamilies: [],
-  },
-  photo_preferred_graphic_allowed: {
-    allowedFamilies: ["background", "photo", "graphic"],
-    preferredFamilies: ["photo", "graphic"],
-    primaryVisualPolicy: "photo_preferred",
-    avoidFamilies: [],
-  },
+const graphicPreferredTemplateAssetPolicy: TemplateAssetPolicy = {
+  allowedFamilies: ["background", "graphic", "photo"],
+  preferredFamilies: ["graphic"],
+  primaryVisualPolicy: "graphic_preferred",
+  avoidFamilies: [],
+};
+
+const photoPreferredTemplateAssetPolicy: TemplateAssetPolicy = {
+  allowedFamilies: ["background", "photo", "graphic"],
+  preferredFamilies: ["photo", "graphic"],
+  primaryVisualPolicy: "photo_preferred",
+  avoidFamilies: [],
 };
 
 const balancedTemplateAssetPolicy: TemplateAssetPolicy = {
@@ -32,17 +28,40 @@ const balancedTemplateAssetPolicy: TemplateAssetPolicy = {
   avoidFamilies: [],
 };
 
+const templateAssetPolicyPresetMap: Record<
+  TemplatePrimaryVisualPolicy,
+  TemplateAssetPolicy
+> = {
+  graphic_preferred: graphicPreferredTemplateAssetPolicy,
+  photo_preferred: photoPreferredTemplateAssetPolicy,
+  balanced: balancedTemplateAssetPolicy,
+};
+
+const legacyTemplateAssetPolicyMap: Record<
+  LegacyTemplateAssetPolicy,
+  TemplatePrimaryVisualPolicy
+> = {
+  graphic_allowed_photo_optional: "graphic_preferred",
+  photo_preferred_graphic_allowed: "photo_preferred",
+};
+
+export function createTemplateAssetPolicyPreset(
+  primaryVisualPolicy: TemplatePrimaryVisualPolicy,
+): TemplateAssetPolicy {
+  return cloneTemplateAssetPolicy(
+    templateAssetPolicyPresetMap[primaryVisualPolicy],
+  );
+}
+
 export function normalizeTemplateAssetPolicy(
   value: TemplateAssetPolicyInput | null | undefined,
 ): TemplateAssetPolicy {
   if (value === null || value === undefined) {
-    return cloneTemplateAssetPolicy(
-      legacyTemplateAssetPolicyMap.graphic_allowed_photo_optional,
-    );
+    return createTemplateAssetPolicyPreset("graphic_preferred");
   }
 
   if (typeof value === "string") {
-    return cloneTemplateAssetPolicy(legacyTemplateAssetPolicyMap[value]);
+    return createTemplateAssetPolicyPreset(legacyTemplateAssetPolicyMap[value]);
   }
 
   const defaultPolicy = resolveTemplateAssetPolicyDefaults(value);
@@ -115,45 +134,33 @@ function resolveTemplateAssetPolicyDefaults(
   value: Exclude<TemplateAssetPolicyInput, LegacyTemplateAssetPolicy>,
 ): TemplateAssetPolicy {
   if (value.primaryVisualPolicy === "balanced") {
-    return cloneTemplateAssetPolicy(balancedTemplateAssetPolicy);
+    return createTemplateAssetPolicyPreset("balanced");
   }
   if (value.primaryVisualPolicy === "photo_preferred") {
-    return cloneTemplateAssetPolicy(
-      legacyTemplateAssetPolicyMap.photo_preferred_graphic_allowed,
-    );
+    return createTemplateAssetPolicyPreset("photo_preferred");
   }
   if (value.primaryVisualPolicy === "graphic_preferred") {
-    return cloneTemplateAssetPolicy(
-      legacyTemplateAssetPolicyMap.graphic_allowed_photo_optional,
-    );
+    return createTemplateAssetPolicyPreset("graphic_preferred");
   }
   if (value.preferredFamilies?.[0] === "photo") {
-    return cloneTemplateAssetPolicy(
-      legacyTemplateAssetPolicyMap.photo_preferred_graphic_allowed,
-    );
+    return createTemplateAssetPolicyPreset("photo_preferred");
   }
   if (value.preferredFamilies?.[0] === "graphic") {
-    return cloneTemplateAssetPolicy(
-      legacyTemplateAssetPolicyMap.graphic_allowed_photo_optional,
-    );
+    return createTemplateAssetPolicyPreset("graphic_preferred");
   }
   if (
     value.preferredFamilies?.includes("graphic") &&
     value.preferredFamilies?.includes("photo")
   ) {
-    return cloneTemplateAssetPolicy(balancedTemplateAssetPolicy);
+    return createTemplateAssetPolicyPreset("balanced");
   }
   if (
     value.allowedFamilies?.[0] === "photo" &&
     value.allowedFamilies.includes("graphic")
   ) {
-    return cloneTemplateAssetPolicy(
-      legacyTemplateAssetPolicyMap.photo_preferred_graphic_allowed,
-    );
+    return createTemplateAssetPolicyPreset("photo_preferred");
   }
-  return cloneTemplateAssetPolicy(
-    legacyTemplateAssetPolicyMap.graphic_allowed_photo_optional,
-  );
+  return createTemplateAssetPolicyPreset("graphic_preferred");
 }
 
 function resolveCompatiblePrimaryVisualPolicy(

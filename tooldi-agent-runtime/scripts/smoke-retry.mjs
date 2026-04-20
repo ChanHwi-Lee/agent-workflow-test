@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { createServer } from "node:net";
 
 import {
+  createStartRunRequest,
   isListenPermissionError,
   runRetrySmokeInProcess,
 } from "./smoke-in-process.mjs";
@@ -277,57 +278,11 @@ async function startRun(apiBaseUrl) {
     headers: {
       "content-type": "application/json",
     },
-    body: JSON.stringify({
-      clientRequestId: `retry-smoke-client-request-${Date.now()}`,
-      editorSessionId: "retry-smoke-editor-session",
-      surface: "toolditor",
-      userInput: {
-        prompt: "봄 세일 배너를 만들어줘",
-        locale: "ko-KR",
-        timezone: "Asia/Seoul",
-      },
-      editorContext: {
-        documentId: "retry-smoke-document-1",
-        pageId: "retry-smoke-page-1",
-        canvasState: "empty",
-        canvasWidth: 1080,
-        canvasHeight: 1080,
-        sizeSerial: "1080x1080@1",
-        workingTemplateCode: null,
-        canvasSnapshotRef: null,
-        selectedLayerIds: [],
-      },
-      brandContext: {
-        brandName: null,
-        palette: [],
-        logoAssetId: null,
-      },
-      referenceAssets: [],
-      runPolicy: {
-        mode: "live_commit",
-        approvalMode: "none",
-        timeBudgetMs: 120000,
-        milestoneTargetsMs: {
-          firstVisible: 1000,
-          editableMinimum: 3000,
-          saveStarted: 5000,
-        },
-        milestoneDeadlinesMs: {
-          planValidated: 1000,
-          firstVisible: 2000,
-          editableMinimum: 5000,
-          mutationCutoff: 10000,
-          hardDeadline: 120000,
-        },
-        requestedOutputCount: 1,
-        allowInternalAiPrimitives: true,
-      },
-      clientInfo: {
-        pagePath: "/editor",
-        viewportWidth: 1440,
-        viewportHeight: 900,
-      },
-    }),
+    body: JSON.stringify(
+      createStartRunRequest("retry-smoke", {
+        workflowVariant: "object_native_v1",
+      }),
+    ),
   });
 
   if (!response.ok) {

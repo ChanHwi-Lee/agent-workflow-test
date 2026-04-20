@@ -1,4 +1,4 @@
-import { normalizeTemplateAssetPolicy } from "./templatePlannerAssetPolicy.js";
+import { createTemplateAssetPolicyPreset } from "./templatePlannerAssetPolicy.js";
 import type {
   TemplateAbstractLayoutDraft,
   TemplateCopyPlanDraft,
@@ -37,11 +37,7 @@ export function createHeuristicTemplatePlanner(): TemplatePlanner {
               : "copy_focused",
         tone: "bright_playful",
         backgroundColorHex: inferBackgroundColorHex(prompt),
-        assetPolicy: normalizeTemplateAssetPolicy(
-          domain === "cafe" || menuType !== null
-            ? "photo_preferred_graphic_allowed"
-            : "graphic_allowed_photo_optional",
-        ),
+        assetPolicy: inferAssetPolicy(domain, menuType),
         typographyHint:
           domain === "fashion_retail"
             ? "세련된 고딕 계열로 명확한 가격/혜택 강조"
@@ -176,7 +172,7 @@ export function buildHeuristicAbstractLayoutDraft(
   prompt: string,
   brief: TemplateSemanticBriefContext,
 ): TemplateAbstractLayoutDraft {
-  const assetPolicy = normalizeTemplateAssetPolicy(brief.assetPolicy);
+  const assetPolicy = brief.assetPolicy;
   const genericPromo = brief.subjectBinding === "subjectless";
   const layoutFamily = genericPromo
     ? brief.layoutIntent === "badge_led"
@@ -221,6 +217,17 @@ export function buildHeuristicAbstractLayoutDraft(
         ? "Generic promo layout keeps a clear copy block and a separate graphic cluster."
         : "Subject-aware layout preserves room for a hero visual while keeping the copy hierarchy stable.",
   };
+}
+
+function inferAssetPolicy(
+  domain: TemplateSemanticBriefDraft["domain"],
+  menuType: TemplateSemanticBriefContext["facets"]["menuType"],
+) {
+  return createTemplateAssetPolicyPreset(
+    domain === "cafe" || menuType !== null
+      ? "photo_preferred"
+      : "graphic_preferred",
+  );
 }
 
 function inferBackgroundColorHex(prompt: string): string {

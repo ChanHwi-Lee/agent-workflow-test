@@ -360,7 +360,9 @@ export async function runTransportSmokeInProcess({ workspaceRoot, queueName }) {
   const sharedEnv = createSharedEnv(queueName);
   const { app, worker } = await createInProcessRuntime({ workspaceRoot, queueName });
   try {
-    const accepted = await startRunViaInject(app, "smoke");
+    const accepted = await startRunViaInject(app, "smoke", {
+      workflowVariant: "object_native_v1",
+    });
     console.log(
       `[smoke] accepted run ${accepted.runId} trace=${accepted.traceId} (in-process fallback)`,
     );
@@ -494,7 +496,9 @@ export async function runObjectNativeSmokeInProcess({
 export async function runRetrySmokeInProcess({ workspaceRoot, queueName }) {
   const { app, worker } = await createInProcessRuntime({ workspaceRoot, queueName });
   try {
-    const accepted = await startRunViaInject(app, "retry-smoke");
+    const accepted = await startRunViaInject(app, "retry-smoke", {
+      workflowVariant: "object_native_v1",
+    });
     console.log(
       `[retry-smoke] accepted run ${accepted.runId} trace=${accepted.traceId} (in-process fallback)`,
     );

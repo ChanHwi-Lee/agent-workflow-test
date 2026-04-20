@@ -5,9 +5,185 @@ import { finalizeRun } from "../phases/finalizeRun.js";
 import { emitSkeletonMutations } from "../phases/emitSkeletonMutations.js";
 import { buildHeartbeatBase, buildStageAckRecord } from "./graphHelpers.js";
 import { shouldStopAfterCurrentAction } from "./nodeUtils.js";
-import { RunJobGraphState } from "./runJobGraphState.js";
+import { RunJobGraphState, type RunJobGraphStateType } from "./runJobGraphState.js";
 import type { RunJobGraphDependencies } from "./runJobGraphTypes.js";
 import type { createRunJobGraphTasks } from "./graphTasks.js";
+
+function isObjectNativeExecutionState(
+  state: Pick<
+    RunJobGraphStateType,
+    | "freeformLayoutPlan"
+    | "referenceBlockGraph"
+    | "messageAtomPlan"
+    | "editableBlockPlan"
+  >,
+): boolean {
+  return (
+    state.freeformLayoutPlan?.workflowVariant === "object_native_v1" ||
+    state.referenceBlockGraph?.workflowVariant === "object_native_v1" ||
+    state.messageAtomPlan?.workflowVariant === "object_native_v1" ||
+    state.editableBlockPlan?.workflowVariant === "object_native_v1"
+  );
+}
+
+type PrepareExecutionTasks = Pick<
+  ReturnType<typeof createRunJobGraphTasks>,
+  "heartbeatTask" | "appendEventTask"
+>;
+
+export async function prepareExecutionNode(
+  state: RunJobGraphStateType,
+  dependencies: Pick<RunJobGraphDependencies, "textLayoutHelper">,
+  tasks: PrepareExecutionTasks,
+) {
+  const {
+    heartbeatTask,
+    appendEventTask,
+  } = tasks;
+
+  if (!state.hydrated || !state.intent || !state.plan) {
+    throw new Error("prepare_execution requires resolved plan state");
+  }
+
+  let cooperativeStopRequested = state.cooperativeStopRequested;
+  const heartbeatBase = buildHeartbeatBase(state.job);
+
+  const executingHeartbeat = await heartbeatTask(state.job.runId, {
+    ...heartbeatBase,
+    attemptState: "running",
+    phase: "executing",
+    heartbeatAt: new Date().toISOString(),
+  });
+  cooperativeStopRequested ||= shouldStopAfterCurrentAction(executingHeartbeat);
+
+  const executingEvent = await appendEventTask(state.job.runId, {
+    traceId: state.job.traceId,
+    attempt: state.job.attemptSeq,
+    queueJobId: state.job.queueJobId,
+    event: {
+      type: "phase",
+      phase: "executing",
+      message: "Worker is emitting staged canvas mutations",
+    },
+  });
+  cooperativeStopRequested ||= executingEvent.cancelRequested;
+
+  if (
+    !cooperativeStopRequested &&
+    isObjectNativeExecutionState(state) &&
+    state.adaptiveSkeletonBatch === null
+  ) {
+    const missingAdaptiveLog = await appendEventTask(state.job.runId, {
+      traceId: state.job.traceId,
+      attempt: state.job.attemptSeq,
+      queueJobId: state.job.queueJobId,
+      event: {
+        type: "log",
+        level: "error",
+        message:
+          "[ssot/adaptive-composition] object_native_v1 requires an adaptive mutation batch; refusing any slot-era fallback",
+      },
+    });
+    cooperativeStopRequested ||= missingAdaptiveLog.cancelRequested;
+    const finalizeDraft = await finalizeRun(state.hydrated, [], null, {
+      cooperativeStopRequested,
+      ...(state.canonicalDesignBriefRef
+        ? { canonicalDesignBriefRef: state.canonicalDesignBriefRef }
+        : {}),
+      ...(state.semanticBriefDraftRef
+        ? { semanticBriefDraftRef: state.semanticBriefDraftRef }
+        : {}),
+      ...(state.briefCompilationReportRef
+        ? { briefCompilationReportRef: state.briefCompilationReportRef }
+        : {}),
+      ...(state.copyPlanRef ? { copyPlanRef: state.copyPlanRef } : {}),
+      ...(state.abstractLayoutPlanRef
+        ? { abstractLayoutPlanRef: state.abstractLayoutPlanRef }
+        : {}),
+      ...(state.assetPlanRef ? { assetPlanRef: state.assetPlanRef } : {}),
+      ...(state.concreteLayoutPlanRef
+        ? { concreteLayoutPlanRef: state.concreteLayoutPlanRef }
+        : {}),
+      ...(state.templatePriorBundleRef
+        ? { templatePriorBundleRef: state.templatePriorBundleRef }
+        : {}),
+      ...(state.sceneStylePlanRef
+        ? { sceneStylePlanRef: state.sceneStylePlanRef }
+        : {}),
+      ...(state.sceneBindingPlanRef
+        ? { sceneBindingPlanRef: state.sceneBindingPlanRef }
+        : {}),
+      overrideResult: {
+        finalStatus: "failed",
+        errorSummary: {
+          code: "adaptive_batch_missing",
+          message:
+            "object_native_v1 could not build an adaptive mutation batch and refused to fall back to the removed slot engine",
+        },
+      },
+    });
+
+    return {
+      cooperativeStopRequested,
+      skeletonBatch: {
+        commitGroup:
+          state.plan?.actions[0]?.commitGroup ?? "adaptive_batch_missing",
+        proposals: [],
+      },
+      currentStageIndex: 0,
+      currentProposal: null,
+      currentMutationId: null,
+      lastMutationAck: null,
+      emittedMutationIds: [],
+      assignedSeqs: [],
+      stageAckHistory: [],
+      refineAttempt: 0,
+      executionSceneSummary: null,
+      executionSceneSummaryRef: null,
+      judgePlan: null,
+      judgePlanRef: null,
+      refineDecision: null,
+      refineDecisionRef: null,
+      finalizeDraft,
+    };
+  }
+
+  const skeletonBatch = cooperativeStopRequested
+    ? {
+        commitGroup:
+          state.plan?.actions[0]?.commitGroup ?? "cancelled_before_mutation",
+        proposals: [],
+      }
+    : state.adaptiveSkeletonBatch
+      ? state.adaptiveSkeletonBatch
+      : await emitSkeletonMutations(state.hydrated, state.intent, state.plan, {
+          textLayoutHelper: dependencies.textLayoutHelper,
+        });
+
+  return {
+    cooperativeStopRequested,
+    skeletonBatch,
+    currentStageIndex: 0,
+    currentProposal: skeletonBatch.proposals[0] ?? null,
+    currentMutationId: null,
+    lastMutationAck: cooperativeStopRequested
+      ? ({
+          found: true,
+          status: "cancelled",
+        } satisfies WaitMutationAckResponse)
+      : null,
+    emittedMutationIds: [],
+    assignedSeqs: [],
+    stageAckHistory: [],
+    refineAttempt: 0,
+    executionSceneSummary: null,
+    executionSceneSummaryRef: null,
+    judgePlan: null,
+    judgePlanRef: null,
+    refineDecision: null,
+    refineDecisionRef: null,
+  };
+}
 
 export function registerExecutionNodes(
   graph: StateGraph<typeof RunJobGraphState>,
@@ -21,151 +197,12 @@ export function registerExecutionNodes(
   } = tasks;
 
   return graph
-    .addNode("prepare_execution", async (state) => {
-      if (!state.hydrated || !state.intent || !state.plan) {
-        throw new Error("prepare_execution requires resolved plan state");
-      }
-
-      let cooperativeStopRequested = state.cooperativeStopRequested;
-      const heartbeatBase = buildHeartbeatBase(state.job);
-
-      const executingHeartbeat = await heartbeatTask(state.job.runId, {
-        ...heartbeatBase,
-        attemptState: "running",
-        phase: "executing",
-        heartbeatAt: new Date().toISOString(),
-      });
-      cooperativeStopRequested ||= shouldStopAfterCurrentAction(executingHeartbeat);
-
-      const executingEvent = await appendEventTask(state.job.runId, {
-        traceId: state.job.traceId,
-        attempt: state.job.attemptSeq,
-        queueJobId: state.job.queueJobId,
-        event: {
-          type: "phase",
-          phase: "executing",
-          message: "Worker is emitting staged canvas mutations",
-        },
-      });
-      cooperativeStopRequested ||= executingEvent.cancelRequested;
-
-      if (
-        !cooperativeStopRequested &&
-        state.hydrated.request.workflowVariant === "object_native_v1" &&
-        state.adaptiveSkeletonBatch === null
-      ) {
-        const missingAdaptiveLog = await appendEventTask(state.job.runId, {
-          traceId: state.job.traceId,
-          attempt: state.job.attemptSeq,
-          queueJobId: state.job.queueJobId,
-          event: {
-            type: "log",
-            level: "error",
-            message:
-              "[ssot/adaptive-composition] object_native_v1 requires an adaptive mutation batch; refusing any slot-era fallback",
-          },
-        });
-        cooperativeStopRequested ||= missingAdaptiveLog.cancelRequested;
-        const finalizeDraft = await finalizeRun(state.hydrated, [], null, {
-          cooperativeStopRequested,
-          ...(state.canonicalDesignBriefRef
-            ? { canonicalDesignBriefRef: state.canonicalDesignBriefRef }
-            : {}),
-          ...(state.semanticBriefDraftRef
-            ? { semanticBriefDraftRef: state.semanticBriefDraftRef }
-            : {}),
-          ...(state.briefCompilationReportRef
-            ? { briefCompilationReportRef: state.briefCompilationReportRef }
-            : {}),
-          ...(state.copyPlanRef ? { copyPlanRef: state.copyPlanRef } : {}),
-          ...(state.abstractLayoutPlanRef
-            ? { abstractLayoutPlanRef: state.abstractLayoutPlanRef }
-            : {}),
-          ...(state.assetPlanRef ? { assetPlanRef: state.assetPlanRef } : {}),
-          ...(state.concreteLayoutPlanRef
-            ? { concreteLayoutPlanRef: state.concreteLayoutPlanRef }
-            : {}),
-          ...(state.templatePriorBundleRef
-            ? { templatePriorBundleRef: state.templatePriorBundleRef }
-            : {}),
-          ...(state.sceneStylePlanRef
-            ? { sceneStylePlanRef: state.sceneStylePlanRef }
-            : {}),
-          ...(state.sceneBindingPlanRef
-            ? { sceneBindingPlanRef: state.sceneBindingPlanRef }
-            : {}),
-          overrideResult: {
-            finalStatus: "failed",
-            errorSummary: {
-              code: "adaptive_batch_missing",
-              message:
-                "object_native_v1 could not build an adaptive mutation batch and refused to fall back to the removed slot engine",
-            },
-          },
-        });
-
-        return {
-          cooperativeStopRequested,
-          skeletonBatch: {
-            commitGroup:
-              state.plan?.actions[0]?.commitGroup ?? "adaptive_batch_missing",
-            proposals: [],
-          },
-          currentStageIndex: 0,
-          currentProposal: null,
-          currentMutationId: null,
-          lastMutationAck: null,
-          emittedMutationIds: [],
-          assignedSeqs: [],
-          stageAckHistory: [],
-          refineAttempt: 0,
-          executionSceneSummary: null,
-          executionSceneSummaryRef: null,
-          judgePlan: null,
-          judgePlanRef: null,
-          refineDecision: null,
-          refineDecisionRef: null,
-          finalizeDraft,
-        };
-      }
-
-      // SSOT: prefer adaptive composition batch when available
-      const skeletonBatch = cooperativeStopRequested
-        ? {
-            commitGroup:
-              state.plan?.actions[0]?.commitGroup ?? "cancelled_before_mutation",
-            proposals: [],
-          }
-        : state.adaptiveSkeletonBatch
-          ? state.adaptiveSkeletonBatch
-          : await emitSkeletonMutations(state.hydrated, state.intent, state.plan, {
-              textLayoutHelper: dependencies.textLayoutHelper,
-            });
-
-      return {
-        cooperativeStopRequested,
-        skeletonBatch,
-        currentStageIndex: 0,
-        currentProposal: skeletonBatch.proposals[0] ?? null,
-        currentMutationId: null,
-        lastMutationAck: cooperativeStopRequested
-          ? ({
-              found: true,
-              status: "cancelled",
-            } satisfies WaitMutationAckResponse)
-          : null,
-        emittedMutationIds: [],
-        assignedSeqs: [],
-        stageAckHistory: [],
-        refineAttempt: 0,
-        executionSceneSummary: null,
-        executionSceneSummaryRef: null,
-        judgePlan: null,
-        judgePlanRef: null,
-        refineDecision: null,
-        refineDecisionRef: null,
-      };
-    })
+    .addNode("prepare_execution", async (state) =>
+      prepareExecutionNode(state, dependencies, {
+        heartbeatTask,
+        appendEventTask,
+      }),
+    )
     .addNode("emit_stage", async (state) => {
       if (!state.currentProposal || !state.skeletonBatch) {
         throw new Error("emit_stage requires an active mutation proposal");
