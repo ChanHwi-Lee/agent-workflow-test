@@ -28,15 +28,17 @@
 - 구현 전환은 진행 중이다. 현재 코드는 아직 adaptive composition 잔재(`buildObjectNativePath`, `ReferenceBlockKind`, `resolveRequiredExecutionSlots`, addable vocabulary 등)를 들고 있다. v5 §3.2 폐기 목록 기준 순차 제거 예정.
 - 설계 철학/파이프라인/재사용·폐기·신설 경계는 [v5 SSOT](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md)만 normative.
 
-## 2026-04-09 현재 구현 스냅샷
+## 2026-04-09 현재 구현 스냅샷 (historical — v5 전환 이전)
 
-- worker orchestration 은 `BullMQ Worker + LangGraph` 로 동작한다.
-- planner/model abstraction 은 `LangChain JS` 로 정리했고, 현재 local 기본 planner provider 는 `Google Gemini` 다.
-- public 제품 표면은 여전히 `empty_canvas -> create_template` 1종이다.
-- 최근 설계 철학 SSOT는 `template-aware adaptive composition` 으로 고정됐다.
-  - template object graph가 구조의 1차 진실이다.
-  - message atoms는 content hint다.
-  - completion은 `editability + renderability + save truth` 로 닫는다.
+> 아래는 2026-04-09 시점 코드/설계 상태 기록이다. 2026-04-20자로 설계 철학은 v5 SSOT로 교체되었으므로, "현재" 문장 대신 "당시" 로 읽어라. 새로운 철학/파이프라인은 [v5 SSOT](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md) 를 본다.
+
+- worker orchestration 은 `BullMQ Worker + LangGraph` 로 동작했다.
+- planner/model abstraction 은 `LangChain JS` 로 정리됐고, 당시 local 기본 planner provider 는 `Google Gemini` 였다.
+- public 제품 표면은 `empty_canvas -> create_template` 1종이었다.
+- 당시 설계 철학 SSOT는 `template-aware adaptive composition` 이었다 (**2026-04-20 v5 SSOT로 대체됨**).
+  - template object graph가 구조의 1차 진실이라고 주장했다. (v5에서 폐기)
+  - message atoms는 content hint로 다뤘다. (v5에서 어휘 자체 폐기)
+  - completion은 `editability + renderability + save truth` 로 닫았다. (**이 판정 3축은 v5에서도 그대로 유지**)
 - 현재 worker 는 여전히 아래 legacy artifact chain을 남긴다.
   - `normalized-intent`
   - `copy-plan`

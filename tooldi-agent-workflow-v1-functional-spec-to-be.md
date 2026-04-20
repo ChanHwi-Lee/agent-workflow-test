@@ -58,10 +58,11 @@
 
 ### 1.1 Normative Precedence
 
-- 설계 철학, adaptive composition axiom, message atoms, template object graph, retain/modify/remove/add, completion definition은 [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 만 normative source로 사용한다.
+- 설계 철학, V1~V5 axiom, 6단계 파이프라인(Constrained HTML Pipeline), 재사용·폐기·신설 경계, default model lock은 [tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md) 만 normative source로 사용한다. 이전 adaptive-composition SSOT(`tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md`)는 2026-04-20자로 v5 SSOT에 의해 대체되었고 historical reference로만 유효하다.
 - artifact identity, counted completion moment, lifecycle ownership, root contract-chain identity, ordering primitive, checkpoint/rollback semantics, primitive reuse boundary, AC closure는 [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md) 의 canonical section만 normative source로 사용한다.
-- 이 문서는 product/API/persistence projection 문서다. 동일 주제를 재진술할 수는 있지만, architecture 문서가 이미 닫은 semantic contract를 override하면 안 된다.
-- 따라서 이 문서의 `canonicalCompletionMoment`, `run lifecycle bootstrap`, persistence field glossary, FR/BR/NFR 표는 모두 SSOT와 architecture 문서가 닫은 용어를 재사용해야 한다.
+- 이 문서는 product/API/persistence projection 문서다. 동일 주제를 재진술할 수는 있지만, v5 SSOT 또는 architecture 문서가 이미 닫은 semantic contract를 override하면 안 된다.
+- 따라서 이 문서의 `canonicalCompletionMoment`, `run lifecycle bootstrap`, persistence field glossary, FR/BR/NFR 표는 모두 v5 SSOT와 architecture 문서가 닫은 용어를 재사용해야 한다.
+- `message atoms`, `template object graph`, `retain/modify/remove/add`, `addable vocabulary`, `adaptive composition axiom` 등 이전 SSOT 어휘는 **historical**이다. 이 문서에서 새로 재진술하지 않는다. 해당 어휘로 작성된 FR/BR은 v5 파이프라인 용어로 재투영되어야 한다.
 
 ## 2. 범위
 
