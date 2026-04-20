@@ -15,8 +15,7 @@
 - 현재 구현 상태: [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
 - 표현 전략 lock: [tooldi-agent-workflow-v1-create-template-representation-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-representation-design-lock.md)
 - intelligence lock: [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md)
-- object-native 전환 배경 참고: [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md)
-- topology-driven v4 배경 참고: [tooldi-agent-workflow-v4-topology-driven-editor-native-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v4-topology-driven-editor-native-architecture.md)
+- historical object-native 배경 참고: [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md)
 - 다음 작업 우선순위: [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
 
 ## 2026-04-09 현재 구현 스냅샷
@@ -64,51 +63,33 @@
   - 이 필드는 current implementation drift일 뿐 구조 truth나 completion truth가 아니다.
 - `ConcreteLayoutPlan` 은 이제 `slotAnchors` 외에 `resolvedSlotBounds` 를 가지며, copy/photo/background placement authority는 이 bounds를 기준으로 정렬된다.
 - real save evidence 는 아직 synthetic finalize placeholder 에 의존한다.
-- `retrieval_prior_v2_reset` 까지의 safety hardening만으로는 브라우저 visible quality가 충분히 올라가지 않았고, 다음 단계는 SSOT 기준 adaptive composition 전환을 실제 runtime contract에 반영하는 것이다.
+- `retrieval_prior_v2_reset` compat path는 제거되었고, 현재 기준선은 `object_native_v1` 단일 adaptive composition runtime이다.
 
 ## 2026-04-15 현재 구현 추가
 
-- experimental `workflowVariant=object_native_v1` 경로를 추가했다.
-  - `retrieval_prior_v2_reset` 은 baseline 으로 유지한다.
-  - 새 경로는 top-k prior candidate에 대해 object-native audit / reselection / renderability report artifact를 남긴다.
+- 외부/user-visible `workflowVariant` 표면은 `object_native_v1` 하나로 정리했다.
+  - active path는 top-k prior candidate에 대해 object-native audit / reselection / renderability report artifact를 남긴다.
 - 현재 object-native 경로는 top-k candidate를 audit하고, stable-capable candidate가 실제로 생겼을 때만 reselection을 의미 있게 다룬다.
 - fallback-only 후보끼리의 reselection heuristics는 architecture 전환 신호를 왜곡할 수 있어 runtime truth로 채택하지 않는다.
 - `object_native_v1` 는 이제 첫 native stable slice를 가진다.
   - 지원 cluster family: `big_text`, `promo_band`, `cta`, `optional microtext/decor`
-  - 이 slice는 `buildReferenceResetPath` stable contract 대신 object-native renderability guard로 stable을 판정한다.
+  - 이 slice는 legacy reset contract 대신 object-native renderability guard로 stable을 판정한다.
 - object-native artifact는 이제 `failureStage` (`semantic_gate_failure`, `binding_failure`, `renderability_guard_failure`) 를 남긴다.
   - candidate audit / selection / renderability report는 `missingClusterFamilies`, `textBearingClusterCount`, `contentClusterCount`, `bindingCoverage`, `renderabilityMetrics`, `semanticGateReason` 를 함께 남긴다.
 - `template-prior-bundle` 는 이제 query-level diagnostics 를 남긴다.
   - `successfulQueryCount`, `failedQueryCount`, `queryDiagnostics[]`
   - real Tooldi template search가 `result=false` 와 `trace_id` 만 돌려주는 empty-result payload는 invalid response가 아니라 empty result set으로 normalize 한다.
   - real source query 하나가 실패해도 run 전체를 transport failure로 종료하지 않고 legacy fallback 판단까지 계속 간다.
-- `pnpm smoke:object-native` 는 representative fixture에서 `template-stable` reselection과 `status=stable` 을 검증한다.
+- `pnpm smoke:object-native` 는 deterministic adaptive decision stub을 주입한 representative fixture에서 `template-stable` reselection과 `status=stable` 을 검증한다.
 - worker 는 아래 artifact family를 새로 남긴다.
   - `object-native-reference-audit`
   - `object-native-candidate-selection`
   - `object-native-renderability-report`
   - `object-native-cluster-graph`
-- toolditor spike panel은 `experimental v3 생성` 버튼을 가지며 object-native audit/selection/renderability log를 따로 노출한다.
+- toolditor spike panel은 object-native 단일 실행 버튼과 object-native audit/selection/renderability log를 노출한다.
 - FE `saveTemplate` ack 는 이제 `saveEvidence` 뿐 아니라 canonical `saveReceipt` 도 함께 보낸다.
 - backend finalizer 는 `latestSaveReceiptId` 뿐 아니라 `LiveDraftArtifactBundle.saveMetadata.latestSaveReceipt` 를 실제 payload로 materialize 한다.
   - completed 계열 finalize는 이제 `saveEvidence + saveReceipt + finalRevision` 이 모두 있어야 통과하고, 하나라도 빠지면 `save_failed_after_apply` 로 강등한다.
-
-## 2026-04-16 현재 구현 추가
-
-- experimental `workflowVariant=topology_v1` 경로를 추가했다.
-  - `object_native_v1` 는 baseline 으로 유지한다.
-  - 새 경로는 `band_overlay_promo`, `centered_message_stack` 두 topology family만 연다.
-- `topology_v1` worker 는 아래 artifact family를 새로 남긴다.
-  - `topology-match-report`
-  - `topology-selection`
-  - `topology-binding-plan`
-  - `topology-execution-plan`
-  - `topology-completion-report`
-- `topology_v1` 는 `requiredExecutionSlots` 대신 topology completion contract를 minimum draft truth로 사용한다.
-  - worker finalize callback은 `selectedTopologyId`, `topologyCompletionContract` 와 topology artifact ref를 backend에 함께 보낸다.
-  - backend finalizer/ledger/materializer 는 emitted layer metadata의 `topologyCapabilityId`, `textBearing`, `actionBearing`, `mediaBearing` 를 기준으로 minimum draft pass/fail 을 판정한다.
-- freeform block emission은 이제 `topologyId`, `topologyCapabilityId`, `topologyRole` metadata를 createLayer command에 실어 보낸다.
-- toolditor spike panel은 `experimental v4 생성` 버튼을 가지며 `topology-match`, `topology-selection`, `topology-completion` log를 따로 노출한다.
 
 ## 범위
 

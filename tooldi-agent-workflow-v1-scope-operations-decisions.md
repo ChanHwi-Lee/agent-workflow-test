@@ -10,7 +10,7 @@
 | 문서 유형 | Decision Record |
 | 작성일 | 2026-04-03 |
 | 기준 시스템 | `toolditor FE`, 신규 `Fastify` Agent API, 신규 `BullMQ Worker + LangGraph Runtime`, `LangChain JS planner/model layer`, `Redis` 기반 `BullMQ` queue, 기존 AI primitive adapters |
-| 기준 데이터 | `docs/tooldi-agent-workflow-v1/tooldi-natural-language-agent-v1-architecture.md`, `docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-functional-spec-to-be.md`, `docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md`, Fastify/BullMQ 공식 문서 |
+| 기준 데이터 | `agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md`, `agent-workflow-test/tooldi-agent-workflow-v1-functional-spec-to-be.md`, `agent-workflow-test/tooldi-agent-workflow-v1-backend-boundary.md`, Fastify/BullMQ 공식 문서 |
 | 대상 독자 | PM, FE, Agent Backend, Worker, QA, 인프라/운영 |
 | Owner | Ouroboros workflow |
 
@@ -31,8 +31,8 @@
 ### 1.1 Document Authority Boundary
 
 - 이 문서는 v1 scope/non-scope, stack lock, day-one operations visibility를 잠그는 decision record다.
-- artifact identity, counted completion moment, lifecycle ownership, contract-chain root identity와 ordering은 [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-natural-language-agent-v1-architecture.md) 가 authoritative source다.
-- backend API/persistence surface는 [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-functional-spec-to-be.md), control-plane/worker split은 [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md) 가 projection을 제공한다.
+- artifact identity, counted completion moment, lifecycle ownership, contract-chain root identity와 ordering은 [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md) 가 authoritative source다.
+- backend API/persistence surface는 [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-functional-spec-to-be.md), control-plane/worker split은 [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-backend-boundary.md) 가 projection을 제공한다.
 - 따라서 이 문서의 scope/stack decision은 sibling 문서가 같은 문장을 재사용하게 만드는 lock 역할만 하고, completion semantics나 artifact identity를 별도 source로 다시 만들지 않는다.
 
 ## 2. v1 Scope Lock
@@ -269,8 +269,8 @@ v1은 대규모 observability platform 없이 시작하더라도 아래 수준�
 
 ## 6. References
 
-- [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-functional-spec-to-be.md)
-- [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-natural-language-agent-v1-architecture.md)
-- [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md)
+- [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-functional-spec-to-be.md)
+- [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md)
+- [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-backend-boundary.md)
 - Fastify official docs: https://fastify.dev/docs/latest/
 - BullMQ official docs: https://docs.bullmq.io/

@@ -55,7 +55,7 @@
 ### 1.1 Normative Precedence
 
 - 설계 철학, adaptive composition axiom, message atoms, template object graph, retain/modify/remove/add, completion definition은 [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 만 normative source로 사용한다.
-- artifact identity, counted completion moment, lifecycle ownership, root contract-chain identity, ordering primitive, checkpoint/rollback semantics, primitive reuse boundary, AC closure는 [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-natural-language-agent-v1-architecture.md) 의 canonical section만 normative source로 사용한다.
+- artifact identity, counted completion moment, lifecycle ownership, root contract-chain identity, ordering primitive, checkpoint/rollback semantics, primitive reuse boundary, AC closure는 [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md) 의 canonical section만 normative source로 사용한다.
 - 이 문서는 product/API/persistence projection 문서다. 동일 주제를 재진술할 수는 있지만, architecture 문서가 이미 닫은 semantic contract를 override하면 안 된다.
 - 따라서 이 문서의 `canonicalCompletionMoment`, `run lifecycle bootstrap`, persistence field glossary, FR/BR/NFR 표는 모두 SSOT와 architecture 문서가 닫은 용어를 재사용해야 한다.
 
@@ -2507,7 +2507,7 @@ asset/image adapter는 generic runtime error class를 그대로 재사용하되,
 | `agent_action_logs` | action 단위 실행/실패/rollback 결과 저장 |
 | `agent_final_summaries` | terminal status, authoritative final canvas state ref, canonical diff ref, warning/fallback summary 저장 |
 
-record별 durable writer/read owner, retrieval path, audit immutability 규칙은 [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md) 의 `8. 상태, 로깅, 저장소 경계` 를 기준으로 삼는다.
+record별 durable writer/read owner, retrieval path, audit immutability 규칙은 [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-backend-boundary.md) 의 `8. 상태, 로깅, 저장소 경계` 를 기준으로 삼는다.
 
 ### 11.2 최소 필드
 

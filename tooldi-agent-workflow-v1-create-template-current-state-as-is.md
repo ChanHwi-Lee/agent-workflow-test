@@ -52,28 +52,14 @@
 - public multi-turn memory
 - editor canonical picture seam 정렬
 
-### 3.3 2026-04-15 추가 current truth
+### 3.3 2026-04-20 추가 current truth
 
-- optional `workflowVariant` 는 현재 아래를 지원한다.
-  - `legacy`
-  - `retrieval_prior_v1`
-  - `retrieval_prior_v2`
-  - `retrieval_prior_v2_reset`
-  - `object_native_v1`
-  - `topology_v1`
-- `object_native_v1` 는 `retrieval_prior_v2_reset` 을 덮어쓰지 않는 별도 experimental path다.
-- `topology_v1` 는 `object_native_v1` baseline 을 유지한 채 topology-driven execution contract를 검증하는 별도 experimental path다.
+- external/user-visible `workflowVariant` 표면은 `object_native_v1` 하나로 고정한다.
 - `object_native_v1` 는 top-k template prior 후보를 대상으로 아래 artifact를 남긴다.
   - `object-native-reference-audit`
   - `object-native-candidate-selection`
   - `object-native-renderability-report`
   - `object-native-cluster-graph`
-- `topology_v1` 는 top-k template prior 후보를 대상으로 아래 artifact를 남긴다.
-  - `topology-match-report`
-  - `topology-selection`
-  - `topology-binding-plan`
-  - `topology-execution-plan`
-  - `topology-completion-report`
 - `template-prior-bundle` 는 query-level diagnostics 를 남긴다.
   - `successfulQueryCount`, `failedQueryCount`, `queryDiagnostics[]`
   - real Tooldi template search가 `result=false` 와 `trace_id` 만 돌려주는 empty-result payload는 empty result set으로 normalize 한다.
@@ -84,16 +70,13 @@
 - 현재 object-native path는 첫 native stable slice를 가진다.
   - 지원 cluster family: `big_text`, `promo_band`, `cta`, `optional microtext/decor`
   - stable 판정은 reset semantic subset이 아니라 object-native renderability guard로 닫는다.
-- 현재 topology path는 첫 topology-driven stable slice를 가진다.
-  - 지원 topology family: `band_overlay_promo`, `centered_message_stack`
-  - stable 판정은 global checklist completeness가 아니라 selected topology의 completion contract + renderability guard로 닫는다.
+- `retrieval_prior_v2_reset` compat path와 `buildReferenceResetPath` wrapper는 제거되었고, readable fallback은 `buildReferenceDrivenFallback` 내부 helper로만 남긴다.
+- finalize/materializer 의 slot-era residue (`requiredExecutionSlots`, planner `requiredSlots`) 는 제거되었고, minimum draft truth는 `rootLayerIds + editableLayerIds` 로 닫는다.
 - object-native artifact는 이제 `failureStage` (`semantic_gate_failure`, `binding_failure`, `renderability_guard_failure`) 를 남겨 style-only 원인을 구조적으로 분리한다.
   - candidate audit / selection / renderability report는 `missingClusterFamilies`, `textBearingClusterCount`, `contentClusterCount`, `bindingCoverage`, `renderabilityMetrics`, `semanticGateReason` 를 함께 남긴다.
-- topology emitted layer는 이제 `topologyId`, `topologyCapabilityId`, `topologyRole`, `textBearing`, `actionBearing`, `mediaBearing` metadata를 함께 실어 completion truth에 사용한다.
 - FE `saveTemplate` ack 는 이제 `saveEvidence` 와 함께 canonical `saveReceipt` 를 보낸다.
 - backend finalization/materialization 은 더 이상 `latestSaveReceiptId`/`outputTemplateCode` 를 null placeholder로만 두지 않고, `latestSaveReceipt` payload를 `LiveDraftArtifactBundle.saveMetadata` 에 실어 남긴다.
   - completed 계열 finalize는 이제 `saveEvidence + saveReceipt + finalRevision` 이 모두 있어야 통과하고, 하나라도 빠지면 `save_failed_after_apply` 로 강등한다.
-  - `topology_v1` completed path는 `selectedTopologyId/topologyCompletionContract` 를 `commitPayload` 에 실어 남기고, ledger projection 은 emitted topology capability metadata 기준으로 minimum draft pass/fail 을 판정한다.
 
 ## 4. 액터 및 전제조건
 
@@ -121,7 +104,7 @@
 2. FE는 run 생성 요청을 backend로 보낸다.
 3. backend는 BullMQ queue에 `RunJobEnvelope` 를 넣고 SSE stream을 연다.
 4. worker는 LangGraph graph를 통해 `NormalizedIntent`, `CopyPlan`, `LayoutPlan`, `AssetPlan`, `SearchProfile`, candidate set, selection, judge, final plan을 만든다.
-   - experimental `workflowVariant=retrieval_prior_v1` path는 searchable template prior bundle을 먼저 조회하고, selected scaffold 요약을 copy/layout generation context에 주입한다.
+   - active `workflowVariant=object_native_v1` path는 searchable template prior bundle을 조회하고, object-native audit/selection/renderability 결정을 composition context에 주입한다.
 5. worker는 staged mutation을 FE에 제안하고 ack를 수집한다.
 6. worker는 ack 결과로 `ExecutionSceneSummary -> JudgePlan -> RefineDecision` 을 만들고 필요 시 1회 patch-only refine mutation을 추가로 보낸다.
 7. backend는 finalize를 materialize 하고 terminal outcome을 남긴다.
@@ -133,8 +116,7 @@
 - 시스템은 현재 `heuristic` 또는 `langchain` planner mode를 지원한다.
 - local 기준 현재 planner는 `langchain + google` 로 설정할 수 있고 실제로 동작한다.
 - 시스템은 optional `workflowVariant` 를 지원한다.
-  - 기본값: `legacy`
-  - experimental: `retrieval_prior_v1`, `retrieval_prior_v2`, `retrieval_prior_v2_reset`, `object_native_v1`, `topology_v1`
+  - 외부/public active 값: `object_native_v1`
 - planner는 현재 최소 아래 값을 만든다.
   - `templateKind`
   - `domain`
@@ -164,10 +146,9 @@
 - 시스템은 `candidate set -> selection decision` 구조를 artifact로 남긴다.
 - 시스템은 typography selection을 별도 artifact로 남긴다.
 - photo branch는 `photo_selected` 또는 `graphic_preferred` reasoning을 artifact와 `run.log`에 남긴다.
-- `retrieval_prior_v1` path는 searchable template top-k 결과와 fetched template JSON으로 `template-prior-bundle` artifact를 남긴다.
-- `retrieval_prior_v1` path는 selected template scaffold의 layout/copy anchor 힌트를 copy/layout/composition 단계에 반영한다.
+- active path는 searchable template top-k 결과와 fetched template JSON으로 `template-prior-bundle` artifact를 남긴다.
+- active path는 selected template scaffold의 layout/copy anchor 힌트와 object-native audit 결과를 copy/layout/composition 단계에 반영한다.
 - `object_native_v1` path는 top-k template prior 후보에 대해 object-native audit/reselection/renderability artifact를 남기고, first native stable slice에서 stable-capable candidate가 생기면 original selected template 교체를 의미 있게 다룬다.
-- `topology_v1` path는 top-k template prior 후보에 대해 topology match/selection/binding/execution/completion artifact를 남기고, first topology slice에서는 `band_overlay_promo`, `centered_message_stack` 두 family만 허용한다.
 
 ### 6.4 judge / terminal semantics
 
@@ -185,7 +166,7 @@
 
 - 시스템은 현재 최소 아래 artifact를 남긴다.
   - `normalized-intent.json`
-  - `template-prior-bundle.json` (`retrieval_prior_v1` only)
+  - `template-prior-bundle.json`
   - `copy-plan.json`
   - `layout-plan-abstract.json`
   - `asset-plan.json`
@@ -201,16 +182,11 @@
   - `refine-decision.json`
   - `executable-plan.json`
 - `object_native_v1` 가 켜지면 아래 artifact도 추가로 남긴다.
+- active path는 아래 object-native artifact를 추가로 남긴다.
   - `object-native-reference-audit.json`
   - `object-native-candidate-selection.json`
   - `object-native-renderability-report.json`
   - `object-native-cluster-graph.json`
-- `topology_v1` 가 켜지면 아래 artifact도 추가로 남긴다.
-  - `topology-match-report.json`
-  - `topology-selection.json`
-  - `topology-binding-plan.json`
-  - `topology-execution-plan.json`
-  - `topology-completion-report.json`
 - refine가 실제로 돌면 `executable-plan-refine-1.json`, `execution-scene-summary-refine-1.json`, `judge-plan-refine-1.json`, `refine-decision-refine-1.json` 도 남는다.
 - finalize/completion chain은 이제 `copyPlanRef`, `assetPlanRef`, `concreteLayoutPlanRef`, `executionSceneSummaryRef`, `judgePlanRef`, `refineDecisionRef` 까지 포함한다.
 
@@ -254,9 +230,9 @@
 
 ### 8.6 retrieval prior 실험의 현재 한계
 
-- `retrieval_prior_v2`, `retrieval_prior_v2_reset` 실험으로 unsafe stable reject, style-only readable fallback, text/surface 정합성 같은 safety hardening은 상당 부분 확보했다.
+- `retrieval_prior_v2`, `retrieval_prior_v2_reset` 실험을 거치며 unsafe stable reject, style-only readable fallback, text/surface 정합성 같은 safety hardening은 상당 부분 확보했다.
 - 하지만 브라우저 결과 기준으로는 visible quality가 크게 오르지 않았다.
-- 현재 판단은 `retrieval_prior_v2_reset`을 더 미세 조정하는 것이 아니라, legacy slot/plan execution 계약을 SSOT 기준 adaptive composition runtime으로 교체해야 한다는 것이다.
+- 현재 판단은 compat variant를 되살리는 것이 아니라, 남은 legacy slot/plan execution 계약을 SSOT 기준 adaptive composition runtime으로 계속 치환해야 한다는 것이다.
 - 이 전환의 철학, 정상 동작 목표, current done/not-done은 [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 를 따른다.
 - 현재 기준선에서 synthetic composition fallback은 허용 방향이 아니다. reference-first를 유지한 bounded degradation만 허용한다.
 

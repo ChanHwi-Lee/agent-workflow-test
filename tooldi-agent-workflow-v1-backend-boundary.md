@@ -8,7 +8,7 @@
 | 문서 유형 | `TO-BE` |
 | 작성일 | `2026-04-02` |
 | 기준 시스템 | `toolditor FE`, `Fastify-based non-PHP agent backend`, `BullMQ worker + LangGraph runtime`, `LangChain JS planner/model layer`, `Redis-backed BullMQ queue`, `existing AI primitives` |
-| 기준 데이터 | `docs/tooldi-agent-workflow-v1/tooldi-natural-language-agent-v1-architecture.md`, `docs/tooldi-agent-workflow-v1/toolditor-agent-workflow-v1-client-boundary.md` |
+| 기준 데이터 | `agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md`, `agent-workflow-test/toolditor-agent-workflow-v1-client-boundary.md` |
 | 대상 독자 | `PM, FE, Agent Backend, Worker, QA` |
 | Owner | `Ouroboros workflow` |
 
@@ -25,7 +25,7 @@
 ### 1.1 Normative Precedence
 
 - 이 문서는 backend/control-plane scope, persistence ownership, northbound/southbound 분리를 정의하는 authoritative boundary 문서다.
-- counted completion moment, canonical draft artifact identity, lifecycle ownership source는 [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-natural-language-agent-v1-architecture.md) 의 `completion_sla_definition`, `draft_artifact_model`, `authority_matrix` 를 그대로 재참조해야 한다.
+- counted completion moment, canonical draft artifact identity, lifecycle ownership source는 [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md) 의 `completion_sla_definition`, `draft_artifact_model`, `authority_matrix` 를 그대로 재참조해야 한다.
 - 따라서 이 문서의 persistence table, close-row 설명, terminalization prose는 `RunCompletionRecord.completedAt` 을 terminal bookkeeping timestamp로만 다루고, `RunCompletionRecord.draftGeneratedAt` 이 sole SLA-counted success moment라는 규칙을 바꾸면 안 된다.
 
 ## 2. backend 경계 정의

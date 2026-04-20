@@ -57,6 +57,7 @@
 - 위 artifact chain은 current runtime scaffolding 이며 design truth는 아니다.
 - current runtime 일부 경로는 `executionSlotKey` 같은 legacy execution metadata를 여전히 남긴다.
 - 이 metadata는 구조 truth나 completion truth가 아니라 drift surface로만 취급한다.
+- external/user-visible `workflowVariant` 표면은 `object_native_v1` 하나로 정리됐고, `retrieval_prior_v2_reset` 은 internal compat fallback 으로만 유지한다.
 - `ConcreteLayoutPlan` 은 `resolvedSlotBounds` 를 가지며 preflight/execution 쪽 copy bounds authority를 제공한다.
 - planner/model abstraction 은 LangChain JS 뒤로 정리됐고, local 기본 provider 는 Gemini 다.
 - picture/shape retrieval은 direct `Picture::index` / `Shape::index` surface를 사용하는 `tooldi_api_direct` mode로 정리됐다.

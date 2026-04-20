@@ -22,27 +22,27 @@
 
 - [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 가 설계 철학과 adaptive composition contract의 최상위 SSOT다. template object graph, message atoms, retain/modify/remove/add, completion definition은 오직 이 문서가 닫는다.
 - 이 문서는 v1 runtime semantic contract의 최상위 authoritative source다. artifact identity, counted completion moment, lifecycle ownership, contract-chain root identity, ordering primitive, checkpoint/rollback semantics, asset normalization boundary, primitive reuse boundary, acceptance-criterion closure는 오직 이 문서가 닫는다.
-- [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-functional-spec-to-be.md) 는 product/API projection 문서다. northbound request, FR/BR/NFR, payload shape, persistence table을 정의할 수는 있지만, 이 문서가 이미 닫은 artifact identity, completion semantics, authority ownership, AC closure를 재정의하거나 override할 수 없다.
-- [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md) 는 backend/control-plane scope와 sync/async split의 authoritative source다. 다만 lifecycle ownership의 normative 판정, canonical completion moment, canonical draft artifact identity는 이 문서를 재참조만 해야 한다.
-- [tooldi-agent-workflow-v1-scope-operations-decisions.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-scope-operations-decisions.md) 는 v1 scope/non-scope, stack lock, day-one operations decision의 authoritative source다. 이 문서 역시 artifact identity, completion semantics, lifecycle ownership을 별도 source로 만들면 안 된다.
+- [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-functional-spec-to-be.md) 는 product/API projection 문서다. northbound request, FR/BR/NFR, payload shape, persistence table을 정의할 수는 있지만, 이 문서가 이미 닫은 artifact identity, completion semantics, authority ownership, AC closure를 재정의하거나 override할 수 없다.
+- [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-backend-boundary.md) 는 backend/control-plane scope와 sync/async split의 authoritative source다. 다만 lifecycle ownership의 normative 판정, canonical completion moment, canonical draft artifact identity는 이 문서를 재참조만 해야 한다.
+- [tooldi-agent-workflow-v1-scope-operations-decisions.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-scope-operations-decisions.md) 는 v1 scope/non-scope, stack lock, day-one operations decision의 authoritative source다. 이 문서 역시 artifact identity, completion semantics, lifecycle ownership을 별도 source로 만들면 안 된다.
 
 ### Integrated Verification
 
 - Integrated Verification: `manual_cross_doc_consistency_review_v1`
 - Verification artifact set:
   - [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md)
-  - [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-natural-language-agent-v1-architecture.md)
-  - [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-functional-spec-to-be.md)
-  - [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md)
-  - [tooldi-agent-workflow-v1-scope-operations-decisions.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-scope-operations-decisions.md)
+  - [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md)
+  - [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-functional-spec-to-be.md)
+  - [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-backend-boundary.md)
+  - [tooldi-agent-workflow-v1-scope-operations-decisions.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-scope-operations-decisions.md)
 - Canonical Test Command:
 
 ```bash
 rg -n "RunCompletionRecord\\.draftGeneratedAt|canonical_completion_moment|LiveDraftArtifactBundle|authority_matrix|tool_activation_policy|StoredAssetDescriptor|verification_traceability_map|ordering_policy|request_ingress_boundary|record_invariant_matrix|evaluation_closure_policy" \
-  docs/tooldi-agent-workflow-v1/tooldi-natural-language-agent-v1-architecture.md \
-  docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-functional-spec-to-be.md \
-  docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md \
-  docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-scope-operations-decisions.md
+  agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md \
+  agent-workflow-test/tooldi-agent-workflow-v1-functional-spec-to-be.md \
+  agent-workflow-test/tooldi-agent-workflow-v1-backend-boundary.md \
+  agent-workflow-test/tooldi-agent-workflow-v1-scope-operations-decisions.md
 ```
 
 - This revision is valid only when the command above shows no sibling document asserting a second canonical completion moment, a second canonical draft artifact, a second lifecycle-ownership source, or a second design-philosophy source that overrides the SSOT.
@@ -50,8 +50,8 @@ rg -n "RunCompletionRecord\\.draftGeneratedAt|canonical_completion_moment|LiveDr
 
 ### Previous-vs-Current Delta
 
-- The previous revision still left a cross-doc mismatch where [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-functional-spec-to-be.md) used `final_save_receipt_acked` as the canonical completion moment while this document had already fixed `RunCompletionRecord.draftGeneratedAt` as the sole counted success moment.
-- The previous revision also allowed [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md) to read `RunCompletionRecord.completedAt` like a canonical completion moment, which contradicted `completion_sla_definition`.
+- The previous revision still left a cross-doc mismatch where [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-functional-spec-to-be.md) used `final_save_receipt_acked` as the canonical completion moment while this document had already fixed `RunCompletionRecord.draftGeneratedAt` as the sole counted success moment.
+- The previous revision also allowed [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-backend-boundary.md) to read `RunCompletionRecord.completedAt` like a canonical completion moment, which contradicted `completion_sla_definition`.
 - This revision closes those contradictions and adds an explicit document-authority hierarchy plus integrated verification metadata so the next evaluation can test one authoritative rule set instead of re-inferring it from sibling prose.
 
 ## 0. Verification Traceability Map
@@ -1797,11 +1797,11 @@ v1은 day one부터 아래 privacy 규칙을 지켜야 한다.
 - FE 사용자 surface는 raw prompt artifact, provider request ref, internal payload ref를 직접 조회하지 않는다.
 - support/ops 조회도 backend query layer를 통해 role-gated access로만 열고, telemetry sink만으로 prompt/tool 전문을 복원할 수 없어야 한다.
 
-세부 record ownership, immutable audit rule, retrieval path는 [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md) 의 `8. 상태, 로깅, 저장소 경계` 를 기준으로 구현한다.
+세부 record ownership, immutable audit rule, retrieval path는 [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-backend-boundary.md) 의 `8. 상태, 로깅, 저장소 경계` 를 기준으로 구현한다.
 
 ## 6. 부록 A. v1 대표 시나리오 구현 계약
 
-이 부록은 대표 시나리오 구현에 필요한 v1 공유 계약을 한곳에 고정한다. 상세 public route schema와 southbound callback schema는 [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/tooldi-agent-workflow-v1-backend-boundary.md), FE 적용 규칙은 [toolditor-agent-workflow-v1-client-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/docs/tooldi-agent-workflow-v1/toolditor-agent-workflow-v1-client-boundary.md) 에서 확장한다. 이 부록의 목적은 `빈 캔버스 -> live-commit editable banner draft 1개` 시나리오를 독립 구현 가능한 수준의 최소 공통 계약으로 수렴시키는 것이다.
+이 부록은 대표 시나리오 구현에 필요한 v1 공유 계약을 한곳에 고정한다. 상세 public route schema와 southbound callback schema는 [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-backend-boundary.md), FE 적용 규칙은 [toolditor-agent-workflow-v1-client-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/toolditor-agent-workflow-v1-client-boundary.md) 에서 확장한다. 이 부록의 목적은 `빈 캔버스 -> live-commit editable banner draft 1개` 시나리오를 독립 구현 가능한 수준의 최소 공통 계약으로 수렴시키는 것이다.
 
 ### 6.1 컴포넌트별 계약 맵
 
