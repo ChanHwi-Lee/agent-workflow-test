@@ -36,6 +36,8 @@ import { createTextLayoutHelper } from "./tools/adapters/textLayoutHelperAdapter
 import { createWorkerToolRegistry } from "./tools/registry.js";
 import { createTooldiCatalogSourceClient } from "./tools/adapters/tooldiCatalogSourceAdapter.js";
 import type { ProcessRunJobResult } from "./types.js";
+import { buildAdaptiveCompositionDecision } from "./phases/buildAdaptiveCompositionDecision.js";
+import type { AdaptiveCompositionDecisionBuilder } from "./graph/runJobGraphTypes.js";
 
 export interface BuildWorkerRuntimeOptions {
   env: AgentWorkerEnv;
@@ -53,6 +55,7 @@ export interface BuildWorkerRuntimeOptions {
   templatePlanner?: ProcessRunJobDependencies["templatePlanner"];
   templateCopyPlanGenerator?: ProcessRunJobDependencies["templateCopyPlanGenerator"];
   templateAbstractLayoutGenerator?: ProcessRunJobDependencies["templateAbstractLayoutGenerator"];
+  adaptiveCompositionDecisionBuilder?: AdaptiveCompositionDecisionBuilder;
 }
 
 export interface AgentWorkerRuntime extends ProcessRunJobDependencies {
@@ -111,6 +114,24 @@ export async function buildWorkerRuntime(
     templateAbstractLayoutGenerator:
       options.templateAbstractLayoutGenerator ??
       createTemplateAbstractLayoutGenerator(options.env, logger),
+    adaptiveCompositionDecisionBuilder:
+      options.adaptiveCompositionDecisionBuilder ??
+      (async (input) => {
+        if (!input.provider || !input.modelName) {
+          return null;
+        }
+        return buildAdaptiveCompositionDecision({
+          runId: input.runId,
+          traceId: input.traceId,
+          projectedGraph: input.projectedGraph,
+          messageAtomPlan: input.messageAtomPlan,
+          sceneStylePlan: input.sceneStylePlan ?? null,
+          palette: input.palette,
+          provider: input.provider,
+          modelName: input.modelName,
+          temperature: input.temperature,
+        });
+      }),
     tooldiCatalogSourceClient:
       options.tooldiCatalogSourceClient ??
       createTooldiCatalogSourceClient(options.env),

@@ -3,6 +3,7 @@ import type {
   TemplateAbstractLayoutGenerator,
   TemplateCopyPlanGenerator,
   TemplatePlanner,
+  TemplatePlannerProvider,
 } from "@tooldi/agent-llm";
 import type { Logger } from "@tooldi/agent-observability";
 import type { ObjectStoreClient } from "@tooldi/agent-persistence";
@@ -17,6 +18,28 @@ import type { ToolRegistry } from "@tooldi/tool-registry";
 import type { BaseCheckpointSaver } from "@langchain/langgraph";
 
 import type { BackendCallbackClient } from "../clients/backendCallbackClient.js";
+import type {
+  AdaptiveCompositionDecision,
+  MessageAtomPlan,
+  ProjectedObjectGraph,
+  SceneStylePlan,
+} from "../types.js";
+
+export interface AdaptiveCompositionDecisionBuilderInput {
+  runId: string;
+  traceId: string;
+  projectedGraph: ProjectedObjectGraph;
+  messageAtomPlan: MessageAtomPlan;
+  sceneStylePlan?: SceneStylePlan | null;
+  palette: string[];
+  provider: TemplatePlannerProvider | null;
+  modelName: string | null;
+  temperature: number;
+}
+
+export type AdaptiveCompositionDecisionBuilder = (
+  input: AdaptiveCompositionDecisionBuilderInput,
+) => Promise<AdaptiveCompositionDecision | null>;
 
 export interface RunJobGraphDependencies {
   env: AgentWorkerEnv;
@@ -33,4 +56,5 @@ export interface RunJobGraphDependencies {
   templatePlanner?: TemplatePlanner;
   templateCopyPlanGenerator?: TemplateCopyPlanGenerator;
   templateAbstractLayoutGenerator?: TemplateAbstractLayoutGenerator;
+  adaptiveCompositionDecisionBuilder?: AdaptiveCompositionDecisionBuilder;
 }

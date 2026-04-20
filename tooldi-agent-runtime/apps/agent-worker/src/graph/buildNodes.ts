@@ -12,15 +12,11 @@ import { buildAssetPlan } from "../phases/buildAssetPlan.js";
 import { buildConcreteLayoutPlan } from "../phases/buildConcreteLayoutPlan.js";
 import { buildCopyAndAbstractLayoutPlan } from "../phases/buildCopyAndAbstractLayoutPlan.js";
 import { buildObjectNativePath } from "../phases/buildObjectNativePath.js";
-import { buildReferenceCompositionV2 } from "../phases/buildReferenceCompositionV2.js";
-import { buildReferenceResetPath } from "../phases/buildReferenceResetPath.js";
 import { buildSearchProfile } from "../phases/buildSearchProfile.js";
 import { buildScenePlans } from "../phases/buildScenePlans.js";
 import { buildSceneStylePlans } from "../phases/buildSceneStylePlans.js";
-import { buildTopologyPath } from "../phases/buildTopologyPath.js";
 import { projectTemplateObjectGraph } from "../phases/projectTemplateGraph.js";
 import {
-  buildAdaptiveCompositionDecision,
   AdaptiveCompositionCoverageError,
 } from "../phases/buildAdaptiveCompositionDecision.js";
 import { emitAdaptiveCompositionMutations } from "../phases/emitAdaptiveCompositionMutations.js";
@@ -35,7 +31,6 @@ import { buildCompositionSelection } from "../phases/compositionEngine.js";
 import { runRetrievalStage } from "../phases/runRetrievalStage.js";
 import { ruleJudgeCreateTemplate } from "../phases/ruleJudge.js";
 import { selectTypography } from "../phases/selectTypography.js";
-import { deriveWorkflowVariant } from "../phases/planningContext.js";
 import {
   buildSelectionLogMessages,
   buildSourceSearchSummary,
@@ -178,245 +173,10 @@ export function registerBuildNodes(
         abstractLayoutPlanNormalizationReportRef,
       };
     })
-    .addNode("build_reference_composition_v2", async (state) => {
+    .addNode("build_object_native_path", async (state) => {
       if (!state.hydrated) {
-        throw new Error("build_reference_composition_v2 requires hydrated state");
+        throw new Error("build_object_native_path requires hydrated state");
       }
-
-      if (deriveWorkflowVariant(state.hydrated) === "topology_v1") {
-        let cooperativeStopRequested = state.cooperativeStopRequested;
-        const topologyPlans = buildTopologyPath(
-          state.hydrated,
-          state.templatePriorBundle,
-          state.copyPlan,
-          state.sceneStylePlan,
-          state.sceneBindingPlan,
-        );
-
-        const topologyMatchReportRef = await persistArtifactTask(
-          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-match-report.json`,
-          topologyPlans.topologyMatchReport,
-          {
-            artifactKind: "topology-match-report",
-            runId: state.job.runId,
-            traceId: state.job.traceId,
-            attemptSeq: String(state.job.attemptSeq),
-          },
-        );
-        const topologySelectionRef = await persistArtifactTask(
-          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-selection.json`,
-          topologyPlans.topologySelection,
-          {
-            artifactKind: "topology-selection",
-            runId: state.job.runId,
-            traceId: state.job.traceId,
-            attemptSeq: String(state.job.attemptSeq),
-          },
-        );
-        const topologyBindingPlanRef = topologyPlans.topologyBindingPlan
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-binding-plan.json`,
-              topologyPlans.topologyBindingPlan,
-              {
-                artifactKind: "topology-binding-plan",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const topologyExecutionPlanRef = topologyPlans.topologyExecutionPlan
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-execution-plan.json`,
-              topologyPlans.topologyExecutionPlan,
-              {
-                artifactKind: "topology-execution-plan",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const topologyCompletionReportRef = await persistArtifactTask(
-          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-completion-report.json`,
-          topologyPlans.topologyCompletionReport,
-          {
-            artifactKind: "topology-completion-report",
-            runId: state.job.runId,
-            traceId: state.job.traceId,
-            attemptSeq: String(state.job.attemptSeq),
-          },
-        );
-        const referenceBlockGraphRef = topologyPlans.referenceBlockGraph
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-cluster-graph.json`,
-              topologyPlans.referenceBlockGraph,
-              {
-                artifactKind: "topology-cluster-graph",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const messageAtomPlanRef = topologyPlans.messageAtomPlan
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-message-atom-plan.json`,
-              topologyPlans.messageAtomPlan,
-              {
-                artifactKind: "topology-message-atom-plan",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const editableBlockPlanRef = topologyPlans.editableBlockPlan
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-editable-block-plan.json`,
-              topologyPlans.editableBlockPlan,
-              {
-                artifactKind: "topology-editable-block-plan",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const freeformLayoutPlanRef = topologyPlans.freeformLayoutPlan
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-freeform-layout-plan.json`,
-              topologyPlans.freeformLayoutPlan,
-              {
-                artifactKind: "topology-freeform-layout-plan",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const qualityEvalSummaryRef = topologyPlans.qualityEvalSummary
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-quality-eval-summary.json`,
-              topologyPlans.qualityEvalSummary,
-              {
-                artifactKind: "topology-quality-eval-summary",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const styleDowngradeVerdictRef = topologyPlans.styleDowngradeVerdict
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/topology-style-downgrade-verdict.json`,
-              topologyPlans.styleDowngradeVerdict,
-              {
-                artifactKind: "topology-style-downgrade-verdict",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-
-        const matchLog = await appendEventTask(state.job.runId, {
-          traceId: state.job.traceId,
-          attempt: state.job.attemptSeq,
-          queueJobId: state.job.queueJobId,
-          event: {
-            type: "log",
-            level:
-              topologyPlans.topologySelection.selectedReadiness === "stable_capable"
-                ? "info"
-                : "warn",
-            message:
-              `[source/topology-match] candidates=${topologyPlans.topologyMatchReport.entries.length} ` +
-              `selected=${topologyPlans.topologySelection.nextSelectedTemplateCode ?? "n/a"} ` +
-              `topology=${topologyPlans.selectedTopologyId ?? "n/a"}`,
-          },
-        });
-        cooperativeStopRequested ||= matchLog.cancelRequested;
-        const selectionLog = await appendEventTask(state.job.runId, {
-          traceId: state.job.traceId,
-          attempt: state.job.attemptSeq,
-          queueJobId: state.job.queueJobId,
-          event: {
-            type: "log",
-            level:
-              topologyPlans.topologySelection.selectedReadiness === "stable_capable"
-                ? "info"
-                : "warn",
-            message:
-              `[source/topology-selection] previous=${topologyPlans.topologySelection.previousSelectedTemplateCode ?? "n/a"} ` +
-              `selected=${topologyPlans.topologySelection.nextSelectedTemplateCode ?? "n/a"} ` +
-              `topology=${topologyPlans.topologySelection.selectedTopologyId ?? "n/a"} ` +
-              `readiness=${topologyPlans.topologySelection.selectedReadiness ?? "n/a"} ` +
-              `failureStage=${topologyPlans.topologySelection.failureStage}`,
-          },
-        });
-        cooperativeStopRequested ||= selectionLog.cancelRequested;
-        const completionLog = await appendEventTask(state.job.runId, {
-          traceId: state.job.traceId,
-          attempt: state.job.attemptSeq,
-          queueJobId: state.job.queueJobId,
-          event: {
-            type: "log",
-            level: topologyPlans.topologyCompletionReport.passed ? "info" : "warn",
-            message:
-              `[source/topology-completion] passed=${topologyPlans.topologyCompletionReport.passed ? "yes" : "no"} ` +
-              `topology=${topologyPlans.topologyCompletionReport.topologyId ?? "n/a"} ` +
-              `present=${topologyPlans.topologyCompletionReport.presentCapabilityIds.join(",") || "none"}`,
-          },
-        });
-        cooperativeStopRequested ||= completionLog.cancelRequested;
-
-        return {
-          cooperativeStopRequested,
-          referenceCompositionGraph: null,
-          referenceCompositionGraphRef: null,
-          referenceSupportEvidence: null,
-          referenceSupportEvidenceRef: null,
-          copyAtomPlan: null,
-          copyAtomPlanRef: null,
-          copyBindingPlan: null,
-          copyBindingPlanRef: null,
-          templateRemixPlan: null,
-          templateRemixPlanRef: null,
-          objectNativeReferenceAudit: null,
-          objectNativeReferenceAuditRef: null,
-          objectNativeCandidateSelection: null,
-          objectNativeCandidateSelectionRef: null,
-          objectNativeRenderabilityReport: null,
-          objectNativeRenderabilityReportRef: null,
-          topologyMatchReport: topologyPlans.topologyMatchReport,
-          topologyMatchReportRef,
-          topologySelection: topologyPlans.topologySelection,
-          topologySelectionRef,
-          selectedTopologyId: topologyPlans.selectedTopologyId,
-          topologyCompletionContract: topologyPlans.topologyCompletionContract,
-          topologyBindingPlan: topologyPlans.topologyBindingPlan,
-          topologyBindingPlanRef,
-          topologyExecutionPlan: topologyPlans.topologyExecutionPlan,
-          topologyExecutionPlanRef,
-          topologyCompletionReport: topologyPlans.topologyCompletionReport,
-          topologyCompletionReportRef,
-          referenceBlockGraph: topologyPlans.referenceBlockGraph,
-          referenceBlockGraphRef,
-          messageAtomPlan: topologyPlans.messageAtomPlan,
-          messageAtomPlanRef,
-          editableBlockPlan: topologyPlans.editableBlockPlan,
-          editableBlockPlanRef,
-          qualityEvalSummary: topologyPlans.qualityEvalSummary,
-          qualityEvalSummaryRef,
-          freeformLayoutPlan: topologyPlans.freeformLayoutPlan,
-          freeformLayoutPlanRef,
-          styleDowngradeVerdict: topologyPlans.styleDowngradeVerdict,
-          styleDowngradeVerdictRef,
-        };
-      }
-
-      if (deriveWorkflowVariant(state.hydrated) === "object_native_v1") {
         let cooperativeStopRequested = state.cooperativeStopRequested;
         const objectNativePlans = buildObjectNativePath(
           state.hydrated,
@@ -591,8 +351,8 @@ export function registerBuildNodes(
         cooperativeStopRequested ||= renderabilityLog.cancelRequested;
 
         // --- SSOT: Template Graph Projection (Layer 2) ---
-        // Generate the projected template object graph alongside the legacy path.
-        // This runs in parallel with the existing pipeline and does not affect it.
+        // Generate the projected template object graph alongside the current
+        // object-native planning pipeline without changing execution flow.
         let projectedTemplateGraph = null as import("../types.js").ProjectedObjectGraph | null;
         let projectedTemplateGraphRef: string | null = null;
         const selectedCode =
@@ -643,9 +403,9 @@ export function registerBuildNodes(
         if (projectedTemplateGraph && objectNativePlans.messageAtomPlan) {
           const plannerProvider = dependencies.env.templatePlannerProvider;
           const plannerModel = dependencies.env.templatePlannerModel;
-          if (plannerProvider && plannerModel) {
-            try {
-              adaptiveCompositionDecision = await buildAdaptiveCompositionDecision({
+          try {
+            adaptiveCompositionDecision =
+              (await dependencies.adaptiveCompositionDecisionBuilder?.({
                 runId: state.job.runId,
                 traceId: state.job.traceId,
                 projectedGraph: projectedTemplateGraph,
@@ -653,9 +413,10 @@ export function registerBuildNodes(
                 sceneStylePlan: state.sceneStylePlan ?? null,
                 palette: state.hydrated.request.brandContext?.palette ?? [],
                 provider: plannerProvider,
-                modelName: plannerModel,
+                modelName: plannerModel ?? null,
                 temperature: dependencies.env.templatePlannerTemperature,
-              });
+              })) ?? null;
+            if (adaptiveCompositionDecision) {
               adaptiveCompositionDecisionRef = await persistArtifactTask(
                 `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/adaptive-composition-decision.json`,
                 adaptiveCompositionDecision,
@@ -666,38 +427,38 @@ export function registerBuildNodes(
                   attemptSeq: String(state.job.attemptSeq),
                 },
               );
-            } catch (err) {
-              // SSOT §4.2 + scope B: decision coverage violations must fail at
-              // the L3 seam with a dedicated error code. They must NOT be
-              // warn-swallowed into a null adaptiveCompositionDecision (which
-              // would otherwise be re-labeled downstream as
-              // adaptive_batch_missing by executionNodes). Transport/LLM-level
-              // failures (network, schema parse) retain the warn-swallow
-              // behavior and surface as adaptive_batch_missing as before.
-              if (err instanceof AdaptiveCompositionCoverageError) {
-                const coverageFailure =
-                  await buildAdaptiveCompositionCoverageFailureFinalizeDraft(
-                    state,
-                    err,
-                    { appendEventTask },
-                  );
-                return {
-                  cooperativeStopRequested: coverageFailure.cooperativeStopRequested,
-                  finalizeDraft: coverageFailure.finalizeDraft,
-                };
-              }
-              const compositionLog = await appendEventTask(state.job.runId, {
-                traceId: state.job.traceId,
-                attempt: state.job.attemptSeq,
-                queueJobId: state.job.queueJobId,
-                event: {
-                  type: "log",
-                  level: "warn",
-                  message: `[ssot/adaptive-composition] LLM call failed: ${err instanceof Error ? err.message : String(err)}`,
-                },
-              });
-              cooperativeStopRequested ||= compositionLog.cancelRequested;
             }
+          } catch (err) {
+            // SSOT §4.2 + scope B: decision coverage violations must fail at
+            // the L3 seam with a dedicated error code. They must NOT be
+            // warn-swallowed into a null adaptiveCompositionDecision (which
+            // would otherwise be re-labeled downstream as
+            // adaptive_batch_missing by executionNodes). Transport/LLM-level
+            // failures (network, schema parse) retain the warn-swallow
+            // behavior and surface as adaptive_batch_missing as before.
+            if (err instanceof AdaptiveCompositionCoverageError) {
+              const coverageFailure =
+                await buildAdaptiveCompositionCoverageFailureFinalizeDraft(
+                  state,
+                  err,
+                  { appendEventTask },
+                );
+              return {
+                cooperativeStopRequested: coverageFailure.cooperativeStopRequested,
+                finalizeDraft: coverageFailure.finalizeDraft,
+              };
+            }
+            const compositionLog = await appendEventTask(state.job.runId, {
+              traceId: state.job.traceId,
+              attempt: state.job.attemptSeq,
+              queueJobId: state.job.queueJobId,
+              event: {
+                type: "log",
+                level: "warn",
+                message: `[ssot/adaptive-composition] LLM call failed: ${err instanceof Error ? err.message : String(err)}`,
+              },
+            });
+            cooperativeStopRequested ||= compositionLog.cancelRequested;
           }
         }
         // --- SSOT Layer 4 bridge: build adaptive mutation batch ---
@@ -721,16 +482,6 @@ export function registerBuildNodes(
         return {
           cooperativeStopRequested,
           adaptiveSkeletonBatch,
-          referenceCompositionGraph: null,
-          referenceCompositionGraphRef: null,
-          referenceSupportEvidence: null,
-          referenceSupportEvidenceRef: null,
-          copyAtomPlan: null,
-          copyAtomPlanRef: null,
-          copyBindingPlan: null,
-          copyBindingPlanRef: null,
-          templateRemixPlan: null,
-          templateRemixPlanRef: null,
           objectNativeReferenceAudit: objectNativePlans.objectNativeReferenceAudit,
           objectNativeReferenceAuditRef,
           objectNativeCandidateSelection: objectNativePlans.objectNativeCandidateSelection,
@@ -754,257 +505,6 @@ export function registerBuildNodes(
           adaptiveCompositionDecision,
           adaptiveCompositionDecisionRef,
         };
-      }
-
-      if (deriveWorkflowVariant(state.hydrated) === "retrieval_prior_v2_reset") {
-        const resetPlans = buildReferenceResetPath(
-          state.hydrated,
-          state.templatePriorBundle,
-          state.copyPlan,
-          state.sceneStylePlan,
-          state.sceneBindingPlan,
-        );
-
-        const referenceBlockGraphRef = resetPlans.referenceBlockGraph
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/reference-block-graph.json`,
-              resetPlans.referenceBlockGraph,
-              {
-                artifactKind: "reference-block-graph",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const messageAtomPlanRef = resetPlans.messageAtomPlan
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/message-atom-plan.json`,
-              resetPlans.messageAtomPlan,
-              {
-                artifactKind: "message-atom-plan",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const blockBindingPlanRef = resetPlans.blockBindingPlan
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/block-binding-plan.json`,
-              resetPlans.blockBindingPlan,
-              {
-                artifactKind: "block-binding-plan",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const editableBlockPlanRef = resetPlans.editableBlockPlan
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/editable-block-plan.json`,
-              resetPlans.editableBlockPlan,
-              {
-                artifactKind: "editable-block-plan",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const freeformLayoutPlanRef = resetPlans.freeformLayoutPlan
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/freeform-layout-plan.json`,
-              resetPlans.freeformLayoutPlan,
-              {
-                artifactKind: "freeform-layout-plan",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const qualityEvalSummaryRef = resetPlans.qualityEvalSummary
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/quality-eval-summary.json`,
-              resetPlans.qualityEvalSummary,
-              {
-                artifactKind: "quality-eval-summary",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-        const styleDowngradeVerdictRef = resetPlans.styleDowngradeVerdict
-          ? await persistArtifactTask(
-              `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/style-downgrade-verdict.json`,
-              resetPlans.styleDowngradeVerdict,
-              {
-                artifactKind: "style-downgrade-verdict",
-                runId: state.job.runId,
-                traceId: state.job.traceId,
-                attemptSeq: String(state.job.attemptSeq),
-              },
-            )
-          : null;
-
-        return {
-          referenceCompositionGraph: null,
-          referenceCompositionGraphRef: null,
-          referenceSupportEvidence: null,
-          referenceSupportEvidenceRef: null,
-          copyAtomPlan: null,
-          copyAtomPlanRef: null,
-          copyBindingPlan: null,
-          copyBindingPlanRef: null,
-          templateRemixPlan: null,
-          templateRemixPlanRef: null,
-          objectNativeReferenceAudit: null,
-          objectNativeReferenceAuditRef: null,
-          objectNativeCandidateSelection: null,
-          objectNativeCandidateSelectionRef: null,
-          objectNativeRenderabilityReport: null,
-          objectNativeRenderabilityReportRef: null,
-          referenceBlockGraph: resetPlans.referenceBlockGraph,
-          referenceBlockGraphRef,
-          messageAtomPlan: resetPlans.messageAtomPlan,
-          messageAtomPlanRef,
-          editableBlockPlan: resetPlans.editableBlockPlan,
-          editableBlockPlanRef,
-          qualityEvalSummary: resetPlans.qualityEvalSummary,
-          qualityEvalSummaryRef,
-          freeformLayoutPlan: resetPlans.freeformLayoutPlan,
-          freeformLayoutPlanRef,
-          styleDowngradeVerdict: resetPlans.styleDowngradeVerdict,
-          styleDowngradeVerdictRef,
-        };
-      }
-
-      const v2Plans = buildReferenceCompositionV2(
-        state.hydrated,
-        state.templatePriorBundle,
-        state.copyPlan,
-        state.sceneStylePlan,
-        state.sceneBindingPlan,
-      );
-
-      const referenceCompositionGraphRef = v2Plans.referenceCompositionGraph
-        ? await persistArtifactTask(
-            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/reference-composition-graph.json`,
-            v2Plans.referenceCompositionGraph,
-            {
-              artifactKind: "reference-composition-graph",
-              runId: state.job.runId,
-              traceId: state.job.traceId,
-              attemptSeq: String(state.job.attemptSeq),
-            },
-          )
-        : null;
-      const referenceSupportEvidenceRef = v2Plans.referenceSupportEvidence
-        ? await persistArtifactTask(
-            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/reference-support-evidence.json`,
-            v2Plans.referenceSupportEvidence,
-            {
-              artifactKind: "reference-support-evidence",
-              runId: state.job.runId,
-              traceId: state.job.traceId,
-              attemptSeq: String(state.job.attemptSeq),
-            },
-          )
-        : null;
-      const copyAtomPlanRef = v2Plans.copyAtomPlan
-        ? await persistArtifactTask(
-            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/copy-atom-plan.json`,
-            v2Plans.copyAtomPlan,
-            {
-              artifactKind: "copy-atom-plan",
-              runId: state.job.runId,
-              traceId: state.job.traceId,
-              attemptSeq: String(state.job.attemptSeq),
-            },
-          )
-        : null;
-      const copyBindingPlanRef = v2Plans.copyBindingPlan
-        ? await persistArtifactTask(
-            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/copy-binding-plan.json`,
-            v2Plans.copyBindingPlan,
-            {
-              artifactKind: "copy-binding-plan",
-              runId: state.job.runId,
-              traceId: state.job.traceId,
-              attemptSeq: String(state.job.attemptSeq),
-            },
-          )
-        : null;
-      const templateRemixPlanRef = v2Plans.templateRemixPlan
-        ? await persistArtifactTask(
-            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/template-remix-plan.json`,
-            v2Plans.templateRemixPlan,
-            {
-              artifactKind: "template-remix-plan",
-              runId: state.job.runId,
-              traceId: state.job.traceId,
-              attemptSeq: String(state.job.attemptSeq),
-            },
-          )
-        : null;
-      const freeformLayoutPlanRef = v2Plans.freeformLayoutPlan
-        ? await persistArtifactTask(
-            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/freeform-layout-plan.json`,
-            v2Plans.freeformLayoutPlan,
-            {
-              artifactKind: "freeform-layout-plan",
-              runId: state.job.runId,
-              traceId: state.job.traceId,
-              attemptSeq: String(state.job.attemptSeq),
-            },
-          )
-        : null;
-      const styleDowngradeVerdictRef = v2Plans.styleDowngradeVerdict
-        ? await persistArtifactTask(
-            `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/style-downgrade-verdict.json`,
-            v2Plans.styleDowngradeVerdict,
-            {
-              artifactKind: "style-downgrade-verdict",
-              runId: state.job.runId,
-              traceId: state.job.traceId,
-              attemptSeq: String(state.job.attemptSeq),
-            },
-          )
-        : null;
-
-      return {
-        referenceCompositionGraph: v2Plans.referenceCompositionGraph,
-        referenceCompositionGraphRef,
-        referenceSupportEvidence: v2Plans.referenceSupportEvidence,
-        referenceSupportEvidenceRef,
-        copyAtomPlan: v2Plans.copyAtomPlan,
-        copyAtomPlanRef,
-        copyBindingPlan: v2Plans.copyBindingPlan,
-        copyBindingPlanRef,
-        templateRemixPlan: v2Plans.templateRemixPlan,
-        templateRemixPlanRef,
-        objectNativeReferenceAudit: null,
-        objectNativeReferenceAuditRef: null,
-        objectNativeCandidateSelection: null,
-        objectNativeCandidateSelectionRef: null,
-        objectNativeRenderabilityReport: null,
-        objectNativeRenderabilityReportRef: null,
-        freeformLayoutPlan: v2Plans.freeformLayoutPlan,
-        freeformLayoutPlanRef,
-        styleDowngradeVerdict: v2Plans.styleDowngradeVerdict,
-        styleDowngradeVerdictRef,
-        referenceBlockGraph: null,
-        referenceBlockGraphRef: null,
-        messageAtomPlan: null,
-        messageAtomPlanRef: null,
-        editableBlockPlan: null,
-        editableBlockPlanRef: null,
-        qualityEvalSummary: null,
-        qualityEvalSummaryRef: null,
-      };
     })
     .addNode("build_search_profile", async (state) => {
       if (!state.intent || !state.templatePriorSummary) {
@@ -1096,20 +596,6 @@ export function registerBuildNodes(
         throw new Error(
           "build_template_prior_bundle requires hydrated normalized intent state",
         );
-      }
-
-      const workflowVariant = deriveWorkflowVariant(state.hydrated);
-      if (
-        workflowVariant !== "retrieval_prior_v1" &&
-        workflowVariant !== "retrieval_prior_v2" &&
-        workflowVariant !== "retrieval_prior_v2_reset" &&
-        workflowVariant !== "object_native_v1" &&
-        workflowVariant !== "topology_v1"
-      ) {
-        return {
-          templatePriorBundle: null,
-          templatePriorBundleRef: null,
-        };
       }
 
       let cooperativeStopRequested = state.cooperativeStopRequested;

@@ -65,7 +65,7 @@ function createExecutablePlanV2(): ExecutablePlan {
       {
         ...createExecutablePlan().actions[0]!,
         inputs: {
-          executionMode: "v2_freeform",
+          executionMode: "object_native_freeform",
           spacingIntent: "dense",
         },
       },
@@ -84,21 +84,43 @@ function createJudgePlan(): JudgePlan {
     allowedPatchScopes: ["spacing", "cta_container"],
     issues: [
       {
+        code: "topology_bounds_conflict",
+        severity: "warn",
+        message: "bounds conflict",
+        patchable: true,
+        suggestedPatchScopes: ["slot_anchor", "spacing"],
+      },
+      {
+        code: "preflight_excessive_empty_space",
+        severity: "warn",
+        message: "empty space",
+        patchable: true,
+        suggestedPatchScopes: ["spacing"],
+      },
+    ],
+    summary: "judge summary",
+  };
+}
+
+function createLegacyOnlyJudgePlan(): JudgePlan {
+  return {
+    ...createJudgePlan(),
+    issues: [
+      {
         code: "copy_stack_spacing_weak",
         severity: "warn",
-        message: "spacing weak",
+        message: "legacy spacing weak",
         patchable: true,
         suggestedPatchScopes: ["spacing"],
       },
       {
         code: "cta_container_missing_after_execution",
         severity: "warn",
-        message: "cta missing",
+        message: "legacy cta missing",
         patchable: true,
         suggestedPatchScopes: ["cta_container"],
       },
     ],
-    summary: "judge summary",
   };
 }
 
@@ -114,16 +136,21 @@ test("buildRefineDecision creates deterministic patch operations for patchable j
   );
 
   assert.equal(decision.decision, "patch");
+  assert.equal(
+    decision.patchPlan?.operations.some(
+      (operation) => operation.kind === "move_copy_slot_anchor",
+    ),
+    true,
+  );
   assert.equal(decision.patchPlan?.operations.some((operation) => operation.kind === "set_spacing_intent"), true);
-  assert.equal(decision.patchPlan?.operations.some((operation) => operation.kind === "ensure_cta_container_fallback"), true);
 });
 
-test("buildRefineDecision suppresses legacy fallback patches for retrieval_prior_v2 execution", async () => {
+test("buildRefineDecision ignores legacy-only patch issue codes after legacy engine removal", async () => {
   const decision = await buildRefineDecision(
     "run-1",
     "trace-1",
     0,
-    createJudgePlan(),
+    createLegacyOnlyJudgePlan(),
     createCopyPlan(),
     createExecutablePlanV2(),
     2,

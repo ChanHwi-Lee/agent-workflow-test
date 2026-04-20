@@ -493,12 +493,6 @@ export function repairTemplateIntentDraft(input: {
     layoutIntent,
     tone: plannerDraft.tone,
     backgroundColorHex,
-    requiredSlots: [
-      "background",
-      "headline",
-      "subheadline",
-      "cta",
-    ],
     assetPolicy: normalizedAssetPolicy,
     searchKeywords: normalizedKeywords,
     primaryVisualPolicy: normalizedAssetPolicy.primaryVisualPolicy,

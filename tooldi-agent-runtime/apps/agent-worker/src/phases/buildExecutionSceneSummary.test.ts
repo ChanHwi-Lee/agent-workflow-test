@@ -182,12 +182,94 @@ function createExecutablePlan(): ExecutablePlan {
           slotKey: "headline",
         },
         inputs: {
+          executionMode: "object_native_freeform",
           copySlotTexts: {
             headline: "봄 세일",
             subheadline: "혜택을 확인하세요",
             cta: "혜택 보기",
             footer_note: "한정 기간 진행",
           },
+          freeformBlocks: [
+            {
+              blockId: "headline",
+              stage: "copy",
+              layerType: "text",
+              executionSlotKey: "headline",
+              role: "headline",
+              variantKey: "text_display",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 120, width: 400, height: 90 },
+              textContent: "봄 세일",
+            },
+            {
+              blockId: "subheadline",
+              stage: "copy",
+              layerType: "text",
+              executionSlotKey: "subheadline",
+              role: "subheadline",
+              variantKey: "text_body",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 220, width: 420, height: 70 },
+              textContent: "혜택을 확인하세요",
+            },
+          ],
+        },
+        rollback: { strategy: "delete_created_layers" },
+      },
+      {
+        actionId: "polish",
+        kind: "canvas_mutation",
+        operation: "place_promo_polish",
+        toolName: "style-heuristic",
+        toolVersion: "1",
+        commitGroup: "group-1",
+        liveCommit: true,
+        idempotencyKey: "polish-1",
+        dependsOn: ["copy"],
+        targetRef: {
+          documentId: "doc-1",
+          pageId: "page-1",
+          layerId: null,
+          slotKey: "decoration",
+        },
+        inputs: {
+          executionMode: "object_native_freeform",
+          freeformBlocks: [
+            {
+              blockId: "cta",
+              stage: "polish",
+              layerType: "group",
+              executionSlotKey: "cta",
+              role: "cta",
+              variantKey: "reference_cta_band",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 360, width: 220, height: 64 },
+              textContent: "혜택 보기",
+            },
+            {
+              blockId: "footer",
+              stage: "polish",
+              layerType: "text",
+              executionSlotKey: "footer_note",
+              role: "footer_note",
+              variantKey: "text_footer",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 560, width: 360, height: 24 },
+              textContent: "한정 기간 진행",
+            },
+            {
+              blockId: "primary-accent",
+              stage: "polish",
+              layerType: "shape",
+              executionSlotKey: null,
+              role: "primary_accent",
+              variantKey: "graphic_primary",
+              candidateId: "graphic-1",
+              bounds: { x: 720, y: 120, width: 240, height: 240 },
+              textContent: null,
+              clusterZone: "right_cluster",
+            },
+          ],
         },
         rollback: { strategy: "delete_created_layers" },
       },
@@ -202,8 +284,7 @@ function createExecutablePlanV2(): ExecutablePlan {
       {
         ...createExecutablePlan().actions[0]!,
         inputs: {
-          ...createExecutablePlan().actions[0]!.inputs,
-          executionMode: "v2_freeform",
+          executionMode: "object_native_freeform",
           copySlotTexts: {
             headline: "봄 세일",
           },
@@ -219,9 +300,17 @@ function createExecutablePlanV2(): ExecutablePlan {
               bounds: { x: 700, y: 150, width: 340, height: 320 },
               textContent: "봄 세일",
             },
+          ],
+        },
+      },
+      {
+        ...createExecutablePlan().actions[1]!,
+        inputs: {
+          executionMode: "object_native_freeform",
+          freeformBlocks: [
             {
               blockId: "cta",
-              stage: "copy",
+              stage: "polish",
               layerType: "group",
               executionSlotKey: "cta",
               role: "cta",
@@ -232,28 +321,6 @@ function createExecutablePlanV2(): ExecutablePlan {
             },
           ],
         },
-      },
-      {
-        actionId: "polish-v2",
-        kind: "canvas_mutation",
-        operation: "place_promo_polish",
-        toolName: "style-heuristic",
-        toolVersion: "1",
-        commitGroup: "group-1",
-        liveCommit: true,
-        idempotencyKey: "polish-v2",
-        dependsOn: ["copy"],
-        targetRef: {
-          documentId: "doc-1",
-          pageId: "page-1",
-          layerId: null,
-          slotKey: "decoration",
-        },
-        inputs: {
-          executionMode: "v2_freeform",
-          freeformBlocks: [],
-        },
-        rollback: { strategy: "delete_created_layers" },
       },
     ],
   };
@@ -473,7 +540,7 @@ test("buildExecutionSceneSummary binds hero_image from canonical executionSlotKe
   });
 });
 
-test("buildExecutionSceneSummary ignores legacy badge/decor expectations for retrieval_prior_v2 execution", async () => {
+test("buildExecutionSceneSummary ignores legacy badge/decor expectations for object-native freeform execution", async () => {
   const summary = await buildExecutionSceneSummary(
     "run-1",
     "trace-1",

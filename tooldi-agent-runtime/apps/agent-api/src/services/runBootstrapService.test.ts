@@ -178,7 +178,7 @@ test("RunBootstrapService closes initial queue publish failure without creating 
     const dedupeKey = [
       request.editorSessionId,
       "create_from_empty_canvas",
-      request.workflowVariant ?? "legacy",
+      request.workflowVariant ?? "object_native_v1",
       request.editorContext.documentId,
       request.editorContext.pageId,
       request.clientRequestId,

@@ -4,14 +4,6 @@ import type {
 } from "@tooldi/agent-contracts";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
 
-type TopologyCompletionContract = {
-  topologyId: string;
-  requiredCapabilityIds: string[];
-  minimumEditableTextCapabilityCount: number;
-  requiresActionCapability: boolean;
-  requiresMediaCapability: boolean;
-};
-
 import type {
   FinalizeRunDraft,
   JudgePlan,
@@ -22,10 +14,10 @@ import type {
   StageAckRecord,
   MutationProposalDraft as WorkerMutationProposalDraft,
   TypographyDecision,
+  WorkflowVariant,
 } from "../types.js";
 import {
   buildRepresentativeReadiness,
-  buildRepresentativeReadinessWarnings,
 } from "./representativeReadiness.js";
 
 type SourceSearchBackground = SourceSearchSummary["background"];
@@ -59,11 +51,6 @@ const FINALIZE_ARTIFACT_REF_KEYS = [
   "executionSceneSummaryRef",
   "judgePlanRef",
   "refineDecisionRef",
-  "topologyMatchReportRef",
-  "topologySelectionRef",
-  "topologyBindingPlanRef",
-  "topologyExecutionPlanRef",
-  "topologyCompletionReportRef",
 ] as const;
 
 const RESULT_ONLY_ARTIFACT_REF_KEYS = [
@@ -82,9 +69,7 @@ type ResultArtifactRefKey = (typeof RESULT_ARTIFACT_REF_KEYS)[number];
 
 type ArtifactRefState = {
   canonicalDesignBriefRef: string | null;
-  workflowVariant?: string | null;
-  selectedTopologyId?: string | null;
-  topologyCompletionContract?: TopologyCompletionContract | null;
+  workflowVariant?: WorkflowVariant | null;
   ruleJudgeVerdict: RuleJudgeVerdict | null;
   judgePlan: JudgePlan | null;
   sourceSearchSummary: SourceSearchSummary | null;
@@ -236,30 +221,8 @@ export function buildFinalizeOptions(
     errorSummary?: FinalizeRunDraft["request"]["errorSummary"];
   },
 ) {
-  const objectNativeWorkflow =
-    state.workflowVariant === "object_native_v1" ||
-    state.workflowVariant === "topology_v1";
-  const representativeFailureOverride =
-    !objectNativeWorkflow &&
-    state.sourceSearchSummary?.representativeReadiness.overallStatus === "failed"
-      ? {
-          finalStatus: "failed" as const,
-          errorSummary: {
-            code: "representative_source_readiness_failed",
-            message:
-              "Representative generic promo path did not meet the minimum real graphic/font readiness requirements.",
-          },
-        }
-      : undefined;
-
   const base = {
     cooperativeStopRequested,
-    ...(state.selectedTopologyId !== undefined
-      ? { selectedTopologyId: state.selectedTopologyId }
-      : {}),
-    ...(state.topologyCompletionContract !== undefined
-      ? { topologyCompletionContract: state.topologyCompletionContract }
-      : {}),
     ...(state.canonicalDesignBriefRef
       ? { canonicalDesignBriefRef: state.canonicalDesignBriefRef }
       : {}),
@@ -270,11 +233,7 @@ export function buildFinalizeOptions(
         }
       : {}),
     assignedSeqs,
-    ...(overrideResult
-      ? { overrideResult }
-      : representativeFailureOverride
-        ? { overrideResult: representativeFailureOverride }
-        : {}),
+    ...(overrideResult ? { overrideResult } : {}),
   };
 
   return base;
@@ -293,17 +252,8 @@ function buildCombinedWarningSummary(state: ArtifactRefState) {
             message: issue.message,
           }))
         : [];
-  const representativeWarnings =
-    state.workflowVariant !== "object_native_v1" &&
-    state.workflowVariant !== "topology_v1" &&
-    state.sourceSearchSummary?.representativeReadiness.overallStatus ===
-    "degraded"
-      ? buildRepresentativeReadinessWarnings(
-          state.sourceSearchSummary.representativeReadiness,
-        )
-      : [];
 
-  return [...judgeWarnings, ...representativeWarnings];
+  return judgeWarnings;
 }
 
 export function buildArtifactRefs(

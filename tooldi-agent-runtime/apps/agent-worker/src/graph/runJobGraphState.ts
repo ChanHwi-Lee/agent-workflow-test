@@ -3,13 +3,6 @@ import type {
   RunJobEnvelope,
   WaitMutationAckResponse,
 } from "@tooldi/agent-contracts";
-type TopologyCompletionContract = {
-  topologyId: string;
-  requiredCapabilityIds: string[];
-  minimumEditableTextCapabilityCount: number;
-  requiresActionCapability: boolean;
-  requiresMediaCapability: boolean;
-};
 import type {
   AdaptiveCompositionDecision,
   FinalizeRunDraft,
@@ -22,7 +15,6 @@ import type {
   ConcreteLayoutPlan,
   CopyPlan,
   CopyPlanNormalizationReport,
-  CopyAtomPlan,
   ExecutionSceneSummary,
   FreeformLayoutPlan,
   HydratedPlanningInput,
@@ -49,9 +41,6 @@ import type {
   TemplateCandidateBundle,
   TemplatePriorBundle,
   TemplateSelectionPolicy,
-  ReferenceCompositionGraph,
-  ReferenceSupportEvidence,
-  CopyBindingPlan,
   EditableBlockPlan,
   MessageAtomPlan,
   ObjectNativeCandidateSelection,
@@ -59,12 +48,6 @@ import type {
   ObjectNativeRenderabilityReport,
   ProjectedObjectGraph,
   QualityEvalSummary,
-  TopologyBindingPlan,
-  TopologyCompletionReport,
-  TopologyExecutionPlan,
-  TopologyMatchReport,
-  TopologySelection,
-  TemplateRemixPlan,
   TypographyDecision,
 } from "../types.js";
 import type {
@@ -106,16 +89,6 @@ export const RunJobGraphState = Annotation.Root({
   sceneStylePlanRef: replaceValue<string | null>(() => null),
   sceneBindingPlan: replaceValue<SceneBindingPlan | null>(() => null),
   sceneBindingPlanRef: replaceValue<string | null>(() => null),
-  referenceCompositionGraph: replaceValue<ReferenceCompositionGraph | null>(() => null),
-  referenceCompositionGraphRef: replaceValue<string | null>(() => null),
-  referenceSupportEvidence: replaceValue<ReferenceSupportEvidence | null>(() => null),
-  referenceSupportEvidenceRef: replaceValue<string | null>(() => null),
-  copyAtomPlan: replaceValue<CopyAtomPlan | null>(() => null),
-  copyAtomPlanRef: replaceValue<string | null>(() => null),
-  copyBindingPlan: replaceValue<CopyBindingPlan | null>(() => null),
-  copyBindingPlanRef: replaceValue<string | null>(() => null),
-  templateRemixPlan: replaceValue<TemplateRemixPlan | null>(() => null),
-  templateRemixPlanRef: replaceValue<string | null>(() => null),
   freeformLayoutPlan: replaceValue<FreeformLayoutPlan | null>(() => null),
   freeformLayoutPlanRef: replaceValue<string | null>(() => null),
   styleDowngradeVerdict: replaceValue<StyleDowngradeVerdict | null>(() => null),
@@ -139,18 +112,6 @@ export const RunJobGraphState = Annotation.Root({
   adaptiveCompositionDecision: replaceValue<AdaptiveCompositionDecision | null>(() => null),
   adaptiveCompositionDecisionRef: replaceValue<string | null>(() => null),
   adaptiveSkeletonBatch: replaceValue<import("../types.js").SkeletonMutationBatch | null>(() => null),
-  topologyMatchReport: replaceValue<TopologyMatchReport | null>(() => null),
-  topologyMatchReportRef: replaceValue<string | null>(() => null),
-  topologySelection: replaceValue<TopologySelection | null>(() => null),
-  topologySelectionRef: replaceValue<string | null>(() => null),
-  selectedTopologyId: replaceValue<string | null>(() => null),
-  topologyCompletionContract: replaceValue<TopologyCompletionContract | null>(() => null),
-  topologyBindingPlan: replaceValue<TopologyBindingPlan | null>(() => null),
-  topologyBindingPlanRef: replaceValue<string | null>(() => null),
-  topologyExecutionPlan: replaceValue<TopologyExecutionPlan | null>(() => null),
-  topologyExecutionPlanRef: replaceValue<string | null>(() => null),
-  topologyCompletionReport: replaceValue<TopologyCompletionReport | null>(() => null),
-  topologyCompletionReportRef: replaceValue<string | null>(() => null),
   compositionBrief: replaceValue<CompositionBrief | null>(() => null),
   compositionBriefRef: replaceValue<string | null>(() => null),
   compositionVariantSet: replaceValue<CompositionVariantSet | null>(() => null),

@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { routeAfterBuildReferenceCompositionV2 } from "./runJobGraphEdges.js";
+import { routeAfterBuildObjectNativePath } from "./runJobGraphEdges.js";
 
 test(
-  "routeAfterBuildReferenceCompositionV2 routes to send_finalize when finalizeDraft is present (coverage-failure short-circuit)",
+  "routeAfterBuildObjectNativePath routes to send_finalize when finalizeDraft is present (coverage-failure short-circuit)",
   () => {
-    const route = routeAfterBuildReferenceCompositionV2({
+    const route = routeAfterBuildObjectNativePath({
       finalizeDraft: { marker: "any-truthy-draft" },
     });
     assert.equal(route, "send_finalize");
@@ -19,18 +19,18 @@ test(
 );
 
 test(
-  "routeAfterBuildReferenceCompositionV2 routes to build_search_profile when finalizeDraft is absent (normal path)",
+  "routeAfterBuildObjectNativePath routes to build_search_profile when finalizeDraft is absent (normal path)",
   () => {
     assert.equal(
-      routeAfterBuildReferenceCompositionV2({ finalizeDraft: undefined }),
+      routeAfterBuildObjectNativePath({ finalizeDraft: undefined }),
       "build_search_profile",
     );
     assert.equal(
-      routeAfterBuildReferenceCompositionV2({ finalizeDraft: null as unknown as undefined }),
+      routeAfterBuildObjectNativePath({ finalizeDraft: null as unknown as undefined }),
       "build_search_profile",
     );
     assert.equal(
-      routeAfterBuildReferenceCompositionV2({}),
+      routeAfterBuildObjectNativePath({}),
       "build_search_profile",
     );
   },

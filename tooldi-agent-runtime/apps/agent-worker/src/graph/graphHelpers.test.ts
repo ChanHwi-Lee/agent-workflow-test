@@ -34,11 +34,6 @@ test("graphHelpers는 정의된 artifact ref만 노출한다", () => {
     executionSceneSummaryRef: "runs/run-1/attempts/1/execution-scene-summary.json",
     judgePlanRef: null,
     refineDecisionRef: null,
-    topologyMatchReportRef: null,
-    topologySelectionRef: null,
-    topologyBindingPlanRef: null,
-    topologyExecutionPlanRef: null,
-    topologyCompletionReportRef: null,
     ruleJudgeVerdict: null,
     judgePlan: null,
     sourceSearchSummary: null,
@@ -89,11 +84,6 @@ test("graphHelpers는 judge warning을 finalize option에 투영한다", () => {
       executionSceneSummaryRef: null,
       judgePlanRef: "runs/run-1/attempts/1/judge-plan.json",
       refineDecisionRef: null,
-      topologyMatchReportRef: null,
-      topologySelectionRef: null,
-      topologyBindingPlanRef: null,
-      topologyExecutionPlanRef: null,
-      topologyCompletionReportRef: null,
       ruleJudgeVerdict: null,
       judgePlan: {
         judgePlanId: "judge-1",
@@ -130,11 +120,10 @@ test("graphHelpers는 judge warning을 finalize option에 투영한다", () => {
   assert.equal(options.judgePlanRef, "runs/run-1/attempts/1/judge-plan.json");
 });
 
-test("graphHelpers는 object-native workflow에서 representative degraded warning을 finalize option에 투영하지 않는다", () => {
+test("graphHelpers는 representative degraded warning을 finalize option에 투영하지 않는다", () => {
   const options = buildFinalizeOptions(
     {
       canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
-      workflowVariant: "object_native_v1",
       semanticBriefDraftRef: null,
       briefCompilationReportRef: null,
       compositionBriefRef: null,
@@ -163,11 +152,6 @@ test("graphHelpers는 object-native workflow에서 representative degraded warni
       executionSceneSummaryRef: null,
       judgePlanRef: null,
       refineDecisionRef: null,
-      topologyMatchReportRef: null,
-      topologySelectionRef: null,
-      topologyBindingPlanRef: null,
-      topologyExecutionPlanRef: null,
-      topologyCompletionReportRef: null,
       ruleJudgeVerdict: null,
       judgePlan: null,
       sourceSearchSummary: {

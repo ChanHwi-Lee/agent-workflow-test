@@ -21,7 +21,6 @@ import type {
 } from "../types.js";
 import {
   deriveCanvasPreset,
-  deriveWorkflowVariant,
 } from "./planningContext.js";
 import {
   CANVAS_OUT_OF_R1_SCOPE,
@@ -239,17 +238,7 @@ export async function buildTemplatePriorBundle(
   rerank?: TemplatePriorReranker | null,
   embeddingClient?: TemplateEmbeddingClient | null,
 ): Promise<TemplatePriorBundle | null> {
-  const workflowVariant = deriveWorkflowVariant(input);
-  if (
-    workflowVariant !== "retrieval_prior_v1" &&
-    workflowVariant !== "retrieval_prior_v2" &&
-    workflowVariant !== "retrieval_prior_v2_reset" &&
-    workflowVariant !== "object_native_v1" &&
-    workflowVariant !== "topology_v1"
-  ) {
-    return null;
-  }
-
+  const workflowVariant = "object_native_v1";
   const queryPlan = buildCanonicalTemplateQueryPlan(intent, input.request.userInput.prompt);
   const canvasPreset = deriveCanvasPreset(
     input.request.editorContext.canvasWidth,

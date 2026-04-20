@@ -62,7 +62,7 @@ export function registerExecutionNodes(
             type: "log",
             level: "error",
             message:
-              "[ssot/adaptive-composition] object_native_v1 requires an adaptive mutation batch; refusing legacy slot fallback",
+              "[ssot/adaptive-composition] object_native_v1 requires an adaptive mutation batch; refusing any slot-era fallback",
           },
         });
         cooperativeStopRequested ||= missingAdaptiveLog.cancelRequested;
@@ -99,7 +99,7 @@ export function registerExecutionNodes(
             errorSummary: {
               code: "adaptive_batch_missing",
               message:
-                "object_native_v1 could not build an adaptive mutation batch and refused to fall back to the legacy slot engine",
+                "object_native_v1 could not build an adaptive mutation batch and refused to fall back to the removed slot engine",
             },
           },
         });

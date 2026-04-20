@@ -7,13 +7,11 @@ import { CanvasMutationEnvelopeSchema } from "../canvas/canvas-mutation.js";
 import { MutationCommandResultSchema } from "../canvas/mutation-ack.js";
 import {
   CompletionStateSchema,
-  ExecutionSlotKeySchema,
   ErrorSummarySchema,
   IdentifierSchema,
   IsoDateTimeSchema,
   RunStatusSchema,
   TerminalRunStatusSchema,
-  TopologyCompletionContractSchema,
   WarningItemSchema,
 } from "../common.js";
 import {
@@ -205,15 +203,6 @@ export const RunFinalizeRequestSchema = Type.Object(
     outputTemplateCode: Type.Optional(
       Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
     ),
-    requiredExecutionSlots: Type.Optional(
-      Type.Array(ExecutionSlotKeySchema, { minItems: 1 }),
-    ),
-    selectedTopologyId: Type.Optional(
-      Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
-    ),
-    topologyCompletionContract: Type.Optional(
-      Type.Union([TopologyCompletionContractSchema, Type.Null()]),
-    ),
     canonicalDesignBriefRef: Type.Optional(IdentifierSchema),
     semanticBriefDraftRef: Type.Optional(IdentifierSchema),
     briefCompilationReportRef: Type.Optional(IdentifierSchema),
@@ -240,11 +229,6 @@ export const RunFinalizeRequestSchema = Type.Object(
     executionSceneSummaryRef: Type.Optional(IdentifierSchema),
     judgePlanRef: Type.Optional(IdentifierSchema),
     refineDecisionRef: Type.Optional(IdentifierSchema),
-    topologyMatchReportRef: Type.Optional(IdentifierSchema),
-    topologySelectionRef: Type.Optional(IdentifierSchema),
-    topologyBindingPlanRef: Type.Optional(IdentifierSchema),
-    topologyExecutionPlanRef: Type.Optional(IdentifierSchema),
-    topologyCompletionReportRef: Type.Optional(IdentifierSchema),
     sourceMutationRange: Type.Optional(
       Type.Object(
         {

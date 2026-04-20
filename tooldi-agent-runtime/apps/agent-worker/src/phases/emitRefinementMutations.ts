@@ -57,6 +57,10 @@ export async function emitRefinementMutations(
   const refinedPlan = applyPatchPlanToExecutablePlan(
     executablePlan,
     refineDecision.patchPlan.operations,
+    {
+      canvasWidth: input.request.editorContext.canvasWidth,
+      canvasHeight: input.request.editorContext.canvasHeight,
+    },
   );
   const refinedBatch = await emitSkeletonMutations(input, normalizedIntent, refinedPlan, {
     textLayoutHelper: dependencies.textLayoutHelper,
@@ -81,6 +85,10 @@ export async function emitRefinementMutations(
 function applyPatchPlanToExecutablePlan(
   executablePlan: ExecutablePlan,
   operations: RefinementPatchOperation[],
+  canvasSize: {
+    canvasWidth: number;
+    canvasHeight: number;
+  },
 ): ExecutablePlan {
   const actions = executablePlan.actions.map((action) => ({
     ...action,
@@ -101,6 +109,8 @@ function applyPatchPlanToExecutablePlan(
           copySlotTexts[operation.executionSlotKey] = operation.text;
           copyAction.inputs.copySlotTexts = copySlotTexts;
         }
+        rewriteFreeformBlockText(copyAction, operation.executionSlotKey, operation.text);
+        rewriteFreeformBlockText(polishAction, operation.executionSlotKey, operation.text);
         break;
       case "move_copy_slot_anchor":
         if (copyAction?.inputs && typeof copyAction.inputs === "object") {
@@ -108,6 +118,18 @@ function applyPatchPlanToExecutablePlan(
           copySlotAnchors[operation.executionSlotKey] = operation.anchor;
           copyAction.inputs.copySlotAnchors = copySlotAnchors;
         }
+        moveFreeformBlockAnchor(
+          copyAction,
+          operation.executionSlotKey,
+          operation.anchor,
+          canvasSize,
+        );
+        moveFreeformBlockAnchor(
+          polishAction,
+          operation.executionSlotKey,
+          operation.anchor,
+          canvasSize,
+        );
         break;
       case "set_spacing_intent":
         if (copyAction?.inputs && typeof copyAction.inputs === "object") {
@@ -116,25 +138,8 @@ function applyPatchPlanToExecutablePlan(
         if (polishAction?.inputs && typeof polishAction.inputs === "object") {
           polishAction.inputs.spacingIntent = operation.spacingIntent;
         }
-        break;
-      case "move_graphic_role_zone":
-        if (polishAction?.inputs && typeof polishAction.inputs === "object") {
-          const hints = Array.isArray(polishAction.inputs.graphicRolePlacementHints)
-            ? JSON.parse(JSON.stringify(polishAction.inputs.graphicRolePlacementHints))
-            : [];
-          const targetHint = hints.find(
-            (hint: { role?: string }) => hint.role === operation.role,
-          );
-          if (targetHint) {
-            targetHint.zone = operation.zone;
-          }
-          polishAction.inputs.graphicRolePlacementHints = hints;
-        }
-        break;
-      case "ensure_cta_container_fallback":
-        if (polishAction?.inputs && typeof polishAction.inputs === "object") {
-          polishAction.inputs.ctaContainerExpected = true;
-        }
+        applyFreeformSpacing(copyAction, operation.spacingIntent);
+        applyFreeformSpacing(polishAction, operation.spacingIntent);
         break;
     }
   }
@@ -152,7 +157,6 @@ function buildRefinementProposal(
   lastMutationAck: WaitMutationAckResponse,
   operations: RefinementPatchOperation[],
 ) {
-  assertSupportedPatchOperations(operations);
   const refinedCreateCommands = refinedBatch.proposals.flatMap((proposal) =>
     proposal.mutation.commands.filter(
       (
@@ -236,9 +240,6 @@ function compilePatchCommands(
       operation.kind === "move_copy_slot_anchor" ||
       operation.kind === "set_spacing_intent",
   );
-  const needsCtaContainerFallback = operations.some(
-    (operation) => operation.kind === "ensure_cta_container_fallback",
-  );
 
   const commands: CanvasMutationEnvelope["commands"] = [];
 
@@ -282,13 +283,6 @@ function compilePatchCommands(
     );
   }
 
-  if (needsCtaContainerFallback && !executionSceneSummary.ctaContainerResolved) {
-    const fallbackCommand = refinedCreateCommands.find(isFallbackCtaContainerCommand);
-    if (fallbackCommand) {
-      commands.push(fallbackCommand);
-    }
-  }
-
   return commands;
 }
 
@@ -330,28 +324,6 @@ function readCommandCopyText(command: CreateLayerCommand): string | null {
     : null;
 }
 
-function isFallbackCtaContainerCommand(command: CreateLayerCommand): boolean {
-  return (
-    command.layerBlueprint.layerType === "shape" &&
-    command.layerBlueprint.metadata.role === "cta_container" &&
-    command.layerBlueprint.metadata.renderPrimitive == null
-  );
-}
-
-function assertSupportedPatchOperations(
-  operations: RefinementPatchOperation[],
-): void {
-  const unsupportedOperation = operations.find(
-    (operation) => operation.kind === "move_graphic_role_zone",
-  );
-  if (!unsupportedOperation) {
-    return;
-  }
-  throw new Error(
-    `Unsupported refine patch operation for bounded runtime compiler: ${unsupportedOperation.kind}`,
-  );
-}
-
 function areBoundsEqual(
   left:
     | ExecutionSceneSummary["copyLayerBindings"][number]["resolvedBounds"]
@@ -371,4 +343,99 @@ function areBoundsEqual(
 
 function ensureRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? { ...(value as Record<string, unknown>) } : {};
+}
+
+function rewriteFreeformBlockText(
+  action: ExecutablePlan["actions"][number] | undefined,
+  executionSlotKey: string,
+  text: string,
+): void {
+  if (!action?.inputs || typeof action.inputs !== "object" || !Array.isArray(action.inputs.freeformBlocks)) {
+    return;
+  }
+  action.inputs.freeformBlocks = action.inputs.freeformBlocks.map((block) =>
+    block &&
+    typeof block === "object" &&
+    "executionSlotKey" in block &&
+    block.executionSlotKey === executionSlotKey
+      ? {
+          ...block,
+          textContent: text,
+        }
+      : block,
+  );
+}
+
+function moveFreeformBlockAnchor(
+  action: ExecutablePlan["actions"][number] | undefined,
+  executionSlotKey: string,
+  anchor: ConcreteLayoutAnchorZone,
+  canvasSize: {
+    canvasWidth: number;
+    canvasHeight: number;
+  },
+): void {
+  if (!action?.inputs || typeof action.inputs !== "object" || !Array.isArray(action.inputs.freeformBlocks)) {
+    return;
+  }
+  action.inputs.freeformBlocks = action.inputs.freeformBlocks.map((block) => {
+    if (
+      !block ||
+      typeof block !== "object" ||
+      !("executionSlotKey" in block) ||
+      block.executionSlotKey !== executionSlotKey ||
+      !("bounds" in block) ||
+      !block.bounds
+    ) {
+      return block;
+    }
+    const blockWithBounds = block as { bounds: { x: number; y: number; width: number; height: number } };
+    const bounds = { ...blockWithBounds.bounds };
+    if (anchor === "bottom_center") {
+      bounds.x = Math.round((canvasSize.canvasWidth - bounds.width) / 2);
+      bounds.y = Math.max(
+        0,
+        canvasSize.canvasHeight - bounds.height - Math.round(canvasSize.canvasHeight * 0.08),
+      );
+    }
+    return {
+      ...block,
+      bounds,
+    };
+  });
+}
+
+function applyFreeformSpacing(
+  action: ExecutablePlan["actions"][number] | undefined,
+  spacingIntent: "dense" | "balanced" | "airy",
+): void {
+  if (!action?.inputs || typeof action.inputs !== "object" || !Array.isArray(action.inputs.freeformBlocks)) {
+    return;
+  }
+  const gap = spacingIntent === "airy" ? 28 : spacingIntent === "balanced" ? 18 : 10;
+  let cursorY: number | null = null;
+  action.inputs.freeformBlocks = action.inputs.freeformBlocks.map((block) => {
+    if (
+      !block ||
+      typeof block !== "object" ||
+      !("executionSlotKey" in block) ||
+      block.executionSlotKey == null ||
+      !("bounds" in block) ||
+      !block.bounds
+    ) {
+      return block;
+    }
+    const blockWithBounds = block as { bounds: { x: number; y: number; width: number; height: number } };
+    const nextBounds = { ...blockWithBounds.bounds };
+    if (cursorY === null) {
+      cursorY = nextBounds.y + nextBounds.height + gap;
+      return block;
+    }
+    nextBounds.y = cursorY;
+    cursorY = nextBounds.y + nextBounds.height + gap;
+    return {
+      ...block,
+      bounds: nextBounds,
+    };
+  });
 }

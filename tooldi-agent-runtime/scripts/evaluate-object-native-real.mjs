@@ -39,9 +39,7 @@ const outputPath =
   options.output ??
   resolve(
     objectStoreRootDir,
-    workflowVariant === "topology_v1"
-      ? "topology-real-eval"
-      : "object-native-real-eval",
+    "object-native-real-eval",
     `report_${new Date().toISOString().replaceAll(":", "").replaceAll(".", "")}.json`,
   );
 
@@ -236,19 +234,11 @@ async function evaluatePrompt({
       latestSaveReceipt,
       latestSaveEvidence,
       savedOutputTemplateCode: latestSaveReceipt?.outputTemplateCode ?? null,
-      selectedTopologyId: artifacts.topologySelection?.selectedTopologyId ?? null,
-      topologyCompletionPassed:
-        artifacts.topologyCompletion?.passed ?? null,
       objectNativeSummary: {
         auditSummary: artifacts.audit?.summary ?? null,
         selectionSummary: artifacts.selection?.summary ?? null,
         renderabilitySummary: artifacts.renderability?.summary ?? null,
         qualityEvalSummary: artifacts.qualityEvalSummary?.summary ?? null,
-      },
-      topologySummary: {
-        matchSummary: artifacts.topologyMatch?.summary ?? null,
-        selectionSummary: artifacts.topologySelection?.summary ?? null,
-        completionSummary: artifacts.topologyCompletion?.summary ?? null,
       },
     };
   } catch (error) {
@@ -275,11 +265,7 @@ async function startRun({
       "content-type": "application/json",
     },
     body: JSON.stringify(
-      createStartRunRequest(
-        workflowVariant === "topology_v1"
-          ? "topology-real-eval"
-          : "object-native-real-eval",
-        {
+      createStartRunRequest("object-native-real-eval", {
         prompt,
         workflowVariant,
         canvasWidth,
@@ -471,15 +457,9 @@ async function readRunArtifacts({
     workflowVariant === "object_native_v1"
       ? readJsonWithRetry(resolve(attemptRoot, "object-native-quality-eval-summary.json"))
       : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-quality-eval-summary.json")),
-    workflowVariant === "topology_v1"
-      ? readJsonWithRetry(resolve(attemptRoot, "topology-match-report.json"))
-      : readJsonOrNullWithRetry(resolve(attemptRoot, "topology-match-report.json")),
-    workflowVariant === "topology_v1"
-      ? readJsonWithRetry(resolve(attemptRoot, "topology-selection.json"))
-      : readJsonOrNullWithRetry(resolve(attemptRoot, "topology-selection.json")),
-    workflowVariant === "topology_v1"
-      ? readJsonWithRetry(resolve(attemptRoot, "topology-completion-report.json"))
-      : readJsonOrNullWithRetry(resolve(attemptRoot, "topology-completion-report.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "topology-match-report.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "topology-selection.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "topology-completion-report.json")),
     readJsonWithRetry(resolve(artifactsRoot, `bundle_${runId}.json`)),
   ]);
 
@@ -551,11 +531,6 @@ function buildAggregateSummary({
   const missingClusterFamilyCounts = countBy(
     completedResults.flatMap((result) => result.missingClusterFamilies ?? []),
   );
-  const selectedTopologyCounts = countBy(
-    completedResults
-      .map((result) => result.selectedTopologyId)
-      .filter((value) => typeof value === "string" && value.length > 0),
-  );
   const errorCounts = countBy(
     erroredResults.map((result) => normalizeErrorMessage(result.error)),
   );
@@ -573,18 +548,6 @@ function buildAggregateSummary({
       (result) => !result.hasLatestSaveReceipt && !result.hasLatestSaveEvidence,
     ).length,
   };
-  const topologyCompletionCounts = {
-    passed: completedResults.filter(
-      (result) => result.topologyCompletionPassed === true,
-    ).length,
-    failed: completedResults.filter(
-      (result) => result.topologyCompletionPassed === false,
-    ).length,
-    notApplicable: completedResults.filter(
-      (result) => result.topologyCompletionPassed === null,
-    ).length,
-  };
-
   return {
     startedAt,
     finishedAt,
@@ -624,8 +587,6 @@ function buildAggregateSummary({
     compositionStatusCounts,
     clusterKindCounts,
     missingClusterFamilyCounts,
-    selectedTopologyCounts,
-    topologyCompletionCounts,
     nextStep: inferNextStep({
       completedResults,
       erroredResults,

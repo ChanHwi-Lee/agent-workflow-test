@@ -32,7 +32,7 @@ export function deriveCanvasPreset(
 }
 
 export function deriveWorkflowVariant(
-  input: HydratedPlanningInput,
+  _input: HydratedPlanningInput,
 ): WorkflowVariant {
-  return input.request.workflowVariant ?? "legacy";
+  return "object_native_v1";
 }

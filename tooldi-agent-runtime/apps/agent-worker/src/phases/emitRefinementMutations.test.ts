@@ -78,12 +78,6 @@ function createNormalizedIntent(): NormalizedIntent {
     subjectBinding: "subjectless",
     offerIntent: "sale",
     backgroundColorHex: "#FFEDF0",
-    requiredSlots: [
-      "background",
-      "headline",
-      "subheadline",
-      "cta",
-    ],
     assetPolicy: normalizeTemplateAssetPolicy("graphic_allowed_photo_optional"),
     primaryVisualPolicy: "graphic_preferred",
     searchKeywords: ["봄", "세일", "프로모션"],
@@ -165,38 +159,7 @@ function createExecutablePlan(options?: {
   ctaContainerExpected?: boolean;
 }): ExecutablePlan {
   const spacingIntent = options?.spacingIntent ?? "balanced";
-  const includeCatalogCtaContainer = options?.includeCatalogCtaContainer ?? true;
-  const ctaContainerExpected = options?.ctaContainerExpected ?? includeCatalogCtaContainer;
-  const graphicRoles = [
-    {
-      role: "primary_accent",
-      candidateId: "graphic-1",
-      variantKey: "graphic_primary",
-      sourceAssetId: "asset-1",
-      sourceSerial: "serial-1",
-      sourceCategory: "vector",
-    },
-    ...(includeCatalogCtaContainer
-      ? [
-          {
-            role: "cta_container",
-            candidateId: "graphic-2",
-            variantKey: "graphic_cta",
-            sourceAssetId: "asset-2",
-            sourceSerial: "serial-2",
-            sourceCategory: "vector",
-          },
-        ]
-      : []),
-    {
-      role: "corner_accent",
-      candidateId: "graphic-3",
-      variantKey: "graphic_corner",
-      sourceAssetId: "asset-3",
-      sourceSerial: "serial-3",
-      sourceCategory: "vector",
-    },
-  ];
+  const ctaContainerExpected = options?.ctaContainerExpected ?? false;
 
   return {
     planId: "plan-1",
@@ -228,6 +191,7 @@ function createExecutablePlan(options?: {
           slotKey: "background",
         },
         inputs: {
+          executionMode: "object_native_freeform",
           backgroundMode: "generated_solid",
           selectedBackgroundCandidateId: "background-1",
           backgroundColorHex: "#FFEDF0",
@@ -255,6 +219,7 @@ function createExecutablePlan(options?: {
           slotKey: "headline",
         },
         inputs: {
+          executionMode: "object_native_freeform",
           layoutMode: "left_copy_right_graphic",
           selectedLayoutCandidateId: "layout-1",
           displayFontFamily: "1168_700",
@@ -279,6 +244,41 @@ function createExecutablePlan(options?: {
           },
           clusterZones: ["right_cluster", "top_corner", "bottom_strip"],
           spacingIntent,
+          freeformBlocks: [
+            {
+              blockId: "headline",
+              stage: "copy",
+              layerType: "text",
+              executionSlotKey: "headline",
+              role: "headline",
+              variantKey: "text_display",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 120, width: 420, height: 90 },
+              textContent: "설레는 봄, 특별한 세일이 시작됩니다!",
+            },
+            {
+              blockId: "subheadline",
+              stage: "copy",
+              layerType: "text",
+              executionSlotKey: "subheadline",
+              role: "subheadline",
+              variantKey: "text_body",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 220, width: 420, height: 70 },
+              textContent: "지금 바로 봄맞이 쇼핑을 즐겨보세요.",
+            },
+            {
+              blockId: "offer",
+              stage: "copy",
+              layerType: "text",
+              executionSlotKey: "offer_line",
+              role: "price_callout",
+              variantKey: "text_offer",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 300, width: 360, height: 56 },
+              textContent: "전 품목 최대 50% 할인 혜택",
+            },
+          ],
         },
         rollback: { strategy: "delete_created_layers" },
       },
@@ -298,23 +298,58 @@ function createExecutablePlan(options?: {
           layerId: null,
         },
         inputs: {
+          executionMode: "object_native_freeform",
           decorationMode: "promo_multi_graphic",
           selectedDecorationCandidateId: "graphic-1",
           selectedDecorationAssetId: "graphic:serial-1",
           selectedDecorationSerial: "serial-1",
           selectedDecorationCategory: "vector",
-          graphicCompositionSet: {
-            roles: graphicRoles,
-          },
-          graphicRolePlacementHints: graphicRoles.map((role) => ({
-            role: role.role,
-            zone: role.role === "corner_accent" ? "top_corner" : "right_cluster",
-          })),
+          graphicCompositionSet: null,
+          graphicRolePlacementHints: [],
           clusterZones: ["right_cluster", "top_corner", "bottom_strip"],
           ctaContainerExpected,
           spacingIntent,
           includeUnderline: false,
           includeRibbon: false,
+          freeformBlocks: [
+            {
+              blockId: "cta",
+              stage: "polish",
+              layerType: "group",
+              executionSlotKey: "cta",
+              role: "cta",
+              variantKey: "reference_cta_band",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 380, width: 260, height: 64 },
+              textContent: "지금 쇼핑하기",
+            },
+            {
+              blockId: "footer",
+              stage: "polish",
+              layerType: "text",
+              executionSlotKey: "footer_note",
+              role: "footer_note",
+              variantKey: "text_footer",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 560, width: 360, height: 24 },
+              textContent: "본 행사는 재고 소진 시 조기 종료될 수 있습니다.",
+            },
+            {
+              blockId: "primary-accent",
+              stage: "polish",
+              layerType: "shape",
+              executionSlotKey: null,
+              role: "primary_accent",
+              variantKey: "graphic_primary",
+              candidateId: "graphic-1",
+              bounds: { x: 720, y: 120, width: 240, height: 240 },
+              textContent: null,
+              sourceAssetId: "asset-1",
+              sourceSerial: "serial-1",
+              sourceCategory: "vector",
+              clusterZone: "right_cluster",
+            },
+          ],
         },
         rollback: { strategy: "delete_created_layers" },
       },
@@ -421,23 +456,13 @@ async function createExecutionSceneSummaryFromPlan(
       .filter(
         (command) =>
           typeof command.layerBlueprint.metadata.role === "string" &&
-          (command.layerBlueprint.metadata.role === "primary_accent" ||
-            command.layerBlueprint.metadata.role === "cta_container" ||
-            command.layerBlueprint.metadata.role === "corner_accent"),
+          command.layerBlueprint.metadata.role === "primary_accent",
       )
       .map((command) => ({
         role: command.layerBlueprint.metadata.role as
-          | "primary_accent"
-          | "cta_container"
-          | "corner_accent",
-        layerId:
-          command.layerBlueprint.metadata.role === "cta_container"
-            ? "group-cta-container"
-            : `illust-${command.layerBlueprint.metadata.role}`,
-        zone:
-          command.layerBlueprint.metadata.role === "corner_accent"
-            ? "top_corner"
-            : "right_cluster",
+          | "primary_accent",
+        layerId: `illust-${command.layerBlueprint.metadata.role}`,
+        zone: "right_cluster",
         sourceAssetId:
           typeof command.layerBlueprint.metadata.sourceAssetId === "string"
             ? command.layerBlueprint.metadata.sourceAssetId
@@ -448,9 +473,7 @@ async function createExecutionSceneSummaryFromPlan(
             : null,
       })),
     photoLayerBinding: null,
-    ctaContainerResolved: createCommands.some(
-      (command) => command.layerBlueprint.metadata.role === "cta_container",
-    ),
+    ctaContainerResolved: false,
     summary: "execution scene summary",
   };
 }
@@ -573,7 +596,7 @@ test("emitRefinementMutations는 spacing refine에서 copy slot bounds만 갱신
   );
 });
 
-test("emitRefinementMutations는 CTA fallback refine에서 fallback createLayer만 추가한다", async () => {
+test("emitRefinementMutations는 legacy CTA fallback refine를 더 이상 내보내지 않는다", async () => {
   const executablePlan = createExecutablePlan({
     includeCatalogCtaContainer: false,
     ctaContainerExpected: false,
@@ -589,25 +612,12 @@ test("emitRefinementMutations는 CTA fallback refine에서 fallback createLayer�
     executablePlan,
     createCopyPlan(),
     executionSceneSummary,
-    createRefineDecision([
-      {
-        kind: "ensure_cta_container_fallback",
-      },
-    ]),
+    createRefineDecision([]),
     createLastMutationAck(),
     {
       textLayoutHelper: TEXT_LAYOUT_HELPER,
     },
   );
 
-  assert.ok(result.proposal);
-  assert.equal(result.proposal?.mutation.commands.length, 1);
-  const command = result.proposal?.mutation.commands[0];
-  if (!command || !isCreateLayerCommand(command)) {
-    throw new Error("CTA fallback createLayer command is required");
-  }
-
-  assert.equal(command.layerBlueprint.layerType, "shape");
-  assert.equal(command.layerBlueprint.metadata.role, "cta_container");
-  assert.equal(command.layerBlueprint.metadata.renderPrimitive, null);
+  assert.equal(result.proposal, null);
 });

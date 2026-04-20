@@ -64,11 +64,7 @@ export type StyleMetadata = {
   backgroundVisualMode: SceneBindingPlan["backgroundMode"] | null;
 };
 
-export type ExecutionMode =
-  | "legacy_slots"
-  | "v2_freeform"
-  | "object_native_freeform"
-  | "topology_freeform";
+export type ExecutionMode = "object_native_freeform";
 
 export type FoundationInputs = {
   executionMode: ExecutionMode;
@@ -98,7 +94,6 @@ export type SaveInputs = {
 
 export type CopyInputs = {
   executionMode: ExecutionMode;
-  requiredExecutionSlots: ExecutionSlotKey[];
   layoutMode: LayoutMode;
   layoutProfile: AbstractLayoutFamily;
   primaryVisualFamily: "graphic" | "photo";
@@ -168,7 +163,7 @@ export function readFoundationInputs(
   };
 
   return {
-    executionMode: record.executionMode ?? "legacy_slots",
+    executionMode: record.executionMode ?? "object_native_freeform",
     backgroundMode: record.backgroundMode ?? "spring_pattern",
     selectedBackgroundCandidateId:
       record.selectedBackgroundCandidateId ?? "background_unknown",
@@ -204,7 +199,6 @@ export function readCopyInputs(
 ): CopyInputs {
   const record = inputs as {
     executionMode?: ExecutionMode;
-    requiredExecutionSlots?: ExecutionSlotKey[];
     layoutMode?: LayoutMode;
     layoutProfile?: AbstractLayoutFamily;
     primaryVisualFamily?: "graphic" | "photo";
@@ -226,10 +220,7 @@ export function readCopyInputs(
   };
 
   return {
-    executionMode: record.executionMode ?? "legacy_slots",
-    requiredExecutionSlots: normalizeExecutionSlotKeys(
-      record.requiredExecutionSlots,
-    ),
+    executionMode: record.executionMode ?? "object_native_freeform",
     layoutMode: record.layoutMode ?? "copy_left_with_right_decoration",
     layoutProfile: record.layoutProfile ?? "promo_split",
     primaryVisualFamily: record.primaryVisualFamily ?? "graphic",
@@ -314,7 +305,7 @@ export function readPolishInputs(
   };
 
   return {
-    executionMode: record.executionMode ?? "legacy_slots",
+    executionMode: record.executionMode ?? "object_native_freeform",
     decorationMode: record.decorationMode ?? "graphic_cluster",
     layoutProfile: record.layoutProfile ?? "promo_split",
     primaryVisualFamily: record.primaryVisualFamily ?? "graphic",
@@ -351,26 +342,6 @@ function normalizeFreeformBlocks(
           Boolean(entry) && typeof entry === "object",
       )
     : [];
-}
-
-function normalizeExecutionSlotKeys(
-  value: unknown,
-): ExecutionSlotKey[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.filter(
-    (entry): entry is ExecutionSlotKey =>
-      entry === "background" ||
-      entry === "headline" ||
-      entry === "subheadline" ||
-      entry === "offer_line" ||
-      entry === "cta" ||
-      entry === "footer_note" ||
-      entry === "badge_text" ||
-      entry === "hero_image",
-  );
 }
 
 function normalizeBoundsRecord(

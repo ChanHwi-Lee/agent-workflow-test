@@ -3,6 +3,7 @@ import type { StateGraph } from "@langchain/langgraph";
 import type { WaitMutationAckResponse } from "@tooldi/agent-contracts";
 
 import { finalizeRun } from "../phases/finalizeRun.js";
+import { deriveWorkflowVariant } from "../phases/planningContext.js";
 import type { ProcessRunJobResult } from "../types.js";
 import { buildArtifactRefs, buildFinalizeOptions, buildHeartbeatBase, buildStageAckRecord } from "./graphHelpers.js";
 import { buildSaveTemplateCommand } from "../phases/layerCommandBuilder.js";
@@ -193,7 +194,7 @@ export function registerFinalizeNodes(
         buildFinalizeOptions(
           {
             ...state,
-            workflowVariant: state.hydrated.request.workflowVariant ?? null,
+            workflowVariant: deriveWorkflowVariant(state.hydrated),
           },
           cooperativeStopRequested,
           state.assignedSeqs,
@@ -302,21 +303,6 @@ export function registerFinalizeNodes(
             : {}),
           ...(state.judgePlan ? { judgePlan: state.judgePlan } : {}),
           ...(state.refineDecision ? { refineDecision: state.refineDecision } : {}),
-          ...(state.topologyMatchReport
-            ? { topologyMatchReport: state.topologyMatchReport }
-            : {}),
-          ...(state.topologySelection
-            ? { topologySelection: state.topologySelection }
-            : {}),
-          ...(state.topologyBindingPlan
-            ? { topologyBindingPlan: state.topologyBindingPlan }
-            : {}),
-          ...(state.topologyExecutionPlan
-            ? { topologyExecutionPlan: state.topologyExecutionPlan }
-            : {}),
-          ...(state.topologyCompletionReport
-            ? { topologyCompletionReport: state.topologyCompletionReport }
-            : {}),
           ...(state.plan ? { plan: state.plan } : {}),
           emittedMutationIds: state.emittedMutationIds,
           finalizeDraft: state.finalizeDraft,

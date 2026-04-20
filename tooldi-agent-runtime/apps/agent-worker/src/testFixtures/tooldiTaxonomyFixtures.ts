@@ -132,12 +132,6 @@ export function createFashionRetailNormalizedIntent(
     canvasPreset: "wide_1200x628",
     layoutIntent: "badge_led",
     tone: "bright_playful",
-    requiredSlots: [
-      "background",
-      "headline",
-      "subheadline",
-      "cta",
-    ],
     assetPolicy,
     searchKeywords,
     primaryVisualPolicy: assetPolicy.primaryVisualPolicy,

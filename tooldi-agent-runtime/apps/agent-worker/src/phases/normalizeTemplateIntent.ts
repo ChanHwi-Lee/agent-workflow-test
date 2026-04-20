@@ -67,12 +67,6 @@ export async function normalizeTemplateIntent(
       layoutIntent: "copy_focused",
       tone: "bright_playful",
       backgroundColorHex: "#ffffff",
-      requiredSlots: [
-        "background",
-        "headline",
-        "subheadline",
-        "cta",
-      ],
       assetPolicy: normalizeTemplateAssetPolicy(
         "graphic_allowed_photo_optional",
       ),

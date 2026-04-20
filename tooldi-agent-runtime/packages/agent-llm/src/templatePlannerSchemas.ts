@@ -270,9 +270,6 @@ export interface TemplateSemanticBriefContext {
     typographyHint: string | null;
     forbiddenStyles: string[];
   };
-  requiredSlots: Array<
-    "background" | "headline" | "subheadline" | "cta"
-  >;
   primaryVisualPolicy: TemplatePrimaryVisualPolicy;
 }
 

@@ -106,28 +106,39 @@ function createExecutablePlanV2(): ExecutablePlan {
       {
         ...createExecutablePlan().actions[0]!,
         inputs: {
-          executionMode: "v2_freeform",
+          executionMode: "object_native_freeform",
         },
       },
     ],
   };
 }
 
-test("buildJudgePlan requests patch refinement for missing CTA container and dense spacing", async () => {
+test("buildJudgePlan requests patch refinement for overlapping object-native bounds", async () => {
   const judgePlan = await buildJudgePlan(
     "run-1",
     "trace-1",
     0,
     createCopyPlan(),
     createConcreteLayoutPlan(),
-    createExecutionSceneSummary(),
+    {
+      ...createExecutionSceneSummary(),
+      copyLayerBindings: createExecutionSceneSummary().copyLayerBindings.map((binding) =>
+        binding.executionSlotKey === "cta"
+          ? {
+              ...binding,
+              plannedBounds: { x: 120, y: 140, width: 260, height: 80 },
+              resolvedBounds: { x: 120, y: 140, width: 260, height: 80 },
+            }
+          : binding,
+      ),
+    },
     createExecutablePlan(),
     null,
   );
 
   assert.equal(judgePlan.recommendation, "refine");
   assert.equal(
-    judgePlan.issues.some((issue) => issue.code === "cta_container_missing_after_execution"),
+    judgePlan.issues.some((issue) => issue.code === "topology_bounds_conflict"),
     true,
   );
   assert.equal(
@@ -161,7 +172,7 @@ test("buildJudgePlan keeps a fully materialized scene when resolved bounds are s
   assert.deepEqual(judgePlan.issues, []);
 });
 
-test("buildJudgePlan surfaces execution slot identity loss before materialization failure", async () => {
+test("buildJudgePlan ignores legacy execution-slot completeness issues", async () => {
   const executionSceneSummary = {
     ...createExecutionSceneSummary(),
     copyLayerBindings: createExecutionSceneSummary().copyLayerBindings.map((binding) =>
@@ -192,15 +203,12 @@ test("buildJudgePlan surfaces execution slot identity loss before materializatio
 
   assert.equal(
     judgePlan.issues.some((issue) => issue.code === "execution_slot_identity_missing"),
-    true,
-  );
-  assert.equal(
-    judgePlan.issues.some((issue) => issue.code === "slot_materialization_missing"),
     false,
   );
+  assert.equal(judgePlan.recommendation, "keep");
 });
 
-test("buildJudgePlan skips legacy cta container and badge expectations for retrieval_prior_v2 execution", async () => {
+test("buildJudgePlan skips legacy cta container and badge expectations for object-native freeform execution", async () => {
   const judgePlan = await buildJudgePlan(
     "run-1",
     "trace-1",
@@ -218,6 +226,10 @@ test("buildJudgePlan skips legacy cta container and badge expectations for retri
   );
   assert.equal(
     judgePlan.issues.some((issue) => issue.code === "badge_zone_mismatch"),
+    false,
+  );
+  assert.equal(
+    judgePlan.issues.some((issue) => issue.code === "slot_materialization_missing"),
     false,
   );
 });

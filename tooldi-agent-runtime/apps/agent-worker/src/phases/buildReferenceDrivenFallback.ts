@@ -21,7 +21,6 @@ import type {
   TemplatePriorBundle,
 } from "../types.js";
 import { deriveGenericPromoHeadline } from "./copyAbstractLayoutPlanningShared.js";
-import { deriveWorkflowVariant } from "./planningContext.js";
 
 type CanvasObject = Record<string, unknown>;
 
@@ -48,7 +47,7 @@ interface CanonicalSurfaceSelection {
   source: "explicit" | "implicit" | null;
 }
 
-interface BuildReferenceResetPathResult {
+interface BuildReferenceDrivenFallbackResult {
   referenceBlockGraph: ReferenceBlockGraph | null;
   messageAtomPlan: MessageAtomPlan | null;
   blockBindingPlan: BlockBindingPlan | null;
@@ -58,17 +57,13 @@ interface BuildReferenceResetPathResult {
   styleDowngradeVerdict: StyleDowngradeVerdict | null;
 }
 
-export function buildReferenceResetPath(
+export function buildReferenceDrivenFallback(
   input: HydratedPlanningInput,
   templatePriorBundle: TemplatePriorBundle | null,
   copyPlan: CopyPlan | null,
   sceneStylePlan: SceneStylePlan | null,
   sceneBindingPlan: SceneBindingPlan | null,
-): BuildReferenceResetPathResult {
-  if (deriveWorkflowVariant(input) !== "retrieval_prior_v2_reset") {
-    return emptyResult();
-  }
-
+): BuildReferenceDrivenFallbackResult {
   const selectedTemplateCode = templatePriorBundle?.selectedTemplateCode ?? null;
   const selectedTemplateTitle = templatePriorBundle?.selectedTemplateTitle ?? null;
   const primaryCandidate =
@@ -93,7 +88,7 @@ export function buildReferenceResetPath(
       messageAtomPlan,
       sceneStylePlan,
       sceneBindingPlan,
-      "No usable primary template or message atoms were available for retrieval_prior_v2_reset.",
+      "No usable primary template or message atoms were available for object_native_v1.",
     );
   }
 
@@ -105,7 +100,7 @@ export function buildReferenceResetPath(
       messageAtomPlan,
       sceneStylePlan,
       sceneBindingPlan,
-      "Selected template had no parsed page payload; downgraded to style-only reset composition.",
+      "Selected template had no parsed page payload; downgraded to the object-native style-only fallback.",
     );
   }
 
@@ -126,7 +121,7 @@ export function buildReferenceResetPath(
       messageAtomPlan,
       sceneStylePlan,
       sceneBindingPlan,
-      referenceGate.reason ?? "Primary reference was too weak for reset composition mode.",
+      referenceGate.reason ?? "Primary reference was too weak for object-native fallback composition.",
       referenceBlockGraph,
       [
         ...extractionAnalysis.warnings,
@@ -162,7 +157,7 @@ export function buildReferenceResetPath(
       sceneStylePlan,
       sceneBindingPlan,
       stableRenderableValidation.reason ??
-        "Stable candidate failed renderability guard; reset path downgraded to style-only.",
+        "Stable candidate failed renderability guard; object-native fallback downgraded to style-only.",
       referenceBlockGraph,
       [
         ...stableRenderableValidation.warnings,
@@ -174,14 +169,14 @@ export function buildReferenceResetPath(
     planId: createRequestId(),
     runId: input.job.runId,
     traceId: input.job.traceId,
-    workflowVariant: "retrieval_prior_v2_reset",
+    workflowVariant: "object_native_v1",
     selectedTemplateCode,
     selectedTemplateTitle,
     compositionStatus: editableBlockPlan.compositionStatus,
     copyBlocks: editableBlockPlan.blocks.filter((block) => block.stage === "copy"),
     polishBlocks: editableBlockPlan.blocks.filter((block) => block.stage === "polish"),
     summary:
-      "Reset candidate executes editable block plan through the existing freeform carrier.",
+      "Object-native fallback executes the readable editable block baseline through the freeform carrier.",
   };
   const warnings = collectQualityWarnings(
     referenceBlockGraph,
@@ -201,7 +196,7 @@ export function buildReferenceResetPath(
       summaryId: createRequestId(),
       runId: input.job.runId,
       traceId: input.job.traceId,
-      workflowVariant: "retrieval_prior_v2_reset",
+      workflowVariant: "object_native_v1",
       selectedTemplateCode,
       selectedTemplateTitle,
       warnings,
@@ -210,7 +205,7 @@ export function buildReferenceResetPath(
       summary:
         warnings.length > 0
           ? `Reset candidate emitted ${freeformLayoutPlan.copyBlocks.length + freeformLayoutPlan.polishBlocks.length} blocks with ${warnings.length} quality warnings.`
-          : "Reset candidate emitted a stable editable block plan without quality warnings.",
+          : "Object-native fallback emitted a stable editable block plan without quality warnings.",
     },
     styleDowngradeVerdict: createDowngradeVerdict(
       input.job.runId,
@@ -218,18 +213,6 @@ export function buildReferenceResetPath(
       false,
       null,
     ),
-  };
-}
-
-function emptyResult(): BuildReferenceResetPathResult {
-  return {
-    referenceBlockGraph: null,
-    messageAtomPlan: null,
-    blockBindingPlan: null,
-    editableBlockPlan: null,
-    freeformLayoutPlan: null,
-    qualityEvalSummary: null,
-    styleDowngradeVerdict: null,
   };
 }
 
@@ -243,7 +226,7 @@ function buildStyleOnlyResult(
   reason: string,
   referenceBlockGraph: ReferenceBlockGraph | null = null,
   extraWarnings: string[] = [],
-): BuildReferenceResetPathResult {
+): BuildReferenceDrivenFallbackResult {
   const editableBlockPlan = createStyleOnlyEditableBlockPlan(
     input,
     selectedTemplateCode,
@@ -267,7 +250,7 @@ function buildStyleOnlyResult(
       planId: createRequestId(),
       runId: input.job.runId,
       traceId: input.job.traceId,
-      workflowVariant: "retrieval_prior_v2_reset",
+      workflowVariant: "object_native_v1",
       selectedTemplateCode,
       selectedTemplateTitle,
       compositionStatus: "style_only",
@@ -279,7 +262,7 @@ function buildStyleOnlyResult(
       summaryId: createRequestId(),
       runId: input.job.runId,
       traceId: input.job.traceId,
-      workflowVariant: "retrieval_prior_v2_reset",
+      workflowVariant: "object_native_v1",
       selectedTemplateCode,
       selectedTemplateTitle,
       warnings,
@@ -372,7 +355,7 @@ export function buildMessageAtomPlan(
     planId: createRequestId(),
     runId,
     traceId,
-    workflowVariant: "retrieval_prior_v2_reset",
+    workflowVariant: "object_native_v1",
     atoms,
     summary:
       "Reset message atom plan derives prompt-native primary/offer/cta/detail atoms and only keeps support text when the prompt shape clearly warrants it.",
@@ -464,7 +447,7 @@ export function extractReferenceBlockGraph(
       planId: createRequestId(),
       runId,
       traceId,
-      workflowVariant: "retrieval_prior_v2_reset",
+      workflowVariant: "object_native_v1",
       selectedTemplateCode,
       selectedTemplateTitle,
       sourceCanvasWidth: canvasWidth,
@@ -553,7 +536,7 @@ function bindMessageAtomsToReferenceBlocks(
     planId: createRequestId(),
     runId,
     traceId,
-    workflowVariant: "retrieval_prior_v2_reset",
+    workflowVariant: "object_native_v1",
     assignments,
     droppedAtomIds: [...droppedAtomIds],
     summary:
@@ -849,7 +832,7 @@ function buildEditableBlockPlan(
     planId: createRequestId(),
     runId: input.job.runId,
     traceId: input.job.traceId,
-    workflowVariant: "retrieval_prior_v2_reset",
+    workflowVariant: "object_native_v1",
     selectedTemplateCode: graph.selectedTemplateCode,
     selectedTemplateTitle: graph.selectedTemplateTitle,
     compositionStatus: blocks.length > 0 ? "stable" : "style_only",
@@ -1211,7 +1194,7 @@ function createStyleOnlyEditableBlockPlan(
     planId: createRequestId(),
     runId: input.job.runId,
     traceId: input.job.traceId,
-    workflowVariant: "retrieval_prior_v2_reset",
+  workflowVariant: "object_native_v1",
     selectedTemplateCode,
     selectedTemplateTitle,
     compositionStatus: "style_only",
@@ -2207,7 +2190,7 @@ function createDowngradeVerdict(
     verdictId: createRequestId(),
     runId,
     traceId,
-    workflowVariant: "retrieval_prior_v2_reset",
+  workflowVariant: "object_native_v1",
     applied,
     reason,
     summary: applied

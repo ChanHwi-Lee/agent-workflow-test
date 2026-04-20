@@ -24,13 +24,6 @@ export async function buildExecutionSceneSummary(
 ): Promise<ExecutionSceneSummary> {
   const copyAction = plan.actions.find((action) => action.operation === "place_copy_cluster");
   const polishAction = plan.actions.find((action) => action.operation === "place_promo_polish");
-  const isV2FreeformExecution =
-    readExecutionMode(copyAction) === "v2_freeform" ||
-    readExecutionMode(polishAction) === "v2_freeform" ||
-    readExecutionMode(copyAction) === "object_native_freeform" ||
-    readExecutionMode(polishAction) === "object_native_freeform" ||
-    readExecutionMode(copyAction) === "topology_freeform" ||
-    readExecutionMode(polishAction) === "topology_freeform";
 
   const finalRevision =
     [...stageAckHistory]
@@ -43,44 +36,14 @@ export async function buildExecutionSceneSummary(
       : null,
   );
 
-  const copyLayerBindings = isV2FreeformExecution
-    ? buildV2CopyLayerBindings(copyAction, polishAction, stageAckHistory)
-    : copyPlan.slots.map((slot) => {
-    const matchingCommand = findLatestCommandByExecutionSlot(stageAckHistory, slot.key);
-    return {
-      executionSlotKey: slot.key,
-      identityObserved: matchingCommand !== null,
-      layerId: resolveCommandLayerId(matchingCommand),
-      text:
-        typeof copySlotTexts?.[slot.key] === "string"
-          ? (copySlotTexts[slot.key] as string)
-          : slot.text,
-      anchor: concreteLayoutPlan.slotAnchors[slot.key] ?? null,
-      plannedBounds:
-        concreteLayoutPlan.resolvedSlotBounds[slot.key] ?? matchingCommand?.proposedBounds ?? null,
-      resolvedBounds:
-        matchingCommand?.proposedBounds ??
-        concreteLayoutPlan.resolvedSlotBounds[slot.key] ??
-        null,
-    };
-  });
+  const copyLayerBindings = buildV2CopyLayerBindings(
+    copyAction,
+    polishAction,
+    stageAckHistory,
+  );
 
   const graphicLayerBindings: ExecutionSceneGraphicLayerBinding[] =
-    isV2FreeformExecution
-      ? buildV2GraphicLayerBindings(polishAction, stageAckHistory)
-      : assetPlan.graphicRoleBindings.map((binding) => {
-      const matchingCommand = findLatestGraphicCommandByRole(stageAckHistory, binding.role);
-      const placementHint = concreteLayoutPlan.graphicRolePlacementHints.find(
-        (hint) => hint.role === binding.role,
-      );
-      return {
-        role: binding.role,
-        layerId: resolveCommandLayerId(matchingCommand),
-        zone: placementHint?.zone ?? null,
-        sourceAssetId: binding.sourceAssetId,
-        sourceSerial: binding.sourceSerial,
-      };
-    });
+    buildV2GraphicLayerBindings(polishAction, stageAckHistory);
 
   const photoCommand =
     assetPlan.photoBinding !== null
@@ -113,9 +76,7 @@ export async function buildExecutionSceneSummary(
               concreteLayoutPlan.resolvedSlotBounds.hero_image ??
               null,
           },
-    ctaContainerResolved: !isV2FreeformExecution && graphicLayerBindings.some(
-      (binding) => binding.role === "cta_container" && binding.layerId !== null,
-    ),
+    ctaContainerResolved: false,
     summary:
       `Execution scene captured ${stageAckHistory.length} acknowledged stages with ` +
       `${copyLayerBindings.filter((binding) => binding.layerId !== null).length} copy layers, ` +

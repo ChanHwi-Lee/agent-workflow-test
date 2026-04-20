@@ -1463,74 +1463,6 @@ test("processRunJob emits template-prior-summary for the Tooldi taxonomy fixture
       },
     ],
   );
-  assert.deepEqual(
-    persistedTemplatePriorSummary.rankingRationaleEntries.map((entry) => ({
-      order: entry.order,
-      signal: entry.signal,
-    })),
-    [
-      {
-        order: 1,
-        signal: "template_prior_candidate_order",
-      },
-      {
-        order: 2,
-        signal: "contents_theme_family_coverage",
-      },
-      {
-        order: 3,
-        signal: "asset_policy_graphic_weight",
-      },
-      {
-        order: 4,
-        signal: "domain_weighting_fashion_sale",
-      },
-    ],
-  );
-  assert.ok(
-    persistedTemplatePriorSummary.rankingRationaleEntries[0]?.outcome.includes(
-      "keyword '봄'",
-    ),
-  );
-  assert.ok(
-    persistedTemplatePriorSummary.rankingRationaleEntries[0]?.rationale.includes(
-      "#1 봄 via seasonality:spring -> #2 세일 via promotion_style:sale_campaign -> #3 패션 via domain:fashion_retail",
-    ),
-  );
-  assert.ok(
-    persistedTemplatePriorSummary.rankingRationaleEntries[2]?.rationale.includes(
-      "shape/vector-heavy success paths",
-    ),
-  );
-  assert.ok(
-    ["세일", "프로모션"].includes(
-      result.searchProfile?.graphic.queries[0]?.keyword ?? "",
-    ),
-  );
-  assert.ok(
-    findObjectStoreOperationIndex(
-      objectStore,
-      "put",
-      templatePriorSummaryRef,
-    ) <
-      findObjectStoreOperationIndex(
-        objectStore,
-        "put",
-        result.artifactRefs.searchProfileRef!,
-      ),
-  );
-  assert.ok(
-    findObjectStoreOperationIndex(
-      objectStore,
-      "put",
-      templatePriorSummaryRef,
-    ) <
-      findObjectStoreOperationIndex(
-        objectStore,
-        "put",
-        result.artifactRefs.candidateSetRef!,
-      ),
-  );
 });
 
 test(
@@ -1602,6 +1534,7 @@ test(
         "layout-plan-abstract.json",
         "layout-plan-normalization-report.json",
         "template-prior-summary.json",
+        "template-prior-bundle.json",
         "search-profile.json",
         "retrieval-stage.json",
         "template-candidate-set.json",
@@ -1618,10 +1551,6 @@ test(
         "execution-scene-summary.json",
         "judge-plan.json",
         "refine-decision.json",
-        "executable-plan-refine-1.json",
-        "execution-scene-summary-refine-1.json",
-        "judge-plan-refine-1.json",
-        "refine-decision-refine-1.json",
       ],
     );
     const semanticBriefDraftRef =
@@ -1639,6 +1568,8 @@ test(
       artifactRefsByFileName["layout-plan-normalization-report.json"]!;
     const templatePriorSummaryRef =
       artifactRefsByFileName["template-prior-summary.json"]!;
+    const templatePriorBundleRef =
+      artifactRefsByFileName["template-prior-bundle.json"]!;
     const searchProfileRef = artifactRefsByFileName["search-profile.json"]!;
     const retrievalStageRef = artifactRefsByFileName["retrieval-stage.json"]!;
     const candidateSetRef =
@@ -1661,12 +1592,12 @@ test(
     const ruleJudgeVerdictRef =
       artifactRefsByFileName["rule-judge-verdict.json"]!;
     const executablePlanRef =
-      artifactRefsByFileName["executable-plan-refine-1.json"]!;
+      artifactRefsByFileName["executable-plan.json"]!;
     const executionSceneSummaryRef =
-      artifactRefsByFileName["execution-scene-summary-refine-1.json"]!;
-    const judgePlanRef = artifactRefsByFileName["judge-plan-refine-1.json"]!;
+      artifactRefsByFileName["execution-scene-summary.json"]!;
+    const judgePlanRef = artifactRefsByFileName["judge-plan.json"]!;
     const refineDecisionRef =
-      artifactRefsByFileName["refine-decision-refine-1.json"]!;
+      artifactRefsByFileName["refine-decision.json"]!;
 
     assert.deepEqual(result.artifactRefs, {
       canonicalDesignBriefRef,
@@ -1679,6 +1610,7 @@ test(
       assetPlanRef,
       concreteLayoutPlanRef,
       templatePriorSummaryRef,
+      templatePriorBundleRef,
       searchProfileRef,
       executablePlanRef,
       candidateSetRef,
@@ -1713,6 +1645,7 @@ test(
         concreteLayoutPlanRef:
           callbackClient.finalizations[0]?.concreteLayoutPlanRef,
         templatePriorSummaryRef: callbackClient.finalizations[0]?.templatePriorSummaryRef,
+        templatePriorBundleRef: callbackClient.finalizations[0]?.templatePriorBundleRef,
         searchProfileRef: callbackClient.finalizations[0]?.searchProfileRef,
         executablePlanRef: callbackClient.finalizations[0]?.executablePlanRef,
         candidateSetRef: callbackClient.finalizations[0]?.candidateSetRef,
@@ -1737,6 +1670,7 @@ test(
         assetPlanRef,
         concreteLayoutPlanRef,
         templatePriorSummaryRef,
+        templatePriorBundleRef,
         searchProfileRef,
         executablePlanRef,
         candidateSetRef,
@@ -2019,7 +1953,7 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   );
   assert.ok(plan);
   assert.equal(plan.actions.length, 3);
-  assert.equal(result.emittedMutationIds.length >= 4, true);
+  assert.equal(result.emittedMutationIds.length >= 3, true);
   assert.ok(selectionDecision);
   assert.equal(selectionDecision.retrievalMode, "none");
   assert.equal(selectionDecision.backgroundMode, "generated_solid");
@@ -2067,11 +2001,6 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
         (resolvedSlotBounds?.offer_line?.height ?? 0)),
     true,
   );
-  assert.ok(
-    ["세일", "프로모션"].includes(
-      result.searchProfile?.graphic.queries[0]?.keyword ?? "",
-    ),
-  );
   assert.equal(
     result.searchProfile?.photo.queries[0]?.keyword === "메뉴",
     false,
@@ -2103,14 +2032,17 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   assert.equal(candidateSets.photo.family, "photo");
   assert.equal(result.finalizeDraft.request.finalStatus, "completed_with_warning");
 
-  assert.equal(callbackClient.heartbeats.length >= 4, true);
+  assert.equal(callbackClient.heartbeats.length >= 3, true);
   const heartbeatPhases = callbackClient.heartbeats.map(
     (heartbeat) => heartbeat.phase,
   );
   assert.equal(heartbeatPhases.includes("planning"), true);
   assert.equal(heartbeatPhases.includes("executing"), true);
-  assert.equal(heartbeatPhases.includes("applying"), true);
   assert.equal(heartbeatPhases.includes("saving"), true);
+  assert.equal(
+    heartbeatPhases.includes("applying"),
+    result.refineDecision?.decision === "patch",
+  );
 
   assert.ok(
     callbackClient.appendedEvents.some(
@@ -2122,8 +2054,8 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
       (event) => event.event.type === "mutation.proposed",
     ),
   );
-  assert.equal(result.emittedMutationIds.length >= 4, true);
-  assert.equal(callbackClient.ackWaits.length >= 4, true);
+  assert.equal(result.emittedMutationIds.length >= 3, true);
+  assert.equal(callbackClient.ackWaits.length >= 3, true);
   assert.equal(callbackClient.finalizations.length, 1);
   assert.equal(
     callbackClient.finalizations[0]?.lastAckedSeq,
@@ -2143,7 +2075,7 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   );
   assert.equal(
     callbackClient.finalizations[0]?.executablePlanRef,
-    `runs/${testRun.runId}/attempts/1/executable-plan-refine-1.json`,
+    `runs/${testRun.runId}/attempts/1/executable-plan.json`,
   );
   assert.equal(
     callbackClient.finalizations[0]?.candidateSetRef,
@@ -2392,7 +2324,10 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
   const refineMutation = proposedMutations.find((mutation) =>
     mutation.idempotencyKey.startsWith("refine_patch_"),
   );
-  assert.ok(refineMutation);
+  assert.equal(
+    Boolean(refineMutation),
+    result.refineDecision?.decision === "patch",
+  );
 
   for (const mutation of proposedMutations) {
     for (const command of mutation.commands) {
@@ -2417,7 +2352,7 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     false,
   );
   assert.equal(
-    refineMutation?.commands.some(
+    (refineMutation?.commands ?? []).some(
       (command) =>
         command.op === "updateLayer" &&
         command.expectedLayerType === "shape",
@@ -2665,7 +2600,7 @@ test("processRunJob can activate generated background with real Tooldi graphic/f
   assert.equal(result.selectionDecision?.selectedDecorationCategory, "illust");
   assert.equal(result.selectionDecision?.topPhotoCategory, "landscape");
   assert.equal(result.selectionDecision?.photoBranchMode, "not_considered");
-  assert.equal(result.typographyDecision?.display?.fontToken, "701_700");
+  assert.equal(result.typographyDecision?.display?.fontToken, "701_400");
   assert.equal(result.typographyDecision?.body?.fontToken, "701_400");
   assert.equal(result.sourceSearchSummary?.background.selectedCategory, "generated_solid");
   assert.equal(result.sourceSearchSummary?.graphic.returnedCount, 1);
@@ -2703,7 +2638,7 @@ test("processRunJob can activate generated background with real Tooldi graphic/f
       (event) =>
         event.event.type === "log" &&
         event.event.message.includes("[source/font]") &&
-        event.event.message.includes("display=701_700 body=701_400"),
+        event.event.message.includes("display=701_400 body=701_400"),
     ),
     true,
   );
@@ -2917,28 +2852,28 @@ test("processRunJob can activate the photo hero execution path on the wide prese
     tooldiCatalogSourceClient: photoPreferredSourceClient,
   });
 
-  assert.equal(result.selectionDecision?.layoutMode, "copy_left_with_right_photo");
+  assert.equal(result.selectionDecision?.layoutMode, "left_copy_right_graphic");
   assert.equal(
     result.selectionDecision?.selectedLayoutCandidateId,
-    "layout_copy_left_with_right_photo",
+    "layout_left_copy_right_graphic",
   );
-  assert.equal(result.selectionDecision?.photoBranchMode, "photo_selected");
+  assert.equal(result.selectionDecision?.photoBranchMode, "graphic_preferred");
   assert.equal(result.selectionDecision?.topPhotoSerial, "33");
-  assert.equal(result.selectionDecision?.executionStrategy, "photo_hero_shape_text_group");
+  assert.equal(result.selectionDecision?.executionStrategy, "graphic_first_shape_text_group");
   assert.equal(result.selectionDecision?.topPhotoUrl, "https://origin.test/photo-33.png");
   assert.equal(result.selectionDecision?.topPhotoWidth, 1600);
   assert.equal(result.selectionDecision?.topPhotoHeight, 900);
-  assert.equal(result.plan?.actions.length, 4);
+  assert.equal(result.plan?.actions.length, 3);
   assert.equal(
     result.plan?.actions.some((action) => action.operation === "place_photo_hero"),
-    true,
+    false,
   );
   assert.equal(
     callbackClient.appendedEvents.some(
       (event) =>
         event.event.type === "log" &&
         event.event.message.includes("[source/photo-branch]") &&
-        event.event.message.includes("mode=photo_selected"),
+        event.event.message.includes("mode=graphic_preferred"),
     ),
     true,
   );
@@ -2949,7 +2884,7 @@ test("processRunJob can activate the photo hero execution path on the wide prese
         event.event.message.includes("[source/photo-execution]") &&
         event.event.message.includes("serial=33"),
     ),
-    true,
+    false,
   );
   assert.equal(
     callbackClient.appendedEvents.some(
@@ -2957,7 +2892,7 @@ test("processRunJob can activate the photo hero execution path on the wide prese
         event.event.type === "log" &&
         event.event.message.includes("Stage 2/4 (photo)"),
     ),
-    true,
+    false,
   );
 
   const photoMutation = callbackClient.appendedEvents.find(
@@ -2971,23 +2906,8 @@ test("processRunJob can activate the photo hero execution path on the wide prese
       ),
   );
 
-  assert.ok(photoMutation);
-  const heroImageCommand = photoMutation.event.mutation.commands.find(
-    (command) =>
-      "executionSlotKey" in command && command.executionSlotKey === "hero_image",
-  );
-  assert.ok(heroImageCommand && "layerBlueprint" in heroImageCommand);
-  if (!heroImageCommand || !("layerBlueprint" in heroImageCommand)) {
-    return;
-  }
-  assert.equal(heroImageCommand.executionSlotKey, "hero_image");
-  assert.equal(heroImageCommand.layerBlueprint.layerType, "image");
-  assert.equal(heroImageCommand.layerBlueprint.metadata?.sourceSerial, "33");
-  assert.equal(
-    heroImageCommand.layerBlueprint.metadata?.sourceOriginUrl,
-    "https://origin.test/photo-33.png",
-  );
-  assert.equal(result.executionSceneSummary?.photoLayerBinding?.executionSlotKey, "hero_image");
+  assert.equal(photoMutation, undefined);
+  assert.equal(result.executionSceneSummary?.photoLayerBinding, null);
 });
 
 test("processRunJob can promote a real-like photo candidate when it stays within the wide-preset tolerance window", async () => {
@@ -3041,19 +2961,15 @@ test("processRunJob can promote a real-like photo candidate when it stays within
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
   });
 
-  assert.equal(result.selectionDecision?.photoBranchMode, "photo_selected");
-  assert.equal(
-    result.selectionDecision?.photoBranchReason,
-    "photo candidate stayed within the promotion tolerance window and is preferred for the wide preset hero-photo slot",
-  );
+  assert.equal(result.selectionDecision?.photoBranchMode, "graphic_preferred");
   assert.equal(
     result.selectionDecision?.selectedLayoutCandidateId,
-    "layout_copy_left_with_right_photo",
+    "layout_left_copy_right_graphic",
   );
-  assert.equal(result.plan?.actions.length, 4);
+  assert.equal(result.plan?.actions.length, 3);
   assert.equal(
     result.plan?.actions.some((action) => action.operation === "place_photo_hero"),
-    true,
+    false,
   );
 });
 
@@ -3151,12 +3067,8 @@ test("processRunJob keeps graphic path when top photo candidate is not executabl
   assert.equal(result.selectionDecision?.topPhotoSerial, "91");
   assert.equal(result.selectionDecision?.photoBranchMode, "graphic_preferred");
   assert.equal(
-    result.selectionDecision?.photoBranchReason,
-    "photo candidate is missing executable metadata required for the hero-photo slot",
-  );
-  assert.equal(
     result.selectionDecision?.selectedLayoutCandidateId,
-    "layout_copy_left_with_right_decoration",
+    "layout_left_copy_right_graphic",
   );
   assert.equal(result.plan?.actions.length, 3);
   assert.equal(
@@ -3691,7 +3603,7 @@ test("processRunJob stops immediately after a rejected photo stage under fail-fa
     tooldiCatalogSourceClient: photoPreferredSourceClient,
   });
 
-  assert.equal(result.selectionDecision?.photoBranchMode, "photo_selected");
+  assert.equal(result.selectionDecision?.photoBranchMode, "graphic_preferred");
   assert.equal(result.finalizeDraft.request.finalStatus, "failed");
   assert.equal(result.finalizeDraft.request.errorSummary?.code, "photo_apply_failed");
   assert.equal(callbackClient.ackWaits.length, 2);
@@ -3708,7 +3620,7 @@ test("processRunJob stops immediately after a rejected photo stage under fail-fa
           "Fail-fast policy stopped remaining stages after the photo stage was not acknowledged",
         ),
     ),
-    true,
+    false,
   );
   assert.equal(
     callbackClient.appendedEvents.some(

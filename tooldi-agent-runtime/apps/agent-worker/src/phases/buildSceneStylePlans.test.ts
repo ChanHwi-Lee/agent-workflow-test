@@ -28,7 +28,6 @@ function createIntent(overrides: Partial<NormalizedIntent> = {}): NormalizedInte
     layoutIntent: "copy_focused",
     tone: "bright_playful",
     backgroundColorHex: "#ffeeee",
-    requiredSlots: ["background", "headline", "subheadline", "cta"],
     assetPolicy: {
       allowedFamilies: ["background", "graphic", "photo"],
       preferredFamilies: ["graphic"],
@@ -61,7 +60,7 @@ function createSceneLayoutPlan(): SceneLayoutPlan {
     planId: "layout-1",
     runId: "run-1",
     traceId: "trace-1",
-    workflowVariant: "retrieval_prior_v1",
+    workflowVariant: "object_native_v1",
     selectedTemplateCode: "19046887349",
     selectedTemplateTitle: "봄맞이 할인 이벤트 광고",
     layoutFamily: "promo_center",
@@ -82,7 +81,7 @@ function createBundle(): TemplatePriorBundle {
     bundleId: "bundle-1",
     runId: "run-1",
     traceId: "trace-1",
-    workflowVariant: "retrieval_prior_v1",
+    workflowVariant: "object_native_v1",
     query: {
       keyword: "봄",
       canvas: "horizontal",

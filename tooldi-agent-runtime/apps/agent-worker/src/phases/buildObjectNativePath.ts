@@ -30,10 +30,9 @@ import type {
   TemplatePriorBundle,
   TemplatePriorCandidate,
 } from "../types.js";
-import { deriveWorkflowVariant } from "./planningContext.js";
 import {
   buildMessageAtomPlan,
-  buildReferenceResetPath,
+  buildReferenceDrivenFallback,
   buildTextBlock,
   extractReferenceBlockGraph,
   fitBandBounds,
@@ -42,7 +41,7 @@ import {
   overlapRatio,
   readFirstParsedPage,
   scaleBounds,
-} from "./buildReferenceResetPath.js";
+} from "./buildReferenceDrivenFallback.js";
 
 interface BuildObjectNativePathResult {
   objectNativeReferenceAudit: ObjectNativeReferenceAudit;
@@ -90,10 +89,6 @@ export function buildObjectNativePath(
   sceneStylePlan: SceneStylePlan | null,
   sceneBindingPlan: SceneBindingPlan | null,
 ): BuildObjectNativePathResult {
-  if (deriveWorkflowVariant(input) !== "object_native_v1") {
-    return buildEmptyObjectNativeResult(input);
-  }
-
   const evaluations = templatePriorBundle
     ? templatePriorBundle.candidates.map((candidate) =>
         evaluateCandidate(
@@ -110,15 +105,15 @@ export function buildObjectNativePath(
     evaluations,
     templatePriorBundle?.selectedTemplateCode ?? null,
   );
-  const transformedExecution = winningEvaluation?.result ?? {
-    referenceBlockGraph: null,
-    messageAtomPlan: null,
-    blockBindingPlan: null,
-    editableBlockPlan: null,
-    freeformLayoutPlan: null,
-    qualityEvalSummary: null,
-    styleDowngradeVerdict: null,
-  };
+  const transformedExecution =
+    winningEvaluation?.result ??
+    buildReferenceDrivenFallback(
+      input,
+      templatePriorBundle,
+      copyPlan,
+      sceneStylePlan,
+      sceneBindingPlan,
+    );
 
   const audit = buildReferenceAudit(
     input,
@@ -142,63 +137,6 @@ export function buildObjectNativePath(
     objectNativeCandidateSelection: selection,
     objectNativeRenderabilityReport: renderabilityReport,
     ...transformedExecution,
-  };
-}
-
-function buildEmptyObjectNativeResult(
-  input: HydratedPlanningInput,
-): BuildObjectNativePathResult {
-  return {
-    objectNativeReferenceAudit: {
-      auditId: createRequestId(),
-      runId: input.job.runId,
-      traceId: input.job.traceId,
-      workflowVariant: "object_native_v1",
-      previousSelectedTemplateCode: null,
-      previousSelectedTemplateTitle: null,
-      nextSelectedTemplateCode: null,
-      nextSelectedTemplateTitle: null,
-      entries: [],
-      summary: "Object-native path was not activated because the workflow variant did not match.",
-    },
-    objectNativeCandidateSelection: {
-      selectionId: createRequestId(),
-      runId: input.job.runId,
-      traceId: input.job.traceId,
-      workflowVariant: "object_native_v1",
-      previousSelectedTemplateCode: null,
-      previousSelectedTemplateTitle: null,
-      nextSelectedTemplateCode: null,
-      nextSelectedTemplateTitle: null,
-      reselectionApplied: false,
-      selectedReadiness: null,
-      selectedFailureStage: "precondition_failure",
-      selectedDiagnostics: null,
-      reason: "workflow_variant_mismatch",
-      summary: "Object-native candidate reselection was skipped.",
-    },
-    objectNativeRenderabilityReport: {
-      reportId: createRequestId(),
-      runId: input.job.runId,
-      traceId: input.job.traceId,
-      workflowVariant: "object_native_v1",
-      selectedTemplateCode: null,
-      selectedTemplateTitle: null,
-      passed: false,
-      failureStage: "precondition_failure",
-      compositionStatus: "none",
-      selectedDiagnostics: null,
-      reason: "workflow_variant_mismatch",
-      warnings: ["workflow_variant_mismatch"],
-      summary: "No object-native renderability evaluation was performed.",
-    },
-    referenceBlockGraph: null,
-    messageAtomPlan: null,
-    blockBindingPlan: null,
-    editableBlockPlan: null,
-    freeformLayoutPlan: null,
-    qualityEvalSummary: null,
-    styleDowngradeVerdict: null,
   };
 }
 
@@ -478,14 +416,12 @@ function buildObjectNativeFallbackExecution(
   | "objectNativeCandidateSelection"
   | "objectNativeRenderabilityReport"
 > {
-  const fallback = transformResetResult(
-    buildReferenceResetPath(
-      createResetCompatInput(input),
-      buildExecutionBundle(templatePriorBundle, candidate),
-      copyPlan,
-      sceneStylePlan,
-      sceneBindingPlan,
-    ),
+  const fallback = buildReferenceDrivenFallback(
+    input,
+    buildExecutionBundle(templatePriorBundle, candidate),
+    copyPlan,
+    sceneStylePlan,
+    sceneBindingPlan,
   );
   const warnings = uniqueStrings([
     ...nativeExecution.warnings,
@@ -1184,72 +1120,6 @@ function buildRenderabilityReport(
     summary: passed
       ? "Object-native execution passed renderability and retained a stable editable composition."
       : "Object-native execution fell back because no stable renderable candidate survived reselection.",
-  };
-}
-
-function transformResetResult(
-  result: ReturnType<typeof buildReferenceResetPath>,
-): Omit<
-  BuildObjectNativePathResult,
-  | "objectNativeReferenceAudit"
-  | "objectNativeCandidateSelection"
-  | "objectNativeRenderabilityReport"
-> {
-  return {
-    referenceBlockGraph: result.referenceBlockGraph
-      ? {
-          ...result.referenceBlockGraph,
-          workflowVariant: "object_native_v1",
-        }
-      : null,
-    messageAtomPlan: result.messageAtomPlan
-      ? {
-          ...result.messageAtomPlan,
-          workflowVariant: "object_native_v1",
-        }
-      : null,
-    blockBindingPlan: result.blockBindingPlan
-      ? {
-          ...result.blockBindingPlan,
-          workflowVariant: "object_native_v1",
-        }
-      : null,
-    editableBlockPlan: result.editableBlockPlan
-      ? {
-          ...result.editableBlockPlan,
-          workflowVariant: "object_native_v1",
-        }
-      : null,
-    freeformLayoutPlan: result.freeformLayoutPlan
-      ? {
-          ...result.freeformLayoutPlan,
-          workflowVariant: "object_native_v1",
-        }
-      : null,
-    qualityEvalSummary: result.qualityEvalSummary
-      ? {
-          ...result.qualityEvalSummary,
-          workflowVariant: "object_native_v1",
-        }
-      : null,
-    styleDowngradeVerdict: result.styleDowngradeVerdict
-      ? {
-          ...result.styleDowngradeVerdict,
-          workflowVariant: "object_native_v1",
-        }
-      : null,
-  };
-}
-
-function createResetCompatInput(
-  input: HydratedPlanningInput,
-): HydratedPlanningInput {
-  return {
-    ...input,
-    request: {
-      ...input.request,
-      workflowVariant: "retrieval_prior_v2_reset",
-    },
   };
 }
 

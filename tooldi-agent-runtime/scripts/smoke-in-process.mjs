@@ -51,6 +51,164 @@ function createWorkerEnv(queueName) {
   };
 }
 
+function visualWeightRank(weight) {
+  switch (weight) {
+    case "dominant":
+      return 0;
+    case "secondary":
+      return 1;
+    case "tertiary":
+      return 2;
+    case "decorative":
+      return 3;
+    case "background":
+      return 4;
+    default:
+      return 5;
+  }
+}
+
+function pickBestTextObject(textObjects, usedObjectIds, predicate) {
+  return (
+    textObjects.find(
+      (object) => !usedObjectIds.has(object.objectId) && predicate(object),
+    ) ?? null
+  );
+}
+
+function createDeterministicAdaptiveBuilder(finalizeAdaptiveCompositionDecision) {
+  return async (input) => {
+    const textObjects = [...input.projectedGraph.objects]
+      .filter(
+        (object) => object.layerType === "text" && object.sourceText !== null,
+      )
+      .sort((left, right) => {
+        const weightDelta =
+          visualWeightRank(left.visualWeight) - visualWeightRank(right.visualWeight);
+        if (weightDelta !== 0) {
+          return weightDelta;
+        }
+        return left.bounds.y - right.bounds.y;
+      });
+    const usedObjectIds = new Set();
+    const elementDecisions = [];
+    const addDecisions = [];
+    const atomsByKind = new Map(
+      input.messageAtomPlan.atoms.map((atom) => [atom.kind, atom]),
+    );
+
+    const assignAtomToTextObject = (atom, preferredObject) => {
+      if (!atom) {
+        return false;
+      }
+      const selectedObject =
+        preferredObject ??
+        pickBestTextObject(textObjects, usedObjectIds, () => true);
+      if (!selectedObject) {
+        return false;
+      }
+      usedObjectIds.add(selectedObject.objectId);
+      elementDecisions.push({
+        objectId: selectedObject.objectId,
+        operation: "modify",
+        newText: atom.text,
+        carriesAtomIds: [atom.atomId],
+        reason: `deterministic smoke mapping for ${atom.kind}`,
+      });
+      return true;
+    };
+
+    const primaryAtom = atomsByKind.get("primary");
+    const primaryAssigned = assignAtomToTextObject(
+      primaryAtom,
+      pickBestTextObject(
+        textObjects,
+        usedObjectIds,
+        (object) => object.visualWeight === "dominant",
+      ) ?? textObjects[0] ?? null,
+    );
+    if (!primaryAssigned && primaryAtom) {
+      addDecisions.push({
+        vocabularyId: "badge_chip",
+        text: primaryAtom.text,
+        placementZone: "top-right",
+        carriesAtomIds: [primaryAtom.atomId],
+        reason: "deterministic smoke fallback for primary atom",
+      });
+    }
+
+    assignAtomToTextObject(
+      atomsByKind.get("offer"),
+      pickBestTextObject(
+        textObjects,
+        usedObjectIds,
+        (object) =>
+          object.visualWeight === "secondary" ||
+          String(object.objectId).includes("offer"),
+      ),
+    );
+
+    const ctaAtom = atomsByKind.get("cta");
+    const ctaAssigned = assignAtomToTextObject(
+      ctaAtom,
+      pickBestTextObject(
+        textObjects,
+        usedObjectIds,
+        (object) =>
+          String(object.objectId).includes("cta") ||
+          object.compositeHint === "button",
+      ),
+    );
+    if (!ctaAssigned && ctaAtom) {
+      addDecisions.push({
+        vocabularyId: "cta_button",
+        text: ctaAtom.text,
+        placementZone: "bottom",
+        carriesAtomIds: [ctaAtom.atomId],
+        reason: "deterministic smoke CTA fallback",
+      });
+    }
+
+    assignAtomToTextObject(
+      atomsByKind.get("detail") ?? atomsByKind.get("support"),
+      pickBestTextObject(
+        textObjects,
+        usedObjectIds,
+        (object) =>
+          object.visualWeight === "tertiary" ||
+          String(object.objectId).includes("footer"),
+      ),
+    );
+
+    for (const object of textObjects) {
+      if (usedObjectIds.has(object.objectId)) {
+        continue;
+      }
+      elementDecisions.push({
+        objectId: object.objectId,
+        operation: "retain",
+        newText: null,
+        carriesAtomIds: [],
+        reason: "deterministic smoke keeps residual text structure",
+      });
+    }
+
+    return finalizeAdaptiveCompositionDecision(
+      {
+        elementDecisions,
+        addDecisions,
+        compositionSummary: "deterministic smoke adaptive composition decision",
+      },
+      {
+        runId: input.runId,
+        traceId: input.traceId,
+        projectedGraph: input.projectedGraph,
+        messageAtomPlan: input.messageAtomPlan,
+      },
+    );
+  };
+}
+
 export function createStartRunRequest(
   prefix,
   options = {},
@@ -233,12 +391,18 @@ export async function runObjectNativeSmokeInProcess({
   workspaceRoot,
   queueName,
 }) {
+  const { finalizeAdaptiveCompositionDecision } = await importModule(
+    workspaceRoot,
+    "apps/agent-worker/dist/phases/buildAdaptiveCompositionDecision.js",
+  );
   const sharedEnv = createSharedEnv(queueName);
   const { app, worker } = await createInProcessRuntime({
     workspaceRoot,
     queueName,
     workerOptions: {
       tooldiCatalogSourceClient: createObjectNativeFixtureSourceClient(),
+      adaptiveCompositionDecisionBuilder:
+        createDeterministicAdaptiveBuilder(finalizeAdaptiveCompositionDecision),
     },
   });
   try {
@@ -270,11 +434,12 @@ export async function runObjectNativeSmokeInProcess({
       runId: accepted.runId,
     });
 
-    const [audit, selection, renderability, freeformLayoutPlan] = await Promise.all([
+    const [audit, selection, renderability, freeformLayoutPlan, adaptiveDecision] = await Promise.all([
       readJsonObject(app.objectStore, sharedEnv.objectStoreBucket, attemptArtifactKey(accepted.runId, "object-native-reference-audit.json")),
       readJsonObject(app.objectStore, sharedEnv.objectStoreBucket, attemptArtifactKey(accepted.runId, "object-native-candidate-selection.json")),
       readJsonObject(app.objectStore, sharedEnv.objectStoreBucket, attemptArtifactKey(accepted.runId, "object-native-renderability-report.json")),
       readJsonObject(app.objectStore, sharedEnv.objectStoreBucket, attemptArtifactKey(accepted.runId, "object-native-freeform-layout-plan.json")),
+      readJsonObject(app.objectStore, sharedEnv.objectStoreBucket, attemptArtifactKey(accepted.runId, "adaptive-composition-decision.json")),
     ]);
 
     assert.equal(audit.workflowVariant, "object_native_v1");
@@ -314,6 +479,9 @@ export async function runObjectNativeSmokeInProcess({
       selection.nextSelectedTemplateCode,
     );
     assert.equal(freeformLayoutPlan.compositionStatus, "stable");
+    assert.equal(adaptiveDecision.templateCode, "template-stable");
+    assert.ok(Array.isArray(adaptiveDecision.elementDecisions));
+    assert.ok(adaptiveDecision.elementDecisions.length > 0);
 
     console.log(
       `[object-native-smoke] verified object-native artifacts selected=${selection.nextSelectedTemplateCode} status=${renderability.compositionStatus}`,

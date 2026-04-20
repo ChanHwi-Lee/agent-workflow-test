@@ -35,12 +35,6 @@ function createIntent(overrides: Partial<NormalizedIntent> = {}): NormalizedInte
     canvasPreset: "wide_1200x628",
     layoutIntent: "hero_focused",
     tone: "bright_playful",
-    requiredSlots: [
-      "background",
-      "headline",
-      "subheadline",
-      "cta",
-    ],
     assetPolicy: normalizeTemplateAssetPolicy(
       "photo_preferred_graphic_allowed",
     ),

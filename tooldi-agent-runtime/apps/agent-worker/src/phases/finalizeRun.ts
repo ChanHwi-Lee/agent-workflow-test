@@ -1,19 +1,10 @@
 import type {
-  ExecutionSlotKey,
   TemplateSaveEvidence,
   TemplateSaveReceipt,
   WaitMutationAckResponse,
 } from "@tooldi/agent-contracts";
 
 import type { FinalizeRunDraft, HydratedPlanningInput } from "../types.js";
-
-type TopologyCompletionContract = {
-  topologyId: string;
-  requiredCapabilityIds: string[];
-  minimumEditableTextCapabilityCount: number;
-  requiresActionCapability: boolean;
-  requiresMediaCapability: boolean;
-};
 
 export async function finalizeRun(
   input: HydratedPlanningInput,
@@ -47,18 +38,11 @@ export async function finalizeRun(
     executionSceneSummaryRef?: string;
     judgePlanRef?: string;
     refineDecisionRef?: string;
-    topologyMatchReportRef?: string;
-    topologySelectionRef?: string;
-    topologyBindingPlanRef?: string;
-    topologyExecutionPlanRef?: string;
-    topologyCompletionReportRef?: string;
     warningSummary?: Array<{
       code: string;
       message: string;
     }>;
     assignedSeqs?: number[];
-    selectedTopologyId?: string | null;
-    topologyCompletionContract?: TopologyCompletionContract | null;
     overrideResult?: {
       finalStatus: FinalizeRunDraft["request"]["finalStatus"];
       errorSummary?: FinalizeRunDraft["request"]["errorSummary"];
@@ -138,10 +122,6 @@ export async function finalizeRun(
     finalStatus === "completed" || finalStatus === "completed_with_warning"
       ? extractSaveReceipt(lastMutationAck)
       : null;
-  const requiredExecutionSlots = deriveRequiredExecutionSlots(
-    input.request.workflowVariant,
-  );
-
   if (
     (finalStatus === "completed" || finalStatus === "completed_with_warning") &&
     (latestSaveEvidence === null || latestSaveReceipt === null)
@@ -168,15 +148,6 @@ export async function finalizeRun(
       lastAckedSeq,
       latestSaveReceiptId: latestSaveReceipt?.saveReceiptId ?? null,
       outputTemplateCode: latestSaveReceipt?.outputTemplateCode ?? null,
-      ...(requiredExecutionSlots.length > 0
-        ? { requiredExecutionSlots }
-        : {}),
-      ...(options.selectedTopologyId !== undefined
-        ? { selectedTopologyId: options.selectedTopologyId }
-        : {}),
-      ...(options.topologyCompletionContract !== undefined
-        ? { topologyCompletionContract: options.topologyCompletionContract }
-        : {}),
       ...(options.canonicalDesignBriefRef
         ? { canonicalDesignBriefRef: options.canonicalDesignBriefRef }
         : {}),
@@ -250,21 +221,6 @@ export async function finalizeRun(
       ...(options.refineDecisionRef
         ? { refineDecisionRef: options.refineDecisionRef }
         : {}),
-      ...(options.topologyMatchReportRef
-        ? { topologyMatchReportRef: options.topologyMatchReportRef }
-        : {}),
-      ...(options.topologySelectionRef
-        ? { topologySelectionRef: options.topologySelectionRef }
-        : {}),
-      ...(options.topologyBindingPlanRef
-        ? { topologyBindingPlanRef: options.topologyBindingPlanRef }
-        : {}),
-      ...(options.topologyExecutionPlanRef
-        ? { topologyExecutionPlanRef: options.topologyExecutionPlanRef }
-        : {}),
-      ...(options.topologyCompletionReportRef
-        ? { topologyCompletionReportRef: options.topologyCompletionReportRef }
-        : {}),
       ...(sourceMutationRange ? { sourceMutationRange } : {}),
       createdLayerIds:
         finalStatus === "completed" || finalStatus === "completed_with_warning"
@@ -282,15 +238,6 @@ export async function finalizeRun(
       lastAckedSeq,
     },
   };
-}
-
-function deriveRequiredExecutionSlots(
-  workflowVariant: HydratedPlanningInput["request"]["workflowVariant"],
-): ExecutionSlotKey[] {
-  if (workflowVariant === "object_native_v1") {
-    return ["background", "headline", "offer_line", "cta"];
-  }
-  return [];
 }
 
 function extractSaveEvidence(

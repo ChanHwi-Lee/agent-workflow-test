@@ -23,57 +23,9 @@ export async function buildJudgePlan(
   preflightVerdict: RuleJudgeVerdict | null,
 ): Promise<JudgePlan> {
   const issues: JudgePlanIssue[] = [];
-  const isV2FreeformExecution =
-    _executablePlan.actions.some(
-      (action) =>
-        action.inputs &&
-        typeof action.inputs === "object" &&
-        (action.inputs.executionMode === "v2_freeform" ||
-          action.inputs.executionMode === "object_native_freeform" ||
-          action.inputs.executionMode === "topology_freeform"),
-    );
 
   if (preflightVerdict) {
     issues.push(...mapPreflightIssues(preflightVerdict.issues, concreteLayoutPlan));
-  }
-
-  const requiredCopyBindings = isV2FreeformExecution
-    ? []
-    : copyPlan.slots.filter((slot) => slot.required);
-  const missingIdentityBindings = requiredCopyBindings.filter((slot) => {
-    const binding = executionSceneSummary.copyLayerBindings.find(
-      (candidate) => candidate.executionSlotKey === slot.key,
-    );
-    return !binding?.identityObserved;
-  });
-  if (missingIdentityBindings.length > 0) {
-    issues.push({
-      code: "execution_slot_identity_missing",
-      severity: "warn",
-      message:
-        `Execution scene summary did not preserve required execution slot identities: ` +
-        `${missingIdentityBindings.map((slot) => slot.key).join(", ")}`,
-      patchable: false,
-      suggestedPatchScopes: [],
-    });
-  }
-
-  const missingRequiredBindings = requiredCopyBindings.filter((slot) => {
-    const binding = executionSceneSummary.copyLayerBindings.find(
-      (candidate) => candidate.executionSlotKey === slot.key,
-    );
-    return binding?.identityObserved === true && !binding.layerId;
-  });
-  if (missingRequiredBindings.length > 0) {
-    issues.push({
-      code: "slot_materialization_missing",
-      severity: "warn",
-      message:
-        `Execution did not materialize required copy slots: ` +
-        `${missingRequiredBindings.map((slot) => slot.key).join(", ")}`,
-      patchable: false,
-      suggestedPatchScopes: [],
-    });
   }
 
   if (hasCopyBoundsConflict(executionSceneSummary)) {
@@ -84,52 +36,6 @@ export async function buildJudgePlan(
         "Resolved copy slot bounds overlap after execution, so the current topology is likely colliding in the visible draft",
       patchable: true,
       suggestedPatchScopes: ["slot_anchor", "spacing"],
-    });
-  }
-
-  if (
-    !isV2FreeformExecution &&
-    concreteLayoutPlan.ctaContainerExpected &&
-    !executionSceneSummary.ctaContainerResolved
-  ) {
-    issues.push({
-      code: "cta_container_missing_after_execution",
-      severity: "warn",
-      message: "CTA container was expected by the concrete layout but no CTA container layer was confirmed after execution",
-      patchable: true,
-      suggestedPatchScopes: ["cta_container"],
-    });
-  }
-
-  if (
-    !isV2FreeformExecution &&
-    concreteLayoutPlan.spacingIntent === "dense" &&
-    executionSceneSummary.copyLayerBindings.filter((binding) => binding.layerId !== null)
-      .length >= 4
-  ) {
-    issues.push({
-      code: "copy_stack_spacing_weak",
-      severity: "warn",
-      message: "Dense spacing is likely to compress the current copy stack too aggressively",
-      patchable: true,
-      suggestedPatchScopes: ["spacing"],
-    });
-  }
-
-  const badgeSlotPresent = !isV2FreeformExecution && copyPlan.slots.some((slot) => slot.key === "badge_text");
-  if (
-    badgeSlotPresent &&
-    !executionSceneSummary.copyLayerBindings.some(
-      (binding) =>
-        binding.executionSlotKey === "badge_text" && binding.layerId !== null,
-    )
-  ) {
-    issues.push({
-      code: "badge_zone_mismatch",
-      severity: "warn",
-      message: "Badge text slot exists in the copy plan but no badge layer was confirmed after execution",
-      patchable: false,
-      suggestedPatchScopes: [],
     });
   }
 

@@ -112,12 +112,7 @@ export class RunFinalizeService {
           `Cannot materialize bundle without mutation ledger rows for run ${run.runId}`,
         );
       }
-      const ledgerProjection = buildRunLedgerProjection(rangedRecords, {
-        requiredExecutionSlots:
-          normalized.materialization.requiredExecutionSlots,
-        topologyCompletionContract:
-          normalized.materialization.topologyCompletionContract,
-      });
+      const ledgerProjection = buildRunLedgerProjection(rangedRecords);
       const materialized = await materializeRunArtifacts({
         run: {
           runId: run.runId,

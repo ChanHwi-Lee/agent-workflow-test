@@ -33,7 +33,6 @@ function createIntent(
     canvasPreset: "wide_1200x628",
     layoutIntent: "copy_focused",
     tone: "bright_playful",
-    requiredSlots: ["background", "headline", "subheadline", "cta"],
     assetPolicy: normalizeTemplateAssetPolicy({
       allowedFamilies: ["background", "graphic", "photo"],
       preferredFamilies: ["graphic"],
@@ -325,7 +324,7 @@ function createSceneBindingPlan(
     planId: "binding-1",
     runId: "run-1",
     traceId: "trace-1",
-    workflowVariant: "retrieval_prior_v1",
+    workflowVariant: "object_native_v1",
     selectedTemplateCode: "19046887349",
     selectedTemplateTitle: "봄맞이 할인 이벤트 광고",
     backgroundMode: "pastel_gradient",

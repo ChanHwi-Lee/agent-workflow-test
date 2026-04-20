@@ -17,7 +17,7 @@ import type {
 } from "../types.js";
 
 // ---------------------------------------------------------------------------
-// Internal type alias (matches buildReferenceResetPath convention)
+// Internal type alias (matches reference-driven fallback convention)
 // ---------------------------------------------------------------------------
 type CanvasObject = Record<string, unknown>;
 type FlattenContext = {
@@ -29,7 +29,7 @@ type FlattenContext = {
 };
 
 // ---------------------------------------------------------------------------
-// Utility functions — duplicated from buildReferenceResetPath.ts
+// Utility functions — duplicated from buildReferenceDrivenFallback.ts
 // These are module-private there, so we copy the small helpers here to keep
 // the existing pipeline untouched.
 // ---------------------------------------------------------------------------
@@ -336,7 +336,7 @@ function resolveLayerType(
 
 /**
  * Compute visual weight from observable metrics.
- * Reuses the same prominence formula as buildReferenceResetPath.ts:
+ * Reuses the same prominence formula as buildReferenceDrivenFallback.ts:
  *   text:  (fontSize ?? 0) * 100 + area
  *   other: area
  *

@@ -50,12 +50,6 @@ function createIntent(overrides: Partial<NormalizedIntent> = {}): NormalizedInte
     layoutIntent: "copy_focused",
     tone: "bright_playful",
     backgroundColorHex: "#ffeeee",
-    requiredSlots: [
-      "background",
-      "headline",
-      "subheadline",
-      "cta",
-    ],
     assetPolicy: normalizeTemplateAssetPolicy({
       allowedFamilies: ["background", "graphic", "photo"],
       preferredFamilies: ["graphic"],
@@ -322,7 +316,7 @@ test("buildCopyAndAbstractLayoutPlan은 retrieval prior scaffold context를 생�
         bundleId: "bundle-1",
         runId: "run-1",
         traceId: "trace-1",
-        workflowVariant: "retrieval_prior_v1",
+        workflowVariant: "object_native_v1",
         query: {
           keyword: "봄 세일 배너",
           canvas: "horizontal",

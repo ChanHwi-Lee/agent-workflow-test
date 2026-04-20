@@ -9,7 +9,7 @@ import type {
   SceneBindingPlan,
   TemplatePriorBundle,
 } from "../types.js";
-import { buildReferenceResetPath } from "./buildReferenceResetPath.js";
+import { buildReferenceDrivenFallback } from "./buildReferenceDrivenFallback.js";
 
 function createHydratedInput(): HydratedPlanningInput {
   const testRun = createTestRun({
@@ -35,7 +35,7 @@ function createHydratedInput(): HydratedPlanningInput {
     job: testRun.job,
     request: {
       ...testRun.request,
-      workflowVariant: "retrieval_prior_v2_reset" as any,
+      workflowVariant: "object_native_v1" as any,
     },
     snapshot: testRun.snapshot,
     requestRef: testRun.requestRef,
@@ -79,7 +79,7 @@ function createTemplatePriorBundle(): TemplatePriorBundle {
     bundleId: "bundle-1",
     runId: "run-1",
     traceId: "trace-1",
-    workflowVariant: "retrieval_prior_v2_reset",
+    workflowVariant: "object_native_v1",
     query: {
       keyword: "봄 세일",
       canvas: "horizontal",
@@ -243,7 +243,7 @@ function createSceneBindingPlan(
     planId: "binding-1",
     runId: "run-1",
     traceId: "trace-1",
-    workflowVariant: "retrieval_prior_v2_reset",
+    workflowVariant: "object_native_v1",
     selectedTemplateCode: "19046887349",
     selectedTemplateTitle: "봄맞이 할인 이벤트 광고",
     backgroundMode: "pastel_gradient",
@@ -271,8 +271,8 @@ function createSceneBindingPlan(
   };
 }
 
-test("buildReferenceResetPath creates reset artifacts and freeform execution carrier", () => {
-  const result = buildReferenceResetPath(
+test("buildReferenceDrivenFallback creates object-native fallback artifacts and freeform execution carrier", () => {
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     createTemplatePriorBundle(),
     createCopyPlan(),
@@ -281,7 +281,7 @@ test("buildReferenceResetPath creates reset artifacts and freeform execution car
   );
 
   assert.ok(result.referenceBlockGraph);
-  assert.equal(result.referenceBlockGraph?.workflowVariant, "retrieval_prior_v2_reset");
+  assert.equal(result.referenceBlockGraph?.workflowVariant, "object_native_v1");
   assert.ok(result.messageAtomPlan);
   assert.equal(
     result.messageAtomPlan?.atoms.some((atom) => atom.kind === "support"),
@@ -290,7 +290,7 @@ test("buildReferenceResetPath creates reset artifacts and freeform execution car
   assert.ok(result.blockBindingPlan);
   assert.ok(result.editableBlockPlan);
   assert.ok(result.freeformLayoutPlan);
-  assert.equal(result.freeformLayoutPlan?.workflowVariant, "retrieval_prior_v2_reset");
+  assert.equal(result.freeformLayoutPlan?.workflowVariant, "object_native_v1");
   assert.ok(result.freeformLayoutPlan?.copyBlocks.some((block) => block.executionSlotKey === "headline"));
   assert.ok(result.freeformLayoutPlan?.copyBlocks.some((block) => block.executionSlotKey === "cta"));
   assert.ok((result.freeformLayoutPlan?.polishBlocks.length ?? 0) >= 1);
@@ -301,7 +301,7 @@ test("buildReferenceResetPath creates reset artifacts and freeform execution car
   assert.ok(result.qualityEvalSummary);
 });
 
-test("buildReferenceResetPath downgrades to style-only when the reference lacks semantic surfaces", () => {
+test("buildReferenceDrivenFallback downgrades to style-only when the reference lacks semantic surfaces", () => {
   const bundle = createTemplatePriorBundle();
   const primaryCandidate = bundle.candidates[0];
   assert.ok(primaryCandidate);
@@ -310,7 +310,7 @@ test("buildReferenceResetPath downgrades to style-only when the reference lacks 
     { id: "meta-1", type: "text", text: "SPRING SALE", left: 80, top: 48, width: 160, height: 30, fontSize: 24, textAlign: "left", fill: "#ffffff" },
   ];
 
-  const result = buildReferenceResetPath(
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     bundle,
     createCopyPlan(),
@@ -327,8 +327,8 @@ test("buildReferenceResetPath downgrades to style-only when the reference lacks 
   assert.match(result.styleDowngradeVerdict?.reason ?? "", /semantic promo\/CTA surface/);
 });
 
-test("buildReferenceResetPath records promo contrast fallback in quality summary", () => {
-  const result = buildReferenceResetPath(
+test("buildReferenceDrivenFallback records promo contrast fallback in quality summary", () => {
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     createTemplatePriorBundle(),
     createCopyPlan(),
@@ -345,8 +345,8 @@ test("buildReferenceResetPath records promo contrast fallback in quality summary
   );
 });
 
-test("buildReferenceResetPath expands or wraps long promo text without overflowing in style-only mode", () => {
-  const result = buildReferenceResetPath(
+test("buildReferenceDrivenFallback expands or wraps long promo text without overflowing in style-only mode", () => {
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     createDecorativeOnlyTemplatePriorBundle(),
     createLongOfferCopyPlan(),
@@ -379,8 +379,8 @@ test("buildReferenceResetPath expands or wraps long promo text without overflowi
   );
 });
 
-test("buildReferenceResetPath keeps promo surface driven by final text box in style-only mode", () => {
-  const result = buildReferenceResetPath(
+test("buildReferenceDrivenFallback keeps promo surface driven by final text box in style-only mode", () => {
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     createDecorativeOnlyTemplatePriorBundle(),
     createLongOfferCopyPlan(),
@@ -402,8 +402,8 @@ test("buildReferenceResetPath keeps promo surface driven by final text box in st
   assert.ok((promoSurface?.bounds.height ?? 0) >= (promoText?.bounds.height ?? 0) + 16);
 });
 
-test("buildReferenceResetPath uses a non-overlapping vertical stack in style-only mode", () => {
-  const result = buildReferenceResetPath(
+test("buildReferenceDrivenFallback uses a non-overlapping vertical stack in style-only mode", () => {
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     createDecorativeOnlyTemplatePriorBundle(),
     createLongOfferCopyPlan(),
@@ -439,8 +439,8 @@ test("buildReferenceResetPath uses a non-overlapping vertical stack in style-onl
   assert.ok((headline?.fontSize ?? 0) < 96);
 });
 
-test("buildReferenceResetPath downgrades to style-only when only decorative display candidates survive", () => {
-  const result = buildReferenceResetPath(
+test("buildReferenceDrivenFallback downgrades to style-only when only decorative display candidates survive", () => {
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     createDecorativeOnlyTemplatePriorBundle(),
     createCopyPlan(),
@@ -456,8 +456,8 @@ test("buildReferenceResetPath downgrades to style-only when only decorative disp
   );
 });
 
-test("buildReferenceResetPath retains a wide short promo headline beside a decorative glyph", () => {
-  const result = buildReferenceResetPath(
+test("buildReferenceDrivenFallback retains a wide short promo headline beside a decorative glyph", () => {
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     createRealLikeTemplatePriorBundle(),
     createCopyPlan(),
@@ -479,8 +479,8 @@ test("buildReferenceResetPath retains a wide short promo headline beside a decor
   );
 });
 
-test("buildReferenceResetPath keeps stable composition when text-only semantic cues exist with a safe display target", () => {
-  const result = buildReferenceResetPath(
+test("buildReferenceDrivenFallback keeps stable composition when text-only semantic cues exist with a safe display target", () => {
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     createSafeCueTemplatePriorBundle(),
     createCopyPlan(),
@@ -513,8 +513,8 @@ test("buildReferenceResetPath keeps stable composition when text-only semantic c
   );
 });
 
-test("buildReferenceResetPath keeps at most one safe decor block in stable mode", () => {
-  const result = buildReferenceResetPath(
+test("buildReferenceDrivenFallback keeps at most one safe decor block in stable mode", () => {
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     createDecorHeavyTemplatePriorBundle(),
     createCopyPlan(),
@@ -526,8 +526,8 @@ test("buildReferenceResetPath keeps at most one safe decor block in stable mode"
   assert.ok((result.freeformLayoutPlan?.polishBlocks.length ?? 0) <= 1);
 });
 
-test("buildReferenceResetPath downgrades unsafe stable candidates after renderability guard", () => {
-  const result = buildReferenceResetPath(
+test("buildReferenceDrivenFallback downgrades unsafe stable candidates after renderability guard", () => {
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     createUnsafeStableTemplatePriorBundle(),
     createCopyPlan(),
@@ -550,8 +550,8 @@ test("buildReferenceResetPath downgrades unsafe stable candidates after renderab
   );
 });
 
-test("buildReferenceResetPath keeps safe stable candidates after renderability guard", () => {
-  const result = buildReferenceResetPath(
+test("buildReferenceDrivenFallback keeps safe stable candidates after renderability guard", () => {
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     createSafeCueTemplatePriorBundle(),
     createCopyPlan(),
@@ -569,8 +569,8 @@ test("buildReferenceResetPath keeps safe stable candidates after renderability g
   );
 });
 
-test("buildReferenceResetPath can promote a readable support-sized headline candidate into stable mode", () => {
-  const result = buildReferenceResetPath(
+test("buildReferenceDrivenFallback can promote a readable support-sized headline candidate into stable mode", () => {
+  const result = buildReferenceDrivenFallback(
     createHydratedInput(),
     createPromotableHeadlineTemplatePriorBundle(),
     createCopyPlan(),

@@ -10,12 +10,6 @@ import { createTestRun } from "@tooldi/agent-testkit";
 
 import type { HydratedPlanningInput, NormalizedIntent } from "../types.js";
 import { emitSkeletonMutations } from "./emitSkeletonMutations.js";
-import {
-  createClusterZoneBounds,
-  createGeometryPresets,
-  resolveCopySlotBounds,
-  resolveGraphicBindingBounds,
-} from "./layoutGeometry.js";
 
 function createHydratedPlanningInput(): HydratedPlanningInput {
   const testRun = createTestRun({
@@ -67,12 +61,6 @@ function createNormalizedIntent(): NormalizedIntent {
     subjectBinding: "subjectless",
     offerIntent: "announcement",
     backgroundColorHex: "#dff2ff",
-    requiredSlots: [
-      "background",
-      "headline",
-      "subheadline",
-      "cta",
-    ],
     assetPolicy: normalizeTemplateAssetPolicy("graphic_allowed_photo_optional"),
     primaryVisualPolicy: "graphic_preferred",
     searchKeywords: ["오픈", "이벤트", "프로모션"],
@@ -125,6 +113,7 @@ function createExecutablePlan(): ExecutablePlan {
           slotKey: "background",
         },
         inputs: {
+          executionMode: "object_native_freeform",
           backgroundMode: "generated_solid",
           selectedBackgroundCandidateId: "background-1",
           backgroundColorHex: "#dff2ff",
@@ -154,6 +143,7 @@ function createExecutablePlan(): ExecutablePlan {
           slotKey: "headline",
         },
         inputs: {
+          executionMode: "object_native_freeform",
           layoutMode: "left_copy_right_graphic",
           selectedLayoutCandidateId: "layout-1",
           displayFontFamily: "font_display_700",
@@ -178,6 +168,41 @@ function createExecutablePlan(): ExecutablePlan {
           },
           clusterZones: ["right_cluster", "top_corner", "bottom_strip"],
           spacingIntent: "balanced",
+          freeformBlocks: [
+            {
+              blockId: "headline-v1",
+              stage: "copy",
+              layerType: "text",
+              executionSlotKey: "headline",
+              role: "headline",
+              variantKey: "text_display",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 120, width: 400, height: 90 },
+              textContent: "오픈 이벤트",
+            },
+            {
+              blockId: "subheadline-v1",
+              stage: "copy",
+              layerType: "text",
+              executionSlotKey: "subheadline",
+              role: "subheadline",
+              variantKey: "text_body",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 220, width: 420, height: 70 },
+              textContent: "지금 바로 확인하세요",
+            },
+            {
+              blockId: "offer-v1",
+              stage: "copy",
+              layerType: "text",
+              executionSlotKey: "offer_line",
+              role: "price_callout",
+              variantKey: "text_offer",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 300, width: 360, height: 56 },
+              textContent: "특별 혜택 진행 중",
+            },
+          ],
         },
         rollback: {
           strategy: "delete_created_layers",
@@ -199,6 +224,7 @@ function createExecutablePlan(): ExecutablePlan {
           layerId: null,
         },
         inputs: {
+          executionMode: "object_native_freeform",
           decorationMode: "promo_multi_graphic",
           selectedDecorationCandidateId: "graphic-1",
           graphicCompositionSet: {
@@ -230,6 +256,62 @@ function createExecutablePlan(): ExecutablePlan {
           spacingIntent: "balanced",
           includeUnderline: false,
           includeRibbon: false,
+          freeformBlocks: [
+            {
+              blockId: "cta-v1",
+              stage: "polish",
+              layerType: "group",
+              executionSlotKey: "cta",
+              role: "cta",
+              variantKey: "reference_cta_band",
+              candidateId: "template-1",
+              bounds: { x: 360, y: 480, width: 260, height: 64 },
+              textContent: "이벤트 확인",
+            },
+            {
+              blockId: "footer-v1",
+              stage: "polish",
+              layerType: "text",
+              executionSlotKey: "footer_note",
+              role: "footer_note",
+              variantKey: "text_footer",
+              candidateId: "template-1",
+              bounds: { x: 80, y: 560, width: 360, height: 24 },
+              textContent: "기간 한정 혜택",
+            },
+            {
+              blockId: "accent-v1",
+              stage: "polish",
+              layerType: "shape",
+              executionSlotKey: null,
+              role: "primary_accent",
+              variantKey: "graphic_primary",
+              candidateId: "graphic-1",
+              bounds: { x: 720, y: 120, width: 240, height: 240 },
+              textContent: null,
+              renderPrimitive: "catalog_element",
+              sourceAssetId: "asset-1",
+              sourceSerial: "serial-1",
+              sourceCategory: "vector",
+              clusterZone: "right_cluster",
+            },
+            {
+              blockId: "corner-v1",
+              stage: "polish",
+              layerType: "shape",
+              executionSlotKey: null,
+              role: "corner_accent",
+              variantKey: "graphic_corner",
+              candidateId: "graphic-2",
+              bounds: { x: 960, y: 40, width: 120, height: 120 },
+              textContent: null,
+              renderPrimitive: "catalog_element",
+              sourceAssetId: "asset-2",
+              sourceSerial: "serial-2",
+              sourceCategory: "vector",
+              clusterZone: "top_corner",
+            },
+          ],
         },
         rollback: {
           strategy: "delete_created_layers",
@@ -271,22 +353,11 @@ function createExecutablePlanV2(): ExecutablePlan {
   return {
     ...createExecutablePlan(),
     actions: [
-      {
-        ...createExecutablePlan().actions[0]!,
-        inputs: {
-          ...createExecutablePlan().actions[0]!.inputs,
-          executionMode: "v2_freeform",
-          includeBadge: false,
-          includeRibbon: false,
-          includeFrame: false,
-          badgeText: null,
-        },
-      },
+      createExecutablePlan().actions[0]!,
       {
         ...createExecutablePlan().actions[1]!,
         inputs: {
           ...createExecutablePlan().actions[1]!.inputs,
-          executionMode: "v2_freeform",
           freeformBlocks: [
             {
               blockId: "headline-v2",
@@ -320,11 +391,6 @@ function createExecutablePlanV2(): ExecutablePlan {
         ...createExecutablePlan().actions[2]!,
         inputs: {
           ...createExecutablePlan().actions[2]!.inputs,
-          executionMode: "v2_freeform",
-          graphicRoleBindings: [],
-          ctaContainerExpected: false,
-          includeUnderline: false,
-          includeRibbon: false,
           freeformBlocks: [],
         },
       },
@@ -427,27 +493,26 @@ test("emitSkeletonMutations uses copy slot text and concrete layout hints in mut
       isCreateLayerCommand(command) &&
       command.layerBlueprint.metadata?.role === "corner_accent",
   );
-  const ctaFallbackCommand = ctaProposal.mutation.commands.find(
-    (command) =>
-      isCreateLayerCommand(command) &&
-      command.layerBlueprint.metadata?.role === "cta_container",
-  );
   if (!primaryAccentCommand || !isCreateLayerCommand(primaryAccentCommand)) {
     throw new Error("primary accent createLayer command is required");
   }
   if (!cornerAccentCommand || !isCreateLayerCommand(cornerAccentCommand)) {
     throw new Error("corner accent createLayer command is required");
   }
-  if (!ctaFallbackCommand || !isCreateLayerCommand(ctaFallbackCommand)) {
-    throw new Error("cta container fallback createLayer command is required");
-  }
   assert.equal(primaryAccentCommand.layerBlueprint.metadata?.clusterZone, "right_cluster");
   assert.equal(primaryAccentCommand.layerBlueprint.metadata?.renderPrimitive, "catalog_element");
   assert.equal(cornerAccentCommand.layerBlueprint.metadata?.renderPrimitive, "catalog_element");
-  assert.equal(ctaFallbackCommand.layerBlueprint.metadata?.renderPrimitive, null);
+  assert.equal(
+    ctaProposal.mutation.commands.some(
+      (command) =>
+        isCreateLayerCommand(command) &&
+        command.layerBlueprint.metadata?.role === "cta_container",
+    ),
+    false,
+  );
 });
 
-test("emitSkeletonMutations는 layoutGeometry 계산 결과와 같은 bounds를 사용한다", async () => {
+test("emitSkeletonMutations는 object-native freeform block bounds를 그대로 사용한다", async () => {
   const batch = await emitSkeletonMutations(
     createHydratedPlanningInput(),
     createNormalizedIntent(),
@@ -461,37 +526,6 @@ test("emitSkeletonMutations는 layoutGeometry 계산 결과와 같은 bounds를 
         }),
       },
     },
-  );
-
-  const presets = createGeometryPresets(
-    1200,
-    628,
-    "promo_split",
-    "left_copy_right_graphic",
-    "promo_multi_graphic",
-    84,
-    "balanced",
-  );
-  const copyBounds = resolveCopySlotBounds(
-    presets,
-    {
-      headline: "left_copy_column",
-      subheadline: "left_copy_column",
-      offer_line: "left_copy_column",
-      cta: "bottom_center",
-      footer_note: "footer_strip",
-    },
-  );
-  const zoneBounds = createClusterZoneBounds(presets, [
-    "right_cluster",
-    "top_corner",
-    "bottom_strip",
-  ]);
-  const expectedPrimaryAccentBounds = resolveGraphicBindingBounds(
-    "primary_accent",
-    "right_cluster",
-    zoneBounds,
-    copyBounds,
   );
 
   const copyProposal = batch.proposals.find((proposal) => proposal.stageLabel === "copy");
@@ -523,15 +557,25 @@ test("emitSkeletonMutations는 layoutGeometry 계산 결과와 같은 bounds를 
     throw new Error("headline, cta, primary accent commands are required");
   }
 
-  assert.deepEqual(headlineCommand.layerBlueprint.bounds, copyBounds.headline);
-  assert.deepEqual(ctaCommand.layerBlueprint.bounds, copyBounds.cta);
+  assert.deepEqual(headlineCommand.layerBlueprint.bounds, {
+    x: 80,
+    y: 120,
+    width: 400,
+    height: 90,
+  });
+  assert.deepEqual(ctaCommand.layerBlueprint.bounds, {
+    x: 360,
+    y: 480,
+    width: 260,
+    height: 64,
+  });
   assert.deepEqual(
     primaryAccentCommand.layerBlueprint.bounds,
-    expectedPrimaryAccentBounds,
+    { x: 720, y: 120, width: 240, height: 240 },
   );
 });
 
-test("emitSkeletonMutations suppresses empty polish proposal for retrieval_prior_v2 execution", async () => {
+test("emitSkeletonMutations suppresses empty polish proposal for object-native freeform execution", async () => {
   const batch = await emitSkeletonMutations(
     createHydratedPlanningInput(),
     createNormalizedIntent(),

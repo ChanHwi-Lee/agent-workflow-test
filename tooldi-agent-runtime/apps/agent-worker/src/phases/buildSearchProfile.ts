@@ -818,20 +818,17 @@ function deriveFontCategoryPlan(
 function deriveFontWeightPlan(
   intent: NormalizedIntent,
 ): SearchProfileArtifact["font"]["weight"] {
-  const displayTarget = intent.requiredSlots.includes("headline") ? 700 : 600;
-  const bodyTarget = intent.requiredSlots.includes("subheadline")
-    ? intent.layoutIntent === "copy_focused"
+  const displayTarget = 700;
+  const bodyTarget =
+    intent.layoutIntent === "copy_focused"
       ? 500
-      : 400
-    : null;
+      : 400;
 
   return {
     displayTarget,
     bodyTarget,
     rationale:
-      bodyTarget === null
-        ? `Headline emphasis targets ${displayTarget}, and no supporting-copy slot requires a secondary body weight. Weight resolution falls back to the nearest available value from fontWeights[].fontWeight or convertWeight.`
-        : `Headline emphasis targets ${displayTarget}, while supporting copy targets ${bodyTarget} for ${intent.layoutIntent} layouts. Weight resolution falls back to the nearest available value from fontWeights[].fontWeight or convertWeight.`,
+      `Headline emphasis targets ${displayTarget}, while supporting copy targets ${bodyTarget} for ${intent.layoutIntent} layouts. Weight resolution falls back to the nearest available value from fontWeights[].fontWeight or convertWeight.`,
   };
 }
 

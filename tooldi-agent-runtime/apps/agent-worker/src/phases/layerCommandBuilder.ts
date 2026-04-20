@@ -44,12 +44,6 @@ type CreateLayerCommandOptions = {
   customFontFamily?: string | undefined;
   customFontWeight?: number | undefined;
   customTextAlign?: "left" | "center" | "right" | undefined;
-  topologyId?: string | null | undefined;
-  topologyCapabilityId?: string | null | undefined;
-  topologyRole?: string | null | undefined;
-  textBearing?: boolean | undefined;
-  actionBearing?: boolean | undefined;
-  mediaBearing?: boolean | undefined;
 };
 
 export function buildCreateLayerCommand(
@@ -74,12 +68,6 @@ export function buildCreateLayerCommand(
     renderPrimitive: options.renderPrimitive ?? null,
     copyText: options.textContent ?? null,
     clusterZone: options.clusterZone ?? null,
-    topologyId: options.topologyId ?? null,
-    topologyCapabilityId: options.topologyCapabilityId ?? null,
-    topologyRole: options.topologyRole ?? null,
-    textBearing: options.textBearing ?? null,
-    actionBearing: options.actionBearing ?? null,
-    mediaBearing: options.mediaBearing ?? null,
   };
 
   if (options.fontRole && options.typography) {

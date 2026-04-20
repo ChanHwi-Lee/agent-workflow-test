@@ -12,15 +12,8 @@ import {
   IdentifierSchema,
   IsoDateTimeSchema,
   JsonObjectSchema,
-  TopologyCompletionContractSchema,
 } from "../common.js";
 import { RunCompletionSnapshotSchema } from "./run-result.js";
-
-const RequiredSlotSchema = Type.Union(
-  ["background", "headline", "subheadline", "cta"].map((value) =>
-    Type.Literal(value),
-  ),
-);
 
 const SlotBindingStatusSchema = Type.Union(
   ["ready", "fallback_ready", "placeholder"].map((value) => Type.Literal(value)),
@@ -90,16 +83,6 @@ const EditableBannerDraftCommitPayloadSchema = Type.Object(
     draftId: IdentifierSchema,
     pageId: IdentifierSchema,
     commitMode: Type.Literal("apply_immediately"),
-    requiredSlots: Type.Array(RequiredSlotSchema, { minItems: 1 }),
-    requiredExecutionSlots: Type.Optional(
-      Type.Array(ExecutionSlotKeySchema, { minItems: 1 }),
-    ),
-    selectedTopologyId: Type.Optional(
-      Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
-    ),
-    topologyCompletionContract: Type.Optional(
-      Type.Union([TopologyCompletionContractSchema, Type.Null()]),
-    ),
     firstRenderableSeq: Type.Integer({ minimum: 1 }),
     reconciledThroughSeq: Type.Integer({ minimum: 0 }),
     mutations: Type.Array(CanvasMutationEnvelopeSchema, { minItems: 1 }),
@@ -246,11 +229,6 @@ const LastKnownGoodCheckpointSchema = Type.Object(
         executionSceneSummaryRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         judgePlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         refineDecisionRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        topologyMatchReportRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        topologySelectionRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        topologyBindingPlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        topologyExecutionPlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        topologyCompletionReportRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         latestSaveReceiptId: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         bundleRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
       },

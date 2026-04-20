@@ -60,12 +60,13 @@ export class RunBootstrapService {
   private static readonly ENQUEUE_TIMEOUT_MS = 2000;
 
   async startRun(command: StartRunCommand): Promise<RunAccepted> {
-    this.assertCreateFromEmptyCanvasPolicy(command.request);
+    const request = this.normalizeRequest(command.request);
+    this.assertCreateFromEmptyCanvasPolicy(request);
 
     const startedAt = now();
     const deadlineAt = addMilliseconds(
       startedAt,
-      command.request.runPolicy.timeBudgetMs,
+      request.runPolicy.timeBudgetMs,
     );
 
     const requestId = createRequestId();
@@ -77,16 +78,16 @@ export class RunBootstrapService {
     const httpRequestId = command.httpRequestId ?? createHttpRequestId();
     const pageLockToken = createPageLockToken(
       runId,
-      command.request.editorContext.pageId,
+      request.editorContext.pageId,
     );
     const cancelToken = createCancelToken(runId);
-    const dedupeKey = this.buildDedupeKey(command.request);
+    const dedupeKey = this.buildDedupeKey(request);
     const requestRef = await this.writeRequestObject(
       requestId,
-      command.request,
+      request,
       traceId,
     );
-    const snapshotRef = await this.writeSnapshotObject(runId, command.request);
+    const snapshotRef = await this.writeSnapshotObject(runId, request);
 
     const existing = await this.runRequestRepository.findByDedupeKey(dedupeKey);
     if (existing) {
@@ -109,18 +110,18 @@ export class RunBootstrapService {
 
     await this.runRequestRepository.create({
       requestId,
-      clientRequestId: command.request.clientRequestId,
-      editorSessionId: command.request.editorSessionId,
+      clientRequestId: request.clientRequestId,
+      editorSessionId: request.editorSessionId,
       runId,
       traceId,
-      surface: command.request.surface,
-      normalizedPrompt: command.request.userInput.prompt,
-      locale: command.request.userInput.locale,
-      timezone: command.request.userInput.timezone,
+      surface: request.surface,
+      normalizedPrompt: request.userInput.prompt,
+      locale: request.userInput.locale,
+      timezone: request.userInput.timezone,
       acceptedHttpRequestId: httpRequestId,
       dedupeKey,
       promptRef: requestRef,
-      redactedPreview: command.request.userInput.prompt.slice(0, 80),
+      redactedPreview: request.userInput.prompt.slice(0, 80),
       createdAt: toIsoDateTime(startedAt),
     });
 
@@ -129,8 +130,8 @@ export class RunBootstrapService {
       runId,
       traceId,
       requestId,
-      documentId: command.request.editorContext.documentId,
-      pageId: command.request.editorContext.pageId,
+      documentId: request.editorContext.documentId,
+      pageId: request.editorContext.pageId,
       status: initialStatus,
       statusReasonCode: null,
       attemptSeq: 0,
@@ -248,11 +249,22 @@ export class RunBootstrapService {
     }
   }
 
+  private normalizeRequest(
+    request: StartAgentWorkflowRunRequest,
+  ): StartAgentWorkflowRunRequest {
+    return request.workflowVariant === "object_native_v1"
+      ? request
+      : {
+          ...request,
+          workflowVariant: "object_native_v1",
+        };
+  }
+
   private buildDedupeKey(request: StartAgentWorkflowRunRequest): string {
     return [
       request.editorSessionId,
       "create_from_empty_canvas",
-      request.workflowVariant ?? "legacy",
+      request.workflowVariant ?? "object_native_v1",
       request.editorContext.documentId,
       request.editorContext.pageId,
       request.clientRequestId,

@@ -84,7 +84,7 @@ export function createLayoutCandidateSet(
               : 0.9,
         selectionReasons: [
           "safer centered fallback for generic promo banners",
-          "reserves more room for badge, CTA, and supporting decoration than the legacy center stack",
+          "reserves more room for badge, CTA, and supporting decoration than the denser center stack layout",
         ],
         riskFlags: [],
         fallbackIfRejected: "layout_center_stack",

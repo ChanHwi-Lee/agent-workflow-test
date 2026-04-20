@@ -19,7 +19,7 @@ import type { HydratedPlanningInput, NormalizedIntent } from "../types.js";
 
 function createHydratedPlanningInput(): HydratedPlanningInput {
   const testRun = createTestRun({
-    workflowVariant: "retrieval_prior_v1",
+    workflowVariant: "object_native_v1",
     userInput: {
       prompt: "봄 세일 배너를 만들어줘",
       locale: "ko-KR",
@@ -68,12 +68,6 @@ function createIntent(): NormalizedIntent {
     layoutIntent: "copy_focused",
     tone: "bright_playful",
     backgroundColorHex: "#ffeeee",
-    requiredSlots: [
-      "background",
-      "headline",
-      "subheadline",
-      "cta",
-    ],
     assetPolicy: {
       allowedFamilies: ["background", "graphic", "photo"],
       preferredFamilies: ["graphic"],
@@ -224,7 +218,7 @@ test("buildTemplatePriorBundle uses searchable templates and extracts a scaffold
   );
 
   assert.ok(bundle);
-  assert.equal(bundle?.workflowVariant, "retrieval_prior_v1");
+  assert.equal(bundle?.workflowVariant, "object_native_v1");
   assert.equal(bundle?.selectedTemplateCode, "74091534190");
   assert.equal(bundle?.candidates.length, 1);
   assert.equal(bundle?.selectedScaffold?.layoutFamilyHint, "promo_split");
@@ -728,4 +722,3 @@ test("graceful degrade: missing embedding client reverts to pre-R1 diagnostics",
     "skipped when no embedding client provided",
   );
 });
-

@@ -1,4 +1,4 @@
-import type { ExecutablePlan, ExecutionSlotKey } from "@tooldi/agent-contracts";
+import type { ExecutablePlan } from "@tooldi/agent-contracts";
 import { createRequestId } from "@tooldi/agent-domain";
 import type { ToolRegistry } from "@tooldi/tool-registry";
 
@@ -50,25 +50,6 @@ export async function buildExecutablePlan(
   if (photoSelected) {
     assertPhotoSelectionExecutable(assetPlan);
   }
-  const graphicRoleBindings = assetPlan.graphicRoleBindings;
-  const includeBadge =
-    Boolean(copySlotTexts.badge_text) ||
-    graphicRoleBindings.some((role) => role.role === "badge_or_ribbon");
-  const includeHeroCaption =
-    concreteLayoutPlan.resolvedSlotTopology === "hero_headline_supporting_cta_footer";
-  const includeHeroPanel =
-    !photoSelected && concreteLayoutPlan.abstractLayoutFamily === "subject_hero";
-  const includeFrame =
-    concreteLayoutPlan.abstractLayoutFamily === "promo_frame" ||
-    graphicRoleBindings.some((role) => role.role === "frame");
-  const includeUnderline =
-    selectionDecision.decorationMode !== "ribbon_badge" &&
-    selectionDecision.decorationMode !== "promo_multi_graphic" &&
-    !photoSelected;
-  const includeRibbon =
-    sceneBindingPlan?.includeRibbon === true ||
-    selectionDecision.decorationMode === "ribbon_badge" ||
-    graphicRoleBindings.some((role) => role.role === "badge_or_ribbon");
   const styleMetadata = sceneBindingPlan
     ? {
         backgroundColorHex: sceneBindingPlan.backgroundColorHex,
@@ -83,50 +64,16 @@ export async function buildExecutablePlan(
         backgroundVisualMode: sceneBindingPlan.backgroundMode,
       }
     : null;
-  const v2FreeformCopyBlocks =
-    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2" ||
-    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset" ||
-    freeformLayoutPlan?.workflowVariant === "object_native_v1" ||
-    freeformLayoutPlan?.workflowVariant === "topology_v1"
-      ? freeformLayoutPlan.copyBlocks
-      : [];
-  const v2FreeformPolishBlocks =
-    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2" ||
-    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset" ||
-    freeformLayoutPlan?.workflowVariant === "object_native_v1" ||
-    freeformLayoutPlan?.workflowVariant === "topology_v1"
-      ? freeformLayoutPlan.polishBlocks
-      : [];
-  const executionMode =
-    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2" ||
-    freeformLayoutPlan?.workflowVariant === "retrieval_prior_v2_reset"
-      ? "v2_freeform"
-      : freeformLayoutPlan?.workflowVariant === "object_native_v1"
-        ? "object_native_freeform"
-        : freeformLayoutPlan?.workflowVariant === "topology_v1"
-          ? "topology_freeform"
-      : "legacy_slots";
-  const topologyFreeformExecution = executionMode === "topology_freeform";
+  const freeformCopyBlocks =
+    freeformLayoutPlan?.copyBlocks ?? [];
+  const freeformPolishBlocks =
+    freeformLayoutPlan?.polishBlocks ?? [];
+  const executionMode = "object_native_freeform" as const;
 
-  const requestedWorkflowVariant = String(input.request.workflowVariant ?? "legacy");
-  const requiredExecutionSlots = resolveRequiredExecutionSlots(executionMode);
-  if (
-    requestedWorkflowVariant === "retrieval_prior_v2" ||
-    requestedWorkflowVariant === "retrieval_prior_v2_reset" ||
-    requestedWorkflowVariant === "object_native_v1" ||
-    requestedWorkflowVariant === "topology_v1"
-  ) {
-    if (
-      !freeformLayoutPlan ||
-      (executionMode !== "v2_freeform" &&
-        executionMode !== "object_native_freeform" &&
-        executionMode !== "topology_freeform") ||
-      v2FreeformCopyBlocks.length === 0
-    ) {
-      throw new Error(
-        "Freeform workflow variants require freeform layout execution truth; refusing to fall back to legacy slot execution",
-      );
-    }
+  if (!freeformLayoutPlan || freeformCopyBlocks.length === 0) {
+    throw new Error(
+      "object_native_v1 requires freeform layout execution truth and cannot execute without adaptive freeform blocks",
+    );
   }
 
   const actions: ExecutablePlan["actions"] = [
@@ -160,26 +107,11 @@ export async function buildExecutablePlan(
         layoutMode: concreteLayoutPlan.resolvedLayoutMode,
         layoutProfile: concreteLayoutPlan.abstractLayoutFamily,
         primaryVisualFamily: assetPlan.primaryVisualFamily,
-        includeHeroPanel:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? false
-            : includeHeroPanel,
-        includeBadge:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? false
-            : includeBadge,
-        includeRibbon:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? false
-            : includeRibbon,
-        includeFrame:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? false
-            : includeFrame,
-        badgeText:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? null
-            : copySlotTexts.badge_text ?? null,
+        includeHeroPanel: false,
+        includeBadge: false,
+        includeRibbon: false,
+        includeFrame: false,
+        badgeText: null,
         ...(styleMetadata ? { styleMetadata } : {}),
         resolvedSlotBounds: JSON.parse(
           JSON.stringify(concreteLayoutPlan.resolvedSlotBounds),
@@ -258,10 +190,6 @@ export async function buildExecutablePlan(
         displayFontWeight: typographyDecision.display?.fontWeight ?? null,
         bodyFontFamily: typographyDecision.body?.fontToken ?? null,
         bodyFontWeight: typographyDecision.body?.fontWeight ?? null,
-        ...(requiredExecutionSlots.length > 0
-          ? { requiredExecutionSlots }
-          : {}),
-        requiredSlots: normalizedIntent.requiredSlots,
         goalSummary: normalizedIntent.goalSummary,
         copyPlanPrimaryMessage: copyPlan.primaryMessage,
         copyPlanSummary: copyPlan.summary,
@@ -276,17 +204,11 @@ export async function buildExecutablePlan(
         clusterZones: JSON.parse(JSON.stringify(concreteLayoutPlan.clusterZones)),
         spacingIntent: concreteLayoutPlan.spacingIntent,
         headlineEstimatedHeight: concreteLayoutPlan.headlineEstimatedHeight,
-        freeformBlocks: JSON.parse(JSON.stringify(v2FreeformCopyBlocks)),
+        freeformBlocks: JSON.parse(JSON.stringify(freeformCopyBlocks)),
         layoutProfile: concreteLayoutPlan.abstractLayoutFamily,
         primaryVisualFamily: assetPlan.primaryVisualFamily,
-        includeHeroCaption:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? false
-            : includeHeroCaption,
-        includeBadge:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? false
-            : includeBadge,
+        includeHeroCaption: false,
+        includeBadge: false,
         ...(styleMetadata ? { styleMetadata } : {}),
       },
       rollback: {
@@ -312,33 +234,16 @@ export async function buildExecutablePlan(
         executionMode,
         selectedDecorationCandidateId:
           selectionDecision.selectedDecorationCandidateId,
-        selectedDecorationAssetId:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? null
-            : selectionDecision.selectedDecorationAssetId,
-        selectedDecorationSerial:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? null
-            : selectionDecision.selectedDecorationSerial,
-        selectedDecorationCategory:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? null
-            : selectionDecision.selectedDecorationCategory,
+        selectedDecorationAssetId: null,
+        selectedDecorationSerial: null,
+        selectedDecorationCategory: null,
         decorationMode: selectionDecision.decorationMode,
         primaryVisualFamily: assetPlan.primaryVisualFamily,
         assetExecutionEligibility: JSON.parse(
           JSON.stringify(assetPlan.executionEligibility),
         ),
-        graphicCompositionSet:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-          ? null
-          : selectionDecision.graphicCompositionSet
-          ? JSON.parse(JSON.stringify(selectionDecision.graphicCompositionSet))
-          : null,
-        graphicRoleBindings:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? []
-            : JSON.parse(JSON.stringify(graphicRoleBindings)),
+        graphicCompositionSet: null,
+        graphicRoleBindings: [],
         displayFontFamily: typographyDecision.display?.fontToken ?? null,
         displayFontWeight: typographyDecision.display?.fontWeight ?? null,
         bodyFontFamily: typographyDecision.body?.fontToken ?? null,
@@ -350,26 +255,14 @@ export async function buildExecutablePlan(
         graphicRolePlacementHints: JSON.parse(
           JSON.stringify(concreteLayoutPlan.graphicRolePlacementHints),
         ),
-        ctaContainerExpected:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? false
-            : concreteLayoutPlan.ctaContainerExpected,
+        ctaContainerExpected: false,
         spacingIntent: concreteLayoutPlan.spacingIntent,
-        freeformBlocks: JSON.parse(JSON.stringify(v2FreeformPolishBlocks)),
+        freeformBlocks: JSON.parse(JSON.stringify(freeformPolishBlocks)),
         executionStrategy: selectionDecision.executionStrategy,
         fallbackSummary: selectionDecision.fallbackSummary,
-        includeBadge:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? false
-            : includeBadge,
-        includeUnderline:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? false
-            : includeUnderline,
-        includeRibbon:
-          executionMode === "v2_freeform" || topologyFreeformExecution
-            ? false
-            : includeRibbon,
+        includeBadge: false,
+        includeUnderline: false,
+        includeRibbon: false,
         ...(styleMetadata ? { styleMetadata } : {}),
       },
       rollback: {
@@ -404,19 +297,6 @@ function buildCopySlotTextMap(
     },
     {},
   );
-}
-
-function resolveRequiredExecutionSlots(
-  executionMode:
-    | "legacy_slots"
-    | "v2_freeform"
-    | "object_native_freeform"
-    | "topology_freeform",
-): ExecutionSlotKey[] {
-  if (executionMode === "object_native_freeform") {
-    return ["background", "headline", "offer_line", "cta"];
-  }
-  return [];
 }
 
 function assertPhotoSelectionExecutable(assetPlan: AssetPlan): void {

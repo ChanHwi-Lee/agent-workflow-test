@@ -18,7 +18,6 @@ import type {
 } from "../types.js";
 import {
   detectCopyPlanIssues,
-  detectGraphicPromoStructureIssues,
   detectLayoutPlanIssues,
 } from "./ruleJudgeStructuralDetectors.js";
 import {
@@ -47,13 +46,6 @@ export function collectRuleJudgeIssues(
 ): RuleJudgeIssue[] {
   const assetPolicy = normalizeTemplateAssetPolicy(intent.assetPolicy);
   const issues: RuleJudgeIssue[] = [];
-  const freeformExecution = plan.actions.some(
-    (action) =>
-      action.inputs &&
-      typeof action.inputs === "object" &&
-      (action.inputs.executionMode === "object_native_freeform" ||
-        action.inputs.executionMode === "topology_freeform"),
-  );
 
   if (typographyDecision.fallbackUsed) {
     issues.push(surfaceRuleJudgeIssue("typography_fallback"));
@@ -116,10 +108,6 @@ export function collectRuleJudgeIssues(
         selectionDecision,
       ),
     );
-  }
-
-  if (!freeformExecution) {
-    issues.push(...detectGraphicPromoStructureIssues(intent, selectionDecision));
   }
 
   const domainSubjectMismatch = detectDomainSubjectMismatch(

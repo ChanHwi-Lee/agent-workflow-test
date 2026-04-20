@@ -439,7 +439,10 @@ function evaluatePhotoVariantEligibility(
     };
   }
 
-  if (selectedLayout.payload.layoutMode !== "copy_left_with_right_decoration") {
+  if (
+    selectedLayout.payload.layoutMode !== "copy_left_with_right_decoration" &&
+    selectedLayout.payload.layoutMode !== "left_copy_right_graphic"
+  ) {
     return {
       mode: "not_considered",
       reason: "selected layout does not expose a dedicated hero-photo field",

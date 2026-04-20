@@ -14,14 +14,6 @@ import type { ObjectStoreClient } from "@tooldi/agent-persistence";
 import type { MaterializationInput } from "./runFinalizeInput.js";
 import type { RunLedgerProjection } from "./runFinalizeLedger.js";
 
-const REQUIRED_SLOTS = [
-  "background",
-  "headline",
-  "supporting_copy",
-  "cta",
-  "decoration",
-] as const;
-
 export type MaterializedArtifacts = {
   bundle: LiveDraftArtifactBundle;
   bundleRef: string;
@@ -122,11 +114,6 @@ export async function materializeRunArtifacts(
             executionSceneSummaryRef: input.input.executionSceneSummaryRef,
             judgePlanRef: input.input.judgePlanRef,
             refineDecisionRef: input.input.refineDecisionRef,
-            topologyMatchReportRef: input.input.topologyMatchReportRef,
-            topologySelectionRef: input.input.topologySelectionRef,
-            topologyBindingPlanRef: input.input.topologyBindingPlanRef,
-            topologyExecutionPlanRef: input.input.topologyExecutionPlanRef,
-            topologyCompletionReportRef: input.input.topologyCompletionReportRef,
             latestSaveReceiptId: latestSaveReceipt?.saveReceiptId ?? null,
             bundleRef,
           },
@@ -194,18 +181,6 @@ export async function materializeRunArtifacts(
     draftId: input.input.draftId,
     pageId: input.run.pageId,
     commitMode: "apply_immediately",
-    requiredSlots: [...REQUIRED_SLOTS],
-    ...(input.ledgerProjection.requiredExecutionSlots.length > 0
-      ? {
-          requiredExecutionSlots: [...input.ledgerProjection.requiredExecutionSlots],
-        }
-      : {}),
-    ...(input.input.selectedTopologyId
-      ? { selectedTopologyId: input.input.selectedTopologyId }
-      : {}),
-    ...(input.input.topologyCompletionContract
-      ? { topologyCompletionContract: input.input.topologyCompletionContract }
-      : {}),
     firstRenderableSeq: input.input.sourceMutationRange.firstSeq,
     reconciledThroughSeq: input.input.sourceMutationRange.reconciledThroughSeq,
     mutations: input.ledgerProjection.rangedRecords.map((record) => record.mutation),
@@ -389,21 +364,6 @@ export async function materializeRunArtifacts(
       ...(input.input.refineDecisionRef
         ? { refineDecisionRef: input.input.refineDecisionRef }
         : {}),
-      ...(input.input.topologyMatchReportRef
-        ? { topologyMatchReportRef: input.input.topologyMatchReportRef }
-        : {}),
-      ...(input.input.topologySelectionRef
-        ? { topologySelectionRef: input.input.topologySelectionRef }
-        : {}),
-      ...(input.input.topologyBindingPlanRef
-        ? { topologyBindingPlanRef: input.input.topologyBindingPlanRef }
-        : {}),
-      ...(input.input.topologyExecutionPlanRef
-        ? { topologyExecutionPlanRef: input.input.topologyExecutionPlanRef }
-        : {}),
-      ...(input.input.topologyCompletionReportRef
-        ? { topologyCompletionReportRef: input.input.topologyCompletionReportRef }
-        : {}),
       bundleRef,
     },
   };
@@ -452,7 +412,7 @@ function enforceMinimumDraft(
   const issue = {
     code: "minimum_draft_not_satisfied",
     message:
-      "Completed status requires the minimum editable draft slots to exist in the mutation ledger",
+      "Completed status requires at least one editable root layer and one editable layer in the mutation ledger",
   };
   return {
     ...result,
