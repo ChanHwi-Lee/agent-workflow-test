@@ -35,6 +35,7 @@ function createEnv(): AgentWorkerEnv {
     tooldiContentApiBaseUrl: null,
     tooldiContentApiTimeoutMs: 5000,
     tooldiContentApiCookie: null,
+    googleApiKey: null,
     exitAfterBoot: false,
   };
 }

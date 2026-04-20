@@ -38,6 +38,7 @@ import { createTooldiCatalogSourceClient } from "./tools/adapters/tooldiCatalogS
 import type { ProcessRunJobResult } from "./types.js";
 import { buildAdaptiveCompositionDecision } from "./phases/buildAdaptiveCompositionDecision.js";
 import type { AdaptiveCompositionDecisionBuilder } from "./graph/runJobGraphTypes.js";
+import type { V5PipelineDependencies } from "./phases/v5PipelineOrchestrator.js";
 
 export interface BuildWorkerRuntimeOptions {
   env: AgentWorkerEnv;
@@ -56,6 +57,7 @@ export interface BuildWorkerRuntimeOptions {
   templateCopyPlanGenerator?: ProcessRunJobDependencies["templateCopyPlanGenerator"];
   templateAbstractLayoutGenerator?: ProcessRunJobDependencies["templateAbstractLayoutGenerator"];
   adaptiveCompositionDecisionBuilder?: AdaptiveCompositionDecisionBuilder;
+  v5Dependencies?: Partial<V5PipelineDependencies>;
 }
 
 export interface AgentWorkerRuntime extends ProcessRunJobDependencies {
@@ -135,6 +137,9 @@ export async function buildWorkerRuntime(
     tooldiCatalogSourceClient:
       options.tooldiCatalogSourceClient ??
       createTooldiCatalogSourceClient(options.env),
+    ...(options.v5Dependencies
+      ? { v5Dependencies: options.v5Dependencies }
+      : {}),
     async processRunJob(job: RunJobEnvelope) {
       return processRunJob(job, runtime);
     },

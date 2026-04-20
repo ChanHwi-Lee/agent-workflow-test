@@ -63,6 +63,7 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
   tooldiContentApiBaseUrl: string | null;
   tooldiContentApiTimeoutMs: number | null;
   tooldiContentApiCookie: string | null;
+  googleApiKey: string | null;
   exitAfterBoot: boolean;
 }
 
@@ -334,6 +335,7 @@ export function loadAgentWorkerEnv(
       source,
       "TOOLDI_CONTENT_API_COOKIE",
     ),
+    googleApiKey: readOptionalString(source, "GOOGLE_API_KEY"),
     exitAfterBoot: readBoolean(source, "WORKER_EXIT_AFTER_BOOT", false),
   };
 }

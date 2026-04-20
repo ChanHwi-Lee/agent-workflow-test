@@ -23,6 +23,7 @@ import {
   readPhotoInputs,
   readPolishInputs,
 } from "./planInputParsers.js";
+import { buildV5SkeletonBatch, isV5PlanAction } from "./emitV5SkeletonMutations.js";
 
 export interface EmitSkeletonMutationsDependencies {
   textLayoutHelper: TextLayoutHelper;
@@ -34,6 +35,9 @@ export async function emitSkeletonMutations(
   plan: ExecutablePlan,
   dependencies: EmitSkeletonMutationsDependencies,
 ): Promise<SkeletonMutationBatch> {
+  if (plan.actions.some(isV5PlanAction)) {
+    return buildV5SkeletonBatch(input, plan);
+  }
   const planActions = validatePlanActions(plan);
   const foundationInputs = readFoundationInputs(planActions.foundation.inputs);
   const photoInputs = readPhotoInputs(planActions.photo?.inputs);

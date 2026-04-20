@@ -56,6 +56,7 @@ import type {
 import type {
   TemplatePlannerMode,
 } from "@tooldi/agent-llm";
+import type { V5PipelineResult } from "../phases/v5PipelineOrchestrator.js";
 
 type SourceSearchBackground = SourceSearchSummary["background"];
 type SourceSearchGraphic = SourceSearchSummary["graphic"];
@@ -151,6 +152,7 @@ export const RunJobGraphState = Annotation.Root({
   sourceSearchSummaryRef: replaceValue<string | null>(() => null),
   plan: replaceValue<ProcessRunJobResult["plan"] | null>(() => null),
   executablePlanRef: replaceValue<string | null>(() => null),
+  v5PipelineResult: replaceValue<V5PipelineResult | null>(() => null),
   ruleJudgeVerdict: replaceValue<RuleJudgeVerdict | null>(() => null),
   ruleJudgeVerdictRef: replaceValue<string | null>(() => null),
   executionSceneSummary: replaceValue<ExecutionSceneSummary | null>(() => null),

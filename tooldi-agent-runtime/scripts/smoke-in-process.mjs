@@ -17,6 +17,36 @@ function createSharedEnv(queueName) {
   };
 }
 
+const SMOKE_V5_FIXTURE_HTML = `<div style="position:relative; width:1200px; height:628px; overflow:hidden;">
+  <div style="position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FFF5E1;"></div>
+  <h1 style="position:absolute; left:80px; top:140px; width:600px; height:110px; font-size:84px; color:#222222;">스모크 헤드라인</h1>
+  <p style="position:absolute; left:80px; top:270px; width:600px; height:80px; font-size:36px;">스모크 부제</p>
+  <img data-tooldi-role="hero" data-hint="smoke" data-aspect="4:5" src="placeholder://" style="position:absolute; left:720px; top:80px; width:420px; height:468px;" />
+</div>`;
+
+async function createSmokeV5Dependencies(workspaceRoot) {
+  const { validateMethodBHtml } = await importModule(
+    workspaceRoot,
+    "apps/agent-worker/dist/phases/v5HtmlValidator.js",
+  );
+  const { transpileHtmlToCommands } = await importModule(
+    workspaceRoot,
+    "apps/agent-worker/dist/phases/v5Transpile/index.js",
+  );
+  return {
+    runMethodB: async () => ({
+      model: "gemini-3.1-flash-lite-preview-smoke-stub",
+      html: SMOKE_V5_FIXTURE_HTML,
+      latencyMs: 1,
+      finishReason: "STOP",
+      usage: null,
+      finishedAt: new Date().toISOString(),
+    }),
+    validateHtml: validateMethodBHtml,
+    transpile: transpileHtmlToCommands,
+  };
+}
+
 function createApiEnv(queueName) {
   return {
     ...createSharedEnv(queueName),
@@ -47,6 +77,7 @@ function createWorkerEnv(queueName) {
     tooldiContentApiBaseUrl: null,
     tooldiContentApiTimeoutMs: 5000,
     tooldiContentApiCookie: null,
+    googleApiKey: "smoke-stub-google-api-key",
     exitAfterBoot: false,
   };
 }
@@ -397,6 +428,7 @@ export async function runObjectNativeSmokeInProcess({
     workspaceRoot,
     "apps/agent-worker/dist/phases/buildAdaptiveCompositionDecision.js",
   );
+  const v5Dependencies = await createSmokeV5Dependencies(workspaceRoot);
   const sharedEnv = createSharedEnv(queueName);
   const { app, worker } = await createInProcessRuntime({
     workspaceRoot,
@@ -405,6 +437,7 @@ export async function runObjectNativeSmokeInProcess({
       tooldiCatalogSourceClient: createObjectNativeFixtureSourceClient(),
       adaptiveCompositionDecisionBuilder:
         createDeterministicAdaptiveBuilder(finalizeAdaptiveCompositionDecision),
+      v5Dependencies,
     },
   });
   try {
@@ -436,57 +469,33 @@ export async function runObjectNativeSmokeInProcess({
       runId: accepted.runId,
     });
 
-    const [audit, selection, renderability, freeformLayoutPlan, adaptiveDecision] = await Promise.all([
-      readJsonObject(app.objectStore, sharedEnv.objectStoreBucket, attemptArtifactKey(accepted.runId, "object-native-reference-audit.json")),
-      readJsonObject(app.objectStore, sharedEnv.objectStoreBucket, attemptArtifactKey(accepted.runId, "object-native-candidate-selection.json")),
-      readJsonObject(app.objectStore, sharedEnv.objectStoreBucket, attemptArtifactKey(accepted.runId, "object-native-renderability-report.json")),
-      readJsonObject(app.objectStore, sharedEnv.objectStoreBucket, attemptArtifactKey(accepted.runId, "object-native-freeform-layout-plan.json")),
-      readJsonObject(app.objectStore, sharedEnv.objectStoreBucket, attemptArtifactKey(accepted.runId, "adaptive-composition-decision.json")),
-    ]);
-
-    assert.equal(audit.workflowVariant, "object_native_v1");
-    assert.ok(Array.isArray(audit.entries));
-    assert.ok(audit.entries.length > 0);
-    assert.equal(selection.workflowVariant, "object_native_v1");
-    assert.equal(selection.reselectionApplied, true);
-    assert.equal(selection.nextSelectedTemplateCode, "template-stable");
-    assert.equal(selection.selectedReadiness, "stable_capable");
-    assert.equal(selection.selectedFailureStage, "none");
-    assert.ok(
-      [
-        "none",
-        "precondition_failure",
-        "semantic_gate_failure",
-        "binding_failure",
-        "renderability_guard_failure",
-      ].includes(selection.selectedFailureStage),
+    // Under v5 routing the legacy adaptive-composition artifacts are no longer
+    // produced (the legacy chain is bypassed; see Work Order B for cleanup).
+    // We instead verify that the v5 pipeline output landed as an executable
+    // plan of schema v5 and that its single action carries the transpiled
+    // createLayer commands.
+    const executablePlan = await readJsonObject(
+      app.objectStore,
+      sharedEnv.objectStoreBucket,
+      attemptArtifactKey(accepted.runId, "executable-plan.json"),
     );
-    assert.equal(renderability.workflowVariant, "object_native_v1");
-    assert.equal(renderability.passed, true);
-    assert.equal(renderability.failureStage, "none");
-    assert.equal(renderability.compositionStatus, "stable");
-    assert.equal(renderability.selectedTemplateCode, "template-stable");
-    assert.ok(
-      [
-        "none",
-        "precondition_failure",
-        "semantic_gate_failure",
-        "binding_failure",
-        "renderability_guard_failure",
-      ].includes(renderability.failureStage),
-    );
-    assert.equal(freeformLayoutPlan.workflowVariant, "object_native_v1");
+    assert.equal(executablePlan.planSchemaVersion, "v5-constrained-html");
+    assert.equal(executablePlan.actions.length, 1);
     assert.equal(
-      freeformLayoutPlan.selectedTemplateCode,
-      selection.nextSelectedTemplateCode,
+      executablePlan.actions[0].operation,
+      "v5_apply_constrained_html_design",
     );
-    assert.equal(freeformLayoutPlan.compositionStatus, "stable");
-    assert.equal(adaptiveDecision.templateCode, "template-stable");
-    assert.ok(Array.isArray(adaptiveDecision.elementDecisions));
-    assert.ok(adaptiveDecision.elementDecisions.length > 0);
+    const v5Commands = executablePlan.actions[0].inputs.v5Commands;
+    assert.ok(
+      Array.isArray(v5Commands) && v5Commands.length >= 3,
+      `expected ≥3 v5 transpiled commands, got ${v5Commands?.length ?? "n/a"}`,
+    );
+    for (const cmd of v5Commands) {
+      assert.equal(cmd.op, "createLayer");
+    }
 
     console.log(
-      `[object-native-smoke] verified object-native artifacts selected=${selection.nextSelectedTemplateCode} status=${renderability.compositionStatus}`,
+      `[object-native-smoke] verified v5 pipeline emitted ${v5Commands.length} createLayer commands via ${executablePlan.actions[0].toolName}`,
     );
   } finally {
     await closeRuntime({ app, worker });
@@ -849,13 +858,13 @@ async function assertBundleHasLatestSaveReceipt({
 }
 
 function assertObjectNativeLogs(runLogs) {
-  for (const prefix of [
-    "[source/object-native-audit]",
-    "[source/object-native-selection]",
-    "[source/object-native-renderability]",
-  ]) {
-    assert.ok(runLogs.some((message) => message.startsWith(prefix)));
-  }
+  // Under v5 routing the legacy [source/object-native-*] artifact logs are no
+  // longer emitted because those stages were bypassed. We instead expect the
+  // v5 pipeline log entries.
+  assert.ok(
+    runLogs.some((message) => message.startsWith("[v5]")),
+    "expected at least one v5 pipeline log entry",
+  );
 }
 
 function createObjectNativeFixtureSourceClient() {

@@ -27,6 +27,9 @@ import type {
 } from "@tooldi/agent-persistence";
 import { createObjectStoreClient } from "@tooldi/agent-persistence";
 import { createTestRun } from "@tooldi/agent-testkit";
+import { validateMethodBHtml } from "../phases/v5HtmlValidator.js";
+import type { V5PipelineDependencies } from "../phases/v5PipelineOrchestrator.js";
+import { transpileHtmlToCommands } from "../phases/v5Transpile/index.js";
 import type {
   AssetStorageClient,
   ImagePrimitiveClient,
@@ -85,6 +88,7 @@ function createEnv(): AgentWorkerEnv {
     tooldiContentApiBaseUrl: null,
     tooldiContentApiTimeoutMs: 5000,
     tooldiContentApiCookie: null,
+    googleApiKey: "test-google-api-key",
     exitAfterBoot: false,
   };
 }
@@ -126,6 +130,42 @@ function pickBestTextObject(
       (object) => !usedObjectIds.has(object.objectId) && predicate(object),
     ) ?? null
   );
+}
+
+const LEGACY_CHAIN_SKIP = {
+  skip:
+    "legacy planning chain (template-prior → adaptive composition → photo/copy/polish stages) is no longer reached under v5 routing. Kept as reference until Work Order B purges the legacy modules.",
+};
+
+const V5_FIXTURE_HTML = `<div style="position:relative; width:1200px; height:628px; overflow:hidden;">
+  <div style="position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FFF5E1;"></div>
+  <h1 style="position:absolute; left:80px; top:140px; width:600px; height:110px; font-size:84px; color:#222222;">테스트 헤드라인</h1>
+  <p style="position:absolute; left:80px; top:270px; width:600px; height:80px; font-size:36px;">테스트 부제</p>
+  <img data-tooldi-role="hero" data-hint="stub" data-aspect="4:5" src="placeholder://" style="position:absolute; left:720px; top:80px; width:420px; height:468px;" />
+</div>`;
+
+function createDeterministicV5Dependencies(): V5PipelineDependencies {
+  return {
+    runMethodB: async (args: { prompt: string; apiKey: string }) => {
+      void args;
+      return {
+        model: "gemini-3.1-flash-lite-preview-test-stub",
+        html: V5_FIXTURE_HTML,
+        latencyMs: 1,
+        finishReason: "STOP",
+        usage: {
+          promptTokenCount: 0,
+          candidatesTokenCount: 0,
+          totalTokenCount: 0,
+          thoughtsTokenCount: null,
+          cachedContentTokenCount: null,
+        },
+        finishedAt: new Date().toISOString(),
+      };
+    },
+    validateHtml: validateMethodBHtml,
+    transpile: transpileHtmlToCommands,
+  };
 }
 
 function createDeterministicAdaptiveCompositionDecisionBuilder() {
@@ -900,7 +940,7 @@ class FakeTooldiCatalogSourceClient implements TooldiCatalogSourceClient {
   }
 }
 
-test("processRunJob persists the raw planner draft before normalized intent", async () => {
+test("processRunJob persists the raw planner draft before normalized intent", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = new TrackingObjectStoreClient(
@@ -970,6 +1010,7 @@ test("processRunJob persists the raw planner draft before normalized intent", as
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -1059,7 +1100,7 @@ test("processRunJob persists the raw planner draft before normalized intent", as
   );
 });
 
-test("processRunJob normalizes from the persisted planner draft artifact", async () => {
+test("processRunJob normalizes from the persisted planner draft artifact", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = new TrackingObjectStoreClient(
@@ -1148,6 +1189,7 @@ test("processRunJob normalizes from the persisted planner draft artifact", async
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -1188,7 +1230,7 @@ test("processRunJob normalizes from the persisted planner draft artifact", async
   );
 });
 
-test("processRunJob uses the persisted normalized intent artifact as downstream truth", async () => {
+test("processRunJob uses the persisted normalized intent artifact as downstream truth", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = new TrackingObjectStoreClient(
@@ -1287,6 +1329,7 @@ test("processRunJob uses the persisted normalized intent artifact as downstream 
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -1390,7 +1433,7 @@ test("processRunJob uses the persisted normalized intent artifact as downstream 
   assert.ok(objectStore.getKeys.includes(result.artifactRefs.canonicalDesignBriefRef));
 });
 
-test("processRunJob는 잘못된 플래너 초안이면 휴리스틱 초안을 저장하고 계속 진행한다", async () => {
+test("processRunJob는 잘못된 플래너 초안이면 휴리스틱 초안을 저장하고 계속 진행한다", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -1440,6 +1483,7 @@ test("processRunJob는 잘못된 플래너 초안이면 휴리스틱 초안을 �
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     templatePlanner,
   });
   const expectedFallbackDraft = await createHeuristicTemplatePlanner().plan({
@@ -1477,7 +1521,7 @@ test("processRunJob는 잘못된 플래너 초안이면 휴리스틱 초안을 �
   );
 });
 
-test("processRunJob keeps structured and legacy asset-policy inputs compatible through the current create-template flow", async () => {
+test("processRunJob keeps structured and legacy asset-policy inputs compatible through the current create-template flow", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const scenarios = [
@@ -1546,6 +1590,7 @@ test("processRunJob keeps structured and legacy asset-policy inputs compatible t
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
       adaptiveCompositionDecisionBuilder:
         createDeterministicAdaptiveCompositionDecisionBuilder(),
       tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -1662,7 +1707,7 @@ test("processRunJob keeps structured and legacy asset-policy inputs compatible t
   }
 });
 
-test("processRunJob emits template-prior-summary for the Tooldi taxonomy fixture with deterministic ranking rationale", async () => {
+test("processRunJob emits template-prior-summary for the Tooldi taxonomy fixture with deterministic ranking rationale", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = new TrackingObjectStoreClient(
@@ -1713,6 +1758,7 @@ test("processRunJob emits template-prior-summary for the Tooldi taxonomy fixture
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
       adaptiveCompositionDecisionBuilder:
         createDeterministicAdaptiveCompositionDecisionBuilder(),
       tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -1776,6 +1822,7 @@ test("processRunJob emits template-prior-summary for the Tooldi taxonomy fixture
 
 test(
   "processRunJob persists the Tooldi taxonomy artifact chain with planner draft provenance before downstream refs",
+  LEGACY_CHAIN_SKIP,
   async () => {
     const env = createEnv();
     const logger = createWorkerLogger(env);
@@ -1827,6 +1874,7 @@ test(
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
       adaptiveCompositionDecisionBuilder:
         createDeterministicAdaptiveCompositionDecisionBuilder(),
       tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -2049,6 +2097,7 @@ test(
 
 test(
   "processRunJob writes normalized-intent-draft before deterministic repair in both planner paths",
+  LEGACY_CHAIN_SKIP,
   async (t) => {
     await t.test("planner success path remains valid", async () => {
       const env = createEnv();
@@ -2097,6 +2146,7 @@ test(
         assetStorageClient: createAssetStorageClient(),
         textLayoutHelper: createTextLayoutHelper(),
         templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
         templatePlanner,
       });
 
@@ -2164,6 +2214,7 @@ test(
         assetStorageClient: createAssetStorageClient(),
         textLayoutHelper: createTextLayoutHelper(),
         templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
         templatePlanner,
       });
 
@@ -2204,7 +2255,7 @@ test(
   },
 );
 
-test("processRunJob orchestrates phases and backend callbacks in order", async () => {
+test("processRunJob orchestrates phases and backend callbacks in order", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = new TrackingObjectStoreClient(
@@ -2245,6 +2296,7 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
     assetStorageClient,
     textLayoutHelper,
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -2702,6 +2754,7 @@ test("processRunJob orchestrates phases and backend callbacks in order", async (
 
 test(
   "processRunJob fails with adaptive_batch_missing for object-native execution even when request.workflowVariant is omitted",
+  LEGACY_CHAIN_SKIP,
   async () => {
     const env = createEnv();
     const logger = createWorkerLogger(env);
@@ -2727,6 +2780,7 @@ test(
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
       adaptiveCompositionDecisionBuilder: async () => null,
     });
 
@@ -2842,7 +2896,7 @@ test(
   },
 );
 
-test("processRunJob covers taxonomy-grounded general, cafe, and fashion create-template acceptance scenarios", async () => {
+test("processRunJob covers taxonomy-grounded general, cafe, and fashion create-template acceptance scenarios", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const scenarios = [
@@ -2906,6 +2960,7 @@ test("processRunJob covers taxonomy-grounded general, cafe, and fashion create-t
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
       adaptiveCompositionDecisionBuilder:
         createDeterministicAdaptiveCompositionDecisionBuilder(),
       tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -3037,7 +3092,7 @@ test("processRunJob covers taxonomy-grounded general, cafe, and fashion create-t
   }
 });
 
-test("processRunJob can activate generated background with real Tooldi graphic/font source mode", async () => {
+test("processRunJob can activate generated background with real Tooldi graphic/font source mode", LEGACY_CHAIN_SKIP, async () => {
   const env = createRealSourceEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -3073,6 +3128,7 @@ test("processRunJob can activate generated background with real Tooldi graphic/f
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
   });
 
@@ -3164,7 +3220,7 @@ test("processRunJob can activate generated background with real Tooldi graphic/f
   assert.equal(sourceSummaryArtifact.font.selectedSerial, "701");
 });
 
-test("processRunJob는 실소스 그래픽 후보가 비면 실패 finalize로 전이한다", async () => {
+test("processRunJob는 실소스 그래픽 후보가 비면 실패 finalize로 전이한다", LEGACY_CHAIN_SKIP, async () => {
   const env = createRealSourceEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -3219,6 +3275,7 @@ test("processRunJob는 실소스 그래픽 후보가 비면 실패 finalize로 �
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     tooldiCatalogSourceClient: backgroundEmptySourceClient,
   });
 
@@ -3245,7 +3302,7 @@ test("processRunJob는 실소스 그래픽 후보가 비면 실패 finalize로 �
   );
 });
 
-test("processRunJob can activate the photo hero execution path on the wide preset", async () => {
+test("processRunJob can activate the photo hero execution path on the wide preset", LEGACY_CHAIN_SKIP, async () => {
   const env = createRealSourceEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -3333,6 +3390,7 @@ test("processRunJob can activate the photo hero execution path on the wide prese
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: photoPreferredSourceClient,
@@ -3396,7 +3454,7 @@ test("processRunJob can activate the photo hero execution path on the wide prese
   assert.equal(result.executionSceneSummary?.photoLayerBinding, null);
 });
 
-test("processRunJob can promote a real-like photo candidate when it stays within the wide-preset tolerance window", async () => {
+test("processRunJob can promote a real-like photo candidate when it stays within the wide-preset tolerance window", LEGACY_CHAIN_SKIP, async () => {
   const env = createRealSourceEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -3444,6 +3502,7 @@ test("processRunJob can promote a real-like photo candidate when it stays within
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
   });
 
@@ -3459,7 +3518,7 @@ test("processRunJob can promote a real-like photo candidate when it stays within
   );
 });
 
-test("processRunJob keeps graphic path when top photo candidate is not executable", async () => {
+test("processRunJob keeps graphic path when top photo candidate is not executable", LEGACY_CHAIN_SKIP, async () => {
   const env = createRealSourceEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -3547,6 +3606,7 @@ test("processRunJob keeps graphic path when top photo candidate is not executabl
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     tooldiCatalogSourceClient: nonExecutablePhotoSourceClient,
   });
 
@@ -3607,6 +3667,7 @@ test("processRunJob rejects non-empty canvas runs for the spring vertical slice"
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
   });
 
   assert.equal(result.intent.operationFamily, "update_layer");
@@ -3624,7 +3685,7 @@ test("processRunJob rejects non-empty canvas runs for the spring vertical slice"
   );
 });
 
-test("processRunJob keeps the representative wide banner geometry inside the canvas", async () => {
+test("processRunJob keeps the representative wide banner geometry inside the canvas", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -3668,6 +3729,7 @@ test("processRunJob keeps the representative wide banner geometry inside the can
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
   });
 
   assert.equal(result.selectionDecision?.layoutMode, "left_copy_right_graphic");
@@ -3710,7 +3772,7 @@ test("processRunJob keeps the representative wide banner geometry inside the can
   );
 });
 
-test("processRunJob retrieval seam disables photo candidates when photo catalog tool is absent", async () => {
+test("processRunJob retrieval seam disables photo candidates when photo catalog tool is absent", LEGACY_CHAIN_SKIP, async () => {
   const env = createRealSourceEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -3765,6 +3827,7 @@ test("processRunJob retrieval seam disables photo candidates when photo catalog 
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     tooldiCatalogSourceClient: countingSourceClient,
   });
 
@@ -3780,7 +3843,7 @@ test("processRunJob retrieval seam disables photo candidates when photo catalog 
   assert.equal(result.selectionDecision?.photoBranchMode, "not_considered");
 });
 
-test("processRunJob honors cancel fence before starting a new mutation group", async () => {
+test("processRunJob honors cancel fence before starting a new mutation group", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -3823,6 +3886,7 @@ test("processRunJob honors cancel fence before starting a new mutation group", a
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
   });
 
   assert.equal(result.emittedMutationIds.length, 0);
@@ -3833,7 +3897,7 @@ test("processRunJob honors cancel fence before starting a new mutation group", a
   );
 });
 
-test("processRunJob does not treat unconfirmed mutation ack as success", async () => {
+test("processRunJob does not treat unconfirmed mutation ack as success", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -3877,6 +3941,7 @@ test("processRunJob does not treat unconfirmed mutation ack as success", async (
     assetStorageClient,
     textLayoutHelper,
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -3888,7 +3953,7 @@ test("processRunJob does not treat unconfirmed mutation ack as success", async (
   assert.equal(assetStorageClient.persistCalls, 0);
 });
 
-test("processRunJob preserves rejected mutation reason in stage log and finalize summary", async () => {
+test("processRunJob preserves rejected mutation reason in stage log and finalize summary", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -3945,6 +4010,7 @@ test("processRunJob preserves rejected mutation reason in stage log and finalize
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -3982,7 +4048,7 @@ test("processRunJob preserves rejected mutation reason in stage log and finalize
   );
 });
 
-test("processRunJob stops immediately after a rejected photo stage under fail-fast policy", async () => {
+test("processRunJob stops immediately after a rejected photo stage under fail-fast policy", LEGACY_CHAIN_SKIP, async () => {
   const env = createRealSourceEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -4092,6 +4158,7 @@ test("processRunJob stops immediately after a rejected photo stage under fail-fa
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: photoPreferredSourceClient,
@@ -4126,7 +4193,7 @@ test("processRunJob stops immediately after a rejected photo stage under fail-fa
   );
 });
 
-test("processRunJob emits an observational log when backend passes repairContext", async () => {
+test("processRunJob emits an observational log when backend passes repairContext", LEGACY_CHAIN_SKIP, async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = createObjectStoreClient({
@@ -4182,6 +4249,7 @@ test("processRunJob emits an observational log when backend passes repairContext
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
     },
   );
 
@@ -4192,5 +4260,89 @@ test("processRunJob emits an observational log when backend passes repairContext
         event.event.message.includes("Recovery handoff received"),
     ),
     true,
+  );
+});
+
+test("processRunJob v5 happy path — Method B + validate + transpile emits a single canvas.mutation envelope with transpiled commands", async () => {
+  const env = createEnv();
+  const logger = createWorkerLogger(env);
+  const objectStore = new TrackingObjectStoreClient(
+    createObjectStoreClient({ bucket: env.objectStoreBucket }),
+  );
+  const callbackClient = new RecordingBackendCallbackClient();
+  const testRun = createTestRun();
+
+  await objectStore.putObject({
+    key: testRun.requestObjectKey,
+    body: JSON.stringify(testRun.request),
+    contentType: "application/json",
+    metadata: { ref: testRun.requestRef },
+  });
+  await objectStore.putObject({
+    key: testRun.snapshotObjectKey,
+    body: JSON.stringify(testRun.snapshot),
+    contentType: "application/json",
+    metadata: { ref: testRun.snapshotRef },
+  });
+
+  const result = await processRunJob(testRun.job, {
+    env,
+    logger,
+    objectStore,
+    callbackClient,
+    toolRegistry: createWorkerToolRegistry(),
+    imagePrimitiveClient: createImagePrimitiveClient(),
+    assetStorageClient: createAssetStorageClient(),
+    textLayoutHelper: createTextLayoutHelper(),
+    templateCatalogClient: createTemplateCatalogClient(),
+    v5Dependencies: createDeterministicV5Dependencies(),
+  });
+
+  assert.equal(result.plan?.planSchemaVersion, "v5-constrained-html");
+  assert.equal(result.plan?.actions.length, 1);
+  const action = result.plan!.actions[0]!;
+  assert.equal(action.operation, "v5_apply_constrained_html_design");
+  assert.equal(action.toolName, "v5-constrained-html-pipeline");
+
+  const mutationEvents = callbackClient.appendedEvents.filter(
+    (e) => e.event.type === "mutation.proposed",
+  );
+  // v5 emits 2 envelopes: the transpiled layer batch + the saveTemplate envelope
+  // coming from emit_save_stage. Filter to the createLayer envelope.
+  const createLayerEnvelopes = mutationEvents.filter((e) => {
+    const event = e.event as Extract<
+      (typeof mutationEvents)[number]["event"],
+      { type: "mutation.proposed" }
+    >;
+    return event.mutation.commands.some((c) => c.op === "createLayer");
+  });
+  assert.equal(
+    createLayerEnvelopes.length,
+    1,
+    "expected exactly one createLayer envelope from the v5 pipeline",
+  );
+  const envelope = (
+    createLayerEnvelopes[0]!.event as Extract<
+      (typeof mutationEvents)[number]["event"],
+      { type: "mutation.proposed" }
+    >
+  ).mutation;
+  assert.ok(
+    envelope.commands.length >= 3,
+    `expected ≥3 transpiled commands, got ${envelope.commands.length}`,
+  );
+  assert.equal(envelope.seq, 1);
+  assert.equal(envelope.expectedBaseRevision, 0);
+  assert.equal(envelope.rollbackHint.strategy, "delete_created_layers");
+
+  const v5Logs = callbackClient.appendedEvents.filter(
+    (e) =>
+      e.event.type === "log" &&
+      typeof e.event.message === "string" &&
+      e.event.message.startsWith("[v5]"),
+  );
+  assert.ok(
+    v5Logs.length >= 2,
+    "expected v5 observability log entries (enter + done)",
   );
 });
