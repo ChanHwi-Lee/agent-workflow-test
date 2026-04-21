@@ -1,0 +1,221 @@
+{
+  "canvas": {
+    "width": 1200,
+    "height": 628
+  },
+  "commands": [
+    {
+      "type": "create",
+      "primitive": "rect",
+      "source": {
+        "serial": 0,
+        "path": "0",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 0,
+        "top": 0,
+        "width": 1200,
+        "height": 628
+      },
+      "opacity": 1,
+      "fill": "#FFFFFF",
+      "borderRadius": 0,
+      "stroke": null,
+      "shadow": null
+    },
+    {
+      "type": "create",
+      "primitive": "rect",
+      "source": {
+        "serial": 1,
+        "path": "0.0",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 64,
+        "top": 64,
+        "width": 1072,
+        "height": 500
+      },
+      "opacity": 1,
+      "fill": "#F1F5F9",
+      "borderRadius": 32,
+      "stroke": null,
+      "shadow": null
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 4,
+        "path": "0.0.0.0.0",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 120,
+        "top": 120,
+        "width": 960,
+        "height": 16
+      },
+      "opacity": 1,
+      "text": "TOOLDI · CLOUD",
+      "fontFamily": "sans-serif",
+      "fontSize": 14,
+      "fontWeight": "700",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "left",
+      "lineHeight": "normal",
+      "letterSpacing": 2,
+      "color": "#0EA5E9"
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 5,
+        "path": "0.0.0.0.1",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 120,
+        "top": 156,
+        "width": 960,
+        "height": 61.59
+      },
+      "opacity": 1,
+      "text": "팀을 위한 디자인 협업",
+      "fontFamily": "sans-serif",
+      "fontSize": 56,
+      "fontWeight": "800",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "left",
+      "lineHeight": 1.1,
+      "letterSpacing": 0,
+      "color": "#0F172A"
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 6,
+        "path": "0.0.0.0.2",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 120,
+        "top": 233.59,
+        "width": 620,
+        "height": 30
+      },
+      "opacity": 1,
+      "text": "실시간 편집, 자연어 편집 에이전트, 자산 일원화. 한 공간에서 모두.",
+      "fontFamily": "sans-serif",
+      "fontSize": 20,
+      "fontWeight": "400",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "left",
+      "lineHeight": 1.5,
+      "letterSpacing": 0,
+      "color": "#475569"
+    },
+    {
+      "type": "create",
+      "primitive": "rect",
+      "source": {
+        "serial": 8,
+        "path": "0.0.0.1.0",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 120,
+        "top": 448,
+        "width": 154.02,
+        "height": 58
+      },
+      "opacity": 1,
+      "fill": "#0EA5E9",
+      "borderRadius": 12,
+      "stroke": null,
+      "shadow": null
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 8,
+        "path": "0.0.0.1.0",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 152,
+        "top": 464,
+        "width": 90.02,
+        "height": 26
+      },
+      "opacity": 1,
+      "text": "무료로 시작",
+      "fontFamily": "sans-serif",
+      "fontSize": 18,
+      "fontWeight": "700",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "left",
+      "lineHeight": "normal",
+      "letterSpacing": 0,
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "create",
+      "primitive": "rect",
+      "source": {
+        "serial": 9,
+        "path": "0.0.0.1.1",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 290.02,
+        "top": 446,
+        "width": 141.02,
+        "height": 62
+      },
+      "opacity": 1,
+      "fill": null,
+      "borderRadius": 12,
+      "stroke": {
+        "color": "#0F172A",
+        "width": 2
+      },
+      "shadow": null
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 9,
+        "path": "0.0.0.1.1",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 324.02,
+        "top": 464,
+        "width": 73.02,
+        "height": 26
+      },
+      "opacity": 1,
+      "text": "데모 보기",
+      "fontFamily": "sans-serif",
+      "fontSize": 18,
+      "fontWeight": "500",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "left",
+      "lineHeight": "normal",
+      "letterSpacing": 0,
+      "color": "#0F172A"
+    }
+  ]
+}

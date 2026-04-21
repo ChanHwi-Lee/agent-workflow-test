@@ -1,0 +1,15 @@
+{
+  "name": "v6-poc",
+  "version": "0.1.0",
+  "description": "AGW v6 Phase 0 PoC — LLM free HTML → Playwright render → Toolditor primitive mapper",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "extract": "node extract.mjs",
+    "map": "node mapper.mjs",
+    "run": "node run.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.56.0"
+  }
+}

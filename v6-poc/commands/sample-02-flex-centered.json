@@ -1,0 +1,152 @@
+{
+  "canvas": {
+    "width": 1200,
+    "height": 628
+  },
+  "commands": [
+    {
+      "type": "create",
+      "primitive": "rect",
+      "source": {
+        "serial": 0,
+        "path": "0",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 0,
+        "top": 0,
+        "width": 1200,
+        "height": 628
+      },
+      "opacity": 1,
+      "fill": "#0F172A",
+      "borderRadius": 0,
+      "stroke": null,
+      "shadow": null
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 1,
+        "path": "0.0",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 458.47,
+        "top": 168,
+        "width": 283.06,
+        "height": 21
+      },
+      "opacity": 1,
+      "text": "NEW COLLECTION 2026",
+      "fontFamily": "sans-serif",
+      "fontSize": 18,
+      "fontWeight": "500",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "left",
+      "lineHeight": "normal",
+      "letterSpacing": 4,
+      "color": "#94A3B8"
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 2,
+        "path": "0.1",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 124.11,
+        "top": 213,
+        "width": 951.77,
+        "height": 88
+      },
+      "opacity": 1,
+      "text": "MINIMAL ESSENTIALS",
+      "fontFamily": "sans-serif",
+      "fontSize": 88,
+      "fontWeight": "800",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "left",
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "color": "#F8FAFC"
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 3,
+        "path": "0.2",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 407.19,
+        "top": 325,
+        "width": 385.61,
+        "height": 33
+      },
+      "opacity": 1,
+      "text": "본질에 집중한 디자인. 4월 26일 정식 출시.",
+      "fontFamily": "sans-serif",
+      "fontSize": 22,
+      "fontWeight": "400",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "center",
+      "lineHeight": 1.5,
+      "letterSpacing": 0,
+      "color": "#CBD5E1"
+    },
+    {
+      "type": "create",
+      "primitive": "rect",
+      "source": {
+        "serial": 4,
+        "path": "0.3",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 489.98,
+        "top": 398,
+        "width": 220.02,
+        "height": 62
+      },
+      "opacity": 1,
+      "fill": "#F8FAFC",
+      "borderRadius": 999,
+      "stroke": null,
+      "shadow": null
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 4,
+        "path": "0.3",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 537.98,
+        "top": 416,
+        "width": 124.02,
+        "height": 26
+      },
+      "opacity": 1,
+      "text": "컬렉션 둘러보기",
+      "fontFamily": "sans-serif",
+      "fontSize": 18,
+      "fontWeight": "700",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "left",
+      "lineHeight": "normal",
+      "letterSpacing": 0,
+      "color": "#0F172A"
+    }
+  ]
+}

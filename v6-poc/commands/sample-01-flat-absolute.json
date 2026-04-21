@@ -1,0 +1,159 @@
+{
+  "canvas": {
+    "width": 1200,
+    "height": 628
+  },
+  "commands": [
+    {
+      "type": "create",
+      "primitive": "rect",
+      "source": {
+        "serial": 0,
+        "path": "0",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 0,
+        "top": 0,
+        "width": 1200,
+        "height": 628
+      },
+      "opacity": 1,
+      "fill": "#FFF5E6",
+      "borderRadius": 0,
+      "stroke": null,
+      "shadow": null
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 1,
+        "path": "0.0",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 80,
+        "top": 120,
+        "width": 520,
+        "height": 100
+      },
+      "opacity": 1,
+      "text": "SPRING SALE",
+      "fontFamily": "sans-serif",
+      "fontSize": 72,
+      "fontWeight": "800",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "left",
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "color": "#D2691E"
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 2,
+        "path": "0.1",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 80,
+        "top": 240,
+        "width": 520,
+        "height": 48
+      },
+      "opacity": 1,
+      "text": "최대 50% 할인 — 4월 한정",
+      "fontFamily": "sans-serif",
+      "fontSize": 24,
+      "fontWeight": "400",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "left",
+      "lineHeight": 1.4000000000000001,
+      "letterSpacing": 0,
+      "color": "#5A3B1A"
+    },
+    {
+      "type": "create",
+      "primitive": "rect",
+      "source": {
+        "serial": 3,
+        "path": "0.2",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 80,
+        "top": 420,
+        "width": 220,
+        "height": 72
+      },
+      "opacity": 1,
+      "fill": "#D2691E",
+      "borderRadius": 12,
+      "stroke": null,
+      "shadow": null
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 4,
+        "path": "0.3",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 80,
+        "top": 420,
+        "width": 220,
+        "height": 72
+      },
+      "opacity": 1,
+      "text": "지금 쇼핑하기",
+      "fontFamily": "sans-serif",
+      "fontSize": 22,
+      "fontWeight": "700",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "center",
+      "lineHeight": 3.272727272727273,
+      "letterSpacing": 0,
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "create",
+      "primitive": "rect",
+      "source": {
+        "serial": 5,
+        "path": "0.4",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 760,
+        "top": 80,
+        "width": 360,
+        "height": 360
+      },
+      "opacity": 1,
+      "fill": {
+        "type": "linear-gradient",
+        "angle": 135,
+        "stops": [
+          {
+            "color": "#FFB347",
+            "offset": 0
+          },
+          {
+            "color": "#FF7043",
+            "offset": 1
+          }
+        ]
+      },
+      "borderRadius": 180,
+      "stroke": null,
+      "shadow": null
+    }
+  ]
+}

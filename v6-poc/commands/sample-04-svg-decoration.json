@@ -1,0 +1,160 @@
+{
+  "canvas": {
+    "width": 1200,
+    "height": 628
+  },
+  "commands": [
+    {
+      "type": "create",
+      "primitive": "rect",
+      "source": {
+        "serial": 0,
+        "path": "0",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 0,
+        "top": 0,
+        "width": 1200,
+        "height": 628
+      },
+      "opacity": 1,
+      "fill": "#FEF3C7",
+      "borderRadius": 0,
+      "stroke": null,
+      "shadow": null
+    },
+    {
+      "type": "create",
+      "primitive": "svg",
+      "source": {
+        "serial": 1,
+        "path": "0.0",
+        "tag": "svg"
+      },
+      "bounds": {
+        "left": 60,
+        "top": 60,
+        "width": 140,
+        "height": 140
+      },
+      "opacity": 1,
+      "outerHTML": "<svg style=\"position:absolute;left:60px;top:60px;width:140px;height:140px;\" viewBox=\"0 0 140 140\">\n      <circle cx=\"70\" cy=\"70\" r=\"60\" fill=\"#F59E0B\"></circle>\n      <path d=\"M 40 70 L 65 95 L 100 50\" stroke=\"#FFFFFF\" stroke-width=\"10\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path>\n    </svg>"
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 2,
+        "path": "0.1",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 240,
+        "top": 110,
+        "width": 312.78,
+        "height": 70.39
+      },
+      "opacity": 1,
+      "text": "검증된 품질",
+      "fontFamily": "sans-serif",
+      "fontSize": 64,
+      "fontWeight": "800",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "left",
+      "lineHeight": 1.1,
+      "letterSpacing": 0,
+      "color": "#78350F"
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 3,
+        "path": "0.2",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 240,
+        "top": 200,
+        "width": 675.31,
+        "height": 33
+      },
+      "opacity": 1,
+      "text": "10만 명의 크리에이터가 선택한 Tooldi. 지금 가입하면 첫 달 프리미엄 무료.",
+      "fontFamily": "sans-serif",
+      "fontSize": 22,
+      "fontWeight": "400",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "left",
+      "lineHeight": 1.5,
+      "letterSpacing": 0,
+      "color": "#92400E"
+    },
+    {
+      "type": "create",
+      "primitive": "svg",
+      "source": {
+        "serial": 4,
+        "path": "0.3",
+        "tag": "svg"
+      },
+      "bounds": {
+        "left": 920,
+        "top": 348,
+        "width": 200,
+        "height": 200
+      },
+      "opacity": 1,
+      "outerHTML": "<svg style=\"position:absolute;right:80px;bottom:80px;width:200px;height:200px;\" viewBox=\"0 0 200 200\">\n      <polygon points=\"100,20 140,90 100,160 60,90\" fill=\"#DC2626\"></polygon>\n      <circle cx=\"100\" cy=\"90\" r=\"14\" fill=\"#FEF3C7\"></circle>\n    </svg>"
+    },
+    {
+      "type": "create",
+      "primitive": "rect",
+      "source": {
+        "serial": 5,
+        "path": "0.4",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 240,
+        "top": 420,
+        "width": 240,
+        "height": 68
+      },
+      "opacity": 1,
+      "fill": "#78350F",
+      "borderRadius": 999,
+      "stroke": null,
+      "shadow": null
+    },
+    {
+      "type": "create",
+      "primitive": "text",
+      "source": {
+        "serial": 5,
+        "path": "0.4",
+        "tag": "div"
+      },
+      "bounds": {
+        "left": 240,
+        "top": 420,
+        "width": 240,
+        "height": 68
+      },
+      "opacity": 1,
+      "text": "가입하기",
+      "fontFamily": "sans-serif",
+      "fontSize": 20,
+      "fontWeight": "700",
+      "fontStyle": "normal",
+      "textDecoration": "none",
+      "textAlign": "center",
+      "lineHeight": 3.4,
+      "letterSpacing": 0,
+      "color": "#FEF3C7"
+    }
+  ]
+}
