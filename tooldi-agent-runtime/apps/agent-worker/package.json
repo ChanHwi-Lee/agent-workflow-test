@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "start": "node --enable-source-maps dist/main.js",
-    "test": "node --test dist/main.test.js dist/worker.test.js dist/clients/backendCallbackClient.test.js dist/graph/buildFailureDrafts.test.js dist/graph/graphHelpers.test.js dist/graph/runJobGraphEdges.test.js dist/jobs/processRunJob.test.js dist/phases/assembleTemplateCandidates.test.js dist/phases/buildAdaptiveCompositionDecision.test.js dist/phases/buildNormalizedIntent.test.js dist/phases/buildCopyAndAbstractLayoutPlan.test.js dist/phases/buildObjectNativePath.test.js dist/phases/buildAssetPlan.test.js dist/phases/buildConcreteLayoutPlan.test.js dist/phases/buildExecutionSceneSummary.test.js dist/phases/buildJudgePlan.test.js dist/phases/buildRefineDecision.test.js dist/phases/buildScenePlans.test.js dist/phases/buildSceneStylePlans.test.js dist/phases/buildSearchProfile.test.js dist/phases/buildTemplatePriorBundle.test.js dist/phases/buildTemplatePriorSummary.test.js dist/phases/projectTemplateGraph.test.js dist/phases/compositionEngine.test.js dist/phases/emitAdaptiveCompositionMutations.test.js dist/phases/emitRefinementMutations.test.js dist/phases/emitSkeletonMutations.test.js dist/phases/layoutGeometry.test.js dist/phases/ruleJudge.test.js dist/phases/v5HtmlValidator.test.js dist/phases/v5MethodBHtmlGen.test.js dist/phases/v5PipelineOrchestrator.test.js dist/phases/emitV5SkeletonMutations.test.js dist/phases/v5Transpile/v5Transpile.test.js",
+    "test": "node --test dist/main.test.js dist/worker.test.js dist/clients/backendCallbackClient.test.js dist/graph/buildFailureDrafts.test.js dist/graph/graphHelpers.test.js dist/graph/runJobGraphEdges.test.js dist/jobs/processRunJob.test.js dist/phases/assembleTemplateCandidates.test.js dist/phases/buildAdaptiveCompositionDecision.test.js dist/phases/buildNormalizedIntent.test.js dist/phases/buildCopyAndAbstractLayoutPlan.test.js dist/phases/buildObjectNativePath.test.js dist/phases/buildAssetPlan.test.js dist/phases/buildConcreteLayoutPlan.test.js dist/phases/buildExecutionSceneSummary.test.js dist/phases/buildJudgePlan.test.js dist/phases/buildRefineDecision.test.js dist/phases/buildScenePlans.test.js dist/phases/buildSceneStylePlans.test.js dist/phases/buildSearchProfile.test.js dist/phases/buildTemplatePriorBundle.test.js dist/phases/buildTemplatePriorSummary.test.js dist/phases/projectTemplateGraph.test.js dist/phases/compositionEngine.test.js dist/phases/emitAdaptiveCompositionMutations.test.js dist/phases/emitRefinementMutations.test.js dist/phases/emitSkeletonMutations.test.js dist/phases/layoutGeometry.test.js dist/phases/ruleJudge.test.js dist/phases/v5HtmlValidator.test.js dist/phases/v5MethodBHtmlGen.test.js dist/phases/v5PipelineOrchestrator.test.js dist/phases/emitV5SkeletonMutations.test.js dist/phases/v5Transpile/v5Transpile.test.js dist/phases/v6HtmlValidator.test.js dist/phases/v6PrimitiveMapper.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -26,6 +26,7 @@
     "bullmq": "^5.73.0",
     "domhandler": "^5.0.3",
     "htmlparser2": "^10.1.0",
-    "ioredis": "^5.10.1"
+    "ioredis": "^5.10.1",
+    "playwright": "^1.56.0"
   }
 }
