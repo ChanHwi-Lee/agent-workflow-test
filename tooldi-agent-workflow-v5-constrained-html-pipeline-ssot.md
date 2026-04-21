@@ -1,5 +1,11 @@
 # Tooldi Agent Workflow v5 — Constrained HTML Pipeline SSOT
 
+> **⚠ Historical — 2026-04-21 자로 [v6 Layout Freedom SSOT](./tooldi-agent-workflow-v6-layout-freedom-ssot.md) 에 의해 대체됨.**
+>
+> 이 문서는 2026-04-20~04-21 사이의 authority 이었다. Phase 0 PoC 와 Phase 4 E2E smoke 에서 free HTML + 브라우저 렌더 + 결정적 primitive 추출 경로가 **더 적은 제약으로 같은 편집성**을 제공함이 증명되어, 제약 HTML grammar(`position:absolute` 강제, child 수 제한, line-break sibling 분해)와 deterministic DOM→Tooldi transpiler 경로는 폐기되었다.
+>
+> v5 경로에서 설계된 6단계 파이프라인, grammar whitelist, self-repair 루프, DOM→layer graph 매핑 표는 전부 v6 의 3단계 파이프라인(free HTML → browser layout → primitive extract) 으로 재구성되었다. 배경 이해 시에만 참조.
+
 ## 문서 정보
 
 | 항목 | 값 |
