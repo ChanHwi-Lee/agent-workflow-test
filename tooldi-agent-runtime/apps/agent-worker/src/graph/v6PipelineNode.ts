@@ -7,6 +7,10 @@ import {
   V6_APPLY_OPERATION,
   V6_INPUT_COMMANDS_KEY,
 } from "../phases/emitV6Mutations.js";
+import {
+  buildV6ConstrainedDebugHtmlPreviewArtifact,
+  runV6UnrestrictedDebugHtmlPreview,
+} from "../phases/v6DebugHtmlPreview.js";
 import { renderAndExtract } from "../phases/v6BrowserRender.js";
 import { runV6HtmlGen } from "../phases/v6HtmlGen.js";
 import { runV6ClaudeCodeHtmlGen } from "../phases/v6ClaudeCodeHtmlGen.js";
@@ -272,6 +276,86 @@ export function registerV6PipelineNode(
       env: dependencies.env,
       commands: v6Result.commands,
     });
+
+    if (state.hydrated.request.options?.debugHtmlPreview) {
+      const v6DebugHtmlRef = await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/debug-v6-html.json`,
+        buildV6ConstrainedDebugHtmlPreviewArtifact({
+          model: v6Result.model,
+          html: v6Result.html,
+          rawHtml: v6Result.html,
+          canvasWidth,
+          canvasHeight,
+          userPrompt,
+          trendContext:
+            dependencies.env.trendResearchMode === "enabled"
+              ? state.v6TrendBrief?.contextForHtmlGen ?? null
+              : null,
+          latencyMs: v6Result.latency.htmlGenMs,
+          usage: v6Result.usage,
+        }),
+        {
+          artifactKind: "debug-v6-html-preview",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+
+      let unrestrictedDebugHtmlRef: string | null = null;
+      try {
+        const unrestrictedPreview = await runV6UnrestrictedDebugHtmlPreview({
+          provider: dependencies.env.htmlGenProvider,
+          googleApiKey: dependencies.env.googleApiKey,
+          claudeCodeModel: dependencies.env.claudeCodeModel,
+          claudeCodeEffort: dependencies.env.claudeCodeEffort,
+          claudeCodeTimeoutMs: dependencies.env.claudeCodeTimeoutMs,
+          canvasWidth,
+          canvasHeight,
+          userPrompt,
+          trendContext:
+            dependencies.env.trendResearchMode === "enabled"
+              ? state.v6TrendBrief?.contextForHtmlGen ?? null
+              : null,
+        });
+        unrestrictedDebugHtmlRef = await persistArtifactTask(
+          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/debug-unrestricted-html.json`,
+          unrestrictedPreview,
+          {
+            artifactKind: "debug-unrestricted-html-preview",
+            runId: state.job.runId,
+            traceId: state.job.traceId,
+            attemptSeq: String(state.job.attemptSeq),
+          },
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "unknown debug preview error";
+        const warnEvent = await appendEventTask(state.job.runId, {
+          traceId: state.job.traceId,
+          attempt: state.job.attemptSeq,
+          queueJobId: state.job.queueJobId,
+          event: {
+            type: "log",
+            level: "warn",
+            message: `[debug-html] unrestricted preview failed; v6 preview is still available (${message.slice(0, 220)})`,
+          },
+        });
+        cooperativeStopRequested ||= warnEvent.cancelRequested;
+      }
+
+      const debugHtmlEvent = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: "info",
+          message: `[debug-html] unrestricted=${unrestrictedDebugHtmlRef ?? "-"} v6=${v6DebugHtmlRef}`,
+        },
+      });
+      cooperativeStopRequested ||= debugHtmlEvent.cancelRequested;
+    }
 
     const { commands: createLayerCommands } = adaptV6Commands(resolvedV6Commands, {
       runId: state.job.runId,

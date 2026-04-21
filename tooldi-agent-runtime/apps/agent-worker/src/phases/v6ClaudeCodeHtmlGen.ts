@@ -38,33 +38,14 @@ export async function runV6ClaudeCodeHtmlGen(
     trendContext: options.trendContext ?? null,
   });
 
-  const args = [
-    "-p",
-    userMessage,
-    "--model",
+  const { stdout, stderr, exitCode, timedOut, latencyMs } = await runClaudeCodeText({
+    prompt: userMessage,
+    systemPrompt: V6_SYSTEM_PROMPT,
     model,
-    "--effort",
     effort,
-    "--output-format",
-    "text",
-    "--no-session-persistence",
-    "--tools",
-    "",
-    "--disable-slash-commands",
-    "--setting-sources",
-    "project",
-    "--permission-mode",
-    "dontAsk",
-    "--system-prompt",
-    V6_SYSTEM_PROMPT,
-  ];
-
-  const startedAt = Date.now();
-  const { stdout, stderr, exitCode, timedOut } = await runClaudeCli(args, {
-    cwd: options.cwd ?? "/tmp",
     timeoutMs,
+    ...(options.cwd ? { cwd: options.cwd } : {}),
   });
-  const latencyMs = Date.now() - startedAt;
 
   if (timedOut) {
     throw new V6HtmlGenerationError(
@@ -93,6 +74,57 @@ export async function runV6ClaudeCodeHtmlGen(
     usage: null,
     finishedAt: new Date().toISOString(),
   };
+}
+
+export interface RunClaudeCodeTextOptions {
+  readonly prompt: string;
+  readonly systemPrompt: string;
+  readonly model?: string;
+  readonly effort?: "low" | "medium" | "high" | "xhigh" | "max";
+  readonly timeoutMs?: number;
+  readonly cwd?: string;
+}
+
+export async function runClaudeCodeText(
+  options: RunClaudeCodeTextOptions,
+): Promise<{
+  readonly stdout: string;
+  readonly stderr: string;
+  readonly exitCode: number | null;
+  readonly timedOut: boolean;
+  readonly latencyMs: number;
+}> {
+  const model = options.model ?? DEFAULT_CLAUDE_CODE_MODEL;
+  const effort = options.effort ?? DEFAULT_CLAUDE_CODE_EFFORT;
+  const timeoutMs = options.timeoutMs ?? DEFAULT_CLAUDE_CODE_TIMEOUT_MS;
+  const args = [
+    "-p",
+    options.prompt,
+    "--model",
+    model,
+    "--effort",
+    effort,
+    "--output-format",
+    "text",
+    "--no-session-persistence",
+    "--tools",
+    "",
+    "--disable-slash-commands",
+    "--setting-sources",
+    "project",
+    "--permission-mode",
+    "dontAsk",
+    "--system-prompt",
+    options.systemPrompt,
+  ];
+
+  const startedAt = Date.now();
+  const { stdout, stderr, exitCode, timedOut } = await runClaudeCli(args, {
+    cwd: options.cwd ?? "/tmp",
+    timeoutMs,
+  });
+  const latencyMs = Date.now() - startedAt;
+  return { stdout, stderr, exitCode, timedOut, latencyMs };
 }
 
 function runClaudeCli(

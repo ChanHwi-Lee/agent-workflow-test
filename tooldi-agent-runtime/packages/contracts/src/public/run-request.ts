@@ -35,6 +35,7 @@ const MilestoneDeadlinesSchema = Type.Object(
 const RunOptionsSchema = Type.Object(
   {
     trendResearch: Type.Optional(Type.Boolean()),
+    debugHtmlPreview: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 );
