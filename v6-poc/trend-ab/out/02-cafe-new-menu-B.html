@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<style>
+@font-face {
+  font-family: "701_400";
+  src: url("https://dev-file.tooldi.com/font/701_400.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "701_700";
+  src: url("https://dev-file.tooldi.com/font/701_700.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "1301_400";
+  src: url("https://dev-file.tooldi.com/font/1301_400.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+</style>
+<style>
+  html, body { margin:0; padding:0; background:#fff; }
+  body { width:1080px; height:1080px; overflow:hidden; }
+</style>
+</head>
+<body>
+<div style="width: 1080px; height: 1080px; background: linear-gradient(135deg, #F0FFF0 0%, #E6F7FF 100%); position: relative; overflow: hidden; font-family: '701_400'; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+    <!-- Background Blob Elements -->
+    <svg viewBox="0 0 1080 1080" style="position: absolute; width: 100%; height: 100%; opacity: 0.6;">
+        <path d="M700 200 C 900 200, 1000 400, 950 600 C 900 800, 600 900, 400 850 C 200 800, 150 500, 300 300 C 450 100, 600 150, 700 200 Z" fill="#FFCBA4" />
+        <path d="M200 600 C 300 500, 500 550, 600 700 C 700 850, 500 950, 300 900 C 100 850, 100 700, 200 600 Z" fill="#A2CFFE" />
+    </svg>
+
+    <!-- Main Content Card -->
+    <div style="width: 800px; height: 800px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border-radius: 60px; border: 4px solid #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+        
+        <!-- Badge -->
+        <div style="background: #FF7F50; color: white; padding: 10px 25px; border-radius: 30px; font-family: '701_700'; font-size: 28px; margin-bottom: 20px;">
+            NEW ARRIVAL
+        </div>
+
+        <!-- Product Image Placeholder -->
+        <div style="width: 400px; height: 400px; background: #FFF; border-radius: 50%; border: 8px solid #FFCBA4; display: flex; align-items: center; justify-content: center; margin: 20px 0; overflow: hidden;">
+            <img src="placeholder://iced-peach-latte-in-glass" style="width: 380px; height: 380px; object-fit: cover;" />
+        </div>
+
+        <!-- Title -->
+        <h1 style="font-family: '1301_400'; font-size: 80px; color: #333; margin: 10px 0; letter-spacing: -2px;">아이스 복숭아 라떼</h1>
+        
+        <!-- Info -->
+        <div style="display: flex; gap: 40px; margin-top: 20px;">
+            <div style="text-align: center;">
+                <p style="font-size: 24px; color: #666; margin: 0;">출시일</p>
+                <p style="font-family: '701_700'; font-size: 36px; color: #FF7F50; margin: 5px 0;">5월 1일</p>
+            </div>
+            <div style="width: 2px; height: 60px; background: #DDD;"></div>
+            <div style="text-align: center;">
+                <p style="font-size: 24px; color: #666; margin: 0;">가격</p>
+                <p style="font-family: '701_700'; font-size: 36px; color: #333; margin: 5px 0;">5,500원</p>
+            </div>
+        </div>
+
+        <!-- Wellness Tag -->
+        <div style="margin-top: 30px; font-size: 20px; color: #888; border: 1px solid #CCC; padding: 5px 15px; border-radius: 20px;">
+            #로컬복숭아 #저당 #청량가득
+        </div>
+    </div>
+
+    <!-- Decorative Sparkles -->
+    <svg viewBox="0 0 100 100" style="position: absolute; top: 150px; left: 150px; width: 60px; height: 60px; fill: #FF7F50;">
+        <path d="M50 0 L55 40 L95 50 L55 60 L50 100 L45 60 L5 50 L45 40 Z" />
+    </svg>
+    <svg viewBox="0 0 100 100" style="position: absolute; bottom: 150px; right: 150px; width: 80px; height: 80px; fill: #A2CFFE;">
+        <path d="M50 0 L55 40 L95 50 L55 60 L50 100 L45 60 L5 50 L45 40 Z" />
+    </svg>
+</div>
+</body>
+</html>

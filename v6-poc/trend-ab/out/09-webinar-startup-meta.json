@@ -1,0 +1,56 @@
+{
+  "id": "09-webinar-startup",
+  "domain": "B2B/웨비나",
+  "canvas": {
+    "width": 1080,
+    "height": 1080
+  },
+  "startedAt": "2026-04-21T06:00:32.130Z",
+  "pathA": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 5057,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 834,
+      "candidatesTokenCount": 1052,
+      "totalTokenCount": 1886,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 834
+        }
+      ]
+    },
+    "bytes": 2376
+  },
+  "pathB": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 6092,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 1325,
+      "candidatesTokenCount": 1266,
+      "totalTokenCount": 2591,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1325
+        }
+      ]
+    },
+    "bytes": 3139,
+    "trendModel": "gemini-3-flash-preview",
+    "trendLatencyMs": 21990,
+    "trendCitationCount": 0,
+    "trendSearchQueries": [
+      "2026 디자인 트렌드 웨비나 포스터",
+      "2025 2026 B2B 스타트업 컨퍼런스 디자인 트렌드",
+      "스타트업 웨비나 초대장 레이아웃 2026",
+      "시리즈 A 조직 성장 전략 웨비나 디자인",
+      "PayPlus 김태훈 대표 웨비나 디자인 참고",
+      "PayPlus brand identity colors",
+      "페이플러스 PayPlus 브랜드 로고 색상",
+      "페이플러스 김태훈 대표 프로필"
+    ]
+  }
+}

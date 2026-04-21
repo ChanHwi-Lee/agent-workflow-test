@@ -1,0 +1,53 @@
+{
+  "id": "01-spring-fashion-sale",
+  "domain": "패션 이커머스",
+  "canvas": {
+    "width": 1200,
+    "height": 628
+  },
+  "startedAt": "2026-04-21T05:58:39.385Z",
+  "pathA": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 5895,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 830,
+      "candidatesTokenCount": 840,
+      "totalTokenCount": 1670,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 830
+        }
+      ]
+    },
+    "bytes": 1837
+  },
+  "pathB": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 4697,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 1348,
+      "candidatesTokenCount": 1028,
+      "totalTokenCount": 2376,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1348
+        }
+      ]
+    },
+    "bytes": 2420,
+    "trendModel": "gemini-3-flash-preview",
+    "trendLatencyMs": 22015,
+    "trendCitationCount": 8,
+    "trendSearchQueries": [
+      "",
+      "2026 S/S 패션 컬러 트렌드 한국",
+      "2026 S/S fashion color trends Korea",
+      "2026 봄 그래픽 디자인 트렌드 배너",
+      "2026 여성 의류 쇼핑몰 배너 디자인 레이아웃"
+    ]
+  }
+}

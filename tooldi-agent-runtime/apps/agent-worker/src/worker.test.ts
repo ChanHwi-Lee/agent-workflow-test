@@ -36,6 +36,24 @@ function createEnv(): AgentWorkerEnv {
     tooldiContentApiTimeoutMs: 5000,
     tooldiContentApiCookie: null,
     googleApiKey: null,
+    htmlGenProvider: "gemini",
+    claudeCodeModel: "sonnet",
+    claudeCodeEffort: "low",
+    claudeCodeTimeoutMs: 180000,
+    trendResearchMode: "off",
+    trendResearchModel: "gemini-3-flash-preview",
+    trendCacheTtlSeconds: 604800,
+    v6AssetRagMode: "off",
+    v6AssetEmbeddingEndpoint: "http://127.0.0.1:7070/embed/text",
+    v6AssetQdrantUrl: "http://127.0.0.1:6333",
+    v6AssetPhotoCollection: "tooldi_photos_v1",
+    v6AssetGraphicCollection: "tooldi_graphics_v1",
+    v6AssetPublicBaseUrl: "https://dev-file.tooldi.com",
+    v6AssetTopK: 40,
+    v6AssetRerankCandidateCount: 6,
+    v6AssetTimeoutMs: 8000,
+    v6AssetVisionRerankMode: "off",
+    v6AssetVisionModel: "gemini-3.1-flash-lite-preview",
     exitAfterBoot: false,
   };
 }
@@ -71,6 +89,61 @@ test("loadAgentWorkerEnv defaults Tooldi catalog source to placeholder mode", ()
   assert.equal(env.tooldiContentApiTimeoutMs, null);
   assert.equal(env.langGraphCheckpointerMode, "postgres");
   assert.equal(env.templatePlannerMode, "heuristic");
+  assert.equal(env.htmlGenProvider, "gemini");
+  assert.equal(env.claudeCodeModel, "sonnet");
+  assert.equal(env.claudeCodeEffort, "low");
+  assert.equal(env.claudeCodeTimeoutMs, 180000);
+  assert.equal(env.trendResearchMode, "off");
+  assert.equal(env.trendResearchModel, "gemini-3-flash-preview");
+  assert.equal(env.trendCacheTtlSeconds, 604800);
+});
+
+test("loadAgentWorkerEnv reads Claude Code v6 HTML generator env", () => {
+  const env = loadAgentWorkerEnv({
+    NODE_ENV: "test",
+    LOG_LEVEL: "info",
+    POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
+    REDIS_URL: "redis://localhost:6379/9",
+    BULLMQ_QUEUE_NAME: "agent-workflow-interactive-test",
+    OBJECT_STORE_MODE: "memory",
+    OBJECT_STORE_ROOT_DIR: "/tmp/tooldi-agent-runtime-object-store-test",
+    OBJECT_STORE_BUCKET: "tooldi-agent-runtime-test",
+    OBJECT_STORE_PREFIX: "agent-runtime-test",
+    WORKER_QUEUE_TRANSPORT_MODE: "disabled",
+    AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
+    HTML_GEN_PROVIDER: "claude_code",
+    CLAUDE_CODE_MODEL: "sonnet",
+    CLAUDE_CODE_EFFORT: "low",
+    CLAUDE_CODE_TIMEOUT_MS: "90000",
+  });
+
+  assert.equal(env.htmlGenProvider, "claude_code");
+  assert.equal(env.claudeCodeModel, "sonnet");
+  assert.equal(env.claudeCodeEffort, "low");
+  assert.equal(env.claudeCodeTimeoutMs, 90000);
+});
+
+test("loadAgentWorkerEnv reads optional trend research env", () => {
+  const env = loadAgentWorkerEnv({
+    NODE_ENV: "test",
+    LOG_LEVEL: "info",
+    POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
+    REDIS_URL: "redis://localhost:6379/9",
+    BULLMQ_QUEUE_NAME: "agent-workflow-interactive-test",
+    OBJECT_STORE_MODE: "memory",
+    OBJECT_STORE_ROOT_DIR: "/tmp/tooldi-agent-runtime-object-store-test",
+    OBJECT_STORE_BUCKET: "tooldi-agent-runtime-test",
+    OBJECT_STORE_PREFIX: "agent-runtime-test",
+    WORKER_QUEUE_TRANSPORT_MODE: "disabled",
+    AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
+    TREND_RESEARCH_MODE: "enabled",
+    TREND_RESEARCH_MODEL: "gemini-3-flash-preview",
+    TREND_CACHE_TTL_SECONDS: "3600",
+  });
+
+  assert.equal(env.trendResearchMode, "enabled");
+  assert.equal(env.trendResearchModel, "gemini-3-flash-preview");
+  assert.equal(env.trendCacheTtlSeconds, 3600);
 });
 
 test("loadAgentWorkerEnv requires Tooldi content API base URL in real Tooldi API mode", () => {

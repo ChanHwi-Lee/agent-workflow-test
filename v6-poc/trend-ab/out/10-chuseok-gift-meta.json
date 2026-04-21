@@ -1,0 +1,52 @@
+{
+  "id": "10-chuseok-gift",
+  "domain": "명절/식품",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "startedAt": "2026-04-21T06:00:36.995Z",
+  "pathA": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 4233,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 836,
+      "candidatesTokenCount": 1055,
+      "totalTokenCount": 1891,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 836
+        }
+      ]
+    },
+    "bytes": 2339
+  },
+  "pathB": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 4254,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 1319,
+      "candidatesTokenCount": 1071,
+      "totalTokenCount": 2390,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1319
+        }
+      ]
+    },
+    "bytes": 2615,
+    "trendModel": "gemini-3-flash-preview",
+    "trendLatencyMs": 18325,
+    "trendCitationCount": 0,
+    "trendSearchQueries": [
+      "modern korean traditional dessert branding 2026",
+      "프리미엄 한과 브랜드 디자인 2026 한국적 미감",
+      "2025 2026 추석 선물세트 배너 디자인 트렌드",
+      "2026 명절 배너 레이아웃 트렌드"
+    ]
+  }
+}

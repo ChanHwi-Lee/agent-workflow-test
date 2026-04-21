@@ -1,0 +1,53 @@
+{
+  "id": "05-summer-aircon-promo",
+  "domain": "가전/이커머스",
+  "canvas": {
+    "width": 1200,
+    "height": 628
+  },
+  "startedAt": "2026-04-21T05:59:37.101Z",
+  "pathA": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 3170,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 835,
+      "candidatesTokenCount": 737,
+      "totalTokenCount": 1572,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 835
+        }
+      ]
+    },
+    "bytes": 1873
+  },
+  "pathB": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 4036,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 1327,
+      "candidatesTokenCount": 1150,
+      "totalTokenCount": 2477,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1327
+        }
+      ]
+    },
+    "bytes": 2955,
+    "trendModel": "gemini-3-flash-preview",
+    "trendLatencyMs": 20841,
+    "trendCitationCount": 0,
+    "trendSearchQueries": [
+      "",
+      "2026 여름 그래픽 디자인 트렌드 한국",
+      "2026 summer graphic design trends Korea e-commerce banner",
+      "2026 가전 제품 프로모션 배너 디자인 트렌드",
+      "에어컨 할인 배너 디자인 2026 트렌드"
+    ]
+  }
+}

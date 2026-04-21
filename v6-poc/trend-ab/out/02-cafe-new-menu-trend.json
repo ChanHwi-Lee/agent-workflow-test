@@ -1,0 +1,86 @@
+{
+  "id": "02-cafe-new-menu",
+  "prompt": "카페 신메뉴 '아이스 복숭아 라떼' 출시 SNS 정사각 카드. 계절감(초여름) 살려서. 가격 5,500원, 출시일 5월 1일.",
+  "model": "gemini-3-flash-preview",
+  "latencyMs": 25681,
+  "trend": {
+    "summary": "2026년 상반기 핵심 트렌드인 'B.E.Y.O.N.D'와 '디지털 안정감'을 반영하여, 인위적인 매끄러움보다는 손맛이 느껴지는 텍스처와 유기적인 곡선을 강조합니다. 초여름의 청량함을 위해 고채도의 복숭아 컬러와 대비되는 쿨 블루/민트 톤을 믹스한 '주시 미니멀리즘(Juicy Minimalism)' 스타일이 주를 이룹니다.",
+    "palette": [
+      "#FF7F50",
+      "#FFCBA4",
+      "#A2CFFE",
+      "#F0FFF0",
+      "#FFFFFF"
+    ],
+    "typography": {
+      "weight": "Bold & Variable",
+      "scale": "Headline (Large), Body (Medium-Small)",
+      "notes": "글자 자체가 그래픽이 되는 '익스프레시브 타이포그래피'가 대세입니다. 메인 타이틀은 가변 글꼴(Variable Font)을 활용해 리퀴드한 느낌을 주고, 보조 문구에는 '인간적인 불완전함'을 담은 손글씨 폰트를 믹스하여 온기를 더합니다."
+    },
+    "composition": "중앙 집중형 제품 레이아웃을 기본으로 하되, 반투명한 글래스모피즘(Glassmorphism) 카드나 유기적인 블롭(Blob) 형태의 배경 요소를 레이어드하여 깊이감을 줍니다.",
+    "motifs": [
+      "물방울 맺힌 유리 질감",
+      "3D 복숭아 오브제",
+      "종이를 찢어 붙인 듯한 콜라주 스티커",
+      "반짝이는 스파클 효과"
+    ],
+    "tone": "청량하고 감각적인(Sensorial) 분위기. 웰니스 트렌드를 반영하여 지나치게 자극적이기보다 자연스럽고 건강한 단맛이 느껴지는 톤앤매너를 유지합니다.",
+    "notes": "2026년 카페 트렌드인 'Everyday Wellness'에 맞춰 '저당(Low Sugar)' 혹은 '로컬 복숭아' 키워드를 디자인 요소(엠블럼 등)로 작게 추가하면 타겟 호응도가 더욱 높아질 것입니다."
+  },
+  "contextForHtmlGen": "Summary: 2026년 상반기 핵심 트렌드인 'B.E.Y.O.N.D'와 '디지털 안정감'을 반영하여, 인위적인 매끄러움보다는 손맛이 느껴지는 텍스처와 유기적인 곡선을 강조합니다. 초여름의 청량함을 위해 고채도의 복숭아 컬러와 대비되는 쿨 블루/민트 톤을 믹스한 '주시 미니멀리즘(Juicy Minimalism)' 스타일이 주를 이룹니다.\nPalette (use as inspiration, pick 2-4): #FF7F50, #FFCBA4, #A2CFFE, #F0FFF0, #FFFFFF\nTypography: weight=Bold & Variable; scale=Headline (Large), Body (Medium-Small); notes=글자 자체가 그래픽이 되는 '익스프레시브 타이포그래피'가 대세입니다. 메인 타이틀은 가변 글꼴(Variable Font)을 활용해 리퀴드한 느낌을 주고, 보조 문구에는 '인간적인 불완전함'을 담은 손글씨 폰트를 믹스하여 온기를 더합니다.\nComposition: 중앙 집중형 제품 레이아웃을 기본으로 하되, 반투명한 글래스모피즘(Glassmorphism) 카드나 유기적인 블롭(Blob) 형태의 배경 요소를 레이어드하여 깊이감을 줍니다.\nMotifs: 물방울 맺힌 유리 질감, 3D 복숭아 오브제, 종이를 찢어 붙인 듯한 콜라주 스티커, 반짝이는 스파클 효과\nTone: 청량하고 감각적인(Sensorial) 분위기. 웰니스 트렌드를 반영하여 지나치게 자극적이기보다 자연스럽고 건강한 단맛이 느껴지는 톤앤매너를 유지합니다.\nNotes: 2026년 카페 트렌드인 'Everyday Wellness'에 맞춰 '저당(Low Sugar)' 혹은 '로컬 복숭아' 키워드를 디자인 요소(엠블럼 등)로 작게 추가하면 타겟 호응도가 더욱 높아질 것입니다.",
+  "citations": [
+    {
+      "title": "sandollcloud.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFXCVyma4MSyqEnccFXOBAnhF8Cv5mfOZYtrheueg5z4afbrLQJO2-GC1GO-cgnRq8Ui2byyFdcTjZ8P7TPL5gOxDWPvccCpb6x9z3eMkVYPGU1obkmyIKi94q4vcWKGO0BmFrI47QklWqCn_yOMsaGr7CXgtA="
+    },
+    {
+      "title": "designkits.co.kr",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGopzrTo25-sQmF09JbijluTla3D5UNERdKVX92BcWfHm0V5-gPGUTF9miN23ci-v5Nba2ZouiWPGHfUFHLPlpdGz5gLuEQUKpE94RY0NHjCqQN5W9jmA1NPTdFR51y3kVcGE8fAwALXnSUvxAqjs_aZEbMHsG5xvOzFIXulhk="
+    },
+    {
+      "title": "tooldi.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFdZVjNrpJvw8Y9Wk1oOImFJKcV0vDAzD8SvwzzmbERzJExJM0of9r9ChsNT_m8DOB1Dk4gD1KEIeUDxJSfFrcqfAfNI1M6t73-q5NSFazvpGg="
+    },
+    {
+      "title": "magazine-hd.kr",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHjgcXYSZp66bekzf6s5BJS-oidwlLIUknTtHksCwjmZYC4dQF6M9BZ3F4At5MXPaSrumZbenmQX-XBU0cdBygyAznGYR_fUtyUad3Jb2wamP60yaE="
+    },
+    {
+      "title": "canva.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFXF6wbJUF_DQMbKbmp9kqj3pVmqZZ8SG2sOprUo9e6sHBAc3vqT12_649QVA8IG_dl8rNF5xYQh24VD9z33kxY_39i9kVv01j0QvYgg71fmGaNZsN_c6NUCvg9c7Js4TFCb13rS3lPo0s-zDosW_Ka6CBJWVRKe-9CSnGDPd9U"
+    },
+    {
+      "title": "theladylearner.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGqj8PbWl3599gHAzsmuUmEfMlWCAOUJPqP42HdK4_hwp39oFQmkt9eGfOIjKA4KeNZcZjFlwMd1TYNEnzoUCkseUoKXwbnwPN6LKePPNhlyprCFloLuje3kiU="
+    },
+    {
+      "title": "yellow-finger.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE7wVk8zaYx6o_9DAFSiyogl0dE2qFZ3_0YAMAUNKl6raEg93YxsTklAUt94Bn9SBVcaJwuFhKgT8d9z5xfiBYsuv3nL9AVwtu2g7yZxZbwanXO3fXX9bfxObmmQWSOJVY9VLT8Ig=="
+    }
+  ],
+  "searchQueries": [
+    "2026년 여름 카페 신메뉴 SNS 디자인 트렌드",
+    "초여름 카페 포스터 색상 트렌드 2026",
+    "Korean cafe SNS design trends 2026 peach latte",
+    "복숭아 라떼 광고 디자인 2025 2026",
+    "",
+    "2026 한국 타이포그래피 디자인 트렌드",
+    "2026 SNS 카드뉴스 디자인 레이아웃 트렌드",
+    "카페 신메뉴 출시 SNS 포스터 레이아웃 2026",
+    "복숭아 음료 인스타그램 홍보물 디자인 2026"
+  ],
+  "rawText": "{\n  \"summary\": \"2026년 상반기 핵심 트렌드인 'B.E.Y.O.N.D'와 '디지털 안정감'을 반영하여, 인위적인 매끄러움보다는 손맛이 느껴지는 텍스처와 유기적인 곡선을 강조합니다. 초여름의 청량함을 위해 고채도의 복숭아 컬러와 대비되는 쿨 블루/민트 톤을 믹스한 '주시 미니멀리즘(Juicy Minimalism)' 스타일이 주를 이룹니다.\",\n  \"palette\": [\"#FF7F50\", \"#FFCBA4\", \"#A2CFFE\", \"#F0FFF0\", \"#FFFFFF\"],\n  \"typography\": {\n    \"weight\": \"Bold & Variable\",\n    \"scale\": \"Headline (Large), Body (Medium-Small)\",\n    \"notes\": \"글자 자체가 그래픽이 되는 '익스프레시브 타이포그래피'가 대세입니다. 메인 타이틀은 가변 글꼴(Variable Font)을 활용해 리퀴드한 느낌을 주고, 보조 문구에는 '인간적인 불완전함'을 담은 손글씨 폰트를 믹스하여 온기를 더합니다.\"\n  },\n  \"composition\": \"중앙 집중형 제품 레이아웃을 기본으로 하되, 반투명한 글래스모피즘(Glassmorphism) 카드나 유기적인 블롭(Blob) 형태의 배경 요소를 레이어드하여 깊이감을 줍니다.\",\n  \"motifs\": [\"물방울 맺힌 유리 질감\", \"3D 복숭아 오브제\", \"종이를 찢어 붙인 듯한 콜라주 스티커\", \"반짝이는 스파클 효과\"],\n  \"tone\": \"청량하고 감각적인(Sensorial) 분위기. 웰니스 트렌드를 반영하여 지나치게 자극적이기보다 자연스럽고 건강한 단맛이 느껴지는 톤앤매너를 유지합니다.\",\n  \"notes\": \"2026년 카페 트렌드인 'Everyday Wellness'에 맞춰 '저당(Low Sugar)' 혹은 '로컬 복숭아' 키워드를 디자인 요소(엠블럼 등)로 작게 추가하면 타겟 호응도가 더욱 높아질 것입니다.\"\n}",
+  "usage": {
+    "promptTokenCount": 1371,
+    "candidatesTokenCount": 509,
+    "totalTokenCount": 3931,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1371
+      }
+    ],
+    "toolUsePromptTokenCount": 1399,
+    "thoughtsTokenCount": 652
+  }
+}

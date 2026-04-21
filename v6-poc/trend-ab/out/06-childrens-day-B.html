@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<style>
+@font-face {
+  font-family: "701_400";
+  src: url("https://dev-file.tooldi.com/font/701_400.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "701_700";
+  src: url("https://dev-file.tooldi.com/font/701_700.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "1301_400";
+  src: url("https://dev-file.tooldi.com/font/1301_400.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+</style>
+<style>
+  html, body { margin:0; padding:0; background:#fff; }
+  body { width:1080px; height:1080px; overflow:hidden; }
+</style>
+</head>
+<body>
+<div style="width: 1080px; height: 1080px; background: radial-gradient(circle at 50% 50%, #FFFDE7 0%, #FFF9C4 100%); position: relative; overflow: hidden; font-family: '701_700'; color: #333; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; box-sizing: border-box;">
+  
+  <!-- Background Decorative Elements -->
+  <svg width="1080" height="1080" style="position: absolute; top: 0; left: 0; z-index: 0;">
+    <circle cx="150" cy="150" r="80" fill="#FF3D00" opacity="0.2" />
+    <circle cx="900" cy="200" r="120" fill="#00E5FF" opacity="0.2" />
+    <circle cx="200" cy="900" r="100" fill="#7C4DFF" opacity="0.2" />
+    <circle cx="850" cy="850" r="150" fill="#FFD600" opacity="0.3" />
+  </svg>
+
+  <!-- Main Content Box -->
+  <div style="background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); border: 8px solid #333; border-radius: 60px; padding: 60px; width: 900px; text-align: center; z-index: 1; box-shadow: 20px 20px 0px #333;">
+    
+    <div style="font-size: 64px; color: #FF3D00; margin-bottom: 20px; transform: rotate(-3deg);">5월 5일 어린이날!</div>
+    <h1 style="font-size: 120px; margin: 0; line-height: 1; color: #333; letter-spacing: -4px;">TOY PARTY</h1>
+    
+    <div style="margin: 40px 0; display: flex; justify-content: center; gap: 20px;">
+      <div style="background: #FF3D00; color: white; padding: 20px 40px; border-radius: 30px; font-size: 48px; transform: rotate(2deg);">전 품목 30% OFF</div>
+    </div>
+
+    <div style="background: #7C4DFF; color: white; padding: 30px; border-radius: 40px; font-size: 40px; margin-top: 20px;">
+      3만원 이상 구매 시<br>
+      <span style="font-size: 56px; font-weight: 700;">귀여운 사은품 증정!</span>
+    </div>
+
+    <div style="margin-top: 50px; font-family: '701_400'; font-size: 32px; color: #666;">
+      행복 가득한 어린이날, 완구 매장에서 만나요!
+    </div>
+  </div>
+
+  <!-- Floating Decoration -->
+  <div style="position: absolute; bottom: 50px; right: 50px; width: 200px; height: 200px; z-index: 2;">
+    <svg viewBox="0 0 100 100">
+      <path d="M50 10 L90 40 L75 90 L25 90 L10 40 Z" fill="#FFD600" stroke="#333" stroke-width="4" />
+      <circle cx="50" cy="50" r="20" fill="#FFF" stroke="#333" stroke-width="4" />
+    </svg>
+  </div>
+  
+  <div style="position: absolute; top: 100px; left: 100px; transform: rotate(15deg);">
+    <div style="width: 120px; height: 120px; background: #00E5FF; border-radius: 50%; border: 6px solid #333;"></div>
+  </div>
+
+</div>
+</body>
+</html>

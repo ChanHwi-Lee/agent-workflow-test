@@ -1,0 +1,53 @@
+{
+  "id": "06-childrens-day",
+  "domain": "이벤트/시즌",
+  "canvas": {
+    "width": 1080,
+    "height": 1080
+  },
+  "startedAt": "2026-04-21T05:59:41.855Z",
+  "pathA": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 3485,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 831,
+      "candidatesTokenCount": 745,
+      "totalTokenCount": 1576,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 831
+        }
+      ]
+    },
+    "bytes": 1792
+  },
+  "pathB": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 5236,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 1293,
+      "candidatesTokenCount": 1069,
+      "totalTokenCount": 2362,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1293
+        }
+      ]
+    },
+    "bytes": 2537,
+    "trendModel": "gemini-3-flash-preview",
+    "trendLatencyMs": 15666,
+    "trendCitationCount": 8,
+    "trendSearchQueries": [
+      "",
+      "2026 kids graphic design trends South Korea",
+      "2026 어린이날 디자인 트렌드 한국",
+      "어린이날 팝업스토어 비주얼 트렌드 2026",
+      "2026 완구 매장 이벤트 포스터 디자인"
+    ]
+  }
+}

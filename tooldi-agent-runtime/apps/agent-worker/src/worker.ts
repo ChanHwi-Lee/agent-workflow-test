@@ -58,6 +58,7 @@ export interface BuildWorkerRuntimeOptions {
   templateAbstractLayoutGenerator?: ProcessRunJobDependencies["templateAbstractLayoutGenerator"];
   adaptiveCompositionDecisionBuilder?: AdaptiveCompositionDecisionBuilder;
   v6Overrides?: V6NodeOverrides;
+  v6TrendResearcher?: ProcessRunJobDependencies["v6TrendResearcher"];
 }
 
 export interface AgentWorkerRuntime extends ProcessRunJobDependencies {
@@ -139,6 +140,9 @@ export async function buildWorkerRuntime(
       createTooldiCatalogSourceClient(options.env),
     ...(options.v6Overrides
       ? { v6Overrides: options.v6Overrides }
+      : {}),
+    ...(options.v6TrendResearcher
+      ? { v6TrendResearcher: options.v6TrendResearcher }
       : {}),
     async processRunJob(job: RunJobEnvelope) {
       return processRunJob(job, runtime);

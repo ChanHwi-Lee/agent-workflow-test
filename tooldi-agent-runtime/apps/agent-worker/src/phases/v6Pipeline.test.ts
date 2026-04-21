@@ -124,6 +124,29 @@ test("runV6Pipeline — runs Stage 1→2→3 in order and returns commands", asy
   assert.ok(result.latency.totalMs >= 0);
 });
 
+test("runV6Pipeline — passes optional trend context only to HTML generation", async () => {
+  let observedTrendContext: string | null | undefined;
+  const deps = makeDeps({
+    generateHtml: async (args) => {
+      observedTrendContext = args.trendContext;
+      return FAKE_GEN_RESULT;
+    },
+  });
+
+  await runV6Pipeline(
+    makeInput({
+      userPrompt: "카페 신메뉴 배너",
+      trendContext: "Palette inspiration: #FF7F50, #E6F7FF",
+    }),
+    deps,
+  );
+
+  assert.equal(
+    observedTrendContext,
+    "Palette inspiration: #FF7F50, #E6F7FF",
+  );
+});
+
 test("runV6Pipeline — throws V6HtmlValidationError when validation fails; skips render and map", async () => {
   let renderCalled = false;
   let mapCalled = false;

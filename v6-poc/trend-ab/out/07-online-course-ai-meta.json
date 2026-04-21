@@ -1,0 +1,54 @@
+{
+  "id": "07-online-course-ai",
+  "domain": "교육/온라인 강의",
+  "canvas": {
+    "width": 1200,
+    "height": 628
+  },
+  "startedAt": "2026-04-21T06:00:05.175Z",
+  "pathA": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 4272,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 841,
+      "candidatesTokenCount": 968,
+      "totalTokenCount": 1809,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 841
+        }
+      ]
+    },
+    "bytes": 2460
+  },
+  "pathB": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 4957,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 1282,
+      "candidatesTokenCount": 1162,
+      "totalTokenCount": 2444,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1282
+        }
+      ]
+    },
+    "bytes": 2908,
+    "trendModel": "gemini-3-flash-preview",
+    "trendLatencyMs": 17696,
+    "trendCitationCount": 5,
+    "trendSearchQueries": [
+      "",
+      "2026 디자인 트렌드 컬러 그래픽",
+      "AI 강의 홍보 배너 디자인 2026",
+      "2026 graphic design trends Korea e-learning",
+      "한국 온라인 강의 플랫폼 디자인 트렌드 2026",
+      "2026 IT 교육 배너 디자인 트렌드"
+    ]
+  }
+}

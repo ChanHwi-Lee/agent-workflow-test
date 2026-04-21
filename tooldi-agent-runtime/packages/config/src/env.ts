@@ -64,6 +64,24 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
   tooldiContentApiTimeoutMs: number | null;
   tooldiContentApiCookie: string | null;
   googleApiKey: string | null;
+  htmlGenProvider: "gemini" | "claude_code";
+  claudeCodeModel: string;
+  claudeCodeEffort: "low" | "medium" | "high" | "xhigh" | "max";
+  claudeCodeTimeoutMs: number;
+  trendResearchMode: "off" | "shadow" | "enabled";
+  trendResearchModel: string;
+  trendCacheTtlSeconds: number;
+  v6AssetRagMode: "off" | "shadow" | "enabled";
+  v6AssetEmbeddingEndpoint: string;
+  v6AssetQdrantUrl: string;
+  v6AssetPhotoCollection: string;
+  v6AssetGraphicCollection: string;
+  v6AssetPublicBaseUrl: string;
+  v6AssetTopK: number;
+  v6AssetRerankCandidateCount: number;
+  v6AssetTimeoutMs: number;
+  v6AssetVisionRerankMode: "off" | "enabled";
+  v6AssetVisionModel: string;
   exitAfterBoot: boolean;
 }
 
@@ -336,6 +354,89 @@ export function loadAgentWorkerEnv(
       "TOOLDI_CONTENT_API_COOKIE",
     ),
     googleApiKey: readOptionalString(source, "GOOGLE_API_KEY"),
+    htmlGenProvider: readEnumValue(
+      source,
+      "HTML_GEN_PROVIDER",
+      ["gemini", "claude_code"] as const,
+      "gemini",
+    ),
+    claudeCodeModel: readString(source, "CLAUDE_CODE_MODEL", "sonnet"),
+    claudeCodeEffort: readEnumValue(
+      source,
+      "CLAUDE_CODE_EFFORT",
+      ["low", "medium", "high", "xhigh", "max"] as const,
+      "low",
+    ),
+    claudeCodeTimeoutMs: readNumber(
+      source,
+      "CLAUDE_CODE_TIMEOUT_MS",
+      180000,
+    ),
+    trendResearchMode: readEnumValue(
+      source,
+      "TREND_RESEARCH_MODE",
+      ["off", "shadow", "enabled"] as const,
+      "off",
+    ),
+    trendResearchModel: readString(
+      source,
+      "TREND_RESEARCH_MODEL",
+      "gemini-3-flash-preview",
+    ),
+    trendCacheTtlSeconds: readNumber(
+      source,
+      "TREND_CACHE_TTL_SECONDS",
+      604800,
+    ),
+    v6AssetRagMode: readEnumValue(
+      source,
+      "V6_ASSET_RAG_MODE",
+      ["off", "shadow", "enabled"] as const,
+      "off",
+    ),
+    v6AssetEmbeddingEndpoint: readString(
+      source,
+      "V6_ASSET_EMBEDDING_ENDPOINT",
+      "http://127.0.0.1:7070/embed/text",
+    ),
+    v6AssetQdrantUrl: readString(
+      source,
+      "V6_ASSET_QDRANT_URL",
+      "http://127.0.0.1:6333",
+    ),
+    v6AssetPhotoCollection: readString(
+      source,
+      "V6_ASSET_PHOTO_COLLECTION",
+      "tooldi_photos_v1",
+    ),
+    v6AssetGraphicCollection: readString(
+      source,
+      "V6_ASSET_GRAPHIC_COLLECTION",
+      "tooldi_graphics_v1",
+    ),
+    v6AssetPublicBaseUrl: readString(
+      source,
+      "V6_ASSET_PUBLIC_BASE_URL",
+      "https://dev-file.tooldi.com",
+    ),
+    v6AssetTopK: readNumber(source, "V6_ASSET_TOP_K", 40),
+    v6AssetRerankCandidateCount: readNumber(
+      source,
+      "V6_ASSET_RERANK_CANDIDATE_COUNT",
+      6,
+    ),
+    v6AssetTimeoutMs: readNumber(source, "V6_ASSET_TIMEOUT_MS", 8000),
+    v6AssetVisionRerankMode: readEnumValue(
+      source,
+      "V6_ASSET_VISION_RERANK_MODE",
+      ["off", "enabled"] as const,
+      "off",
+    ),
+    v6AssetVisionModel: readString(
+      source,
+      "V6_ASSET_VISION_MODEL",
+      "gemini-3.1-flash-lite-preview",
+    ),
     exitAfterBoot: readBoolean(source, "WORKER_EXIT_AFTER_BOOT", false),
   };
 }

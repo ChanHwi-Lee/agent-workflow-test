@@ -32,6 +32,7 @@ export interface V6PipelineInput {
   readonly canvasWidth: number;
   readonly canvasHeight: number;
   readonly userPrompt: string;
+  readonly trendContext?: string | null;
   readonly apiKey: string;
 }
 
@@ -40,6 +41,7 @@ export interface V6PipelineDependencies {
     canvasWidth: number;
     canvasHeight: number;
     userPrompt: string;
+    trendContext?: string | null;
     apiKey: string;
   }) => Promise<V6HtmlGenResult>;
   readonly validateHtml: (html: string) => V6HtmlValidationResult;
@@ -108,6 +110,7 @@ export async function runV6Pipeline(
     canvasWidth: input.canvasWidth,
     canvasHeight: input.canvasHeight,
     userPrompt: input.userPrompt,
+    trendContext: input.trendContext ?? null,
     apiKey: input.apiKey,
   });
   const html = genResult.html;

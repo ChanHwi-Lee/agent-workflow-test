@@ -25,6 +25,7 @@ import type {
   SceneStylePlan,
 } from "../types.js";
 import type { V6NodeOverrides } from "./v6PipelineNode.js";
+import type { V6TrendResearcher } from "../phases/v6TrendResearch.js";
 
 export interface AdaptiveCompositionDecisionBuilderInput {
   runId: string;
@@ -59,4 +60,5 @@ export interface RunJobGraphDependencies {
   templateAbstractLayoutGenerator?: TemplateAbstractLayoutGenerator;
   adaptiveCompositionDecisionBuilder?: AdaptiveCompositionDecisionBuilder;
   v6Overrides?: V6NodeOverrides;
+  v6TrendResearcher?: V6TrendResearcher;
 }

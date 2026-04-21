@@ -1,0 +1,62 @@
+[
+  {
+    "id": "01-spring-fashion-sale",
+    "domain": "패션 이커머스",
+    "canvas": { "width": 1200, "height": 628 },
+    "prompt": "봄 신상 여성 의류 20% 할인 이벤트 배너. 브랜드명 'NOVA', 메인 카피는 '봄의 시작, 당신의 룩'. CTA는 '지금 쇼핑하기'."
+  },
+  {
+    "id": "02-cafe-new-menu",
+    "domain": "외식/카페",
+    "canvas": { "width": 1080, "height": 1080 },
+    "prompt": "카페 신메뉴 '아이스 복숭아 라떼' 출시 SNS 정사각 카드. 계절감(초여름) 살려서. 가격 5,500원, 출시일 5월 1일."
+  },
+  {
+    "id": "03-recruiting-backend",
+    "domain": "HR/채용",
+    "canvas": { "width": 1200, "height": 628 },
+    "prompt": "스타트업 '오로라랩스' 시니어 백엔드 개발자 채용 공고 썸네일. 기술 스택 Node.js/TypeScript/AWS, 주 4일제, 연봉 협의."
+  },
+  {
+    "id": "04-wedding-invitation",
+    "domain": "웨딩/라이프",
+    "canvas": { "width": 1080, "height": 1350 },
+    "prompt": "결혼식 청첩장 SNS 세로형 카드. 신랑 이준호, 신부 김서연. 2026년 6월 14일 토요일 오후 1시, 서울 그랜드하얏트. 우아하고 감성적인 톤."
+  },
+  {
+    "id": "05-summer-aircon-promo",
+    "domain": "가전/이커머스",
+    "canvas": { "width": 1200, "height": 628 },
+    "prompt": "여름맞이 에어컨 할인 프로모션 배너. 최대 40% 할인, 무이자 12개월. '시원한 여름, 시작은 쿨하게' 카피. CTA '특가 보기'."
+  },
+  {
+    "id": "06-childrens-day",
+    "domain": "이벤트/시즌",
+    "canvas": { "width": 1080, "height": 1080 },
+    "prompt": "어린이날 완구 매장 이벤트 포스터. 5월 5일 전 품목 30%, 3만원 이상 구매 시 사은품 증정. 밝고 즐거운 분위기."
+  },
+  {
+    "id": "07-online-course-ai",
+    "domain": "교육/온라인 강의",
+    "canvas": { "width": 1200, "height": 628 },
+    "prompt": "온라인 강의 플랫폼 'CodeGround' AI 입문 과정 홍보 배너. '비전공자도 4주 만에' 카피, 수강료 99,000원, 4월 한정 30% 할인."
+  },
+  {
+    "id": "08-restaurant-opening",
+    "domain": "외식/오픈",
+    "canvas": { "width": 1200, "height": 628 },
+    "prompt": "파스타 전문점 'La Linea' 신규 오픈 이벤트 배너. 4월 25일 오픈, 첫 주 30% 할인. 위치 성수동. 모던하고 이탈리안 무드."
+  },
+  {
+    "id": "09-webinar-startup",
+    "domain": "B2B/웨비나",
+    "canvas": { "width": 1080, "height": 1080 },
+    "prompt": "무료 웨비나 초대장. 주제 '시리즈 A 이후 조직 성장 전략', 연사 김태훈 대표(페이플러스). 5월 10일 목요일 저녁 8시, Zoom."
+  },
+  {
+    "id": "10-chuseok-gift",
+    "domain": "명절/식품",
+    "canvas": { "width": 1080, "height": 1350 },
+    "prompt": "추석 프리미엄 한과 선물세트 판매 세로형 배너. 전통 한과 9종 구성, 55,000원, 빠른배송 무료. 고급스러움과 한국적 미감 강조."
+  }
+]

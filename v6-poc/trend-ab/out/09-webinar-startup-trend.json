@@ -1,0 +1,62 @@
+{
+  "id": "09-webinar-startup",
+  "prompt": "무료 웨비나 초대장. 주제 '시리즈 A 이후 조직 성장 전략', 연사 김태훈 대표(페이플러스). 5월 10일 목요일 저녁 8시, Zoom.",
+  "model": "gemini-3-flash-preview",
+  "latencyMs": 21990,
+  "trend": {
+    "summary": "2026년 B2B 테크 트렌드인 'Tech Spec'과 'Quiet Tech'를 결합하여, 신뢰감 있는 오프화이트 베이스에 고채도 블루를 포인트로 사용한 정교한 그리드 레이아웃을 제안합니다. 시리즈 A 이후의 체계적인 성장을 시각화하기 위해 유리 질감의 3D 모티프와 데이터 시각화 요소를 활용합니다.",
+    "palette": [
+      "#F0EEE9",
+      "#262AFF",
+      "#0C0C0C",
+      "#1CABFF",
+      "#E2E2E2"
+    ],
+    "typography": {
+      "weight": "Title: Black(900), Body: Regular(400), Data: Mono",
+      "scale": "Headline: 48pt+, Sub-headline: 18pt, Body: 11pt",
+      "notes": "타이틀은 'Hero Character' 트렌드를 반영해 압도적인 크기로 배치하고, 상세 정보는 모노스페이스 폰트를 사용하여 공학적인 정밀함(Tech Spec)을 강조합니다."
+    },
+    "composition": "비대칭 벤토 그리드(Bento Grid) 레이아웃을 사용하여 연사 프로필, 강연 내용, 일시 정보를 독립된 카드 형태로 구조화하여 가독성을 높입니다.",
+    "motifs": [
+      "유리 질감(Glassmorphism)의 3D 상승 화살표",
+      "정교한 배경 그리드 라인",
+      "데이터 차트를 형상화한 추상적 선 요소"
+    ],
+    "tone": "전문적이고 혁신적이며, 불필요한 장식을 배제한 '절제된 기술미(Quiet Tech)'",
+    "notes": "2026년 트렌드 컬러인 'Cloud Dancer'를 배경색으로 설정하여 고급스러운 느낌을 주었으며, 핀테크 기업인 페이플러스의 정체성을 고려해 고채도 'Global Blue'를 포인트로 활용했습니다. 2026년 5월 10일은 실제 일요일이나 요청하신 '목요일' 텍스트를 우선 반영하도록 설계했습니다."
+  },
+  "contextForHtmlGen": "Summary: 2026년 B2B 테크 트렌드인 'Tech Spec'과 'Quiet Tech'를 결합하여, 신뢰감 있는 오프화이트 베이스에 고채도 블루를 포인트로 사용한 정교한 그리드 레이아웃을 제안합니다. 시리즈 A 이후의 체계적인 성장을 시각화하기 위해 유리 질감의 3D 모티프와 데이터 시각화 요소를 활용합니다.\nPalette (use as inspiration, pick 2-4): #F0EEE9, #262AFF, #0C0C0C, #1CABFF, #E2E2E2\nTypography: weight=Title: Black(900), Body: Regular(400), Data: Mono; scale=Headline: 48pt+, Sub-headline: 18pt, Body: 11pt; notes=타이틀은 'Hero Character' 트렌드를 반영해 압도적인 크기로 배치하고, 상세 정보는 모노스페이스 폰트를 사용하여 공학적인 정밀함(Tech Spec)을 강조합니다.\nComposition: 비대칭 벤토 그리드(Bento Grid) 레이아웃을 사용하여 연사 프로필, 강연 내용, 일시 정보를 독립된 카드 형태로 구조화하여 가독성을 높입니다.\nMotifs: 유리 질감(Glassmorphism)의 3D 상승 화살표, 정교한 배경 그리드 라인, 데이터 차트를 형상화한 추상적 선 요소\nTone: 전문적이고 혁신적이며, 불필요한 장식을 배제한 '절제된 기술미(Quiet Tech)'\nNotes: 2026년 트렌드 컬러인 'Cloud Dancer'를 배경색으로 설정하여 고급스러운 느낌을 주었으며, 핀테크 기업인 페이플러스의 정체성을 고려해 고채도 'Global Blue'를 포인트로 활용했습니다. 2026년 5월 10일은 실제 일요일이나 요청하신 '목요일' 텍스트를 우선 반영하도록 설계했습니다.",
+  "citations": [],
+  "searchQueries": [
+    "2026 디자인 트렌드 웨비나 포스터",
+    "2025 2026 B2B 스타트업 컨퍼런스 디자인 트렌드",
+    "스타트업 웨비나 초대장 레이아웃 2026",
+    "시리즈 A 조직 성장 전략 웨비나 디자인",
+    "PayPlus 김태훈 대표 웨비나 디자인 참고",
+    "PayPlus brand identity colors",
+    "페이플러스 PayPlus 브랜드 로고 색상",
+    "페이플러스 김태훈 대표 프로필"
+  ],
+  "rawText": "{\n  \"summary\": \"2026년 B2B 테크 트렌드인 'Tech Spec'과 'Quiet Tech'를 결합하여, 신뢰감 있는 오프화이트 베이스에 고채도 블루를 포인트로 사용한 정교한 그리드 레이아웃을 제안합니다. 시리즈 A 이후의 체계적인 성장을 시각화하기 위해 유리 질감의 3D 모티프와 데이터 시각화 요소를 활용합니다.\",\n  \"palette\": [\"#F0EEE9\", \"#262AFF\", \"#0C0C0C\", \"#1CABFF\", \"#E2E2E2\"],\n  \"typography\": {\n    \"weight\": \"Title: Black(900), Body: Regular(400), Data: Mono\",\n    \"scale\": \"Headline: 48pt+, Sub-headline: 18pt, Body: 11pt\",\n    \"notes\": \"타이틀은 'Hero Character' 트렌드를 반영해 압도적인 크기로 배치하고, 상세 정보는 모노스페이스 폰트를 사용하여 공학적인 정밀함(Tech Spec)을 강조합니다.\"\n  },\n  \"composition\": \"비대칭 벤토 그리드(Bento Grid) 레이아웃을 사용하여 연사 프로필, 강연 내용, 일시 정보를 독립된 카드 형태로 구조화하여 가독성을 높입니다.\",\n  \"motifs\": [\"유리 질감(Glassmorphism)의 3D 상승 화살표\", \"정교한 배경 그리드 라인\", \"데이터 차트를 형상화한 추상적 선 요소\"],\n  \"tone\": \"전문적이고 혁신적이며, 불필요한 장식을 배제한 '절제된 기술미(Quiet Tech)'\",\n  \"notes\": \"2026년 트렌드 컬러인 'Cloud Dancer'를 배경색으로 설정하여 고급스러운 느낌을 주었으며, 핀테크 기업인 페이플러스의 정체성을 고려해 고채도 'Global Blue'를 포인트로 활용했습니다. 2026년 5월 10일은 실제 일요일이나 요청하신 '목요일' 텍스트를 우선 반영하도록 설계했습니다.\"\n}",
+  "usage": {
+    "promptTokenCount": 889,
+    "candidatesTokenCount": 488,
+    "totalTokenCount": 3670,
+    "cachedContentTokenCount": 443,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 889
+      }
+    ],
+    "cacheTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 443
+      }
+    ],
+    "toolUsePromptTokenCount": 877,
+    "thoughtsTokenCount": 1416
+  }
+}

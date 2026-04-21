@@ -1,0 +1,53 @@
+{
+  "id": "08-restaurant-opening",
+  "domain": "외식/오픈",
+  "canvas": {
+    "width": 1200,
+    "height": 628
+  },
+  "startedAt": "2026-04-21T06:00:06.274Z",
+  "pathA": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 2955,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 834,
+      "candidatesTokenCount": 737,
+      "totalTokenCount": 1571,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 834
+        }
+      ]
+    },
+    "bytes": 1764
+  },
+  "pathB": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 4845,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 1380,
+      "candidatesTokenCount": 980,
+      "totalTokenCount": 2360,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1380
+        }
+      ]
+    },
+    "bytes": 2407,
+    "trendModel": "gemini-3-flash-preview",
+    "trendLatencyMs": 22890,
+    "trendCitationCount": 0,
+    "trendSearchQueries": [
+      "",
+      "성수동 맛집 브랜딩 2025 2026 트렌드",
+      "modern italian restaurant banner design trends 2026",
+      "2026 성수동 레스토랑 디자인 트렌드",
+      "2026 이탈리안 레스토랑 배너 디자인 트렌드 컬러 타이포그래피"
+    ]
+  }
+}

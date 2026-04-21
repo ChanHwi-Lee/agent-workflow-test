@@ -171,3 +171,17 @@ test("buildV6UserMessage — includes canvas dimensions and trimmed user prompt"
   // No leading/trailing whitespace on the user section.
   assert.ok(!msg.endsWith(" "));
 });
+
+test("buildV6UserMessage — appends optional trend context as execution-oriented visual input", () => {
+  const msg = buildV6UserMessage({
+    canvasWidth: 1080,
+    canvasHeight: 1080,
+    userPrompt: "카페 신메뉴 배너",
+    trendContext: "Palette inspiration: #FF7F50, #E6F7FF",
+  });
+
+  assert.match(msg, /Optional current visual trend context/);
+  assert.match(msg, /Palette inspiration/);
+  assert.match(msg, /design execution brief/);
+  assert.match(msg, /product\/hero imagery/);
+});

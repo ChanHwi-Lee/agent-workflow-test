@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<style>
+@font-face {
+  font-family: "701_400";
+  src: url("https://dev-file.tooldi.com/font/701_400.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "701_700";
+  src: url("https://dev-file.tooldi.com/font/701_700.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "1301_400";
+  src: url("https://dev-file.tooldi.com/font/1301_400.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+</style>
+<style>
+  html, body { margin:0; padding:0; background:#fff; }
+  body { width:1200px; height:628px; overflow:hidden; }
+</style>
+</head>
+<body>
+<div style="width: 1200px; height: 628px; background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); position: relative; overflow: hidden; font-family: '701_700'; color: #F8FAFC; display: flex; align-items: center; justify-content: space-between; padding: 0 80px; box-sizing: border-box;">
+    
+    <!-- Background Abstract Shapes -->
+    <svg width="1200" height="628" style="position: absolute; top: 0; left: 0; opacity: 0.15;">
+        <circle cx="900" cy="100" r="200" fill="#0055FF" filter="blur(80px)"/>
+        <circle cx="200" cy="500" r="250" fill="#A3E635" filter="blur(100px)"/>
+    </svg>
+
+    <!-- Left Content -->
+    <div style="display: flex; flex-direction: column; gap: 20px; z-index: 1;">
+        <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: 8px 20px; border-radius: 50px; width: fit-content; font-family: '701_400'; font-size: 20px; color: #A3E635; backdrop-filter: blur(10px);">
+            CodeGround AI 입문 과정
+        </div>
+        <h1 style="font-family: '1301_400'; font-size: 96px; margin: 0; line-height: 1.1; letter-spacing: -2px;">
+            비전공자도<br>
+            <span style="color: #A3E635;">4주 만에</span> 마스터
+        </h1>
+        <p style="font-family: '701_400'; font-size: 28px; opacity: 0.8; margin: 0;">AI의 기초부터 실무 활용까지, 가장 빠르게 시작하세요.</p>
+    </div>
+
+    <!-- Right Content (Bento Card) -->
+    <div style="width: 380px; height: 420px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 40px; backdrop-filter: blur(20px); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+        <div style="position: absolute; top: -20px; right: -20px; background: #0055FF; padding: 15px 30px; border-radius: 20px; transform: rotate(10deg); font-size: 24px; box-shadow: 0 10px 20px rgba(0,85,255,0.3);">
+            4월 한정 30% 할인
+        </div>
+        <span style="font-size: 24px; opacity: 0.7; margin-bottom: 10px;">수강료</span>
+        <div style="font-family: '1301_400'; font-size: 72px; margin-bottom: 40px;">99,000<span style="font-size: 32px;">원</span></div>
+        <div style="width: 280px; height: 70px; background: #A3E635; border-radius: 20px; display: flex; align-items: center; justify-content: center; color: #1E293B; font-size: 24px; cursor: pointer;">
+            지금 바로 시작하기
+        </div>
+    </div>
+
+    <!-- Decorative Elements -->
+    <div style="position: absolute; bottom: 40px; left: 80px; width: 60px; height: 60px; border: 2px solid #2DD4BF; border-radius: 50%;"></div>
+    <div style="position: absolute; top: 80px; right: 100px; width: 40px; height: 40px; background: #0055FF; border-radius: 10px; transform: rotate(45deg);"></div>
+</div>
+</body>
+</html>

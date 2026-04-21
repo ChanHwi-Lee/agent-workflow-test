@@ -13,8 +13,9 @@ export function registerRunJobGraphEdges(graph: any) {
     .addConditionalEdges("gate_scope", (state: any) =>
       state.finalizeDraft
         ? "send_finalize"
-        : "v6_freeform_layout_pipeline",
+        : "maybe_research_visual_trends",
     )
+    .addEdge("maybe_research_visual_trends", "v6_freeform_layout_pipeline")
     .addEdge("v6_freeform_layout_pipeline", "prepare_execution")
     .addEdge("build_template_prior_summary", "build_template_prior_bundle")
     .addEdge("build_template_prior_bundle", "build_scene_plans")

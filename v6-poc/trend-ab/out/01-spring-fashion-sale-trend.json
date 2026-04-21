@@ -1,0 +1,85 @@
+{
+  "id": "01-spring-fashion-sale",
+  "prompt": "봄 신상 여성 의류 20% 할인 이벤트 배너. 브랜드명 'NOVA', 메인 카피는 '봄의 시작, 당신의 룩'. CTA는 '지금 쇼핑하기'.",
+  "model": "gemini-3-flash-preview",
+  "latencyMs": 22015,
+  "trend": {
+    "summary": "2026년 S/S 시즌은 '정제된 맥시멀리즘(Refined Maximalism)'과 '노스탤직 레트로 퓨처리즘'의 결합이 핵심입니다. 부드러운 파우더리 파스텔 톤을 베이스로 하되, 유리 질감(Glass Block)이나 크롬 소재의 디지털 요소를 레이어드하여 세련되면서도 활기찬 에너지를 전달하는 디자인이 주를 이룹니다.",
+    "palette": [
+      "#F0EEE9",
+      "#A2CFFE",
+      "#FFF44F",
+      "#FF6347",
+      "#E6E6FA"
+    ],
+    "typography": {
+      "weight": "Extra Bold / Medium",
+      "scale": "대담한 타이포그래피가 스토리텔링의 중심이 되며, 메인 카피는 화면을 압도하는 크기로 배치합니다.",
+      "notes": "리드미컬하고 끝처리가 부드러운(Liquid Terminals) 산세리프체가 유행하며, 브랜드명 'NOVA'는 미래적인 느낌의 와이드한 산세리프나 고대비 세리프를 혼용합니다."
+    },
+    "composition": "이미지를 겹겹이 쌓는 콜라주 방식과 반투명한 '유리 블록' 프레임을 활용해 깊이감을 주며, 배경에 브랜드명이나 할인율을 반복 배치하는 '빌보딩(Billboarding)' 패턴을 적용합니다.",
+    "motifs": [
+      "블러 처리된 로맨틱 블룸(꽃) 실루엣",
+      "액체 금속(Liquid Chrome) 라인",
+      "3D 유리 질감의 입체 도형",
+      "격자무늬(Grid)와 하프톤 패턴의 변주"
+    ],
+    "tone": "세련된 '레이지 럭셔리(Lazy Luxury)'와 디지털 감성이 공존하는 활기차고 감각적인 분위기",
+    "notes": "2026년은 완벽한 미니멀리즘보다는 의도된 불완전함과 레이어링을 통한 촉각적 경험이 중요합니다. 할인율(20%) 강조 시 토마토 레드(#FF6347)와 같은 강렬한 보색을 포인트로 활용하는 것이 효과적입니다."
+  },
+  "contextForHtmlGen": "Summary: 2026년 S/S 시즌은 '정제된 맥시멀리즘(Refined Maximalism)'과 '노스탤직 레트로 퓨처리즘'의 결합이 핵심입니다. 부드러운 파우더리 파스텔 톤을 베이스로 하되, 유리 질감(Glass Block)이나 크롬 소재의 디지털 요소를 레이어드하여 세련되면서도 활기찬 에너지를 전달하는 디자인이 주를 이룹니다.\nPalette (use as inspiration, pick 2-4): #F0EEE9, #A2CFFE, #FFF44F, #FF6347, #E6E6FA\nTypography: weight=Extra Bold / Medium; scale=대담한 타이포그래피가 스토리텔링의 중심이 되며, 메인 카피는 화면을 압도하는 크기로 배치합니다.; notes=리드미컬하고 끝처리가 부드러운(Liquid Terminals) 산세리프체가 유행하며, 브랜드명 'NOVA'는 미래적인 느낌의 와이드한 산세리프나 고대비 세리프를 혼용합니다.\nComposition: 이미지를 겹겹이 쌓는 콜라주 방식과 반투명한 '유리 블록' 프레임을 활용해 깊이감을 주며, 배경에 브랜드명이나 할인율을 반복 배치하는 '빌보딩(Billboarding)' 패턴을 적용합니다.\nMotifs: 블러 처리된 로맨틱 블룸(꽃) 실루엣, 액체 금속(Liquid Chrome) 라인, 3D 유리 질감의 입체 도형, 격자무늬(Grid)와 하프톤 패턴의 변주\nTone: 세련된 '레이지 럭셔리(Lazy Luxury)'와 디지털 감성이 공존하는 활기차고 감각적인 분위기\nNotes: 2026년은 완벽한 미니멀리즘보다는 의도된 불완전함과 레이어링을 통한 촉각적 경험이 중요합니다. 할인율(20%) 강조 시 토마토 레드(#FF6347)와 같은 강렬한 보색을 포인트로 활용하는 것이 효과적입니다.",
+  "citations": [
+    {
+      "title": "koreaherald.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEpXGTU22t2Yshn4Cc6Nr8tC2OTtVDItN5TXyy_h_T8vLAwDKWuRSzdYaUm-9RCyKdqDi1NvtihRrlb2e45QnX24Xmo6Km0-tcX8Y3mys-V0ZK8XI6obLgeZRbfqYbaUaWYrqClXf4="
+    },
+    {
+      "title": "theapparelfactory.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGirLyryDtaoxGe3lQkyE-CDBJUjlZNvEdYRKp8n0JLK_qREUAehXZJ6g1jBhQ8sOW7E-lA6K44hiCWABZb4rBCqkNBkW16qqXNnT8XGloGTybujmUpB6NKd45TrnSbSZquTx_0t3-hUUBLU6tYydV_3J17f_BWUhJmIA=="
+    },
+    {
+      "title": "imagazinekorea.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG-az0hLG5mESbkbjhUre8N6hmqvYltTxaEB4OqswunJbyOUcrbN_q9mbcN1BkKbYXhny5NoAmw9t-PH1Cy29mVSDBvC8H8m1a6eYmWGAob3Pbg5koCkpYnrvhVqZD9DMcHBj3YnuVONwZH4m20c-wm8RqjhxtmOxld2T1mCi4DQdhW6hpzxingsfj6bf6qSUayOGSm_7lbzACQOw=="
+    },
+    {
+      "title": "adobe.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHEIM160L71KJo4PYOIwIEG7531D-yCpR_WL9x8gszhIGRftgEEb_aWbN2aaAco5OfLKhFnVc6G2WMfUJmu4innaP-YI2m0W-YcL9l6QhoC6hrSacQ_ABlInBuzzWGSnTCa-KtiqWTW3KYUGc8-Rvy41SFczUQ="
+    },
+    {
+      "title": "allurekorea.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHJuN55UFOqn3AcoRddy2x9ofGZQzuQSZYf4bXB69xzwjN97SsUy43M6aYHgnGgcndtNwucgO79j1w2NMMlQt-OgFDxuCWV4OgZaVLmxgxaHr-PGMk0GQY9-AgN2jvq9hBmXBaHis6Ndk2a2uHv16f4I8rbEszDX_LcAL5DME21sql5_KhXovgzjy-JTK7G-5IVpn4X8bUubBobhEvTOuJgx2zpaGDba73wY9xliNrSSsANktF-C3WO"
+    },
+    {
+      "title": "fashionchingu.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEAJP0s3HLh6bRlaoYCO-1reU86L2BUV-A7LbTCYg0dws2SahpYpJGFZ8OZhZyR-vUtn3AlETYq_QnR-C67-lHnTcIm7aGxZPLFqn5kl-lZsQQnwzhkeSamN7hB2gm40MdrJG1GKbLtKkDg49MCgDW65CWsaJS0_FIiag=="
+    },
+    {
+      "title": "itsnicethat.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFPZDt9WlqgHBgf165UcPQUcAV2K228K7MLPWyhOGcwQJpZkdKrT9adOoO4FZW4us0ZMXhQoKGCbxHOB4vL4_4idX7weWyXlcih8qbVeDH_TC3U6V9erSxCzqPx2UzxhtCBP0gy2FXX6i4-WPBcfmaiqbCSQbG4fePBBiLahNkaY0bLjb3bjUq5gh4FZw2z8BPsFI8dLfeLbQU="
+    },
+    {
+      "title": "youtube.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFUhaqpHRxC65lioMzV1Ycb03gwg1FQjySY3VhLX4PdnadibHI1b-N5MWgn0-SQ3BAZ2PnALynaiD2Qb5vK7d77cqkeK44yJYwJDztV5ROZ9yZBtkF-8FPPXzby31yb9Ya_J_t5dA=="
+    }
+  ],
+  "searchQueries": [
+    "",
+    "2026 S/S 패션 컬러 트렌드 한국",
+    "2026 S/S fashion color trends Korea",
+    "2026 봄 그래픽 디자인 트렌드 배너",
+    "2026 여성 의류 쇼핑몰 배너 디자인 레이아웃"
+  ],
+  "rawText": "{\n  \"summary\": \"2026년 S/S 시즌은 '정제된 맥시멀리즘(Refined Maximalism)'과 '노스탤직 레트로 퓨처리즘'의 결합이 핵심입니다. 부드러운 파우더리 파스텔 톤을 베이스로 하되, 유리 질감(Glass Block)이나 크롬 소재의 디지털 요소를 레이어드하여 세련되면서도 활기찬 에너지를 전달하는 디자인이 주를 이룹니다.\",\n  \"palette\": [\n    \"#F0EEE9\",\n    \"#A2CFFE\",\n    \"#FFF44F\",\n    \"#FF6347\",\n    \"#E6E6FA\"\n  ],\n  \"typography\": {\n    \"weight\": \"Extra Bold / Medium\",\n    \"scale\": \"대담한 타이포그래피가 스토리텔링의 중심이 되며, 메인 카피는 화면을 압도하는 크기로 배치합니다.\",\n    \"notes\": \"리드미컬하고 끝처리가 부드러운(Liquid Terminals) 산세리프체가 유행하며, 브랜드명 'NOVA'는 미래적인 느낌의 와이드한 산세리프나 고대비 세리프를 혼용합니다.\"\n  },\n  \"composition\": \"이미지를 겹겹이 쌓는 콜라주 방식과 반투명한 '유리 블록' 프레임을 활용해 깊이감을 주며, 배경에 브랜드명이나 할인율을 반복 배치하는 '빌보딩(Billboarding)' 패턴을 적용합니다.\",\n  \"motifs\": [\n    \"블러 처리된 로맨틱 블룸(꽃) 실루엣\",\n    \"액체 금속(Liquid Chrome) 라인\",\n    \"3D 유리 질감의 입체 도형\",\n    \"격자무늬(Grid)와 하프톤 패턴의 변주\"\n  ],\n  \"tone\": \"세련된 '레이지 럭셔리(Lazy Luxury)'와 디지털 감성이 공존하는 활기차고 감각적인 분위기\",\n  \"notes\": \"2026년은 완벽한 미니멀리즘보다는 의도된 불완전함과 레이어링을 통한 촉각적 경험이 중요합니다. 할인율(20%) 강조 시 토마토 레드(#FF6347)와 같은 강렬한 보색을 포인트로 활용하는 것이 효과적입니다.\"\n}",
+  "usage": {
+    "promptTokenCount": 1380,
+    "candidatesTokenCount": 539,
+    "totalTokenCount": 3372,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1380
+      }
+    ],
+    "thoughtsTokenCount": 1453
+  }
+}

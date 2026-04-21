@@ -1,0 +1,74 @@
+{
+  "id": "07-online-course-ai",
+  "prompt": "온라인 강의 플랫폼 'CodeGround' AI 입문 과정 홍보 배너. '비전공자도 4주 만에' 카피, 수강료 99,000원, 4월 한정 30% 할인.",
+  "model": "gemini-3-flash-preview",
+  "latencyMs": 17696,
+  "trend": {
+    "summary": "2026년 AI 교육 디자인은 차갑고 기계적인 느낌에서 벗어나 '인간 중심의 기술(Human-centric Tech)'을 지향합니다. '리퀴드 글래스(Liquid Glass)' 질감과 밝고 에너제틱한 컬러를 사용하여 비전공자도 쉽게 접근할 수 있는 친근하면서도 혁신적인 분위기를 연출하는 것이 핵심입니다.",
+    "palette": [
+      "#0055FF",
+      "#A3E635",
+      "#F8FAFC",
+      "#1E293B",
+      "#2DD4BF"
+    ],
+    "typography": {
+      "weight": "Extra Bold & Variable",
+      "scale": "Extreme Contrast (Title vs Body)",
+      "notes": "Tlab퓨처 Variable이나 Google Sans Flex 같은 가변 폰트를 사용하여 '4주', '99,000원' 등 핵심 숫자를 거대하게 강조하고, 자간을 넓게 설정해 현대적인 인상을 줍니다."
+    },
+    "composition": "벤토 그리드(Bento Grid) 레이아웃을 기반으로 하되, 요소들이 경계를 넘나드는 '플로팅 3D' 배치를 통해 입체감과 역동성을 부여합니다.",
+    "motifs": [
+      "리퀴드 글래스(유리 질감) 아이콘",
+      "홍보 문구를 감싸는 반투명 유리 카드",
+      "홍로그램 광택의 3D 구체",
+      "미세한 노이즈/그레인 질감 오버레이"
+    ],
+    "tone": "신뢰감 있는(Professional), 에너제틱한(High-energy), 비전공자에게 친숙한(Approachable)",
+    "notes": "2026년 트렌드인 '뉴스텔지어(Newstalgia)'를 반영하여 완전한 평면 디자인보다는 약간의 질감이 느껴지는 3D 요소와 고대비 컬러 조합이 효과적입니다."
+  },
+  "contextForHtmlGen": "Summary: 2026년 AI 교육 디자인은 차갑고 기계적인 느낌에서 벗어나 '인간 중심의 기술(Human-centric Tech)'을 지향합니다. '리퀴드 글래스(Liquid Glass)' 질감과 밝고 에너제틱한 컬러를 사용하여 비전공자도 쉽게 접근할 수 있는 친근하면서도 혁신적인 분위기를 연출하는 것이 핵심입니다.\nPalette (use as inspiration, pick 2-4): #0055FF, #A3E635, #F8FAFC, #1E293B, #2DD4BF\nTypography: weight=Extra Bold & Variable; scale=Extreme Contrast (Title vs Body); notes=Tlab퓨처 Variable이나 Google Sans Flex 같은 가변 폰트를 사용하여 '4주', '99,000원' 등 핵심 숫자를 거대하게 강조하고, 자간을 넓게 설정해 현대적인 인상을 줍니다.\nComposition: 벤토 그리드(Bento Grid) 레이아웃을 기반으로 하되, 요소들이 경계를 넘나드는 '플로팅 3D' 배치를 통해 입체감과 역동성을 부여합니다.\nMotifs: 리퀴드 글래스(유리 질감) 아이콘, 홍보 문구를 감싸는 반투명 유리 카드, 홍로그램 광택의 3D 구체, 미세한 노이즈/그레인 질감 오버레이\nTone: 신뢰감 있는(Professional), 에너제틱한(High-energy), 비전공자에게 친숙한(Approachable)\nNotes: 2026년 트렌드인 '뉴스텔지어(Newstalgia)'를 반영하여 완전한 평면 디자인보다는 약간의 질감이 느껴지는 3D 요소와 고대비 컬러 조합이 효과적입니다.",
+  "citations": [
+    {
+      "title": "envato.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGW0xs3rdmhh-OOxQJpqF8SiRZGnFl5yHKExGNXG6JOvvsI-PoWxbpm8ZZdOKa7edt-fRmgKR04AEnLJWzKoPXbogR9MBs__c0xT_VhNqb4HYxGa5YvdnNUBltANJDv6v7fsMJ_WDEDKuqc37J2iZj2VZQ="
+    },
+    {
+      "title": "cosmorning.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHDd2HfsyplpD6_mZ0HCcGFV3sxJ1L-KgyfGmfIdlwiFSWRNt3BzkFP24k9Orpbg8rlVxCdAlpMbDWUg0WEvjc_dTZ7-QPZy0KdJMXoc8GbrSoZ2DSk0IAlxNBq5NYgHNYhRdYirvKhP3BD9cceJjxn"
+    },
+    {
+      "title": "adobe.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGLFO8QXWsQlDomwnQvPWrjcy-SaYB5phk-2MWteyiiUODdE9VpdCDgFeWuQgMIASUPINcbVRfngYy-S9og9uCQ8bk_IYpAfisJKTmx-le1qnzAx_q3T964QRWDMu-el78wsNZXkjImh7qEaClg53eQdIIkIrJs"
+    },
+    {
+      "title": "itsnicethat.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHlzmpM-YBdwj4lUtMS9HLTLO-x5LSNGRD8DXp_DwpHZPYaUeoHFS8p3tmV7mgeppng4xUfg9ZNs9KNeQASh7rlQt8fSiyuRTuxrZfjb1oCcaBgVcQs9r0rJkkBngoxNC3NqeRbrFy7YNtjw6SLupWL9ZiBWN96B9byo2zv2ybfxVCsBufl0U22t8uKEweXrv3Kr50KfogxsVJB"
+    },
+    {
+      "title": "yesimadesigner.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFVJuancui2EyZCYTTbISMwj8L4b23kcWGQQVH7LHoiatNSkk27gkAIaXcBj4GEVHuA4RrEN4CNuojh544qNNl7dw0jVWE6JDLB60WIxjtnTL7vOc6kuR9DQX3aS9Iay-lP9FZ1LuvGRMmVECwnwxXW2QlzMFZ2XLxzMI9mbLfh"
+    }
+  ],
+  "searchQueries": [
+    "",
+    "2026 디자인 트렌드 컬러 그래픽",
+    "AI 강의 홍보 배너 디자인 2026",
+    "2026 graphic design trends Korea e-learning",
+    "한국 온라인 강의 플랫폼 디자인 트렌드 2026",
+    "2026 IT 교육 배너 디자인 트렌드"
+  ],
+  "rawText": "{\n  \"summary\": \"2026년 AI 교육 디자인은 차갑고 기계적인 느낌에서 벗어나 '인간 중심의 기술(Human-centric Tech)'을 지향합니다. '리퀴드 글래스(Liquid Glass)' 질감과 밝고 에너제틱한 컬러를 사용하여 비전공자도 쉽게 접근할 수 있는 친근하면서도 혁신적인 분위기를 연출하는 것이 핵심입니다.\",\n  \"palette\": [\"#0055FF\", \"#A3E635\", \"#F8FAFC\", \"#1E293B\", \"#2DD4BF\"],\n  \"typography\": {\n    \"weight\": \"Extra Bold & Variable\",\n    \"scale\": \"Extreme Contrast (Title vs Body)\",\n    \"notes\": \"Tlab퓨처 Variable이나 Google Sans Flex 같은 가변 폰트를 사용하여 '4주', '99,000원' 등 핵심 숫자를 거대하게 강조하고, 자간을 넓게 설정해 현대적인 인상을 줍니다.\"\n  },\n  \"composition\": \"벤토 그리드(Bento Grid) 레이아웃을 기반으로 하되, 요소들이 경계를 넘나드는 '플로팅 3D' 배치를 통해 입체감과 역동성을 부여합니다.\",\n  \"motifs\": [\"리퀴드 글래스(유리 질감) 아이콘\", \"홍보 문구를 감싸는 반투명 유리 카드\", \"홍로그램 광택의 3D 구체\", \"미세한 노이즈/그레인 질감 오버레이\"],\n  \"tone\": \"신뢰감 있는(Professional), 에너제틱한(High-energy), 비전공자에게 친숙한(Approachable)\",\n  \"notes\": \"2026년 트렌드인 '뉴스텔지어(Newstalgia)'를 반영하여 완전한 평면 디자인보다는 약간의 질감이 느껴지는 3D 요소와 고대비 컬러 조합이 효과적입니다.\"\n}",
+  "usage": {
+    "promptTokenCount": 1410,
+    "candidatesTokenCount": 436,
+    "totalTokenCount": 2685,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1410
+      }
+    ],
+    "thoughtsTokenCount": 839
+  }
+}

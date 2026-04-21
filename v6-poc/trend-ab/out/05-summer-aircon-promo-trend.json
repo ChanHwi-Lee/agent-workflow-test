@@ -1,0 +1,52 @@
+{
+  "id": "05-summer-aircon-promo",
+  "prompt": "여름맞이 에어컨 할인 프로모션 배너. 최대 40% 할인, 무이자 12개월. '시원한 여름, 시작은 쿨하게' 카피. CTA '특가 보기'.",
+  "model": "gemini-3-flash-preview",
+  "latencyMs": 20841,
+  "trend": {
+    "summary": "2026년 팬톤 컬러인 '클라우드 댄서(Cloud Dancer)'의 깨끗한 화이트를 베이스로, 고채도의 '사이버 네온' 컬러를 포인트로 활용한 '피지털(Phygital) 쿨링' 스타일이 핵심입니다. 가전의 프리미엄한 느낌을 주는 3D 크롬 질감과 정보 전달력이 높은 벤토 박스(Bento Box) 레이아웃을 결합하여 신뢰감과 구매 욕구를 동시에 자극합니다.",
+    "palette": [
+      "#F2F0EB",
+      "#0055FF",
+      "#D4FF00",
+      "#1A1A1A",
+      "#E0E0E0"
+    ],
+    "typography": {
+      "weight": "Extra-Bold / Black",
+      "scale": "Headline 80pt+, Discount 120pt+",
+      "notes": "Pretendard Variable 또는 Tlab퓨처 Variable 같은 가변 서체를 사용하며, '쿨하게'와 같은 키워드에는 리퀴드(Liquid) 효과나 미세한 왜곡을 주어 시각적 리듬감을 부여합니다."
+    },
+    "composition": "정보를 구획화하는 벤토 박스(Bento Box) 그리드를 사용하여 '40% 할인'과 '12개월 무이자' 혜택을 독립적인 모듈로 강조하고, 중앙에는 3D 에어컨 렌더링을 배치합니다.",
+    "motifs": [
+      "3D 프로스트 글래스(Frosted Glass) 패널",
+      "크롬 텍스처의 숫자 그래픽",
+      "유동적인 액체 형태의 냉기(Cooling Aura) 그래픽",
+      "Y3K 스타일의 픽셀 아이콘"
+    ],
+    "tone": "하이테크 미니멀리즘(Tech-Minimalism) 기반의 고에너지 프로모션 톤",
+    "notes": "2026년 가전 트렌드인 'AI X'와 '사람 중심의 테크'를 반영하기 위해 지나치게 차가운 느낌보다는 깨끗하고 정돈된 화이트 여백을 충분히 활용하는 것이 중요합니다."
+  },
+  "contextForHtmlGen": "Summary: 2026년 팬톤 컬러인 '클라우드 댄서(Cloud Dancer)'의 깨끗한 화이트를 베이스로, 고채도의 '사이버 네온' 컬러를 포인트로 활용한 '피지털(Phygital) 쿨링' 스타일이 핵심입니다. 가전의 프리미엄한 느낌을 주는 3D 크롬 질감과 정보 전달력이 높은 벤토 박스(Bento Box) 레이아웃을 결합하여 신뢰감과 구매 욕구를 동시에 자극합니다.\nPalette (use as inspiration, pick 2-4): #F2F0EB, #0055FF, #D4FF00, #1A1A1A, #E0E0E0\nTypography: weight=Extra-Bold / Black; scale=Headline 80pt+, Discount 120pt+; notes=Pretendard Variable 또는 Tlab퓨처 Variable 같은 가변 서체를 사용하며, '쿨하게'와 같은 키워드에는 리퀴드(Liquid) 효과나 미세한 왜곡을 주어 시각적 리듬감을 부여합니다.\nComposition: 정보를 구획화하는 벤토 박스(Bento Box) 그리드를 사용하여 '40% 할인'과 '12개월 무이자' 혜택을 독립적인 모듈로 강조하고, 중앙에는 3D 에어컨 렌더링을 배치합니다.\nMotifs: 3D 프로스트 글래스(Frosted Glass) 패널, 크롬 텍스처의 숫자 그래픽, 유동적인 액체 형태의 냉기(Cooling Aura) 그래픽, Y3K 스타일의 픽셀 아이콘\nTone: 하이테크 미니멀리즘(Tech-Minimalism) 기반의 고에너지 프로모션 톤\nNotes: 2026년 가전 트렌드인 'AI X'와 '사람 중심의 테크'를 반영하기 위해 지나치게 차가운 느낌보다는 깨끗하고 정돈된 화이트 여백을 충분히 활용하는 것이 중요합니다.",
+  "citations": [],
+  "searchQueries": [
+    "",
+    "2026 여름 그래픽 디자인 트렌드 한국",
+    "2026 summer graphic design trends Korea e-commerce banner",
+    "2026 가전 제품 프로모션 배너 디자인 트렌드",
+    "에어컨 할인 배너 디자인 2026 트렌드"
+  ],
+  "rawText": "{\n  \"summary\": \"2026년 팬톤 컬러인 '클라우드 댄서(Cloud Dancer)'의 깨끗한 화이트를 베이스로, 고채도의 '사이버 네온' 컬러를 포인트로 활용한 '피지털(Phygital) 쿨링' 스타일이 핵심입니다. 가전의 프리미엄한 느낌을 주는 3D 크롬 질감과 정보 전달력이 높은 벤토 박스(Bento Box) 레이아웃을 결합하여 신뢰감과 구매 욕구를 동시에 자극합니다.\",\n  \"palette\": [\n    \"#F2F0EB\",\n    \"#0055FF\",\n    \"#D4FF00\",\n    \"#1A1A1A\",\n    \"#E0E0E0\"\n  ],\n  \"typography\": {\n    \"weight\": \"Extra-Bold / Black\",\n    \"scale\": \"Headline 80pt+, Discount 120pt+\",\n    \"notes\": \"Pretendard Variable 또는 Tlab퓨처 Variable 같은 가변 서체를 사용하며, '쿨하게'와 같은 키워드에는 리퀴드(Liquid) 효과나 미세한 왜곡을 주어 시각적 리듬감을 부여합니다.\"\n  },\n  \"composition\": \"정보를 구획화하는 벤토 박스(Bento Box) 그리드를 사용하여 '40% 할인'과 '12개월 무이자' 혜택을 독립적인 모듈로 강조하고, 중앙에는 3D 에어컨 렌더링을 배치합니다.\",\n  \"motifs\": [\n    \"3D 프로스트 글래스(Frosted Glass) 패널\",\n    \"크롬 텍스처의 숫자 그래픽\",\n    \"유동적인 액체 형태의 냉기(Cooling Aura) 그래픽\",\n    \"Y3K 스타일의 픽셀 아이콘\"\n  ],\n  \"tone\": \"하이테크 미니멀리즘(Tech-Minimalism) 기반의 고에너지 프로모션 톤\",\n  \"notes\": \"2026년 가전 트렌드인 'AI X'와 '사람 중심의 테크'를 반영하기 위해 지나치게 차가운 느낌보다는 깨끗하고 정돈된 화이트 여백을 충분히 활용하는 것이 중요합니다.\"\n}",
+  "usage": {
+    "promptTokenCount": 1730,
+    "candidatesTokenCount": 512,
+    "totalTokenCount": 3297,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1730
+      }
+    ],
+    "thoughtsTokenCount": 1055
+  }
+}

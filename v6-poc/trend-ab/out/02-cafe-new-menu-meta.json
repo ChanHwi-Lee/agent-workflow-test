@@ -1,0 +1,57 @@
+{
+  "id": "02-cafe-new-menu",
+  "domain": "외식/카페",
+  "canvas": {
+    "width": 1080,
+    "height": 1080
+  },
+  "startedAt": "2026-04-21T05:58:39.400Z",
+  "pathA": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 5015,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 836,
+      "candidatesTokenCount": 990,
+      "totalTokenCount": 1826,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 836
+        }
+      ]
+    },
+    "bytes": 2241
+  },
+  "pathB": {
+    "model": "gemini-3.1-flash-lite-preview",
+    "latencyMs": 4816,
+    "finishReason": "STOP",
+    "usage": {
+      "promptTokenCount": 1348,
+      "candidatesTokenCount": 1410,
+      "totalTokenCount": 2758,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1348
+        }
+      ]
+    },
+    "bytes": 3250,
+    "trendModel": "gemini-3-flash-preview",
+    "trendLatencyMs": 25681,
+    "trendCitationCount": 7,
+    "trendSearchQueries": [
+      "2026년 여름 카페 신메뉴 SNS 디자인 트렌드",
+      "초여름 카페 포스터 색상 트렌드 2026",
+      "Korean cafe SNS design trends 2026 peach latte",
+      "복숭아 라떼 광고 디자인 2025 2026",
+      "",
+      "2026 한국 타이포그래피 디자인 트렌드",
+      "2026 SNS 카드뉴스 디자인 레이아웃 트렌드",
+      "카페 신메뉴 출시 SNS 포스터 레이아웃 2026",
+      "복숭아 음료 인스타그램 홍보물 디자인 2026"
+    ]
+  }
+}

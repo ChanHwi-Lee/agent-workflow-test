@@ -153,6 +153,16 @@ export interface V6ImageCommand extends V6BaseCommand {
   readonly objectFit: string;
   readonly borderRadius: V6BorderRadius;
   readonly alt: string;
+  readonly resolvedAssetId?: string;
+  readonly resolvedAssetFamily?: "photo" | "graphic";
+  readonly resolvedAssetSourceSerial?: number;
+  readonly resolvedAssetOriginKey?: string;
+  readonly resolvedAssetThumbKey?: string;
+  readonly resolvedAssetMethod?: string;
+  readonly unresolvedPlaceholder?: boolean;
+  readonly placeholderUri?: string;
+  readonly placeholderHint?: string;
+  readonly unresolveReason?: string;
 }
 
 export interface V6SvgCommand extends V6BaseCommand {

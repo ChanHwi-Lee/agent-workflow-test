@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<style>
+@font-face {
+  font-family: "701_400";
+  src: url("https://dev-file.tooldi.com/font/701_400.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "701_700";
+  src: url("https://dev-file.tooldi.com/font/701_700.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "1301_400";
+  src: url("https://dev-file.tooldi.com/font/1301_400.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+</style>
+<style>
+  html, body { margin:0; padding:0; background:#fff; }
+  body { width:1080px; height:1080px; overflow:hidden; }
+</style>
+</head>
+<body>
+<div style="width: 1080px; height: 1080px; background-color: #F0EEE9; position: relative; overflow: hidden; font-family: '701_400'; padding: 60px; box-sizing: border-box;">
+  <!-- Background Grid -->
+  <svg width="1080" height="1080" style="position: absolute; top: 0; left: 0; opacity: 0.1;">
+    <defs>
+      <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0C0C0C" stroke-width="0.5"/>
+      </pattern>
+    </defs>
+    <rect width="1080" height="1080" fill="url(#grid)" />
+  </svg>
+
+  <!-- Header Section -->
+  <div style="position: relative; z-index: 10;">
+    <div style="font-family: '1301_400'; font-size: 32px; color: #262AFF; margin-bottom: 20px;">FREE WEBINAR</div>
+    <h1 style="font-family: '701_700'; font-size: 96px; line-height: 1.1; color: #0C0C0C; margin: 0; width: 800px;">
+      시리즈 A 이후<br>
+      <span style="color: #262AFF;">조직 성장 전략</span>
+    </h1>
+  </div>
+
+  <!-- Bento Grid Container -->
+  <div style="display: flex; gap: 24px; margin-top: 60px;">
+    
+    <!-- Speaker Card -->
+    <div style="width: 480px; height: 320px; background: rgba(255,255,255,0.6); border: 1px solid #E2E2E2; border-radius: 32px; padding: 40px; box-sizing: border-box; backdrop-filter: blur(10px);">
+      <div style="font-size: 16px; color: #666; margin-bottom: 10px;">SPEAKER</div>
+      <div style="font-family: '701_700'; font-size: 36px; color: #0C0C0C; margin-bottom: 8px;">김태훈 대표</div>
+      <div style="font-size: 24px; color: #262AFF; margin-bottom: 30px;">페이플러스 (PayPlus)</div>
+      <div style="width: 60px; height: 4px; background: #262AFF;"></div>
+    </div>
+
+    <!-- Info Card -->
+    <div style="width: 480px; height: 320px; background: #0C0C0C; border-radius: 32px; padding: 40px; box-sizing: border-box; color: #F0EEE9;">
+      <div style="font-size: 16px; opacity: 0.7; margin-bottom: 20px;">EVENT DETAILS</div>
+      <div style="font-size: 32px; margin-bottom: 10px;">5월 10일 목요일</div>
+      <div style="font-size: 48px; font-weight: 700; margin-bottom: 40px;">저녁 8:00</div>
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <div style="padding: 8px 20px; border: 1px solid #1CABFF; color: #1CABFF; border-radius: 20px; font-size: 20px;">ZOOM LIVE</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Abstract Graphic Element -->
+  <svg width="300" height="300" viewBox="0 0 100 100" style="position: absolute; bottom: 60px; right: 60px; opacity: 0.8;">
+    <path d="M 10 90 L 40 50 L 60 70 L 90 20" fill="none" stroke="#262AFF" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="90" cy="20" r="6" fill="#1CABFF"/>
+    <rect x="5" y="5" width="90" height="90" rx="10" stroke="#0C0C0C" stroke-width="2" fill="none" stroke-dasharray="5 5"/>
+  </svg>
+
+  <!-- Footer -->
+  <div style="position: absolute; bottom: 60px; left: 60px;">
+    <p style="font-size: 16px; color: #666; line-height: 1.6;">
+      본 웨비나는 시리즈 A 투자를 유치한 스타트업의<br>
+      조직 문화와 스케일업 전략을 다룹니다.
+    </p>
+  </div>
+</div>
+</body>
+</html>

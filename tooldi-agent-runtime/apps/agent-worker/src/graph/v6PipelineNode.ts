@@ -9,8 +9,10 @@ import {
 } from "../phases/emitV6Mutations.js";
 import { renderAndExtract } from "../phases/v6BrowserRender.js";
 import { runV6HtmlGen } from "../phases/v6HtmlGen.js";
+import { runV6ClaudeCodeHtmlGen } from "../phases/v6ClaudeCodeHtmlGen.js";
 import { validateV6Html } from "../phases/v6HtmlValidator.js";
 import { adaptV6Commands } from "../phases/v6CommandAdapter.js";
+import { resolveV6PlaceholderAssets } from "../phases/v6AssetResolver.js";
 import { mapRenderedElements } from "../phases/v6PrimitiveMapper.js";
 import { runV6Pipeline } from "../phases/v6Pipeline.js";
 import type {
@@ -39,15 +41,44 @@ export class V6ConfigError extends Error {
  */
 export type V6BrowserSupplier = () => Promise<Browser>;
 
-export function createProductionV6Dependencies(): V6PipelineDependencies {
+export interface V6ProductionDependencyOptions {
+  readonly htmlGenProvider?: "gemini" | "claude_code";
+  readonly claudeCodeModel?: string;
+  readonly claudeCodeEffort?: "low" | "medium" | "high" | "xhigh" | "max";
+  readonly claudeCodeTimeoutMs?: number;
+}
+
+export function createProductionV6Dependencies(
+  options: V6ProductionDependencyOptions = {},
+): V6PipelineDependencies {
   return {
-    generateHtml: (args) =>
-      runV6HtmlGen({
+    generateHtml: (args) => {
+      if (options.htmlGenProvider === "claude_code") {
+        return runV6ClaudeCodeHtmlGen({
+          canvasWidth: args.canvasWidth,
+          canvasHeight: args.canvasHeight,
+          userPrompt: args.userPrompt,
+          trendContext: args.trendContext ?? null,
+          ...(options.claudeCodeModel
+            ? { model: options.claudeCodeModel }
+            : {}),
+          ...(options.claudeCodeEffort
+            ? { effort: options.claudeCodeEffort }
+            : {}),
+          ...(options.claudeCodeTimeoutMs
+            ? { timeoutMs: options.claudeCodeTimeoutMs }
+            : {}),
+        });
+      }
+
+      return runV6HtmlGen({
         canvasWidth: args.canvasWidth,
         canvasHeight: args.canvasHeight,
         userPrompt: args.userPrompt,
+        trendContext: args.trendContext ?? null,
         apiKey: args.apiKey,
-      }),
+      });
+    },
     validateHtml: validateV6Html,
     renderAndExtract: async (_html: string, _canvas: V6Canvas) => {
       throw new Error(
@@ -133,7 +164,12 @@ export function registerV6PipelineNode(
       return launchEphemeralBrowser();
     });
 
-  const baseDeps = createProductionV6Dependencies();
+  const baseDeps = createProductionV6Dependencies({
+    htmlGenProvider: dependencies.env.htmlGenProvider,
+    claudeCodeModel: dependencies.env.claudeCodeModel,
+    claudeCodeEffort: dependencies.env.claudeCodeEffort,
+    claudeCodeTimeoutMs: dependencies.env.claudeCodeTimeoutMs,
+  });
   const deps: V6PipelineDependencies = {
     ...baseDeps,
     ...(overrides?.deps ?? {}),
@@ -147,7 +183,7 @@ export function registerV6PipelineNode(
     }
 
     const apiKey = dependencies.env.googleApiKey;
-    if (!apiKey) {
+    if (dependencies.env.htmlGenProvider === "gemini" && !apiKey) {
       throw new V6ConfigError(
         "GOOGLE_API_KEY is missing from AgentWorkerEnv; v6 pipeline cannot call Gemini",
       );
@@ -201,13 +237,19 @@ export function registerV6PipelineNode(
             },
           };
 
+      const trendContext =
+        dependencies.env.trendResearchMode === "enabled"
+          ? state.v6TrendBrief?.contextForHtmlGen ?? null
+          : null;
+
       v6Result = await runV6Pipeline(
         {
           runId: state.job.runId,
           canvasWidth,
           canvasHeight,
           userPrompt,
-          apiKey,
+          trendContext,
+          apiKey: apiKey ?? "",
         },
         boundDeps,
       );
@@ -221,7 +263,17 @@ export function registerV6PipelineNode(
       }
     }
 
-    const { commands: createLayerCommands } = adaptV6Commands(v6Result.commands, {
+    const resolvedV6Commands = await resolveV6PlaceholderAssets({
+      runId: state.job.runId,
+      userPrompt,
+      canvasWidth,
+      canvasHeight,
+      googleApiKey: dependencies.env.googleApiKey,
+      env: dependencies.env,
+      commands: v6Result.commands,
+    });
+
+    const { commands: createLayerCommands } = adaptV6Commands(resolvedV6Commands, {
       runId: state.job.runId,
     });
 

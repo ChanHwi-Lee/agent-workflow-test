@@ -1,0 +1,52 @@
+{
+  "id": "03-recruiting-backend",
+  "prompt": "스타트업 '오로라랩스' 시니어 백엔드 개발자 채용 공고 썸네일. 기술 스택 Node.js/TypeScript/AWS, 주 4일제, 연봉 협의.",
+  "model": "gemini-3-flash-preview",
+  "latencyMs": 15722,
+  "trend": {
+    "summary": "오로라랩스의 브랜드 정체성을 반영한 '오로라 그라디언트' 배경에 정보 밀도가 높은 '벤토 그리드(Bento Grid)' 레이아웃을 결합한 디자인이 대세입니다. 2026년 IT 채용 트렌드인 '정밀 채용' 기조에 맞춰 기술 스택과 복지 혜택을 명확한 구획으로 나누어 가독성을 극대화한 하이테크 스타일을 지향합니다.",
+    "palette": [
+      "#0F172A",
+      "#7C3AED",
+      "#2DD4BF",
+      "#F8FAFC",
+      "#FF9900"
+    ],
+    "typography": {
+      "weight": "ExtraBold for Title, Medium for Tags",
+      "scale": "Headline 48pt+, Sub-info 18-24pt",
+      "notes": "제목에는 'Pretendard' 또는 'Gmarket Sans' 같은 기하학적 산세리프를 사용해 신뢰감을 주고, 기술 스택은 코드 폰트 느낌의 모노스페이스(JetBrains Mono 등)를 혼용하여 개발자 친화적인 무드를 조성합니다."
+    },
+    "composition": "애플 스타일의 벤토 그리드 레이아웃을 적용하여 좌측 상단에 직무명을 크게 배치하고, 나머지 칸에 기술 스택 아이콘과 '주 4일제' 등의 핵심 복지를 카드 형태로 분할 배치합니다.",
+    "motifs": [
+      "3D Glassmorphism icons (AWS, Node.js)",
+      "Aurora-style blurred gradients",
+      "Pixel-art accents",
+      "Floating code snippets"
+    ],
+    "tone": "전문적이고 미래지향적인(Futuristic) 분위기 속에 '주 4일제'와 같은 인간 중심적 가치를 따뜻한 네온 컬러 포인트로 강조한 네오 미니멀리즘 톤입니다.",
+    "notes": "2026년 상반기 채용 시장은 '즉시 전력감'을 선호하므로, 썸네일에서 시니어급에 걸맞은 기술적 전문성이 시각적으로 즉각 전달되도록 3D 오브젝트와 고대비 색상을 활용하는 것이 핵심입니다."
+  },
+  "contextForHtmlGen": "Summary: 오로라랩스의 브랜드 정체성을 반영한 '오로라 그라디언트' 배경에 정보 밀도가 높은 '벤토 그리드(Bento Grid)' 레이아웃을 결합한 디자인이 대세입니다. 2026년 IT 채용 트렌드인 '정밀 채용' 기조에 맞춰 기술 스택과 복지 혜택을 명확한 구획으로 나누어 가독성을 극대화한 하이테크 스타일을 지향합니다.\nPalette (use as inspiration, pick 2-4): #0F172A, #7C3AED, #2DD4BF, #F8FAFC, #FF9900\nTypography: weight=ExtraBold for Title, Medium for Tags; scale=Headline 48pt+, Sub-info 18-24pt; notes=제목에는 'Pretendard' 또는 'Gmarket Sans' 같은 기하학적 산세리프를 사용해 신뢰감을 주고, 기술 스택은 코드 폰트 느낌의 모노스페이스(JetBrains Mono 등)를 혼용하여 개발자 친화적인 무드를 조성합니다.\nComposition: 애플 스타일의 벤토 그리드 레이아웃을 적용하여 좌측 상단에 직무명을 크게 배치하고, 나머지 칸에 기술 스택 아이콘과 '주 4일제' 등의 핵심 복지를 카드 형태로 분할 배치합니다.\nMotifs: 3D Glassmorphism icons (AWS, Node.js), Aurora-style blurred gradients, Pixel-art accents, Floating code snippets\nTone: 전문적이고 미래지향적인(Futuristic) 분위기 속에 '주 4일제'와 같은 인간 중심적 가치를 따뜻한 네온 컬러 포인트로 강조한 네오 미니멀리즘 톤입니다.\nNotes: 2026년 상반기 채용 시장은 '즉시 전력감'을 선호하므로, 썸네일에서 시니어급에 걸맞은 기술적 전문성이 시각적으로 즉각 전달되도록 3D 오브젝트와 고대비 색상을 활용하는 것이 핵심입니다.",
+  "citations": [],
+  "searchQueries": [
+    "",
+    "2026 IT 채용 공고 디자인 트렌드 한국",
+    "오로라 컨셉 그래픽 디자인 트렌드 2026",
+    "스타트업 개발자 채용 썸네일 디자인 2025 2026",
+    "IT 기업 채용 배너 벤토 그리드 디자인"
+  ],
+  "rawText": "{\n  \"summary\": \"오로라랩스의 브랜드 정체성을 반영한 '오로라 그라디언트' 배경에 정보 밀도가 높은 '벤토 그리드(Bento Grid)' 레이아웃을 결합한 디자인이 대세입니다. 2026년 IT 채용 트렌드인 '정밀 채용' 기조에 맞춰 기술 스택과 복지 혜택을 명확한 구획으로 나누어 가독성을 극대화한 하이테크 스타일을 지향합니다.\",\n  \"palette\": [\"#0F172A\", \"#7C3AED\", \"#2DD4BF\", \"#F8FAFC\", \"#FF9900\"],\n  \"typography\": {\n    \"weight\": \"ExtraBold for Title, Medium for Tags\",\n    \"scale\": \"Headline 48pt+, Sub-info 18-24pt\",\n    \"notes\": \"제목에는 'Pretendard' 또는 'Gmarket Sans' 같은 기하학적 산세리프를 사용해 신뢰감을 주고, 기술 스택은 코드 폰트 느낌의 모노스페이스(JetBrains Mono 등)를 혼용하여 개발자 친화적인 무드를 조성합니다.\"\n  },\n  \"composition\": \"애플 스타일의 벤토 그리드 레이아웃을 적용하여 좌측 상단에 직무명을 크게 배치하고, 나머지 칸에 기술 스택 아이콘과 '주 4일제' 등의 핵심 복지를 카드 형태로 분할 배치합니다.\",\n  \"motifs\": [\"3D Glassmorphism icons (AWS, Node.js)\", \"Aurora-style blurred gradients\", \"Pixel-art accents\", \"Floating code snippets\"],\n  \"tone\": \"전문적이고 미래지향적인(Futuristic) 분위기 속에 '주 4일제'와 같은 인간 중심적 가치를 따뜻한 네온 컬러 포인트로 강조한 네오 미니멀리즘 톤입니다.\",\n  \"notes\": \"2026년 상반기 채용 시장은 '즉시 전력감'을 선호하므로, 썸네일에서 시니어급에 걸맞은 기술적 전문성이 시각적으로 즉각 전달되도록 3D 오브젝트와 고대비 색상을 활용하는 것이 핵심입니다.\"\n}",
+  "usage": {
+    "promptTokenCount": 1309,
+    "candidatesTokenCount": 498,
+    "totalTokenCount": 2478,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1309
+      }
+    ],
+    "thoughtsTokenCount": 671
+  }
+}

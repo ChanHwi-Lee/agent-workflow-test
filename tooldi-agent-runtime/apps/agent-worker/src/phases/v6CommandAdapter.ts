@@ -190,13 +190,44 @@ function metadataForImage(
   base: Record<string, string | number | boolean | null>,
   cmd: V6ImageCommand,
 ): Record<string, string | number | boolean | null> {
-  return {
+  const metadata: Record<string, string | number | boolean | null> = {
     ...base,
     src: cmd.src,
     naturalWidth: cmd.naturalWidth,
     naturalHeight: cmd.naturalHeight,
     alt: cmd.alt,
   };
+  if (cmd.resolvedAssetId !== undefined) {
+    metadata.resolvedAssetId = cmd.resolvedAssetId;
+  }
+  if (cmd.resolvedAssetFamily !== undefined) {
+    metadata.resolvedAssetFamily = cmd.resolvedAssetFamily;
+  }
+  if (cmd.resolvedAssetSourceSerial !== undefined) {
+    metadata.resolvedAssetSourceSerial = cmd.resolvedAssetSourceSerial;
+  }
+  if (cmd.resolvedAssetOriginKey !== undefined) {
+    metadata.resolvedAssetOriginKey = cmd.resolvedAssetOriginKey;
+  }
+  if (cmd.resolvedAssetThumbKey !== undefined) {
+    metadata.resolvedAssetThumbKey = cmd.resolvedAssetThumbKey;
+  }
+  if (cmd.resolvedAssetMethod !== undefined) {
+    metadata.resolvedAssetMethod = cmd.resolvedAssetMethod;
+  }
+  if (cmd.unresolvedPlaceholder !== undefined) {
+    metadata.unresolvedPlaceholder = cmd.unresolvedPlaceholder;
+  }
+  if (cmd.placeholderUri !== undefined) {
+    metadata.placeholderUri = cmd.placeholderUri;
+  }
+  if (cmd.placeholderHint !== undefined) {
+    metadata.placeholderHint = cmd.placeholderHint;
+  }
+  if (cmd.unresolveReason !== undefined) {
+    metadata.unresolveReason = cmd.unresolveReason;
+  }
+  return metadata;
 }
 
 function metadataForSvg(

@@ -57,6 +57,7 @@ import type {
   TemplatePlannerMode,
 } from "@tooldi/agent-llm";
 import type { V6PipelineResult } from "../phases/v6Pipeline.js";
+import type { V6TrendBrief } from "../phases/v6TrendResearch.js";
 
 type SourceSearchBackground = SourceSearchSummary["background"];
 type SourceSearchGraphic = SourceSearchSummary["graphic"];
@@ -152,6 +153,8 @@ export const RunJobGraphState = Annotation.Root({
   sourceSearchSummaryRef: replaceValue<string | null>(() => null),
   plan: replaceValue<ProcessRunJobResult["plan"] | null>(() => null),
   executablePlanRef: replaceValue<string | null>(() => null),
+  v6TrendBrief: replaceValue<V6TrendBrief | null>(() => null),
+  v6TrendBriefRef: replaceValue<string | null>(() => null),
   v6PipelineResult: replaceValue<V6PipelineResult | null>(() => null),
   ruleJudgeVerdict: replaceValue<RuleJudgeVerdict | null>(() => null),
   ruleJudgeVerdictRef: replaceValue<string | null>(() => null),

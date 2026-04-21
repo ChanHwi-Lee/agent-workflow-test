@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"/>
+<title>AGW v6 · trend A/B</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html,body { margin:0; padding:0; background:#0f172a; color:#e2e8f0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  h1 { margin:0; padding:20px 24px 12px; font-size:18px; font-weight:700; letter-spacing:.02em; }
+  h1 .sub { display:block; font-size:12px; font-weight:400; color:#94a3b8; margin-top:4px; }
+  .row { border-top:1px solid #1e293b; padding:16px 24px 28px; }
+  .row header { display:flex; align-items:flex-start; gap:16px; }
+  .row .n { font-variant-numeric: tabular-nums; font-size:22px; font-weight:700; color:#64748b; min-width:48px; }
+  .row .meta { flex:1; min-width:0; }
+  .row .id { font-size:12px; color:#94a3b8; margin-bottom:2px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .row .sub { font-size:12px; color:#94a3b8; }
+  .row .sub .dom { background:#1e293b; padding:1px 8px; border-radius:10px; }
+  .row .sub .badge { display:inline-block; margin-left:4px; padding:1px 8px; background:#0b1220; border:1px solid #334155; border-radius:10px; font-variant-numeric: tabular-nums; }
+  .row .prompt { margin-top:6px; font-size:13.5px; color:#e2e8f0; line-height:1.5; }
+  .row .actions { display:flex; gap:8px; }
+  .btn { display:inline-block; padding:6px 10px; background:#1e293b; border:1px solid #334155; color:#cbd5e1; border-radius:8px; font-size:12px; text-decoration:none; }
+  .btn:hover { background:#334155; color:#fff; }
+  .frames { display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:14px; }
+  .frame-box { background:#020617; border:1px solid #1e293b; border-radius:10px; overflow:hidden; }
+  .frame-label { padding:8px 12px; font-size:12px; color:#cbd5e1; background:#0b1220; border-bottom:1px solid #1e293b; }
+  .frame-label.a { border-left:3px solid #64748b; }
+  .frame-label.b { border-left:3px solid #f59e0b; }
+  .frame-wrap {
+    position:relative;
+    width:100%;
+    aspect-ratio: var(--cw) / var(--ch);
+    overflow:hidden;
+    background:#fff;
+  }
+  .frame-wrap iframe {
+    position:absolute; inset:0;
+    width: var(--cw); height: var(--ch);
+    transform-origin: top left;
+    /* viewer JS sets --scale */
+    transform: scale(var(--scale, 1));
+    border:0;
+  }
+  details.trend-preview { margin-top:10px; }
+  details.trend-preview summary { cursor:pointer; font-size:12px; color:#94a3b8; padding:4px 0; }
+  details.trend-preview pre { background:#0b1220; border:1px solid #1e293b; border-radius:6px; padding:10px 12px; font-size:12px; line-height:1.5; white-space:pre-wrap; overflow:auto; max-height:300px; color:#cbd5e1; }
+</style>
+</head>
+<body>
+<h1>AGW v6 · Trend A/B Comparison
+  <span class="sub">Left = current v6 HTML gen (no trend context) · Right = trend research (Gemini + google_search) → HTML gen with trend context</span>
+</h1>
+<section class="row" data-id="01-spring-fashion-sale">
+  <header>
+    <div class="n">#01</div>
+    <div class="meta">
+      <div class="id">01-spring-fashion-sale</div>
+      <div class="sub"><span class="dom">패션 이커머스</span> · 1200×628 · <span class="badge">searches 0</span> <span class="badge">cites 0</span></div>
+      <div class="prompt">봄 신상 여성 의류 20% 할인 이벤트 배너. 브랜드명 'NOVA', 메인 카피는 '봄의 시작, 당신의 룩'. CTA는 '지금 쇼핑하기'.</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="out/01-spring-fashion-sale-trend.json" target="_blank">trend.json</a>
+      <a class="btn" href="out/01-spring-fashion-sale-A.html" target="_blank">A ↗</a>
+      <a class="btn" href="out/01-spring-fashion-sale-B.html" target="_blank">B ↗</a>
+    </div>
+  </header>
+  <div class="frames">
+    <div class="frame-box"><div class="frame-label a">A · current (no trend)</div>
+      <div class="frame-wrap" style="--cw:1200px;--ch:628px;">
+        <iframe loading="lazy" src="out/01-spring-fashion-sale-A.html" width="1200" height="628"></iframe>
+      </div>
+    </div>
+    <div class="frame-box"><div class="frame-label b">B · + trend research</div>
+      <div class="frame-wrap" style="--cw:1200px;--ch:628px;">
+        <iframe loading="lazy" src="out/01-spring-fashion-sale-B.html" width="1200" height="628"></iframe>
+      </div>
+    </div>
+  </div>
+  <details class="trend-preview"><summary>Trend summary (click to expand)</summary>
+    <pre>{
+  &quot;summary&quot;: &quot;2026년 S/S 시즌은 '정제된 맥시멀리즘(Refined Maximalism)'과 '노스탤직 레트로 퓨처리즘'의 결합이 핵심입니다. 부드러운 파우더리 파스텔 톤을 베이스로 하되, 유리 질감(Glass Block)이나 크롬 소재의 디지털 요소를 레이어드하여 세련되면서도 활기찬 에너지를 전달하는 디자인이 주를 이룹니다.&quot;,
+  &quot;palette&quot;: [
+    &quot;#F0EEE9&quot;,
+    &quot;#A2CFFE&quot;,
+    &quot;#FFF44F&quot;,
+    &quot;#FF6347&quot;,
+    &quot;#E6E6FA&quot;
+  ],
+  &quot;typography&quot;: {
+    &quot;weight&quot;: &quot;Extra Bold / Medium&quot;,
+    &quot;scale&quot;: &quot;대담한 타이포그래피가 스토리텔링의 중심이 되며, 메인 카피는 화면을 압도하는 크기로 배치합니다.&quot;,
+    &quot;notes&quot;: &quot;리드미컬하고 끝처리가 부드러운(Liquid Terminals) 산세리프체가 유행하며, 브랜드명 'NOVA'는 미래적인 느낌의 와이드한 산세리프나 고대비 세리프를 혼용합니다.&quot;
+  },
+  &quot;composition&quot;: &quot;이미지를 겹겹이 쌓는 콜라주 방식과 반투명한 '유리 블록' 프레임을 활용해 깊이감을 주며, 배경에 브랜드명이나 할인율을 반복 배치하는 '빌보딩(Billboarding)' 패턴을 적용합니다.&quot;,
+  &quot;motifs&quot;: [
+    &quot;블러 처리된 로맨틱 블룸(꽃) 실루엣&quot;,
+    &quot;액체 금속(Liquid Chrome) 라인&quot;,
+    &quot;3D 유리 질감의 입체 도형&quot;,
+    &quot;격자무늬(Grid)와 하프톤 패턴의 변주&quot;
+  ],
+  &quot;tone&quot;: &quot;세련된 '레이지 럭셔리(Lazy Luxury)'와 디지털 감성이 공존하는 활기차고 감각적인 분위기&quot;,
+  &quot;searchQueries&quot;: [
+    &quot;&quot;,
+    &quot;2026 S/S 패션 컬러 트렌드 한국&quot;,
+    &quot;2026 S/S fashion color trends Korea&quot;,
+    &quot;2026 봄 그래픽 디자인 트렌드 배너&quot;,
+    &quot;2026 여성 의류 쇼핑몰 배너 디자인 레이아웃&quot;
+  ],
+  &quot;citationCount&quot;: 8,
+  &quot;citations&quot;: [
+    {
+      &quot;title&quot;: &quot;koreaherald.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEpXGTU22t2Yshn4Cc6Nr8tC2OTtVDItN5TXyy_h_T8vLAwDKWuRSzdYaUm-9RCyKdqDi1NvtihRrlb2e45QnX24Xmo6Km0-tcX8Y3mys-V0ZK8XI6obLgeZRbfqYbaUaWYrqClXf4=&quot;
+    },
+    {
+      &quot;title&quot;: &quot;theapparelfactory.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGirLyryDtaoxGe3lQkyE-CDBJUjlZNvEdYRKp8n0JLK_qREUAehXZJ6g1jBhQ8sOW7E-lA6K44hiCWABZb4rBCqkNBkW16qqXNnT8XGloGTybujmUpB6NKd45TrnSbSZquTx_0t3-hUUBLU6tYydV_3J17f_BWUhJmIA==&quot;
+    },
+    {
+      &quot;title&quot;: &quot;imagazinekorea.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG-az0hLG5mESbkbjhUre8N6hmqvYltTxaEB4OqswunJbyOUcrbN_q9mbcN1BkKbYXhny5NoAmw9t-PH1Cy29mVSDBvC8H8m1a6eYmWGAob3Pbg5koCkpYnrvhVqZD9DMcHBj3YnuVONwZH4m20c-wm8RqjhxtmOxld2T1mCi4DQdhW6hpzxingsfj6bf6qSUayOGSm_7lbzACQOw==&quot;
+    },
+    {
+      &quot;title&quot;: &quot;adobe.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHEIM160L71KJo4PYOIwIEG7531D-yCpR_WL9x8gszhIGRftgEEb_aWbN2aaAco5OfLKhFnVc6G2WMfUJmu4innaP-YI2m0W-YcL9l6QhoC6hrSacQ_ABlInBuzzWGSnTCa-KtiqWTW3KYUGc8-Rvy41SFczUQ=&quot;
+    },
+    {
+      &quot;title&quot;: &quot;allurekorea.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHJuN55UFOqn3AcoRddy2x9ofGZQzuQSZYf4bXB69xzwjN97SsUy43M6aYHgnGgcndtNwucgO79j1w2NMMlQt-OgFDxuCWV4OgZaVLmxgxaHr-PGMk0GQY9-AgN2jvq9hBmXBaHis6Ndk2a2uHv16f4I8rbEszDX_LcAL5DME21sql5_KhXovgzjy-JTK7G-5IVpn4X8bUubBobhEvTOuJgx2zpaGDba73wY9xliNrSSsANktF-C3WO&quot;
+    },
+    {
+      &quot;title&quot;: &quot;fashionchingu.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEAJP0s3HLh6bRlaoYCO-1reU86L2BUV-A7LbTCYg0dws2SahpYpJGFZ8OZhZyR-vUtn3AlETYq_QnR-C67-lHnTcIm7aGxZPLFqn5kl-lZsQQnwzhkeSamN7hB2gm40MdrJG1GKbLtKkDg49MCgDW65CWsaJS0_FIiag==&quot;
+    }
+  ]
+}</pre>
+  </details>
+</section>
+<section class="row" data-id="02-cafe-new-menu">
+  <header>
+    <div class="n">#02</div>
+    <div class="meta">
+      <div class="id">02-cafe-new-menu</div>
+      <div class="sub"><span class="dom">외식/카페</span> · 1080×1080 · <span class="badge">searches 0</span> <span class="badge">cites 0</span></div>
+      <div class="prompt">카페 신메뉴 '아이스 복숭아 라떼' 출시 SNS 정사각 카드. 계절감(초여름) 살려서. 가격 5,500원, 출시일 5월 1일.</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="out/02-cafe-new-menu-trend.json" target="_blank">trend.json</a>
+      <a class="btn" href="out/02-cafe-new-menu-A.html" target="_blank">A ↗</a>
+      <a class="btn" href="out/02-cafe-new-menu-B.html" target="_blank">B ↗</a>
+    </div>
+  </header>
+  <div class="frames">
+    <div class="frame-box"><div class="frame-label a">A · current (no trend)</div>
+      <div class="frame-wrap" style="--cw:1080px;--ch:1080px;">
+        <iframe loading="lazy" src="out/02-cafe-new-menu-A.html" width="1080" height="1080"></iframe>
+      </div>
+    </div>
+    <div class="frame-box"><div class="frame-label b">B · + trend research</div>
+      <div class="frame-wrap" style="--cw:1080px;--ch:1080px;">
+        <iframe loading="lazy" src="out/02-cafe-new-menu-B.html" width="1080" height="1080"></iframe>
+      </div>
+    </div>
+  </div>
+  <details class="trend-preview"><summary>Trend summary (click to expand)</summary>
+    <pre>{
+  &quot;summary&quot;: &quot;2026년 상반기 핵심 트렌드인 'B.E.Y.O.N.D'와 '디지털 안정감'을 반영하여, 인위적인 매끄러움보다는 손맛이 느껴지는 텍스처와 유기적인 곡선을 강조합니다. 초여름의 청량함을 위해 고채도의 복숭아 컬러와 대비되는 쿨 블루/민트 톤을 믹스한 '주시 미니멀리즘(Juicy Minimalism)' 스타일이 주를 이룹니다.&quot;,
+  &quot;palette&quot;: [
+    &quot;#FF7F50&quot;,
+    &quot;#FFCBA4&quot;,
+    &quot;#A2CFFE&quot;,
+    &quot;#F0FFF0&quot;,
+    &quot;#FFFFFF&quot;
+  ],
+  &quot;typography&quot;: {
+    &quot;weight&quot;: &quot;Bold &amp; Variable&quot;,
+    &quot;scale&quot;: &quot;Headline (Large), Body (Medium-Small)&quot;,
+    &quot;notes&quot;: &quot;글자 자체가 그래픽이 되는 '익스프레시브 타이포그래피'가 대세입니다. 메인 타이틀은 가변 글꼴(Variable Font)을 활용해 리퀴드한 느낌을 주고, 보조 문구에는 '인간적인 불완전함'을 담은 손글씨 폰트를 믹스하여 온기를 더합니다.&quot;
+  },
+  &quot;composition&quot;: &quot;중앙 집중형 제품 레이아웃을 기본으로 하되, 반투명한 글래스모피즘(Glassmorphism) 카드나 유기적인 블롭(Blob) 형태의 배경 요소를 레이어드하여 깊이감을 줍니다.&quot;,
+  &quot;motifs&quot;: [
+    &quot;물방울 맺힌 유리 질감&quot;,
+    &quot;3D 복숭아 오브제&quot;,
+    &quot;종이를 찢어 붙인 듯한 콜라주 스티커&quot;,
+    &quot;반짝이는 스파클 효과&quot;
+  ],
+  &quot;tone&quot;: &quot;청량하고 감각적인(Sensorial) 분위기. 웰니스 트렌드를 반영하여 지나치게 자극적이기보다 자연스럽고 건강한 단맛이 느껴지는 톤앤매너를 유지합니다.&quot;,
+  &quot;searchQueries&quot;: [
+    &quot;2026년 여름 카페 신메뉴 SNS 디자인 트렌드&quot;,
+    &quot;초여름 카페 포스터 색상 트렌드 2026&quot;,
+    &quot;Korean cafe SNS design trends 2026 peach latte&quot;,
+    &quot;복숭아 라떼 광고 디자인 2025 2026&quot;,
+    &quot;&quot;,
+    &quot;2026 한국 타이포그래피 디자인 트렌드&quot;,
+    &quot;2026 SNS 카드뉴스 디자인 레이아웃 트렌드&quot;,
+    &quot;카페 신메뉴 출시 SNS 포스터 레이아웃 2026&quot;,
+    &quot;복숭아 음료 인스타그램 홍보물 디자인 2026&quot;
+  ],
+  &quot;citationCount&quot;: 7,
+  &quot;citations&quot;: [
+    {
+      &quot;title&quot;: &quot;sandollcloud.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFXCVyma4MSyqEnccFXOBAnhF8Cv5mfOZYtrheueg5z4afbrLQJO2-GC1GO-cgnRq8Ui2byyFdcTjZ8P7TPL5gOxDWPvccCpb6x9z3eMkVYPGU1obkmyIKi94q4vcWKGO0BmFrI47QklWqCn_yOMsaGr7CXgtA=&quot;
+    },
+    {
+      &quot;title&quot;: &quot;designkits.co.kr&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGopzrTo25-sQmF09JbijluTla3D5UNERdKVX92BcWfHm0V5-gPGUTF9miN23ci-v5Nba2ZouiWPGHfUFHLPlpdGz5gLuEQUKpE94RY0NHjCqQN5W9jmA1NPTdFR51y3kVcGE8fAwALXnSUvxAqjs_aZEbMHsG5xvOzFIXulhk=&quot;
+    },
+    {
+      &quot;title&quot;: &quot;tooldi.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFdZVjNrpJvw8Y9Wk1oOImFJKcV0vDAzD8SvwzzmbERzJExJM0of9r9ChsNT_m8DOB1Dk4gD1KEIeUDxJSfFrcqfAfNI1M6t73-q5NSFazvpGg=&quot;
+    },
+    {
+      &quot;title&quot;: &quot;magazine-hd.kr&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHjgcXYSZp66bekzf6s5BJS-oidwlLIUknTtHksCwjmZYC4dQF6M9BZ3F4At5MXPaSrumZbenmQX-XBU0cdBygyAznGYR_fUtyUad3Jb2wamP60yaE=&quot;
+    },
+    {
+      &quot;title&quot;: &quot;canva.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFXF6wbJUF_DQMbKbmp9kqj3pVmqZZ8SG2sOprUo9e6sHBAc3vqT12_649QVA8IG_dl8rNF5xYQh24VD9z33kxY_39i9kVv01j0QvYgg71fmGaNZsN_c6NUCvg9c7Js4TFCb13rS3lPo0s-zDosW_Ka6CBJWVRKe-9CSnGDPd9U&quot;
+    },
+    {
+      &quot;title&quot;: &quot;theladylearner.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGqj8PbWl3599gHAzsmuUmEfMlWCAOUJPqP42HdK4_hwp39oFQmkt9eGfOIjKA4KeNZcZjFlwMd1TYNEnzoUCkseUoKXwbnwPN6LKePPNhlyprCFloLuje3kiU=&quot;
+    }
+  ]
+}</pre>
+  </details>
+</section>
+<section class="row" data-id="03-recruiting-backend">
+  <header>
+    <div class="n">#03</div>
+    <div class="meta">
+      <div class="id">03-recruiting-backend</div>
+      <div class="sub"><span class="dom">HR/채용</span> · 1200×628 · <span class="badge">searches 0</span> <span class="badge">cites 0</span></div>
+      <div class="prompt">스타트업 '오로라랩스' 시니어 백엔드 개발자 채용 공고 썸네일. 기술 스택 Node.js/TypeScript/AWS, 주 4일제, 연봉 협의.</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="out/03-recruiting-backend-trend.json" target="_blank">trend.json</a>
+      <a class="btn" href="out/03-recruiting-backend-A.html" target="_blank">A ↗</a>
+      <a class="btn" href="out/03-recruiting-backend-B.html" target="_blank">B ↗</a>
+    </div>
+  </header>
+  <div class="frames">
+    <div class="frame-box"><div class="frame-label a">A · current (no trend)</div>
+      <div class="frame-wrap" style="--cw:1200px;--ch:628px;">
+        <iframe loading="lazy" src="out/03-recruiting-backend-A.html" width="1200" height="628"></iframe>
+      </div>
+    </div>
+    <div class="frame-box"><div class="frame-label b">B · + trend research</div>
+      <div class="frame-wrap" style="--cw:1200px;--ch:628px;">
+        <iframe loading="lazy" src="out/03-recruiting-backend-B.html" width="1200" height="628"></iframe>
+      </div>
+    </div>
+  </div>
+  <details class="trend-preview"><summary>Trend summary (click to expand)</summary>
+    <pre>{
+  &quot;summary&quot;: &quot;오로라랩스의 브랜드 정체성을 반영한 '오로라 그라디언트' 배경에 정보 밀도가 높은 '벤토 그리드(Bento Grid)' 레이아웃을 결합한 디자인이 대세입니다. 2026년 IT 채용 트렌드인 '정밀 채용' 기조에 맞춰 기술 스택과 복지 혜택을 명확한 구획으로 나누어 가독성을 극대화한 하이테크 스타일을 지향합니다.&quot;,
+  &quot;palette&quot;: [
+    &quot;#0F172A&quot;,
+    &quot;#7C3AED&quot;,
+    &quot;#2DD4BF&quot;,
+    &quot;#F8FAFC&quot;,
+    &quot;#FF9900&quot;
+  ],
+  &quot;typography&quot;: {
+    &quot;weight&quot;: &quot;ExtraBold for Title, Medium for Tags&quot;,
+    &quot;scale&quot;: &quot;Headline 48pt+, Sub-info 18-24pt&quot;,
+    &quot;notes&quot;: &quot;제목에는 'Pretendard' 또는 'Gmarket Sans' 같은 기하학적 산세리프를 사용해 신뢰감을 주고, 기술 스택은 코드 폰트 느낌의 모노스페이스(JetBrains Mono 등)를 혼용하여 개발자 친화적인 무드를 조성합니다.&quot;
+  },
+  &quot;composition&quot;: &quot;애플 스타일의 벤토 그리드 레이아웃을 적용하여 좌측 상단에 직무명을 크게 배치하고, 나머지 칸에 기술 스택 아이콘과 '주 4일제' 등의 핵심 복지를 카드 형태로 분할 배치합니다.&quot;,
+  &quot;motifs&quot;: [
+    &quot;3D Glassmorphism icons (AWS, Node.js)&quot;,
+    &quot;Aurora-style blurred gradients&quot;,
+    &quot;Pixel-art accents&quot;,
+    &quot;Floating code snippets&quot;
+  ],
+  &quot;tone&quot;: &quot;전문적이고 미래지향적인(Futuristic) 분위기 속에 '주 4일제'와 같은 인간 중심적 가치를 따뜻한 네온 컬러 포인트로 강조한 네오 미니멀리즘 톤입니다.&quot;,
+  &quot;searchQueries&quot;: [
+    &quot;&quot;,
+    &quot;2026 IT 채용 공고 디자인 트렌드 한국&quot;,
+    &quot;오로라 컨셉 그래픽 디자인 트렌드 2026&quot;,
+    &quot;스타트업 개발자 채용 썸네일 디자인 2025 2026&quot;,
+    &quot;IT 기업 채용 배너 벤토 그리드 디자인&quot;
+  ],
+  &quot;citationCount&quot;: 0,
+  &quot;citations&quot;: []
+}</pre>
+  </details>
+</section>
+<section class="row" data-id="04-wedding-invitation">
+  <header>
+    <div class="n">#04</div>
+    <div class="meta">
+      <div class="id">04-wedding-invitation</div>
+      <div class="sub"><span class="dom">웨딩/라이프</span> · 1080×1350 · <span class="badge">searches 0</span> <span class="badge">cites 0</span></div>
+      <div class="prompt">결혼식 청첩장 SNS 세로형 카드. 신랑 이준호, 신부 김서연. 2026년 6월 14일 토요일 오후 1시, 서울 그랜드하얏트. 우아하고 감성적인 톤.</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="out/04-wedding-invitation-trend.json" target="_blank">trend.json</a>
+      <a class="btn" href="out/04-wedding-invitation-A.html" target="_blank">A ↗</a>
+      <a class="btn" href="out/04-wedding-invitation-B.html" target="_blank">B ↗</a>
+    </div>
+  </header>
+  <div class="frames">
+    <div class="frame-box"><div class="frame-label a">A · current (no trend)</div>
+      <div class="frame-wrap" style="--cw:1080px;--ch:1350px;">
+        <iframe loading="lazy" src="out/04-wedding-invitation-A.html" width="1080" height="1350"></iframe>
+      </div>
+    </div>
+    <div class="frame-box"><div class="frame-label b">B · + trend research</div>
+      <div class="frame-wrap" style="--cw:1080px;--ch:1350px;">
+        <iframe loading="lazy" src="out/04-wedding-invitation-B.html" width="1080" height="1350"></iframe>
+      </div>
+    </div>
+  </div>
+  <details class="trend-preview"><summary>Trend summary (click to expand)</summary>
+    <pre>{
+  &quot;summary&quot;: &quot;2026년 웨딩 트렌드는 '고딕 모더니즘(Gothic Modernism)'과 '콰이어트 럭셔리'의 결합으로, 그랜드하얏트 서울의 웅장한 아치 구조와 진주 비즈, 그린 소재를 활용한 시네마틱하고 예술적인 감성이 주를 이룹니다. 단순한 정보 전달을 넘어 하나의 갤러리 작품처럼 여백의 미와 구조적 미학을 강조하는 것이 핵심입니다.&quot;,
+  &quot;palette&quot;: [
+    &quot;#F9F8F4&quot;,
+    &quot;#9CAF88&quot;,
+    &quot;#D4AF37&quot;,
+    &quot;#2C3E50&quot;,
+    &quot;#E5E4E2&quot;
+  ],
+  &quot;typography&quot;: {
+    &quot;weight&quot;: &quot;Light &amp; Medium&quot;,
+    &quot;scale&quot;: &quot;이름과 날짜에 압도적인 크기 대비 적용&quot;,
+    &quot;notes&quot;: &quot;신랑·신부 이름은 우아한 하이 콘트라스트 세리프(Serif)체를 사용하고, 상세 정보는 가독성이 높은 미니멀한 산세리프(Sans-serif)를 조합하여 현대적인 세련미를 강조합니다.&quot;
+  },
+  &quot;composition&quot;: &quot;9:16 세로형 레이아웃에서 상단에 넓은 여백을 두고, 중앙에 아치형 프레임이나 구조적 타이포그래피를 배치하여 시선이 자연스럽게 하단으로 흐르는 '버티컬 갤러리' 패턴을 사용합니다.&quot;,
+  &quot;motifs&quot;: [
+    &quot;현대적인 아치 셰이프&quot;,
+    &quot;디지털 진주 텍스처&quot;,
+    &quot;섬세한 라인 아트 그리너리&quot;,
+    &quot;은은한 빛의 번짐(Cinematic Glow) 효과&quot;
+  ],
+  &quot;tone&quot;: &quot;Sophisticated &amp; Emotional (절제된 고급스러움과 따뜻한 감성이 공존하는 분위기)&quot;,
+  &quot;searchQueries&quot;: [
+    &quot;&quot;,
+    &quot;그랜드하얏트 서울 웨딩 분위기 디자인 요소&quot;,
+    &quot;2026년 결혼식 청첩장 디자인 트렌드&quot;,
+    &quot;2025 2026 모바일 청첩장 색상 트렌드&quot;,
+    &quot;SNS용 세로형 청첩장 레이아웃 2026&quot;
+  ],
+  &quot;citationCount&quot;: 0,
+  &quot;citations&quot;: []
+}</pre>
+  </details>
+</section>
+<section class="row" data-id="05-summer-aircon-promo">
+  <header>
+    <div class="n">#05</div>
+    <div class="meta">
+      <div class="id">05-summer-aircon-promo</div>
+      <div class="sub"><span class="dom">가전/이커머스</span> · 1200×628 · <span class="badge">searches 0</span> <span class="badge">cites 0</span></div>
+      <div class="prompt">여름맞이 에어컨 할인 프로모션 배너. 최대 40% 할인, 무이자 12개월. '시원한 여름, 시작은 쿨하게' 카피. CTA '특가 보기'.</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="out/05-summer-aircon-promo-trend.json" target="_blank">trend.json</a>
+      <a class="btn" href="out/05-summer-aircon-promo-A.html" target="_blank">A ↗</a>
+      <a class="btn" href="out/05-summer-aircon-promo-B.html" target="_blank">B ↗</a>
+    </div>
+  </header>
+  <div class="frames">
+    <div class="frame-box"><div class="frame-label a">A · current (no trend)</div>
+      <div class="frame-wrap" style="--cw:1200px;--ch:628px;">
+        <iframe loading="lazy" src="out/05-summer-aircon-promo-A.html" width="1200" height="628"></iframe>
+      </div>
+    </div>
+    <div class="frame-box"><div class="frame-label b">B · + trend research</div>
+      <div class="frame-wrap" style="--cw:1200px;--ch:628px;">
+        <iframe loading="lazy" src="out/05-summer-aircon-promo-B.html" width="1200" height="628"></iframe>
+      </div>
+    </div>
+  </div>
+  <details class="trend-preview"><summary>Trend summary (click to expand)</summary>
+    <pre>{
+  &quot;summary&quot;: &quot;2026년 팬톤 컬러인 '클라우드 댄서(Cloud Dancer)'의 깨끗한 화이트를 베이스로, 고채도의 '사이버 네온' 컬러를 포인트로 활용한 '피지털(Phygital) 쿨링' 스타일이 핵심입니다. 가전의 프리미엄한 느낌을 주는 3D 크롬 질감과 정보 전달력이 높은 벤토 박스(Bento Box) 레이아웃을 결합하여 신뢰감과 구매 욕구를 동시에 자극합니다.&quot;,
+  &quot;palette&quot;: [
+    &quot;#F2F0EB&quot;,
+    &quot;#0055FF&quot;,
+    &quot;#D4FF00&quot;,
+    &quot;#1A1A1A&quot;,
+    &quot;#E0E0E0&quot;
+  ],
+  &quot;typography&quot;: {
+    &quot;weight&quot;: &quot;Extra-Bold / Black&quot;,
+    &quot;scale&quot;: &quot;Headline 80pt+, Discount 120pt+&quot;,
+    &quot;notes&quot;: &quot;Pretendard Variable 또는 Tlab퓨처 Variable 같은 가변 서체를 사용하며, '쿨하게'와 같은 키워드에는 리퀴드(Liquid) 효과나 미세한 왜곡을 주어 시각적 리듬감을 부여합니다.&quot;
+  },
+  &quot;composition&quot;: &quot;정보를 구획화하는 벤토 박스(Bento Box) 그리드를 사용하여 '40% 할인'과 '12개월 무이자' 혜택을 독립적인 모듈로 강조하고, 중앙에는 3D 에어컨 렌더링을 배치합니다.&quot;,
+  &quot;motifs&quot;: [
+    &quot;3D 프로스트 글래스(Frosted Glass) 패널&quot;,
+    &quot;크롬 텍스처의 숫자 그래픽&quot;,
+    &quot;유동적인 액체 형태의 냉기(Cooling Aura) 그래픽&quot;,
+    &quot;Y3K 스타일의 픽셀 아이콘&quot;
+  ],
+  &quot;tone&quot;: &quot;하이테크 미니멀리즘(Tech-Minimalism) 기반의 고에너지 프로모션 톤&quot;,
+  &quot;searchQueries&quot;: [
+    &quot;&quot;,
+    &quot;2026 여름 그래픽 디자인 트렌드 한국&quot;,
+    &quot;2026 summer graphic design trends Korea e-commerce banner&quot;,
+    &quot;2026 가전 제품 프로모션 배너 디자인 트렌드&quot;,
+    &quot;에어컨 할인 배너 디자인 2026 트렌드&quot;
+  ],
+  &quot;citationCount&quot;: 0,
+  &quot;citations&quot;: []
+}</pre>
+  </details>
+</section>
+<section class="row" data-id="06-childrens-day">
+  <header>
+    <div class="n">#06</div>
+    <div class="meta">
+      <div class="id">06-childrens-day</div>
+      <div class="sub"><span class="dom">이벤트/시즌</span> · 1080×1080 · <span class="badge">searches 0</span> <span class="badge">cites 0</span></div>
+      <div class="prompt">어린이날 완구 매장 이벤트 포스터. 5월 5일 전 품목 30%, 3만원 이상 구매 시 사은품 증정. 밝고 즐거운 분위기.</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="out/06-childrens-day-trend.json" target="_blank">trend.json</a>
+      <a class="btn" href="out/06-childrens-day-A.html" target="_blank">A ↗</a>
+      <a class="btn" href="out/06-childrens-day-B.html" target="_blank">B ↗</a>
+    </div>
+  </header>
+  <div class="frames">
+    <div class="frame-box"><div class="frame-label a">A · current (no trend)</div>
+      <div class="frame-wrap" style="--cw:1080px;--ch:1080px;">
+        <iframe loading="lazy" src="out/06-childrens-day-A.html" width="1080" height="1080"></iframe>
+      </div>
+    </div>
+    <div class="frame-box"><div class="frame-label b">B · + trend research</div>
+      <div class="frame-wrap" style="--cw:1080px;--ch:1080px;">
+        <iframe loading="lazy" src="out/06-childrens-day-B.html" width="1080" height="1080"></iframe>
+      </div>
+    </div>
+  </div>
+  <details class="trend-preview"><summary>Trend summary (click to expand)</summary>
+    <pre>{
+  &quot;summary&quot;: &quot;2026년 어린이날 디자인은 완벽함보다는 인간적인 감성을 강조하는 'Naïve Design(의도된 천진난만함)'과 성인과 아이 모두의 유희 본능을 자극하는 'Youth-phoria'가 핵심입니다. 3D 캐릭터와 수작업 느낌의 일러스트가 결합된 '피지털(Phygital)' 감성이 주를 이룹니다.&quot;,
+  &quot;palette&quot;: [
+    &quot;#FF3D00&quot;,
+    &quot;#FFD600&quot;,
+    &quot;#00E5FF&quot;,
+    &quot;#7C4DFF&quot;,
+    &quot;#F5F5F5&quot;
+  ],
+  &quot;typography&quot;: {
+    &quot;weight&quot;: &quot;Extra Bold / Black&quot;,
+    &quot;scale&quot;: &quot;Exaggerated (과장된 크기 대비)&quot;,
+    &quot;notes&quot;: &quot;3D 효과가 들어간 버블 폰트나 잉크 트랩(Ink Trap)이 강조된 현대적 산세리프를 혼용하여 가독성과 재미를 동시에 확보합니다.&quot;
+  },
+  &quot;composition&quot;: &quot;정보의 명확성을 위한 벤토 그리드(Bento Grid) 레이아웃을 기반으로 하되, 그 위로 3D 오브젝트와 캐릭터가 자유롭게 떠다니는 레이어드 구성을 사용합니다.&quot;,
+  &quot;motifs&quot;: [
+    &quot;Fuzzy/Amorphous 3D 캐릭터&quot;,
+    &quot;장난감 블록 및 트린킷(Trinket) 아이콘&quot;,
+    &quot;낙서 스타일의 핸드 드로잉 요소&quot;,
+    &quot;그라데이션 블러(Gradient Blur) 배경&quot;
+  ],
+  &quot;tone&quot;: &quot;에너제틱하고 몰입감 있는(Immersive) 분위기로, 단순한 세일 포스터를 넘어 브랜드의 세계관을 보여주는 놀이터 같은 느낌을 전달합니다.&quot;,
+  &quot;searchQueries&quot;: [
+    &quot;&quot;,
+    &quot;2026 kids graphic design trends South Korea&quot;,
+    &quot;2026 어린이날 디자인 트렌드 한국&quot;,
+    &quot;어린이날 팝업스토어 비주얼 트렌드 2026&quot;,
+    &quot;2026 완구 매장 이벤트 포스터 디자인&quot;
+  ],
+  &quot;citationCount&quot;: 8,
+  &quot;citations&quot;: [
+    {
+      &quot;title&quot;: &quot;domestika.org&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQElk4z5O7pG6Mt3rYzeb78c0ySJyCWo1F-YPoVpcW1vwAnvlvmFs3WSDydpxs1t7u3WNx6sVQSa3qVh5qPjVfbt-V9RgWTfi-HiM9gl6_4s0yXTr7rlRI4TNEEr0MSkDHI1hWzveT8GpPnLAtLrdrmiVzQvNdxugmf6z0ubCPU8IcFVdO22IpIcMTyZrbp_kcb-1XxXqxiHMwgjGaX8si-lLSKMM5-H&quot;
+    },
+    {
+      &quot;title&quot;: &quot;canva.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFAePeXx9GH1fSOWnZiiv9NKWwGdk-A7BVsRlm5UIoKg67SyFIG3aAJlpOi8guZkRYoL6JLd_gPhxWNCgIu9VRcgH1DzpD7kq5N-qv1LjlAac1jrXxxryj-SxZ34wdve7GgDKczBvA35yRszPXICj0lVrw=&quot;
+    },
+    {
+      &quot;title&quot;: &quot;wordpress.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFde-bCREPzN31f-CfYO02gNDVUpf2fozGBV8e_3OVYXwDvpMbTPZuUNd2CFMHVEIQDe7YzMnKNUJ7JGKIIZM53eYooBB0Hfa6atT6V0tukTgv4sKGRnVnrYaIRnZwy7Je-ylARzScNy_83Ni5WOJT9Mqu1EN45onYJjCg8qAWL9jnLSQ==&quot;
+    },
+    {
+      &quot;title&quot;: &quot;starbucks.co.kr&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHhmBzAFaTsB3ZhaANrFBlV0SXXCfyZFbbIHOjHmAbavonEW3uL5spmf_FcqOToto6c4DxnoLfd5Cz2TbOt1n62k9eehVIvC7DVFoOi8Nq5JqFTdTeyHg5o-Bb2BYL1JnY0ruwTNZvN1EvqtRB1qZ_0Id_vb16NWIMB3PgXq68=&quot;
+    },
+    {
+      &quot;title&quot;: &quot;the-industry.co.kr&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFd7NE-rVpcvq6Qvn3EnoIxLAw2Kz1Bg8XCP5067IJajv7V0RQGzluR5YOUP-r-2VbRoPEL-Ar8nTm6X1ZZ-ay3AMiQxUnI-1Ntf_FPQ-pbrmXf0qyIMqHm1_zsle2n8Q==&quot;
+    },
+    {
+      &quot;title&quot;: &quot;eopla.net&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHkq4CoVhxkvsWSieV1S7eLXA02Acu-ZEssZEFyTeDhEFORonSF8eRlXlhd0TFhhCYzWJuD_eWXaYW-G8KE4eCs24SaWemj89xUiVE6HChPlkHI0mUkqtL0sV5aLQ==&quot;
+    }
+  ]
+}</pre>
+  </details>
+</section>
+<section class="row" data-id="07-online-course-ai">
+  <header>
+    <div class="n">#07</div>
+    <div class="meta">
+      <div class="id">07-online-course-ai</div>
+      <div class="sub"><span class="dom">교육/온라인 강의</span> · 1200×628 · <span class="badge">searches 0</span> <span class="badge">cites 0</span></div>
+      <div class="prompt">온라인 강의 플랫폼 'CodeGround' AI 입문 과정 홍보 배너. '비전공자도 4주 만에' 카피, 수강료 99,000원, 4월 한정 30% 할인.</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="out/07-online-course-ai-trend.json" target="_blank">trend.json</a>
+      <a class="btn" href="out/07-online-course-ai-A.html" target="_blank">A ↗</a>
+      <a class="btn" href="out/07-online-course-ai-B.html" target="_blank">B ↗</a>
+    </div>
+  </header>
+  <div class="frames">
+    <div class="frame-box"><div class="frame-label a">A · current (no trend)</div>
+      <div class="frame-wrap" style="--cw:1200px;--ch:628px;">
+        <iframe loading="lazy" src="out/07-online-course-ai-A.html" width="1200" height="628"></iframe>
+      </div>
+    </div>
+    <div class="frame-box"><div class="frame-label b">B · + trend research</div>
+      <div class="frame-wrap" style="--cw:1200px;--ch:628px;">
+        <iframe loading="lazy" src="out/07-online-course-ai-B.html" width="1200" height="628"></iframe>
+      </div>
+    </div>
+  </div>
+  <details class="trend-preview"><summary>Trend summary (click to expand)</summary>
+    <pre>{
+  &quot;summary&quot;: &quot;2026년 AI 교육 디자인은 차갑고 기계적인 느낌에서 벗어나 '인간 중심의 기술(Human-centric Tech)'을 지향합니다. '리퀴드 글래스(Liquid Glass)' 질감과 밝고 에너제틱한 컬러를 사용하여 비전공자도 쉽게 접근할 수 있는 친근하면서도 혁신적인 분위기를 연출하는 것이 핵심입니다.&quot;,
+  &quot;palette&quot;: [
+    &quot;#0055FF&quot;,
+    &quot;#A3E635&quot;,
+    &quot;#F8FAFC&quot;,
+    &quot;#1E293B&quot;,
+    &quot;#2DD4BF&quot;
+  ],
+  &quot;typography&quot;: {
+    &quot;weight&quot;: &quot;Extra Bold &amp; Variable&quot;,
+    &quot;scale&quot;: &quot;Extreme Contrast (Title vs Body)&quot;,
+    &quot;notes&quot;: &quot;Tlab퓨처 Variable이나 Google Sans Flex 같은 가변 폰트를 사용하여 '4주', '99,000원' 등 핵심 숫자를 거대하게 강조하고, 자간을 넓게 설정해 현대적인 인상을 줍니다.&quot;
+  },
+  &quot;composition&quot;: &quot;벤토 그리드(Bento Grid) 레이아웃을 기반으로 하되, 요소들이 경계를 넘나드는 '플로팅 3D' 배치를 통해 입체감과 역동성을 부여합니다.&quot;,
+  &quot;motifs&quot;: [
+    &quot;리퀴드 글래스(유리 질감) 아이콘&quot;,
+    &quot;홍보 문구를 감싸는 반투명 유리 카드&quot;,
+    &quot;홍로그램 광택의 3D 구체&quot;,
+    &quot;미세한 노이즈/그레인 질감 오버레이&quot;
+  ],
+  &quot;tone&quot;: &quot;신뢰감 있는(Professional), 에너제틱한(High-energy), 비전공자에게 친숙한(Approachable)&quot;,
+  &quot;searchQueries&quot;: [
+    &quot;&quot;,
+    &quot;2026 디자인 트렌드 컬러 그래픽&quot;,
+    &quot;AI 강의 홍보 배너 디자인 2026&quot;,
+    &quot;2026 graphic design trends Korea e-learning&quot;,
+    &quot;한국 온라인 강의 플랫폼 디자인 트렌드 2026&quot;,
+    &quot;2026 IT 교육 배너 디자인 트렌드&quot;
+  ],
+  &quot;citationCount&quot;: 5,
+  &quot;citations&quot;: [
+    {
+      &quot;title&quot;: &quot;envato.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGW0xs3rdmhh-OOxQJpqF8SiRZGnFl5yHKExGNXG6JOvvsI-PoWxbpm8ZZdOKa7edt-fRmgKR04AEnLJWzKoPXbogR9MBs__c0xT_VhNqb4HYxGa5YvdnNUBltANJDv6v7fsMJ_WDEDKuqc37J2iZj2VZQ=&quot;
+    },
+    {
+      &quot;title&quot;: &quot;cosmorning.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHDd2HfsyplpD6_mZ0HCcGFV3sxJ1L-KgyfGmfIdlwiFSWRNt3BzkFP24k9Orpbg8rlVxCdAlpMbDWUg0WEvjc_dTZ7-QPZy0KdJMXoc8GbrSoZ2DSk0IAlxNBq5NYgHNYhRdYirvKhP3BD9cceJjxn&quot;
+    },
+    {
+      &quot;title&quot;: &quot;adobe.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGLFO8QXWsQlDomwnQvPWrjcy-SaYB5phk-2MWteyiiUODdE9VpdCDgFeWuQgMIASUPINcbVRfngYy-S9og9uCQ8bk_IYpAfisJKTmx-le1qnzAx_q3T964QRWDMu-el78wsNZXkjImh7qEaClg53eQdIIkIrJs&quot;
+    },
+    {
+      &quot;title&quot;: &quot;itsnicethat.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHlzmpM-YBdwj4lUtMS9HLTLO-x5LSNGRD8DXp_DwpHZPYaUeoHFS8p3tmV7mgeppng4xUfg9ZNs9KNeQASh7rlQt8fSiyuRTuxrZfjb1oCcaBgVcQs9r0rJkkBngoxNC3NqeRbrFy7YNtjw6SLupWL9ZiBWN96B9byo2zv2ybfxVCsBufl0U22t8uKEweXrv3Kr50KfogxsVJB&quot;
+    },
+    {
+      &quot;title&quot;: &quot;yesimadesigner.com&quot;,
+      &quot;uri&quot;: &quot;https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFVJuancui2EyZCYTTbISMwj8L4b23kcWGQQVH7LHoiatNSkk27gkAIaXcBj4GEVHuA4RrEN4CNuojh544qNNl7dw0jVWE6JDLB60WIxjtnTL7vOc6kuR9DQX3aS9Iay-lP9FZ1LuvGRMmVECwnwxXW2QlzMFZ2XLxzMI9mbLfh&quot;
+    }
+  ]
+}</pre>
+  </details>
+</section>
+<section class="row" data-id="08-restaurant-opening">
+  <header>
+    <div class="n">#08</div>
+    <div class="meta">
+      <div class="id">08-restaurant-opening</div>
+      <div class="sub"><span class="dom">외식/오픈</span> · 1200×628 · <span class="badge">searches 0</span> <span class="badge">cites 0</span></div>
+      <div class="prompt">파스타 전문점 'La Linea' 신규 오픈 이벤트 배너. 4월 25일 오픈, 첫 주 30% 할인. 위치 성수동. 모던하고 이탈리안 무드.</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="out/08-restaurant-opening-trend.json" target="_blank">trend.json</a>
+      <a class="btn" href="out/08-restaurant-opening-A.html" target="_blank">A ↗</a>
+      <a class="btn" href="out/08-restaurant-opening-B.html" target="_blank">B ↗</a>
+    </div>
+  </header>
+  <div class="frames">
+    <div class="frame-box"><div class="frame-label a">A · current (no trend)</div>
+      <div class="frame-wrap" style="--cw:1200px;--ch:628px;">
+        <iframe loading="lazy" src="out/08-restaurant-opening-A.html" width="1200" height="628"></iframe>
+      </div>
+    </div>
+    <div class="frame-box"><div class="frame-label b">B · + trend research</div>
+      <div class="frame-wrap" style="--cw:1200px;--ch:628px;">
+        <iframe loading="lazy" src="out/08-restaurant-opening-B.html" width="1200" height="628"></iframe>
+      </div>
+    </div>
+  </div>
+  <details class="trend-preview"><summary>Trend summary (click to expand)</summary>
+    <pre>{
+  &quot;summary&quot;: &quot;2026년 성수동의 '플래그십 스토어' 경쟁 구도에 맞춰, 일시적인 팝업 느낌보다는 브랜드의 영속성이 느껴지는 '에이지드(Aged) 모던' 스타일이 핵심입니다. 이탈리아의 클래식한 우아함을 성수동 특유의 거친 질감(Raw texture)과 결합하여, 완벽한 디지털 정교함보다는 손맛이 느껴지는 휴머니즘 디자인을 지향합니다.&quot;,
+  &quot;palette&quot;: [
+    &quot;#E8DCCA&quot;,
+    &quot;#A13D2D&quot;,
+    &quot;#4A5D4E&quot;,
+    &quot;#2C2C2C&quot;,
+    &quot;#D97B56&quot;
+  ],
+  &quot;typography&quot;: {
+    &quot;weight&quot;: &quot;극명한 대비 (Hairline Serif &amp; Ultra Bold Sans)&quot;,
+    &quot;scale&quot;: &quot;타이틀 'La Linea'는 우아한 대문자 세리프로, 숫자 '30%'는 화면의 40% 이상을 차지하는 거대한 스케일로 배치&quot;,
+    &quot;notes&quot;: &quot;2026년 트렌드인 '베리어블 폰트(Variable Font)'를 활용해 글자 폭에 리듬감을 주며, 의도적인 오타나 정렬 불일치로 인간적인 결을 살림&quot;
+  },
+  &quot;composition&quot;: &quot;비대칭 그리드 또는 '벤토 박스(Bento Box)' 레이아웃을 사용하며, 한 칸에는 파스타의 질감을 극대화한 매크로(초근접) 사진을 배치하고 나머지 칸에 정보를 분할 배치&quot;,
+  &quot;motifs&quot;: [
+    &quot;이름(La Linea)을 형상화한 단 하나의 연속된 선(Continuous Line Art)&quot;,
+    &quot;종이 질감이 느껴지는 노이즈/그레인 효과&quot;,
+    &quot;아르데코풍의 기하학적 테두리&quot;,
+    &quot;식재료를 활용한 거친 드로잉&quot;
+  ],
+  &quot;tone&quot;: &quot;세련된 투박함(Sophisticated Rawness). 정통 이탈리안의 자부심과 성수의 힙한 감성이 공존하는 무드&quot;,
+  &quot;searchQueries&quot;: [
+    &quot;&quot;,
+    &quot;성수동 맛집 브랜딩 2025 2026 트렌드&quot;,
+    &quot;modern italian restaurant banner design trends 2026&quot;,
+    &quot;2026 성수동 레스토랑 디자인 트렌드&quot;,
+    &quot;2026 이탈리안 레스토랑 배너 디자인 트렌드 컬러 타이포그래피&quot;
+  ],
+  &quot;citationCount&quot;: 0,
+  &quot;citations&quot;: []
+}</pre>
+  </details>
+</section>
+<section class="row" data-id="09-webinar-startup">
+  <header>
+    <div class="n">#09</div>
+    <div class="meta">
+      <div class="id">09-webinar-startup</div>
+      <div class="sub"><span class="dom">B2B/웨비나</span> · 1080×1080 · <span class="badge">searches 0</span> <span class="badge">cites 0</span></div>
+      <div class="prompt">무료 웨비나 초대장. 주제 '시리즈 A 이후 조직 성장 전략', 연사 김태훈 대표(페이플러스). 5월 10일 목요일 저녁 8시, Zoom.</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="out/09-webinar-startup-trend.json" target="_blank">trend.json</a>
+      <a class="btn" href="out/09-webinar-startup-A.html" target="_blank">A ↗</a>
+      <a class="btn" href="out/09-webinar-startup-B.html" target="_blank">B ↗</a>
+    </div>
+  </header>
+  <div class="frames">
+    <div class="frame-box"><div class="frame-label a">A · current (no trend)</div>
+      <div class="frame-wrap" style="--cw:1080px;--ch:1080px;">
+        <iframe loading="lazy" src="out/09-webinar-startup-A.html" width="1080" height="1080"></iframe>
+      </div>
+    </div>
+    <div class="frame-box"><div class="frame-label b">B · + trend research</div>
+      <div class="frame-wrap" style="--cw:1080px;--ch:1080px;">
+        <iframe loading="lazy" src="out/09-webinar-startup-B.html" width="1080" height="1080"></iframe>
+      </div>
+    </div>
+  </div>
+  <details class="trend-preview"><summary>Trend summary (click to expand)</summary>
+    <pre>{
+  &quot;summary&quot;: &quot;2026년 B2B 테크 트렌드인 'Tech Spec'과 'Quiet Tech'를 결합하여, 신뢰감 있는 오프화이트 베이스에 고채도 블루를 포인트로 사용한 정교한 그리드 레이아웃을 제안합니다. 시리즈 A 이후의 체계적인 성장을 시각화하기 위해 유리 질감의 3D 모티프와 데이터 시각화 요소를 활용합니다.&quot;,
+  &quot;palette&quot;: [
+    &quot;#F0EEE9&quot;,
+    &quot;#262AFF&quot;,
+    &quot;#0C0C0C&quot;,
+    &quot;#1CABFF&quot;,
+    &quot;#E2E2E2&quot;
+  ],
+  &quot;typography&quot;: {
+    &quot;weight&quot;: &quot;Title: Black(900), Body: Regular(400), Data: Mono&quot;,
+    &quot;scale&quot;: &quot;Headline: 48pt+, Sub-headline: 18pt, Body: 11pt&quot;,
+    &quot;notes&quot;: &quot;타이틀은 'Hero Character' 트렌드를 반영해 압도적인 크기로 배치하고, 상세 정보는 모노스페이스 폰트를 사용하여 공학적인 정밀함(Tech Spec)을 강조합니다.&quot;
+  },
+  &quot;composition&quot;: &quot;비대칭 벤토 그리드(Bento Grid) 레이아웃을 사용하여 연사 프로필, 강연 내용, 일시 정보를 독립된 카드 형태로 구조화하여 가독성을 높입니다.&quot;,
+  &quot;motifs&quot;: [
+    &quot;유리 질감(Glassmorphism)의 3D 상승 화살표&quot;,
+    &quot;정교한 배경 그리드 라인&quot;,
+    &quot;데이터 차트를 형상화한 추상적 선 요소&quot;
+  ],
+  &quot;tone&quot;: &quot;전문적이고 혁신적이며, 불필요한 장식을 배제한 '절제된 기술미(Quiet Tech)'&quot;,
+  &quot;searchQueries&quot;: [
+    &quot;2026 디자인 트렌드 웨비나 포스터&quot;,
+    &quot;2025 2026 B2B 스타트업 컨퍼런스 디자인 트렌드&quot;,
+    &quot;스타트업 웨비나 초대장 레이아웃 2026&quot;,
+    &quot;시리즈 A 조직 성장 전략 웨비나 디자인&quot;,
+    &quot;PayPlus 김태훈 대표 웨비나 디자인 참고&quot;,
+    &quot;PayPlus brand identity colors&quot;,
+    &quot;페이플러스 PayPlus 브랜드 로고 색상&quot;,
+    &quot;페이플러스 김태훈 대표 프로필&quot;
+  ],
+  &quot;citationCount&quot;: 0,
+  &quot;citations&quot;: []
+}</pre>
+  </details>
+</section>
+<section class="row" data-id="10-chuseok-gift">
+  <header>
+    <div class="n">#10</div>
+    <div class="meta">
+      <div class="id">10-chuseok-gift</div>
+      <div class="sub"><span class="dom">명절/식품</span> · 1080×1350 · <span class="badge">searches 0</span> <span class="badge">cites 0</span></div>
+      <div class="prompt">추석 프리미엄 한과 선물세트 판매 세로형 배너. 전통 한과 9종 구성, 55,000원, 빠른배송 무료. 고급스러움과 한국적 미감 강조.</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="out/10-chuseok-gift-trend.json" target="_blank">trend.json</a>
+      <a class="btn" href="out/10-chuseok-gift-A.html" target="_blank">A ↗</a>
+      <a class="btn" href="out/10-chuseok-gift-B.html" target="_blank">B ↗</a>
+    </div>
+  </header>
+  <div class="frames">
+    <div class="frame-box"><div class="frame-label a">A · current (no trend)</div>
+      <div class="frame-wrap" style="--cw:1080px;--ch:1350px;">
+        <iframe loading="lazy" src="out/10-chuseok-gift-A.html" width="1080" height="1350"></iframe>
+      </div>
+    </div>
+    <div class="frame-box"><div class="frame-label b">B · + trend research</div>
+      <div class="frame-wrap" style="--cw:1080px;--ch:1350px;">
+        <iframe loading="lazy" src="out/10-chuseok-gift-B.html" width="1080" height="1350"></iframe>
+      </div>
+    </div>
+  </div>
+  <details class="trend-preview"><summary>Trend summary (click to expand)</summary>
+    <pre>{
+  &quot;summary&quot;: &quot;2026년 한국 디자인 트렌드인 '인간적인 온기(Human Warmth)'와 '익스프레시브 타이포그래피'를 결합한 '모던 헤리티지' 스타일이 핵심입니다. 전통적인 미감을 유지하되, 2026 서울색인 '모닝 옐로우'와 글래스모피즘(Glassmorphism) 레이어를 활용해 현대적이고 세련된 프리미엄 이미지를 구축합니다.&quot;,
+  &quot;palette&quot;: [
+    &quot;#F9E498&quot;,
+    &quot;#F2F0EA&quot;,
+    &quot;#005F6A&quot;,
+    &quot;#B22222&quot;,
+    &quot;#D4AF37&quot;
+  ],
+  &quot;typography&quot;: {
+    &quot;weight&quot;: &quot;Title: Extra Bold / Body: Medium&quot;,
+    &quot;scale&quot;: &quot;초대형 타이틀과 극도로 절제된 정보 텍스트의 대비&quot;,
+    &quot;notes&quot;: &quot;세로형 레이아웃에 최적화된 'NU 시야' 스타일이나 획의 대비가 강한 현대적 명조체(SD 초양 등)를 사용하여 글자 자체를 그래픽 오브제로 활용합니다.&quot;
+  },
+  &quot;composition&quot;: &quot;중앙에 한과의 '꾸덕한' 질감을 강조한 하이퍼 리얼리즘 사진을 배치하고, 주변에 반투명한 전통 문양 레이어를 겹쳐 깊이감 있는 9:16 세로형 레이아웃을 구성합니다.&quot;,
+  &quot;motifs&quot;: [
+    &quot;기하학적으로 단순화된 단청 문양&quot;,
+    &quot;입체적인 보자기 매듭 오브제&quot;,
+    &quot;유리 질감의 현대적 노리개 아이콘&quot;,
+    &quot;한지 질감의 디지털 텍스처&quot;
+  ],
+  &quot;tone&quot;: &quot;전통의 권위보다는 MZ세대의 '할매입맛' 트렌드를 반영한 '힙(Hip)한 고전미'와 프리미엄의 우아함이 공존하는 톤&quot;,
+  &quot;searchQueries&quot;: [
+    &quot;modern korean traditional dessert branding 2026&quot;,
+    &quot;프리미엄 한과 브랜드 디자인 2026 한국적 미감&quot;,
+    &quot;2025 2026 추석 선물세트 배너 디자인 트렌드&quot;,
+    &quot;2026 명절 배너 레이아웃 트렌드&quot;
+  ],
+  &quot;citationCount&quot;: 0,
+  &quot;citations&quot;: []
+}</pre>
+  </details>
+</section>
+<script>
+  // Fit each iframe into its aspect-ratio wrapper. iframe renders at canvas
+  // size; we CSS-scale it to fit the column width.
+  function fit() {
+    for (const wrap of document.querySelectorAll('.frame-wrap')) {
+      const cw = parseFloat(getComputedStyle(wrap).getPropertyValue('--cw'));
+      const boxW = wrap.clientWidth;
+      const scale = boxW / cw;
+      wrap.style.setProperty('--scale', scale);
+    }
+  }
+  window.addEventListener('resize', fit);
+  fit();
+  // Re-fit after iframes load (content might change wrap width timing).
+  for (const f of document.querySelectorAll('iframe')) {
+    f.addEventListener('load', fit);
+  }
+</script>
+</body></html>

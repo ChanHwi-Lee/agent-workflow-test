@@ -32,6 +32,13 @@ const MilestoneDeadlinesSchema = Type.Object(
   { additionalProperties: false },
 );
 
+const RunOptionsSchema = Type.Object(
+  {
+    trendResearch: Type.Optional(Type.Boolean()),
+  },
+  { additionalProperties: false },
+);
+
 export const StartAgentWorkflowRunRequestSchema = Type.Object(
   {
     clientRequestId: IdentifierSchema,
@@ -71,6 +78,7 @@ export const StartAgentWorkflowRunRequestSchema = Type.Object(
       { additionalProperties: false },
     ),
     referenceAssets: Type.Array(ReferenceAssetSchema),
+    options: Type.Optional(RunOptionsSchema),
     runPolicy: Type.Object(
       {
         mode: Type.Literal("live_commit"),

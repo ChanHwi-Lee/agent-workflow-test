@@ -1,0 +1,85 @@
+{
+  "id": "06-childrens-day",
+  "prompt": "어린이날 완구 매장 이벤트 포스터. 5월 5일 전 품목 30%, 3만원 이상 구매 시 사은품 증정. 밝고 즐거운 분위기.",
+  "model": "gemini-3-flash-preview",
+  "latencyMs": 15666,
+  "trend": {
+    "summary": "2026년 어린이날 디자인은 완벽함보다는 인간적인 감성을 강조하는 'Naïve Design(의도된 천진난만함)'과 성인과 아이 모두의 유희 본능을 자극하는 'Youth-phoria'가 핵심입니다. 3D 캐릭터와 수작업 느낌의 일러스트가 결합된 '피지털(Phygital)' 감성이 주를 이룹니다.",
+    "palette": [
+      "#FF3D00",
+      "#FFD600",
+      "#00E5FF",
+      "#7C4DFF",
+      "#F5F5F5"
+    ],
+    "typography": {
+      "weight": "Extra Bold / Black",
+      "scale": "Exaggerated (과장된 크기 대비)",
+      "notes": "3D 효과가 들어간 버블 폰트나 잉크 트랩(Ink Trap)이 강조된 현대적 산세리프를 혼용하여 가독성과 재미를 동시에 확보합니다."
+    },
+    "composition": "정보의 명확성을 위한 벤토 그리드(Bento Grid) 레이아웃을 기반으로 하되, 그 위로 3D 오브젝트와 캐릭터가 자유롭게 떠다니는 레이어드 구성을 사용합니다.",
+    "motifs": [
+      "Fuzzy/Amorphous 3D 캐릭터",
+      "장난감 블록 및 트린킷(Trinket) 아이콘",
+      "낙서 스타일의 핸드 드로잉 요소",
+      "그라데이션 블러(Gradient Blur) 배경"
+    ],
+    "tone": "에너제틱하고 몰입감 있는(Immersive) 분위기로, 단순한 세일 포스터를 넘어 브랜드의 세계관을 보여주는 놀이터 같은 느낌을 전달합니다.",
+    "notes": "2026년 롯데백화점 '슈퍼 해피' 및 스타벅스 '토이스토리' 협업 사례에서 보듯, 특정 캐릭터 IP나 아티스트 콜라보레이션 스타일의 비주얼이 한국 시장에서 강력한 트렌드로 작용하고 있습니다."
+  },
+  "contextForHtmlGen": "Summary: 2026년 어린이날 디자인은 완벽함보다는 인간적인 감성을 강조하는 'Naïve Design(의도된 천진난만함)'과 성인과 아이 모두의 유희 본능을 자극하는 'Youth-phoria'가 핵심입니다. 3D 캐릭터와 수작업 느낌의 일러스트가 결합된 '피지털(Phygital)' 감성이 주를 이룹니다.\nPalette (use as inspiration, pick 2-4): #FF3D00, #FFD600, #00E5FF, #7C4DFF, #F5F5F5\nTypography: weight=Extra Bold / Black; scale=Exaggerated (과장된 크기 대비); notes=3D 효과가 들어간 버블 폰트나 잉크 트랩(Ink Trap)이 강조된 현대적 산세리프를 혼용하여 가독성과 재미를 동시에 확보합니다.\nComposition: 정보의 명확성을 위한 벤토 그리드(Bento Grid) 레이아웃을 기반으로 하되, 그 위로 3D 오브젝트와 캐릭터가 자유롭게 떠다니는 레이어드 구성을 사용합니다.\nMotifs: Fuzzy/Amorphous 3D 캐릭터, 장난감 블록 및 트린킷(Trinket) 아이콘, 낙서 스타일의 핸드 드로잉 요소, 그라데이션 블러(Gradient Blur) 배경\nTone: 에너제틱하고 몰입감 있는(Immersive) 분위기로, 단순한 세일 포스터를 넘어 브랜드의 세계관을 보여주는 놀이터 같은 느낌을 전달합니다.\nNotes: 2026년 롯데백화점 '슈퍼 해피' 및 스타벅스 '토이스토리' 협업 사례에서 보듯, 특정 캐릭터 IP나 아티스트 콜라보레이션 스타일의 비주얼이 한국 시장에서 강력한 트렌드로 작용하고 있습니다.",
+  "citations": [
+    {
+      "title": "domestika.org",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQElk4z5O7pG6Mt3rYzeb78c0ySJyCWo1F-YPoVpcW1vwAnvlvmFs3WSDydpxs1t7u3WNx6sVQSa3qVh5qPjVfbt-V9RgWTfi-HiM9gl6_4s0yXTr7rlRI4TNEEr0MSkDHI1hWzveT8GpPnLAtLrdrmiVzQvNdxugmf6z0ubCPU8IcFVdO22IpIcMTyZrbp_kcb-1XxXqxiHMwgjGaX8si-lLSKMM5-H"
+    },
+    {
+      "title": "canva.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFAePeXx9GH1fSOWnZiiv9NKWwGdk-A7BVsRlm5UIoKg67SyFIG3aAJlpOi8guZkRYoL6JLd_gPhxWNCgIu9VRcgH1DzpD7kq5N-qv1LjlAac1jrXxxryj-SxZ34wdve7GgDKczBvA35yRszPXICj0lVrw="
+    },
+    {
+      "title": "wordpress.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFde-bCREPzN31f-CfYO02gNDVUpf2fozGBV8e_3OVYXwDvpMbTPZuUNd2CFMHVEIQDe7YzMnKNUJ7JGKIIZM53eYooBB0Hfa6atT6V0tukTgv4sKGRnVnrYaIRnZwy7Je-ylARzScNy_83Ni5WOJT9Mqu1EN45onYJjCg8qAWL9jnLSQ=="
+    },
+    {
+      "title": "starbucks.co.kr",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHhmBzAFaTsB3ZhaANrFBlV0SXXCfyZFbbIHOjHmAbavonEW3uL5spmf_FcqOToto6c4DxnoLfd5Cz2TbOt1n62k9eehVIvC7DVFoOi8Nq5JqFTdTeyHg5o-Bb2BYL1JnY0ruwTNZvN1EvqtRB1qZ_0Id_vb16NWIMB3PgXq68="
+    },
+    {
+      "title": "the-industry.co.kr",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFd7NE-rVpcvq6Qvn3EnoIxLAw2Kz1Bg8XCP5067IJajv7V0RQGzluR5YOUP-r-2VbRoPEL-Ar8nTm6X1ZZ-ay3AMiQxUnI-1Ntf_FPQ-pbrmXf0qyIMqHm1_zsle2n8Q=="
+    },
+    {
+      "title": "eopla.net",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHkq4CoVhxkvsWSieV1S7eLXA02Acu-ZEssZEFyTeDhEFORonSF8eRlXlhd0TFhhCYzWJuD_eWXaYW-G8KE4eCs24SaWemj89xUiVE6HChPlkHI0mUkqtL0sV5aLQ=="
+    },
+    {
+      "title": "magazine-hd.kr",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHlVFGdkz6UtBwjqgu6uUx8co1dx9w17kl4-GRAXMStMxOTihTzJDX9Q9APr_0ZyhIVCmed8TPLE2kZomXwaydfUX3uK0DZkSrgC7EHQLZ11-OQiAv0"
+    },
+    {
+      "title": "adobe.com",
+      "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHk5UcxI-wePy3i6eCIzNmX5AjUIJUr-xynDoKN-gOqx2_xK_TymV9FJEVASCSShnRE23yfDFtnD_H0N5MYr11lm8eN7BG5LXf3X1AzjRQeIfoAH_2VC3HvJirFOSQImxekmFVSioxnxxTLKrzsWsIRbUQuftwn"
+    }
+  ],
+  "searchQueries": [
+    "",
+    "2026 kids graphic design trends South Korea",
+    "2026 어린이날 디자인 트렌드 한국",
+    "어린이날 팝업스토어 비주얼 트렌드 2026",
+    "2026 완구 매장 이벤트 포스터 디자인"
+  ],
+  "rawText": "{\n  \"summary\": \"2026년 어린이날 디자인은 완벽함보다는 인간적인 감성을 강조하는 'Naïve Design(의도된 천진난만함)'과 성인과 아이 모두의 유희 본능을 자극하는 'Youth-phoria'가 핵심입니다. 3D 캐릭터와 수작업 느낌의 일러스트가 결합된 '피지털(Phygital)' 감성이 주를 이룹니다.\",\n  \"palette\": [\"#FF3D00\", \"#FFD600\", \"#00E5FF\", \"#7C4DFF\", \"#F5F5F5\"],\n  \"typography\": {\n    \"weight\": \"Extra Bold / Black\",\n    \"scale\": \"Exaggerated (과장된 크기 대비)\",\n    \"notes\": \"3D 효과가 들어간 버블 폰트나 잉크 트랩(Ink Trap)이 강조된 현대적 산세리프를 혼용하여 가독성과 재미를 동시에 확보합니다.\"\n  },\n  \"composition\": \"정보의 명확성을 위한 벤토 그리드(Bento Grid) 레이아웃을 기반으로 하되, 그 위로 3D 오브젝트와 캐릭터가 자유롭게 떠다니는 레이어드 구성을 사용합니다.\",\n  \"motifs\": [\"Fuzzy/Amorphous 3D 캐릭터\", \"장난감 블록 및 트린킷(Trinket) 아이콘\", \"낙서 스타일의 핸드 드로잉 요소\", \"그라데이션 블러(Gradient Blur) 배경\"],\n  \"tone\": \"에너제틱하고 몰입감 있는(Immersive) 분위기로, 단순한 세일 포스터를 넘어 브랜드의 세계관을 보여주는 놀이터 같은 느낌을 전달합니다.\",\n  \"notes\": \"2026년 롯데백화점 '슈퍼 해피' 및 스타벅스 '토이스토리' 협업 사례에서 보듯, 특정 캐릭터 IP나 아티스트 콜라보레이션 스타일의 비주얼이 한국 시장에서 강력한 트렌드로 작용하고 있습니다.\"\n}",
+  "usage": {
+    "promptTokenCount": 955,
+    "candidatesTokenCount": 459,
+    "totalTokenCount": 2338,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 955
+      }
+    ],
+    "thoughtsTokenCount": 924
+  }
+}
