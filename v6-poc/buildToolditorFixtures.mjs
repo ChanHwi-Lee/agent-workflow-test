@@ -89,10 +89,20 @@ function rectTokens(cmd) {
   return tokens;
 }
 
+// Playwright returns `getComputedStyle().fontFamily` as a CSS cascade string
+// like `"701_400", sans-serif`. Toolditor's text object expects a single
+// font-family matching its dynamic @font-face (Toolditor ID convention like
+// "701_400"), so we strip to the first quoted/unquoted family name.
+function parseFirstFontFamily(cascade) {
+  if (typeof cascade !== 'string' || cascade.length === 0) return '';
+  const first = cascade.split(',')[0].trim();
+  return first.replace(/^['"]|['"]$/g, '');
+}
+
 function textTokens(cmd) {
   return {
     fillColor: cmd.color,
-    fontFamily: cmd.fontFamily,
+    fontFamily: parseFirstFontFamily(cmd.fontFamily),
     fontSize: cmd.fontSize,
     fontWeight: cmd.fontWeight,
     fontStyle: cmd.fontStyle,

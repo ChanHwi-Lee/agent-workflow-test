@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "description": "AGW v6 Phase 2.5 — Toolditor 등록 폰트 중 Playwright extraction 과 공유하는 curated subset. CSS font-family 이름은 Toolditor 의 {serial}_{weight} 컨벤션을 그대로 사용해 adapter 단계에서 별도 매핑이 필요 없도록 한다.",
+  "cdnBase": "https://dev-file.tooldi.com/font",
+  "fonts": [
+    {
+      "toolditorId": "701_400",
+      "weight": 400,
+      "style": "normal",
+      "fontName": "나눔바른고딕",
+      "fontFace": "NanumBarunGothic",
+      "category": "고딕",
+      "languages": ["KOR", "ENG", "CHN"],
+      "savedFilename": "701_400.woff",
+      "format": "woff",
+      "isDefault": true
+    },
+    {
+      "toolditorId": "701_700",
+      "weight": 700,
+      "style": "normal",
+      "fontName": "나눔바른고딕 Bold",
+      "fontFace": "NanumBarunGothic",
+      "category": "고딕",
+      "languages": ["KOR", "ENG", "CHN"],
+      "savedFilename": "701_700.woff",
+      "format": "woff"
+    },
+    {
+      "toolditorId": "1301_400",
+      "weight": 400,
+      "style": "normal",
+      "fontName": "가석체",
+      "fontFace": "GasoekOne-Regular",
+      "category": "고딕",
+      "languages": ["KOR", "ENG"],
+      "savedFilename": "1301_400.woff",
+      "format": "woff"
+    }
+  ],
+  "default": { "toolditorId": "701_400" }
+}

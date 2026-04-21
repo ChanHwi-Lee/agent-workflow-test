@@ -60,7 +60,7 @@
       },
       "opacity": 1,
       "text": "TOOLDI · CLOUD",
-      "fontFamily": "sans-serif",
+      "fontFamily": "\"701_700\", sans-serif",
       "fontSize": 14,
       "fontWeight": "700",
       "fontStyle": "normal",
@@ -86,9 +86,9 @@
       },
       "opacity": 1,
       "text": "팀을 위한 디자인 협업",
-      "fontFamily": "sans-serif",
+      "fontFamily": "\"701_700\", sans-serif",
       "fontSize": 56,
-      "fontWeight": "800",
+      "fontWeight": "700",
       "fontStyle": "normal",
       "textDecoration": "none",
       "textAlign": "left",
@@ -112,7 +112,7 @@
       },
       "opacity": 1,
       "text": "실시간 편집, 자연어 편집 에이전트, 자산 일원화. 한 공간에서 모두.",
-      "fontFamily": "sans-serif",
+      "fontFamily": "\"701_400\", sans-serif",
       "fontSize": 20,
       "fontWeight": "400",
       "fontStyle": "normal",
@@ -132,9 +132,9 @@
       },
       "bounds": {
         "left": 120,
-        "top": 448,
-        "width": 154.02,
-        "height": 58
+        "top": 454,
+        "width": 148,
+        "height": 52
       },
       "opacity": 1,
       "fill": "#0EA5E9",
@@ -152,13 +152,13 @@
       },
       "bounds": {
         "left": 152,
-        "top": 464,
-        "width": 90.02,
-        "height": 26
+        "top": 470,
+        "width": 84,
+        "height": 20
       },
       "opacity": 1,
       "text": "무료로 시작",
-      "fontFamily": "sans-serif",
+      "fontFamily": "\"701_700\", sans-serif",
       "fontSize": 18,
       "fontWeight": "700",
       "fontStyle": "normal",
@@ -177,10 +177,10 @@
         "tag": "div"
       },
       "bounds": {
-        "left": 290.02,
-        "top": 446,
-        "width": 141.02,
-        "height": 62
+        "left": 284,
+        "top": 452,
+        "width": 136,
+        "height": 56
       },
       "opacity": 1,
       "fill": null,
@@ -200,16 +200,16 @@
         "tag": "div"
       },
       "bounds": {
-        "left": 324.02,
-        "top": 464,
-        "width": 73.02,
-        "height": 26
+        "left": 318,
+        "top": 470,
+        "width": 68,
+        "height": 20
       },
       "opacity": 1,
       "text": "데모 보기",
-      "fontFamily": "sans-serif",
+      "fontFamily": "\"701_400\", sans-serif",
       "fontSize": 18,
-      "fontWeight": "500",
+      "fontWeight": "400",
       "fontStyle": "normal",
       "textDecoration": "none",
       "textAlign": "left",

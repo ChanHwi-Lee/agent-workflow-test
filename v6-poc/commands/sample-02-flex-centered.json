@@ -33,16 +33,16 @@
         "tag": "div"
       },
       "bounds": {
-        "left": 458.47,
-        "top": 168,
-        "width": 283.06,
-        "height": 21
+        "left": 460.5,
+        "top": 171.5,
+        "width": 279,
+        "height": 20
       },
       "opacity": 1,
       "text": "NEW COLLECTION 2026",
-      "fontFamily": "sans-serif",
+      "fontFamily": "\"701_400\", sans-serif",
       "fontSize": 18,
-      "fontWeight": "500",
+      "fontWeight": "400",
       "fontStyle": "normal",
       "textDecoration": "none",
       "textAlign": "left",
@@ -59,16 +59,16 @@
         "tag": "div"
       },
       "bounds": {
-        "left": 124.11,
-        "top": 213,
-        "width": 951.77,
+        "left": 155.5,
+        "top": 215.5,
+        "width": 889,
         "height": 88
       },
       "opacity": 1,
       "text": "MINIMAL ESSENTIALS",
-      "fontFamily": "sans-serif",
+      "fontFamily": "\"701_700\", sans-serif",
       "fontSize": 88,
-      "fontWeight": "800",
+      "fontWeight": "700",
       "fontStyle": "normal",
       "textDecoration": "none",
       "textAlign": "left",
@@ -85,14 +85,14 @@
         "tag": "div"
       },
       "bounds": {
-        "left": 407.19,
-        "top": 325,
-        "width": 385.61,
+        "left": 408.5,
+        "top": 327.5,
+        "width": 383,
         "height": 33
       },
       "opacity": 1,
       "text": "본질에 집중한 디자인. 4월 26일 정식 출시.",
-      "fontFamily": "sans-serif",
+      "fontFamily": "\"701_400\", sans-serif",
       "fontSize": 22,
       "fontWeight": "400",
       "fontStyle": "normal",
@@ -111,10 +111,10 @@
         "tag": "div"
       },
       "bounds": {
-        "left": 489.98,
-        "top": 398,
-        "width": 220.02,
-        "height": 62
+        "left": 494,
+        "top": 400.5,
+        "width": 212,
+        "height": 56
       },
       "opacity": 1,
       "fill": "#F8FAFC",
@@ -131,14 +131,14 @@
         "tag": "div"
       },
       "bounds": {
-        "left": 537.98,
-        "top": 416,
-        "width": 124.02,
-        "height": 26
+        "left": 542,
+        "top": 418.5,
+        "width": 116,
+        "height": 20
       },
       "opacity": 1,
       "text": "컬렉션 둘러보기",
-      "fontFamily": "sans-serif",
+      "fontFamily": "\"701_700\", sans-serif",
       "fontSize": 18,
       "fontWeight": "700",
       "fontStyle": "normal",

@@ -12,9 +12,16 @@ import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
 import { join, basename, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { buildFontFaceStyleBlock } from './fonts/buildFontFaceCSS.mjs';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SAMPLES_DIR = join(__dirname, 'samples');
 const OUT_DIR = join(__dirname, 'extracted');
+
+// Phase 2.5: Toolditor webfonts injected as @font-face so Playwright measures
+// text with the same font set Toolditor renders with. Without this, system
+// fallback fonts produce metrics that don't match Toolditor canvas render.
+const FONT_FACE_STYLE = buildFontFaceStyleBlock();
 
 const CANVAS_WIDTH = 1200;
 const CANVAS_HEIGHT = 628;
@@ -31,7 +38,13 @@ async function extractFromHtml(page, html) {
   );
 
   await page.setViewportSize({ width: CANVAS_WIDTH, height: CANVAS_HEIGHT });
-  await page.setContent(html, { waitUntil: 'networkidle' });
+  // Inject Toolditor @font-face block immediately before </head> (or before <body>
+  // if no </head>) so every subsequent measurement uses the target renderer's
+  // font metrics.
+  const htmlWithFonts = html.includes('</head>')
+    ? html.replace('</head>', `${FONT_FACE_STYLE}\n</head>`)
+    : html.replace('<body', `${FONT_FACE_STYLE}\n<body`);
+  await page.setContent(htmlWithFonts, { waitUntil: 'networkidle' });
 
   // Ensure fonts are loaded before measuring.
   await page.evaluate(async () => {
