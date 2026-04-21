@@ -27,9 +27,9 @@ import type {
 } from "@tooldi/agent-persistence";
 import { createObjectStoreClient } from "@tooldi/agent-persistence";
 import { createTestRun } from "@tooldi/agent-testkit";
-import { validateMethodBHtml } from "../phases/v5HtmlValidator.js";
-import type { V5PipelineDependencies } from "../phases/v5PipelineOrchestrator.js";
-import { transpileHtmlToCommands } from "../phases/v5Transpile/index.js";
+import type { V6NodeOverrides } from "../graph/v6PipelineNode.js";
+import type { V6ExtractionResult } from "../phases/v6Types.js";
+import type { V6HtmlGenResult } from "../phases/v6HtmlGen.js";
 import type {
   AssetStorageClient,
   ImagePrimitiveClient,
@@ -134,37 +134,139 @@ function pickBestTextObject(
 
 const LEGACY_CHAIN_SKIP = {
   skip:
-    "legacy planning chain (template-prior → adaptive composition → photo/copy/polish stages) is no longer reached under v5 routing. Kept as reference until Work Order B purges the legacy modules.",
+    "legacy planning chain (template-prior → adaptive composition → photo/copy/polish stages) is no longer reached under v6 routing. Kept as reference until the legacy modules are purged.",
 };
 
-const V5_FIXTURE_HTML = `<div style="position:relative; width:1200px; height:628px; overflow:hidden;">
-  <div style="position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FFF5E1;"></div>
-  <h1 style="position:absolute; left:80px; top:140px; width:600px; height:110px; font-size:84px; color:#222222;">테스트 헤드라인</h1>
-  <p style="position:absolute; left:80px; top:270px; width:600px; height:80px; font-size:36px;">테스트 부제</p>
-  <img data-tooldi-role="hero" data-hint="stub" data-aspect="4:5" src="placeholder://" style="position:absolute; left:720px; top:80px; width:420px; height:468px;" />
-</div>`;
+const V6_FIXTURE_HTML = `<div style="position:relative; width:1200px; height:628px; overflow:hidden; background-color:#FFF5E1;"><h1 style="position:absolute; left:80px; top:140px; width:600px; height:110px; font-family:\"701_700\"; font-size:84px; color:#222222;">테스트 헤드라인</h1><p style="position:absolute; left:80px; top:270px; width:600px; height:80px; font-family:\"701_400\"; font-size:36px;">테스트 부제</p></div>`;
 
-function createDeterministicV5Dependencies(): V5PipelineDependencies {
-  return {
-    runMethodB: async (args: { prompt: string; apiKey: string }) => {
-      void args;
-      return {
-        model: "gemini-3.1-flash-lite-preview-test-stub",
-        html: V5_FIXTURE_HTML,
-        latencyMs: 1,
-        finishReason: "STOP",
-        usage: {
-          promptTokenCount: 0,
-          candidatesTokenCount: 0,
-          totalTokenCount: 0,
-          thoughtsTokenCount: null,
-          cachedContentTokenCount: null,
-        },
-        finishedAt: new Date().toISOString(),
-      };
+// Deterministic v6 node overrides for processRunJob tests. Bypasses Gemini
+// (generateHtml stub returns V6_FIXTURE_HTML), bypasses Playwright
+// (renderAndExtract stub returns a hand-built extraction), and keeps the real
+// deterministic validator + primitive mapper so the pipeline shape is still
+// exercised. Produces at least 3 primitives so downstream assertions on
+// mutation command count hold.
+function createDeterministicV6Overrides(): V6NodeOverrides {
+  const stubHtmlGen = async (_args: {
+    canvasWidth: number;
+    canvasHeight: number;
+    userPrompt: string;
+    apiKey: string;
+  }): Promise<V6HtmlGenResult> => ({
+    model: "gemini-3.1-flash-lite-preview-test-stub",
+    html: V6_FIXTURE_HTML,
+    rawHtml: V6_FIXTURE_HTML,
+    latencyMs: 1,
+    finishReason: "STOP",
+    usage: {
+      promptTokenCount: 0,
+      candidatesTokenCount: 0,
+      totalTokenCount: 0,
+      thoughtsTokenCount: null,
+      cachedContentTokenCount: null,
     },
-    validateHtml: validateMethodBHtml,
-    transpile: transpileHtmlToCommands,
+    finishedAt: new Date().toISOString(),
+  });
+
+  const stubRenderAndExtract = async (
+    _html: string,
+    canvas: { width: number; height: number },
+  ): Promise<V6ExtractionResult> => {
+    const baseStyle = {
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      backgroundImage: "none",
+      borderTopLeftRadius: "0px",
+      borderTopRightRadius: "0px",
+      borderBottomRightRadius: "0px",
+      borderBottomLeftRadius: "0px",
+      borderTopWidth: "0px",
+      borderRightWidth: "0px",
+      borderBottomWidth: "0px",
+      borderLeftWidth: "0px",
+      borderTopColor: "rgba(0, 0, 0, 0)",
+      paddingTop: "0px",
+      paddingRight: "0px",
+      paddingBottom: "0px",
+      paddingLeft: "0px",
+      color: "rgb(0, 0, 0)",
+      fontFamily: "\"701_400\", sans-serif",
+      fontSize: "16px",
+      fontWeight: "400",
+      fontStyle: "normal",
+      textDecorationLine: "none",
+      textAlign: "left",
+      lineHeight: "normal",
+      letterSpacing: "0px",
+      opacity: "1",
+      transform: "none",
+      transformOrigin: "0 0",
+      boxShadow: "none",
+      objectFit: "fill",
+      overflow: "visible",
+      display: "block",
+      visibility: "visible",
+      whiteSpace: "normal",
+    };
+    return {
+      canvas,
+      elements: [
+        {
+          serial: 0,
+          path: "0",
+          tagName: "div",
+          bounds: { left: 0, top: 0, width: canvas.width, height: canvas.height },
+          style: { ...baseStyle, backgroundColor: "rgb(255, 245, 225)" },
+          isTextLeaf: false,
+          text: null,
+          img: null,
+          svg: null,
+          hasChildren: true,
+          visible: true,
+        },
+        {
+          serial: 1,
+          path: "0.0",
+          tagName: "h1",
+          bounds: { left: 80, top: 140, width: 600, height: 110 },
+          style: {
+            ...baseStyle,
+            fontFamily: "\"701_700\", sans-serif",
+            fontSize: "84px",
+            fontWeight: "700",
+            color: "rgb(34, 34, 34)",
+          },
+          isTextLeaf: true,
+          text: "테스트 헤드라인",
+          img: null,
+          svg: null,
+          hasChildren: false,
+          visible: true,
+        },
+        {
+          serial: 2,
+          path: "0.1",
+          tagName: "p",
+          bounds: { left: 80, top: 270, width: 600, height: 80 },
+          style: {
+            ...baseStyle,
+            fontFamily: "\"701_400\", sans-serif",
+            fontSize: "36px",
+          },
+          isTextLeaf: true,
+          text: "테스트 부제",
+          img: null,
+          svg: null,
+          hasChildren: false,
+          visible: true,
+        },
+      ],
+    };
+  };
+
+  return {
+    deps: {
+      generateHtml: stubHtmlGen,
+      renderAndExtract: stubRenderAndExtract,
+    },
   };
 }
 
@@ -1010,7 +1112,7 @@ test("processRunJob persists the raw planner draft before normalized intent", LE
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -1189,7 +1291,7 @@ test("processRunJob normalizes from the persisted planner draft artifact", LEGAC
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -1329,7 +1431,7 @@ test("processRunJob uses the persisted normalized intent artifact as downstream 
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -1483,7 +1585,7 @@ test("processRunJob는 잘못된 플래너 초안이면 휴리스틱 초안을 �
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     templatePlanner,
   });
   const expectedFallbackDraft = await createHeuristicTemplatePlanner().plan({
@@ -1590,7 +1692,7 @@ test("processRunJob keeps structured and legacy asset-policy inputs compatible t
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
       adaptiveCompositionDecisionBuilder:
         createDeterministicAdaptiveCompositionDecisionBuilder(),
       tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -1758,7 +1860,7 @@ test("processRunJob emits template-prior-summary for the Tooldi taxonomy fixture
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
       adaptiveCompositionDecisionBuilder:
         createDeterministicAdaptiveCompositionDecisionBuilder(),
       tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -1874,7 +1976,7 @@ test(
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
       adaptiveCompositionDecisionBuilder:
         createDeterministicAdaptiveCompositionDecisionBuilder(),
       tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -2146,7 +2248,7 @@ test(
         assetStorageClient: createAssetStorageClient(),
         textLayoutHelper: createTextLayoutHelper(),
         templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
         templatePlanner,
       });
 
@@ -2214,7 +2316,7 @@ test(
         assetStorageClient: createAssetStorageClient(),
         textLayoutHelper: createTextLayoutHelper(),
         templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
         templatePlanner,
       });
 
@@ -2296,7 +2398,7 @@ test("processRunJob orchestrates phases and backend callbacks in order", LEGACY_
     assetStorageClient,
     textLayoutHelper,
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -2780,7 +2882,7 @@ test(
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
       adaptiveCompositionDecisionBuilder: async () => null,
     });
 
@@ -2960,7 +3062,7 @@ test("processRunJob covers taxonomy-grounded general, cafe, and fashion create-t
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
       adaptiveCompositionDecisionBuilder:
         createDeterministicAdaptiveCompositionDecisionBuilder(),
       tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -3128,7 +3230,7 @@ test("processRunJob can activate generated background with real Tooldi graphic/f
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
   });
 
@@ -3275,7 +3377,7 @@ test("processRunJob는 실소스 그래픽 후보가 비면 실패 finalize로 �
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     tooldiCatalogSourceClient: backgroundEmptySourceClient,
   });
 
@@ -3390,7 +3492,7 @@ test("processRunJob can activate the photo hero execution path on the wide prese
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: photoPreferredSourceClient,
@@ -3502,7 +3604,7 @@ test("processRunJob can promote a real-like photo candidate when it stays within
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
   });
 
@@ -3606,7 +3708,7 @@ test("processRunJob keeps graphic path when top photo candidate is not executabl
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     tooldiCatalogSourceClient: nonExecutablePhotoSourceClient,
   });
 
@@ -3667,7 +3769,7 @@ test("processRunJob rejects non-empty canvas runs for the spring vertical slice"
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
   });
 
   assert.equal(result.intent.operationFamily, "update_layer");
@@ -3729,7 +3831,7 @@ test("processRunJob keeps the representative wide banner geometry inside the can
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
   });
 
   assert.equal(result.selectionDecision?.layoutMode, "left_copy_right_graphic");
@@ -3827,7 +3929,7 @@ test("processRunJob retrieval seam disables photo candidates when photo catalog 
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     tooldiCatalogSourceClient: countingSourceClient,
   });
 
@@ -3886,7 +3988,7 @@ test("processRunJob honors cancel fence before starting a new mutation group", L
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
   });
 
   assert.equal(result.emittedMutationIds.length, 0);
@@ -3941,7 +4043,7 @@ test("processRunJob does not treat unconfirmed mutation ack as success", LEGACY_
     assetStorageClient,
     textLayoutHelper,
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -4010,7 +4112,7 @@ test("processRunJob preserves rejected mutation reason in stage log and finalize
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: new FakeTooldiCatalogSourceClient(),
@@ -4158,7 +4260,7 @@ test("processRunJob stops immediately after a rejected photo stage under fail-fa
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     adaptiveCompositionDecisionBuilder:
       createDeterministicAdaptiveCompositionDecisionBuilder(),
     tooldiCatalogSourceClient: photoPreferredSourceClient,
@@ -4249,7 +4351,7 @@ test("processRunJob emits an observational log when backend passes repairContext
       assetStorageClient: createAssetStorageClient(),
       textLayoutHelper: createTextLayoutHelper(),
       templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
     },
   );
 
@@ -4263,7 +4365,7 @@ test("processRunJob emits an observational log when backend passes repairContext
   );
 });
 
-test("processRunJob v5 happy path — Method B + validate + transpile emits a single canvas.mutation envelope with transpiled commands", async () => {
+test("processRunJob v6 happy path — HTML gen + security validate + browser-render stub + primitive map + adapter emits a single canvas.mutation envelope", async () => {
   const env = createEnv();
   const logger = createWorkerLogger(env);
   const objectStore = new TrackingObjectStoreClient(
@@ -4295,19 +4397,19 @@ test("processRunJob v5 happy path — Method B + validate + transpile emits a si
     assetStorageClient: createAssetStorageClient(),
     textLayoutHelper: createTextLayoutHelper(),
     templateCatalogClient: createTemplateCatalogClient(),
-    v5Dependencies: createDeterministicV5Dependencies(),
+    v6Overrides: createDeterministicV6Overrides(),
   });
 
-  assert.equal(result.plan?.planSchemaVersion, "v5-constrained-html");
+  assert.equal(result.plan?.planSchemaVersion, "v6-freeform-layout");
   assert.equal(result.plan?.actions.length, 1);
   const action = result.plan!.actions[0]!;
-  assert.equal(action.operation, "v5_apply_constrained_html_design");
-  assert.equal(action.toolName, "v5-constrained-html-pipeline");
+  assert.equal(action.operation, "v6_apply_freeform_layout");
+  assert.equal(action.toolName, "v6-freeform-layout-pipeline");
 
   const mutationEvents = callbackClient.appendedEvents.filter(
     (e) => e.event.type === "mutation.proposed",
   );
-  // v5 emits 2 envelopes: the transpiled layer batch + the saveTemplate envelope
+  // v6 emits 2 envelopes: the primitive layer batch + the saveTemplate envelope
   // coming from emit_save_stage. Filter to the createLayer envelope.
   const createLayerEnvelopes = mutationEvents.filter((e) => {
     const event = e.event as Extract<
@@ -4319,7 +4421,7 @@ test("processRunJob v5 happy path — Method B + validate + transpile emits a si
   assert.equal(
     createLayerEnvelopes.length,
     1,
-    "expected exactly one createLayer envelope from the v5 pipeline",
+    "expected exactly one createLayer envelope from the v6 pipeline",
   );
   const envelope = (
     createLayerEnvelopes[0]!.event as Extract<
@@ -4329,20 +4431,20 @@ test("processRunJob v5 happy path — Method B + validate + transpile emits a si
   ).mutation;
   assert.ok(
     envelope.commands.length >= 3,
-    `expected ≥3 transpiled commands, got ${envelope.commands.length}`,
+    `expected ≥3 v6-mapped commands (1 rect + 2 text), got ${envelope.commands.length}`,
   );
   assert.equal(envelope.seq, 1);
   assert.equal(envelope.expectedBaseRevision, 0);
   assert.equal(envelope.rollbackHint.strategy, "delete_created_layers");
 
-  const v5Logs = callbackClient.appendedEvents.filter(
+  const v6Logs = callbackClient.appendedEvents.filter(
     (e) =>
       e.event.type === "log" &&
       typeof e.event.message === "string" &&
-      e.event.message.startsWith("[v5]"),
+      e.event.message.startsWith("[v6]"),
   );
   assert.ok(
-    v5Logs.length >= 2,
-    "expected v5 observability log entries (enter + done)",
+    v6Logs.length >= 2,
+    "expected v6 observability log entries (enter + done)",
   );
 });

@@ -24,7 +24,7 @@ import type {
   ProjectedObjectGraph,
   SceneStylePlan,
 } from "../types.js";
-import type { V5PipelineDependencies } from "../phases/v5PipelineOrchestrator.js";
+import type { V6NodeOverrides } from "./v6PipelineNode.js";
 
 export interface AdaptiveCompositionDecisionBuilderInput {
   runId: string;
@@ -58,5 +58,5 @@ export interface RunJobGraphDependencies {
   templateCopyPlanGenerator?: TemplateCopyPlanGenerator;
   templateAbstractLayoutGenerator?: TemplateAbstractLayoutGenerator;
   adaptiveCompositionDecisionBuilder?: AdaptiveCompositionDecisionBuilder;
-  v5Dependencies?: Partial<V5PipelineDependencies>;
+  v6Overrides?: V6NodeOverrides;
 }

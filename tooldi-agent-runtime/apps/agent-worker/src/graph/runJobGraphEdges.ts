@@ -13,9 +13,9 @@ export function registerRunJobGraphEdges(graph: any) {
     .addConditionalEdges("gate_scope", (state: any) =>
       state.finalizeDraft
         ? "send_finalize"
-        : "v5_constrained_html_pipeline",
+        : "v6_freeform_layout_pipeline",
     )
-    .addEdge("v5_constrained_html_pipeline", "prepare_execution")
+    .addEdge("v6_freeform_layout_pipeline", "prepare_execution")
     .addEdge("build_template_prior_summary", "build_template_prior_bundle")
     .addEdge("build_template_prior_bundle", "build_scene_plans")
     .addEdge("build_scene_plans", "build_copy_and_abstract_layout_plan")
@@ -52,21 +52,22 @@ export function registerRunJobGraphEdges(graph: any) {
     )
     .addEdge("await_stage_ack", "advance_after_ack")
     .addConditionalEdges("advance_after_ack", (state: any) => {
+      const inV6Pipeline = Boolean(state.v6PipelineResult);
       if (state.lastMutationAck?.status !== "acked" || state.cooperativeStopRequested) {
-        // v5 does not populate the copy/asset/layout legacy plans that
+        // v6 does not populate the copy/asset/layout legacy plans that
         // build_execution_scene_summary requires — short-circuit to finalize
         // so cancellation / rejection still surfaces cleanly.
-        return state.v5PipelineResult
+        return inV6Pipeline
           ? "prepare_finalize"
           : "build_execution_scene_summary";
       }
       if (state.currentProposal) {
         return "emit_stage";
       }
-      // v5 emits a single envelope and proceeds straight to save: the legacy
+      // v6 emits a single envelope and proceeds straight to save: the legacy
       // refinement/judge/refine subgraph expects state (copyPlan, assetPlan,
-      // concreteLayoutPlan) that v5 does not produce.
-      return state.v5PipelineResult
+      // concreteLayoutPlan) that v6 does not produce.
+      return inV6Pipeline
         ? "emit_save_stage"
         : "build_execution_scene_summary";
     })

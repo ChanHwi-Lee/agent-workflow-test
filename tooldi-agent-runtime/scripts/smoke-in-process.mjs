@@ -17,33 +17,106 @@ function createSharedEnv(queueName) {
   };
 }
 
-const SMOKE_V5_FIXTURE_HTML = `<div style="position:relative; width:1200px; height:628px; overflow:hidden;">
-  <div style="position:absolute; left:0px; top:0px; width:1200px; height:628px; background-color:#FFF5E1;"></div>
-  <h1 style="position:absolute; left:80px; top:140px; width:600px; height:110px; font-size:84px; color:#222222;">스모크 헤드라인</h1>
-  <p style="position:absolute; left:80px; top:270px; width:600px; height:80px; font-size:36px;">스모크 부제</p>
-  <img data-tooldi-role="hero" data-hint="smoke" data-aspect="4:5" src="placeholder://" style="position:absolute; left:720px; top:80px; width:420px; height:468px;" />
-</div>`;
+const SMOKE_V6_FIXTURE_HTML = `<div style="position:relative; width:1200px; height:628px; overflow:hidden; background-color:#FFF5E1;"><h1 style="position:absolute; left:80px; top:140px; width:600px; height:110px; font-size:84px; color:#222222;">스모크 헤드라인</h1><p style="position:absolute; left:80px; top:270px; width:600px; height:80px; font-size:36px;">스모크 부제</p></div>`;
 
-async function createSmokeV5Dependencies(workspaceRoot) {
-  const { validateMethodBHtml } = await importModule(
-    workspaceRoot,
-    "apps/agent-worker/dist/phases/v5HtmlValidator.js",
-  );
-  const { transpileHtmlToCommands } = await importModule(
-    workspaceRoot,
-    "apps/agent-worker/dist/phases/v5Transpile/index.js",
-  );
+function buildSmokeBaseStyle() {
   return {
-    runMethodB: async () => ({
-      model: "gemini-3.1-flash-lite-preview-smoke-stub",
-      html: SMOKE_V5_FIXTURE_HTML,
-      latencyMs: 1,
-      finishReason: "STOP",
-      usage: null,
-      finishedAt: new Date().toISOString(),
-    }),
-    validateHtml: validateMethodBHtml,
-    transpile: transpileHtmlToCommands,
+    backgroundColor: "rgba(0, 0, 0, 0)",
+    backgroundImage: "none",
+    borderTopLeftRadius: "0px",
+    borderTopRightRadius: "0px",
+    borderBottomRightRadius: "0px",
+    borderBottomLeftRadius: "0px",
+    borderTopWidth: "0px",
+    borderRightWidth: "0px",
+    borderBottomWidth: "0px",
+    borderLeftWidth: "0px",
+    borderTopColor: "rgba(0, 0, 0, 0)",
+    paddingTop: "0px",
+    paddingRight: "0px",
+    paddingBottom: "0px",
+    paddingLeft: "0px",
+    color: "rgb(0, 0, 0)",
+    fontFamily: "\"701_400\", sans-serif",
+    fontSize: "16px",
+    fontWeight: "400",
+    fontStyle: "normal",
+    textDecorationLine: "none",
+    textAlign: "left",
+    lineHeight: "normal",
+    letterSpacing: "0px",
+    opacity: "1",
+    transform: "none",
+    transformOrigin: "0 0",
+    boxShadow: "none",
+    objectFit: "fill",
+    overflow: "visible",
+    display: "block",
+    visibility: "visible",
+    whiteSpace: "normal",
+  };
+}
+
+async function createSmokeV6Overrides() {
+  return {
+    deps: {
+      generateHtml: async () => ({
+        model: "gemini-3.1-flash-lite-preview-smoke-stub",
+        html: SMOKE_V6_FIXTURE_HTML,
+        rawHtml: SMOKE_V6_FIXTURE_HTML,
+        latencyMs: 1,
+        finishReason: "STOP",
+        usage: null,
+        finishedAt: new Date().toISOString(),
+      }),
+      renderAndExtract: async (_html, canvas) => {
+        const base = buildSmokeBaseStyle();
+        return {
+          canvas,
+          elements: [
+            {
+              serial: 0,
+              path: "0",
+              tagName: "div",
+              bounds: { left: 0, top: 0, width: canvas.width, height: canvas.height },
+              style: { ...base, backgroundColor: "rgb(255, 245, 225)" },
+              isTextLeaf: false,
+              text: null,
+              img: null,
+              svg: null,
+              hasChildren: true,
+              visible: true,
+            },
+            {
+              serial: 1,
+              path: "0.0",
+              tagName: "h1",
+              bounds: { left: 80, top: 140, width: 600, height: 110 },
+              style: { ...base, fontSize: "84px", fontWeight: "700", color: "rgb(34, 34, 34)" },
+              isTextLeaf: true,
+              text: "스모크 헤드라인",
+              img: null,
+              svg: null,
+              hasChildren: false,
+              visible: true,
+            },
+            {
+              serial: 2,
+              path: "0.1",
+              tagName: "p",
+              bounds: { left: 80, top: 270, width: 600, height: 80 },
+              style: { ...base, fontSize: "36px" },
+              isTextLeaf: true,
+              text: "스모크 부제",
+              img: null,
+              svg: null,
+              hasChildren: false,
+              visible: true,
+            },
+          ],
+        };
+      },
+    },
   };
 }
 
@@ -428,7 +501,7 @@ export async function runObjectNativeSmokeInProcess({
     workspaceRoot,
     "apps/agent-worker/dist/phases/buildAdaptiveCompositionDecision.js",
   );
-  const v5Dependencies = await createSmokeV5Dependencies(workspaceRoot);
+  const v6Overrides = await createSmokeV6Overrides();
   const sharedEnv = createSharedEnv(queueName);
   const { app, worker } = await createInProcessRuntime({
     workspaceRoot,
@@ -437,7 +510,7 @@ export async function runObjectNativeSmokeInProcess({
       tooldiCatalogSourceClient: createObjectNativeFixtureSourceClient(),
       adaptiveCompositionDecisionBuilder:
         createDeterministicAdaptiveBuilder(finalizeAdaptiveCompositionDecision),
-      v5Dependencies,
+      v6Overrides,
     },
   });
   try {
@@ -469,33 +542,32 @@ export async function runObjectNativeSmokeInProcess({
       runId: accepted.runId,
     });
 
-    // Under v5 routing the legacy adaptive-composition artifacts are no longer
-    // produced (the legacy chain is bypassed; see Work Order B for cleanup).
-    // We instead verify that the v5 pipeline output landed as an executable
-    // plan of schema v5 and that its single action carries the transpiled
-    // createLayer commands.
+    // Under v6 routing the legacy adaptive-composition artifacts are no longer
+    // produced (the legacy chain is bypassed). We instead verify that the v6
+    // pipeline output landed as an executable plan of schema v6 and that its
+    // single action carries the primitive-mapped createLayer commands.
     const executablePlan = await readJsonObject(
       app.objectStore,
       sharedEnv.objectStoreBucket,
       attemptArtifactKey(accepted.runId, "executable-plan.json"),
     );
-    assert.equal(executablePlan.planSchemaVersion, "v5-constrained-html");
+    assert.equal(executablePlan.planSchemaVersion, "v6-freeform-layout");
     assert.equal(executablePlan.actions.length, 1);
     assert.equal(
       executablePlan.actions[0].operation,
-      "v5_apply_constrained_html_design",
+      "v6_apply_freeform_layout",
     );
-    const v5Commands = executablePlan.actions[0].inputs.v5Commands;
+    const v6Commands = executablePlan.actions[0].inputs.v6Commands;
     assert.ok(
-      Array.isArray(v5Commands) && v5Commands.length >= 3,
-      `expected ≥3 v5 transpiled commands, got ${v5Commands?.length ?? "n/a"}`,
+      Array.isArray(v6Commands) && v6Commands.length >= 3,
+      `expected ≥3 v6-mapped commands, got ${v6Commands?.length ?? "n/a"}`,
     );
-    for (const cmd of v5Commands) {
+    for (const cmd of v6Commands) {
       assert.equal(cmd.op, "createLayer");
     }
 
     console.log(
-      `[object-native-smoke] verified v5 pipeline emitted ${v5Commands.length} createLayer commands via ${executablePlan.actions[0].toolName}`,
+      `[object-native-smoke] verified v6 pipeline emitted ${v6Commands.length} createLayer commands via ${executablePlan.actions[0].toolName}`,
     );
   } finally {
     await closeRuntime({ app, worker });
@@ -858,12 +930,12 @@ async function assertBundleHasLatestSaveReceipt({
 }
 
 function assertObjectNativeLogs(runLogs) {
-  // Under v5 routing the legacy [source/object-native-*] artifact logs are no
+  // Under v6 routing the legacy [source/object-native-*] artifact logs are no
   // longer emitted because those stages were bypassed. We instead expect the
-  // v5 pipeline log entries.
+  // v6 pipeline log entries.
   assert.ok(
-    runLogs.some((message) => message.startsWith("[v5]")),
-    "expected at least one v5 pipeline log entry",
+    runLogs.some((message) => message.startsWith("[v6]")),
+    "expected at least one v6 pipeline log entry",
   );
 }
 
