@@ -1,0 +1,67 @@
+[
+  {
+    "id": "prompt_01",
+    "prompt": "식당에서 신규 봄 계절메뉴를 만들어줘",
+    "primitiveCount": 12,
+    "layerCommandCount": 12,
+    "model": "gemini-3.1-flash-lite-preview",
+    "latency": {
+      "htmlGenMs": 4491,
+      "renderMs": 1449,
+      "totalMs": 5946
+    },
+    "ok": true
+  },
+  {
+    "id": "prompt_08",
+    "prompt": "신제품 무선 이어폰 런칭 프로모션 배너 - 사전 예약 10% 할인",
+    "primitiveCount": 13,
+    "layerCommandCount": 13,
+    "model": "gemini-3.1-flash-lite-preview",
+    "latency": {
+      "htmlGenMs": 5053,
+      "renderMs": 986,
+      "totalMs": 6043
+    },
+    "ok": true
+  },
+  {
+    "id": "prompt_09",
+    "prompt": "코딩 부트캠프 수강생 모집 배너 - 얼리버드 40% 할인",
+    "primitiveCount": 11,
+    "layerCommandCount": 11,
+    "model": "gemini-3.1-flash-lite-preview",
+    "latency": {
+      "htmlGenMs": 4882,
+      "renderMs": 961,
+      "totalMs": 5847
+    },
+    "ok": true
+  },
+  {
+    "id": "prompt_15",
+    "prompt": "건강검진센터 봄맞이 종합검진 할인 배너",
+    "primitiveCount": 12,
+    "layerCommandCount": 12,
+    "model": "gemini-3.1-flash-lite-preview",
+    "latency": {
+      "htmlGenMs": 4379,
+      "renderMs": 1070,
+      "totalMs": 5453
+    },
+    "ok": true
+  },
+  {
+    "id": "prompt_19",
+    "prompt": "어린이날 완구 특별 할인 이벤트 배너",
+    "primitiveCount": 9,
+    "layerCommandCount": 9,
+    "model": "gemini-3.1-flash-lite-preview",
+    "latency": {
+      "htmlGenMs": 4012,
+      "renderMs": 828,
+      "totalMs": 4843
+    },
+    "ok": true
+  }
+]

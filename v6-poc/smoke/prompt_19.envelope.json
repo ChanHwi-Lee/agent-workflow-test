@@ -1,0 +1,418 @@
+{
+  "mutationId": "mut_smoke_prompt_19_1776747930614",
+  "mutationVersion": "v1",
+  "traceId": "trace_smoke_prompt_19_1776747930614",
+  "runId": "smoke_prompt_19_1776747930614",
+  "draftId": "draft_smoke_prompt_19_1776747930614",
+  "documentId": "doc_smoke_prompt_19_1776747930614",
+  "pageId": "page_smoke_prompt_19_1776747930614",
+  "seq": 1,
+  "commitGroup": "commit_smoke_prompt_19_1776747930614",
+  "idempotencyKey": "mutation_v6_freeform_layout_smoke_prompt_19_1776747930614",
+  "expectedBaseRevision": 0,
+  "ownershipScope": "draft_only",
+  "commands": [
+    {
+      "commandId": "cmd:smoke_prompt_19_1776747930614:001",
+      "op": "createLayer",
+      "executionSlotKey": null,
+      "clientLayerKey": "v6:smoke_prompt_19_1776747930614:001:shape",
+      "targetRef": {
+        "layerId": null,
+        "clientLayerKey": "v6:smoke_prompt_19_1776747930614:001:shape"
+      },
+      "targetLayerVersion": null,
+      "parentRef": {
+        "position": "append"
+      },
+      "expectedLayerType": null,
+      "allowNoop": false,
+      "metadataTags": {},
+      "layerBlueprint": {
+        "layerType": "shape",
+        "bounds": {
+          "x": 8,
+          "y": 8,
+          "width": 1200,
+          "height": 628
+        },
+        "styleTokens": {
+          "opacity": 1,
+          "fill": {
+            "type": "linear-gradient",
+            "angle": 135,
+            "stops": [
+              {
+                "color": "#FFEFBA",
+                "offset": 0
+              },
+              {
+                "color": "#FFFFFF",
+                "offset": 1
+              }
+            ]
+          },
+          "borderRadius": 0,
+          "stroke": {
+            "color": "#FFD700",
+            "width": 15
+          }
+        },
+        "metadata": {
+          "v6Primitive": "rect",
+          "sourceSerial": 0,
+          "sourcePath": "0",
+          "sourceTag": "div"
+        }
+      },
+      "editable": true
+    },
+    {
+      "commandId": "cmd:smoke_prompt_19_1776747930614:002",
+      "op": "createLayer",
+      "executionSlotKey": null,
+      "clientLayerKey": "v6:smoke_prompt_19_1776747930614:002:svg",
+      "targetRef": {
+        "layerId": null,
+        "clientLayerKey": "v6:smoke_prompt_19_1776747930614:002:svg"
+      },
+      "targetLayerVersion": null,
+      "parentRef": {
+        "position": "append"
+      },
+      "expectedLayerType": null,
+      "allowNoop": false,
+      "metadataTags": {},
+      "layerBlueprint": {
+        "layerType": "svg",
+        "bounds": {
+          "x": 23,
+          "y": 23,
+          "width": 1170,
+          "height": 598
+        },
+        "styleTokens": {
+          "opacity": 0.2
+        },
+        "metadata": {
+          "v6Primitive": "svg",
+          "sourceSerial": 1,
+          "sourcePath": "0.0",
+          "sourceTag": "svg",
+          "outerHTML": "<svg viewBox=\"0 0 1200 628\" style=\"position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.2;\">\n    <circle cx=\"100\" cy=\"100\" r=\"80\" fill=\"#FF8A80\"></circle>\n    <circle cx=\"1100\" cy=\"500\" r=\"120\" fill=\"#81D4FA\"></circle>\n    <circle cx=\"1000\" cy=\"100\" r=\"60\" fill=\"#C5E1A5\"></circle>\n    <path d=\"M0,500 Q300,400 600,500 T1200,500 L1200,628 L0,628 Z\" fill=\"#FFE082\"></path>\n  </svg>"
+        }
+      },
+      "editable": true
+    },
+    {
+      "commandId": "cmd:smoke_prompt_19_1776747930614:003",
+      "op": "createLayer",
+      "executionSlotKey": null,
+      "clientLayerKey": "v6:smoke_prompt_19_1776747930614:003:text",
+      "targetRef": {
+        "layerId": null,
+        "clientLayerKey": "v6:smoke_prompt_19_1776747930614:003:text"
+      },
+      "targetLayerVersion": null,
+      "parentRef": {
+        "position": "append"
+      },
+      "expectedLayerType": null,
+      "allowNoop": false,
+      "metadataTags": {},
+      "layerBlueprint": {
+        "layerType": "text",
+        "bounds": {
+          "x": 112.77,
+          "y": 128.74,
+          "width": 990.46,
+          "height": 143.53
+        },
+        "styleTokens": {
+          "opacity": 1,
+          "transform": "matrix(0.99863, -0.052336, 0.052336, 0.99863, 0, 0)",
+          "fillColor": "#E64A19",
+          "fontFamily": "1301_400",
+          "fontSize": 64,
+          "fontWeight": "400",
+          "fontStyle": "normal",
+          "textAlign": "center",
+          "lineHeight": null,
+          "letterSpacing": -2,
+          "textDecoration": "none"
+        },
+        "metadata": {
+          "v6Primitive": "text",
+          "sourceSerial": 3,
+          "sourcePath": "0.1.0",
+          "sourceTag": "div",
+          "text": "어린이날 맞이 특별 선물!"
+        }
+      },
+      "editable": true
+    },
+    {
+      "commandId": "cmd:smoke_prompt_19_1776747930614:004",
+      "op": "createLayer",
+      "executionSlotKey": null,
+      "clientLayerKey": "v6:smoke_prompt_19_1776747930614:004:text",
+      "targetRef": {
+        "layerId": null,
+        "clientLayerKey": "v6:smoke_prompt_19_1776747930614:004:text"
+      },
+      "targetLayerVersion": null,
+      "parentRef": {
+        "position": "append"
+      },
+      "expectedLayerType": null,
+      "allowNoop": false,
+      "metadataTags": {},
+      "layerBlueprint": {
+        "layerType": "text",
+        "bounds": {
+          "x": 654.5,
+          "y": 266.5,
+          "width": 447,
+          "height": 127
+        },
+        "styleTokens": {
+          "opacity": 1,
+          "fillColor": "#FF5722",
+          "fontFamily": "701_700",
+          "fontSize": 110,
+          "fontWeight": "400",
+          "fontStyle": "normal",
+          "textAlign": "center",
+          "lineHeight": null,
+          "letterSpacing": 0,
+          "textDecoration": "none"
+        },
+        "metadata": {
+          "v6Primitive": "text",
+          "sourceSerial": 5,
+          "sourcePath": "0.1.1.0",
+          "sourceTag": "span",
+          "text": "최대 50%"
+        }
+      },
+      "editable": true
+    },
+    {
+      "commandId": "cmd:smoke_prompt_19_1776747930614:005",
+      "op": "createLayer",
+      "executionSlotKey": null,
+      "clientLayerKey": "v6:smoke_prompt_19_1776747930614:005:shape",
+      "targetRef": {
+        "layerId": null,
+        "clientLayerKey": "v6:smoke_prompt_19_1776747930614:005:shape"
+      },
+      "targetLayerVersion": null,
+      "parentRef": {
+        "position": "append"
+      },
+      "expectedLayerType": null,
+      "allowNoop": false,
+      "metadataTags": {},
+      "layerBlueprint": {
+        "layerType": "shape",
+        "bounds": {
+          "x": 114.5,
+          "y": 413.5,
+          "width": 987,
+          "height": 76
+        },
+        "styleTokens": {
+          "opacity": 1,
+          "fillColor": "#FF5722",
+          "borderRadius": 50,
+          "shadow": "rgba(0, 0, 0, 0.2) 0px 10px 20px 0px"
+        },
+        "metadata": {
+          "v6Primitive": "rect",
+          "sourceSerial": 6,
+          "sourcePath": "0.1.2",
+          "sourceTag": "div"
+        }
+      },
+      "editable": true
+    },
+    {
+      "commandId": "cmd:smoke_prompt_19_1776747930614:006",
+      "op": "createLayer",
+      "executionSlotKey": null,
+      "clientLayerKey": "v6:smoke_prompt_19_1776747930614:006:text",
+      "targetRef": {
+        "layerId": null,
+        "clientLayerKey": "v6:smoke_prompt_19_1776747930614:006:text"
+      },
+      "targetLayerVersion": null,
+      "parentRef": {
+        "position": "append"
+      },
+      "expectedLayerType": null,
+      "allowNoop": false,
+      "metadataTags": {},
+      "layerBlueprint": {
+        "layerType": "text",
+        "bounds": {
+          "x": 174.5,
+          "y": 428.5,
+          "width": 867,
+          "height": 46
+        },
+        "styleTokens": {
+          "opacity": 1,
+          "fillColor": "#FFFFFF",
+          "fontFamily": "701_700",
+          "fontSize": 40,
+          "fontWeight": "400",
+          "fontStyle": "normal",
+          "textAlign": "center",
+          "lineHeight": null,
+          "letterSpacing": 0,
+          "textDecoration": "none"
+        },
+        "metadata": {
+          "v6Primitive": "text",
+          "sourceSerial": 6,
+          "sourcePath": "0.1.2",
+          "sourceTag": "div",
+          "text": "지금 바로 구경하기 →"
+        }
+      },
+      "editable": true
+    },
+    {
+      "commandId": "cmd:smoke_prompt_19_1776747930614:007",
+      "op": "createLayer",
+      "executionSlotKey": null,
+      "clientLayerKey": "v6:smoke_prompt_19_1776747930614:007:bitmap",
+      "targetRef": {
+        "layerId": null,
+        "clientLayerKey": "v6:smoke_prompt_19_1776747930614:007:bitmap"
+      },
+      "targetLayerVersion": null,
+      "parentRef": {
+        "position": "append"
+      },
+      "expectedLayerType": null,
+      "allowNoop": false,
+      "metadataTags": {},
+      "layerBlueprint": {
+        "layerType": "bitmap",
+        "bounds": {
+          "x": 743,
+          "y": 321,
+          "width": 400,
+          "height": 300
+        },
+        "styleTokens": {
+          "opacity": 1,
+          "objectFit": "contain",
+          "borderRadius": 0
+        },
+        "metadata": {
+          "v6Primitive": "bitmap",
+          "sourceSerial": 7,
+          "sourcePath": "0.2",
+          "sourceTag": "img",
+          "src": "placeholder://toy-collection",
+          "naturalWidth": 1,
+          "naturalHeight": 1,
+          "alt": ""
+        }
+      },
+      "editable": true
+    },
+    {
+      "commandId": "cmd:smoke_prompt_19_1776747930614:008",
+      "op": "createLayer",
+      "executionSlotKey": null,
+      "clientLayerKey": "v6:smoke_prompt_19_1776747930614:008:shape",
+      "targetRef": {
+        "layerId": null,
+        "clientLayerKey": "v6:smoke_prompt_19_1776747930614:008:shape"
+      },
+      "targetLayerVersion": null,
+      "parentRef": {
+        "position": "append"
+      },
+      "expectedLayerType": null,
+      "allowNoop": false,
+      "metadataTags": {},
+      "layerBlueprint": {
+        "layerType": "shape",
+        "bounds": {
+          "x": 63,
+          "y": 63,
+          "width": 272,
+          "height": 47
+        },
+        "styleTokens": {
+          "opacity": 1,
+          "fillColor": "#FFD700",
+          "borderRadius": 20
+        },
+        "metadata": {
+          "v6Primitive": "rect",
+          "sourceSerial": 8,
+          "sourcePath": "0.3",
+          "sourceTag": "div"
+        }
+      },
+      "editable": true
+    },
+    {
+      "commandId": "cmd:smoke_prompt_19_1776747930614:009",
+      "op": "createLayer",
+      "executionSlotKey": null,
+      "clientLayerKey": "v6:smoke_prompt_19_1776747930614:009:text",
+      "targetRef": {
+        "layerId": null,
+        "clientLayerKey": "v6:smoke_prompt_19_1776747930614:009:text"
+      },
+      "targetLayerVersion": null,
+      "parentRef": {
+        "position": "append"
+      },
+      "expectedLayerType": null,
+      "allowNoop": false,
+      "metadataTags": {},
+      "layerBlueprint": {
+        "layerType": "text",
+        "bounds": {
+          "x": 83,
+          "y": 73,
+          "width": 232,
+          "height": 27
+        },
+        "styleTokens": {
+          "opacity": 1,
+          "fillColor": "#000000",
+          "fontFamily": "701_700",
+          "fontSize": 24,
+          "fontWeight": "400",
+          "fontStyle": "normal",
+          "textAlign": "left",
+          "lineHeight": null,
+          "letterSpacing": 0,
+          "textDecoration": "none"
+        },
+        "metadata": {
+          "v6Primitive": "text",
+          "sourceSerial": 8,
+          "sourcePath": "0.3",
+          "sourceTag": "div",
+          "text": "5월 5일 어린이날 이벤트"
+        }
+      },
+      "editable": true
+    }
+  ],
+  "rollbackHint": {
+    "rollbackGroupId": "rollback_smoke_prompt_19_1776747930614",
+    "strategy": "delete_created_layers"
+  },
+  "emittedAt": "2026-04-21T05:05:35.457Z",
+  "deliveryDeadlineAt": "2026-04-21T05:05:45.457Z"
+}
