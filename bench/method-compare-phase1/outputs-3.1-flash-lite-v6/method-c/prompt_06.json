@@ -1,0 +1,21 @@
+{
+  "id": "prompt_06",
+  "domain": "fitness",
+  "method": "method-c",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "헬스장 신규 회원 3개월 30% 할인 프로모션 배너",
+  "latencyMs": 4056,
+  "outputText": "<div style=\"width: 1200px; height: 628px; background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); position: relative; overflow: hidden; font-family: 'Pretendard', sans-serif; color: #ffffff; display: flex; flex-direction: column; justify-content: center; padding-left: 80px;\">\n    <div style=\"position: absolute; top: -100px; right: -100px; width: 600px; height: 600px; border-radius: 50%; background: rgba(255, 69, 0, 0.15); filter: blur(80px);\"></div>\n    \n    <div style=\"position: relative; z-index: 1;\">\n        <div style=\"background: #ff4500; color: #ffffff; padding: 8px 20px; font-size: 24px; font-weight: 800; display: inline-block; margin-bottom: 20px; border-radius: 4px; letter-spacing: 2px;\">\n            SPECIAL EVENT\n        </div>\n        \n        <h1 style=\"font-size: 96px; font-weight: 900; margin: 0; line-height: 1.1; letter-spacing: -2px;\">\n            여름 준비,<br>\n            <span style=\"color: #ff4500;\">3개월 30% 할인</span>\n        </h1>\n        \n        <p style=\"font-size: 32px; color: #cccccc; margin-top: 20px; font-weight: 300;\">\n            지금 등록하고 당신의 건강한 변화를 시작하세요.\n        </p>\n        \n        <div style=\"margin-top: 40px; display: flex; gap: 20px; align-items: center;\">\n            <div style=\"background: #ffffff; color: #1a1a1a; padding: 20px 40px; font-size: 28px; font-weight: 700; border-radius: 8px;\">\n                신규 회원 한정 프로모션\n            </div>\n            <div style=\"font-size: 20px; color: #888888;\">\n                * 선착순 마감 예정\n            </div>\n        </div>\n    </div>\n\n    <div style=\"position: absolute; bottom: 0; right: 80px;\">\n        <svg width=\"400\" height=\"500\" viewBox=\"0 0 200 250\">\n            <path d=\"M100 20 L180 100 L180 230 L20 230 L20 100 Z\" fill=\"none\" stroke=\"#ff4500\" stroke-width=\"2\" opacity=\"0.3\"/>\n            <rect x=\"50\" y=\"50\" width=\"100\" height=\"150\" fill=\"url(#grad1)\" rx=\"10\"/>\n            <defs>\n                <linearGradient id=\"grad1\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\">\n                    <stop offset=\"0%\" style=\"stop-color:#ff4500;stop-opacity:0.8\" />\n                    <stop offset=\"100%\" style=\"stop-color:#cc3300;stop-opacity:1\" />\n                </linearGradient>\n            </defs>\n            <text x=\"100\" y=\"135\" text-anchor=\"middle\" fill=\"white\" font-size=\"24\" font-weight=\"bold\">30% OFF</text>\n        </svg>\n    </div>\n</div>",
+  "outputBytes": 2433,
+  "usage": {
+    "promptTokenCount": 668,
+    "candidatesTokenCount": 903,
+    "totalTokenCount": 1571,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-21T02:07:11.039Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_08",
+  "domain": "product_launch",
+  "method": "method-c",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "신제품 무선 이어폰 런칭 프로모션 배너 - 사전 예약 10% 할인",
+  "latencyMs": 4313,
+  "outputText": "<div style=\"width: 1200px; height: 628px; background: linear-gradient(135deg, #0f0f12 0%, #1a1a2e 100%); position: relative; overflow: hidden; font-family: 'Pretendard', sans-serif; color: #ffffff; padding: 0; margin: 0; box-sizing: border-box;\">\n  <div style=\"position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.1;\">\n    <svg viewBox=\"0 0 1200 628\" preserveAspectRatio=\"none\" style=\"width: 100%; height: 100%;\">\n      <circle cx=\"900\" cy=\"300\" r=\"400\" fill=\"#4e44ff\" />\n      <circle cx=\"200\" cy=\"500\" r=\"200\" fill=\"#00d2ff\" />\n    </svg>\n  </div>\n\n  <div style=\"position: absolute; top: 80px; left: 80px; z-index: 1;\">\n    <div style=\"background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: 8px 16px; border-radius: 20px; font-size: 18px; font-weight: 500; display: inline-block; margin-bottom: 24px; letter-spacing: 2px; color: #a5a5ff;\">\n      NEW LAUNCHING\n    </div>\n    <h1 style=\"font-size: 84px; font-weight: 800; line-height: 1.1; margin: 0 0 20px 0; background: linear-gradient(to right, #ffffff, #a5a5ff); -webkit-background-clip: text; color: transparent;\">\n      차원이 다른 사운드,<br>\n      <span style=\"color: #4e44ff;\">무선 이어폰</span>의 완성\n    </h1>\n    <p style=\"font-size: 28px; color: #cccccc; margin: 0 0 40px 0; font-weight: 300;\">\n      지금 사전 예약하고 10% 할인 혜택을 누리세요.\n    </p>\n    <div style=\"background: linear-gradient(90deg, #4e44ff, #7a73ff); padding: 20px 40px; border-radius: 50px; font-size: 24px; font-weight: 700; display: inline-block; box-shadow: 0 10px 30px rgba(78, 68, 255, 0.4);\">\n      사전 예약 10% 할인 진행 중\n    </div>\n  </div>\n\n  <div style=\"position: absolute; right: 50px; top: 50px; width: 500px; height: 500px;\">\n    <img src=\"placeholder://wireless-earbuds-product-shot\" style=\"width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5));\" />\n  </div>\n\n  <div style=\"position: absolute; bottom: 40px; left: 80px; font-size: 14px; color: #666666;\">\n    * 본 행사는 사전 예약 기간 내 구매 시 적용됩니다. | 2024.10.01 - 10.15\n  </div>\n</div>",
+  "outputBytes": 2164,
+  "usage": {
+    "promptTokenCount": 671,
+    "candidatesTokenCount": 913,
+    "totalTokenCount": 1584,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-21T02:07:14.591Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prompt_15",
+  "domain": "healthcare",
+  "method": "method-c",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "건강검진센터 봄맞이 종합검진 할인 배너",
+  "latencyMs": 4712,
+  "outputText": "<div style=\"width: 1200px; height: 628px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); position: relative; overflow: hidden; font-family: 'Pretendard', sans-serif; display: flex; flex-direction: column; justify-content: center; padding-left: 80px; border: 15px solid #ffffff; box-sizing: border-box;\">\n    <div style=\"position: absolute; top: -50px; right: -50px; width: 400px; height: 400px; background: rgba(34, 197, 94, 0.15); border-radius: 50%;\"></div>\n    <div style=\"position: absolute; bottom: -100px; left: 200px; width: 300px; height: 300px; background: rgba(252, 165, 165, 0.15); border-radius: 50%;\"></div>\n    \n    <div style=\"z-index: 1;\">\n        <span style=\"background: #22c55e; color: white; padding: 8px 20px; border-radius: 20px; font-weight: 700; font-size: 24px; letter-spacing: -0.5px;\">SPRING PROMOTION</span>\n        <h1 style=\"font-size: 82px; color: #064e3b; margin: 20px 0; font-weight: 800; line-height: 1.1;\">따스한 봄날의 시작,<br><span style=\"color: #16a34a;\">건강검진</span>으로 챙기세요!</h1>\n        <p style=\"font-size: 32px; color: #4b5563; margin-top: 10px; font-weight: 500;\">봄맞이 특별 할인 혜택으로 더 가볍고 건강하게</p>\n        \n        <div style=\"margin-top: 40px; display: flex; align-items: center; gap: 20px;\">\n            <div style=\"background: #ffffff; padding: 20px 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border-left: 8px solid #22c55e;\">\n                <span style=\"display: block; font-size: 20px; color: #6b7280;\">최대 할인율</span>\n                <span style=\"font-size: 48px; font-weight: 800; color: #16a34a;\">30% OFF</span>\n            </div>\n            <div style=\"background: #ffffff; padding: 20px 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);\">\n                <span style=\"display: block; font-size: 20px; color: #6b7280;\">예약 상담 문의</span>\n                <span style=\"font-size: 32px; font-weight: 700; color: #111827;\">1588-0000</span>\n            </div>\n        </div>\n    </div>\n\n    <svg viewBox=\"0 0 400 400\" style=\"position: absolute; right: 100px; top: 114px; width: 400px; height: 400px;\">\n        <path d=\"M200 50 C 250 50, 300 100, 300 200 C 300 300, 200 350, 200 350 C 200 350, 100 300, 100 200 C 100 100, 150 50, 200 50 Z\" fill=\"#fca5a5\" opacity=\"0.6\"/>\n        <path d=\"M200 80 C 240 80, 280 120, 280 200 C 280 280, 200 320, 200 320 C 200 320, 120 280, 120 200 C 120 120, 160 80, 200 80 Z\" fill=\"#ffffff\" opacity=\"0.8\"/>\n        <circle cx=\"200\" cy=\"200\" r=\"80\" fill=\"#22c55e\"/>\n        <text x=\"200\" y=\"215\" font-size=\"40\" fill=\"white\" font-weight=\"bold\" text-anchor=\"middle\">봄맞이</text>\n    </svg>\n</div>",
+  "outputBytes": 2717,
+  "usage": {
+    "promptTokenCount": 663,
+    "candidatesTokenCount": 1227,
+    "totalTokenCount": 1890,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-21T02:07:25.449Z"
+}

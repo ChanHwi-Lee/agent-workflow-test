@@ -1,0 +1,21 @@
+{
+  "id": "prompt_01",
+  "domain": "restaurant",
+  "method": "method-c",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "식당에서 신규 봄 계절메뉴를 만들어줘",
+  "latencyMs": 4484,
+  "outputText": "<div style=\"width: 1200px; height: 628px; background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); position: relative; overflow: hidden; font-family: 'Pretendard', sans-serif; border: 20px solid #fff; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; padding: 0 80px;\">\n  <div style=\"position: absolute; top: -100px; right: -100px; width: 400px; height: 400px; background: #e8f5e9; border-radius: 50%; opacity: 0.6;\"></div>\n  <div style=\"position: absolute; bottom: -100px; left: -100px; width: 300px; height: 300px; background: #fff3e0; border-radius: 50%; opacity: 0.6;\"></div>\n\n  <div style=\"z-index: 1; flex: 1; display: flex; flex-direction: column; gap: 20px;\">\n    <span style=\"background: #4caf50; color: #fff; padding: 8px 20px; border-radius: 50px; font-size: 24px; font-weight: bold; align-self: flex-start; letter-spacing: 2px;\">SPRING SPECIAL</span>\n    <h1 style=\"font-size: 84px; color: #2d3436; margin: 0; line-height: 1.1; font-weight: 800;\">\n      봄을 담은<br><span style=\"color: #4caf50;\">싱그러운 제철 식탁</span>\n    </h1>\n    <p style=\"font-size: 28px; color: #636e72; margin: 0; line-height: 1.5;\">\n      향긋한 봄나물과 신선한 식재료로<br>당신의 일상에 활력을 채워드립니다.\n    </p>\n    <div style=\"margin-top: 20px; padding: 15px 40px; background: #2d3436; color: #fff; font-size: 24px; border-radius: 10px; width: fit-content; font-weight: bold;\">\n      지금 바로 맛보러 오세요!\n    </div>\n  </div>\n\n  <div style=\"z-index: 1; position: relative;\">\n    <svg width=\"450\" height=\"450\" viewBox=\"0 0 200 200\">\n      <circle cx=\"100\" cy=\"100\" r=\"90\" fill=\"#c8e6c9\" />\n      <path d=\"M100 20 C 140 20, 180 60, 180 100 C 180 140, 140 180, 100 180 C 60 180, 20 140, 20 100 C 20 60, 60 20, 100 20 Z\" fill=\"#fff\" opacity=\"0.8\" />\n      <text x=\"50%\" y=\"50%\" text-anchor=\"middle\" font-size=\"24\" fill=\"#2e7d32\" font-weight=\"bold\" dy=\".3em\">SEASONAL</text>\n      <text x=\"50%\" y=\"60%\" text-anchor=\"middle\" font-size=\"32\" fill=\"#2d3436\" font-weight=\"800\" dy=\".3em\">MENU</text>\n    </svg>\n    <img src=\"placeholder://fresh-spring-salad-bowl\" style=\"position: absolute; top: 50px; left: 50px; width: 350px; height: 350px; border-radius: 50%; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.15);\">\n  </div>\n</div>",
+  "outputBytes": 2329,
+  "usage": {
+    "promptTokenCount": 662,
+    "candidatesTokenCount": 1007,
+    "totalTokenCount": 1669,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-21T02:07:06.523Z"
+}

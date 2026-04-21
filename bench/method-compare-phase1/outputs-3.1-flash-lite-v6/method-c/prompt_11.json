@@ -1,0 +1,21 @@
+{
+  "id": "prompt_11",
+  "domain": "automotive",
+  "method": "method-c",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "전기차 시승 이벤트 배너 만들어줘",
+  "latencyMs": 3781,
+  "outputText": "<div style=\"width: 1200px; height: 628px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; padding: 0 80px; box-sizing: border-box; font-family: sans-serif;\">\n  <div style=\"position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.1;\">\n    <svg viewBox=\"0 0 1200 628\" width=\"1200\" height=\"628\">\n      <path d=\"M0 628L1200 0H1200V628H0Z\" fill=\"#38bdf8\"/>\n    </svg>\n  </div>\n\n  <div style=\"z-index: 1; color: #ffffff; max-width: 600px;\">\n    <div style=\"background: #38bdf8; color: #000; padding: 8px 20px; border-radius: 50px; font-weight: 800; font-size: 20px; display: inline-block; margin-bottom: 20px; letter-spacing: 1px;\">\n      EV TEST DRIVE EVENT\n    </div>\n    <h1 style=\"font-size: 72px; font-weight: 900; line-height: 1.1; margin: 0 0 20px 0; color: #f8fafc;\">\n      전기차의 미래를<br/>지금 직접 경험하세요\n    </h1>\n    <p style=\"font-size: 24px; color: #94a3b8; margin: 0 0 40px 0; font-weight: 300;\">\n      최신 모델 시승부터 특별한 혜택까지.<br/>지금 바로 신청하고 드라이빙의 즐거움을 느껴보세요.\n    </p>\n    <div style=\"background: #ffffff; color: #0f172a; padding: 20px 40px; border-radius: 12px; font-size: 24px; font-weight: 700; display: inline-block; box-shadow: 0 10px 25px rgba(56, 189, 248, 0.3);\">\n      시승 신청하기 →\n    </div>\n  </div>\n\n  <div style=\"z-index: 1; position: relative;\">\n    <img src=\"placeholder://electric-car-side-profile\" width=\"500\" height=\"300\" style=\"filter: drop-shadow(0 20px 30px rgba(0,0,0,0.5));\"/>\n    <div style=\"position: absolute; bottom: -20px; right: -20px; width: 150px; height: 150px; border: 4px solid #38bdf8; border-radius: 50%; opacity: 0.5;\"></div>\n  </div>\n\n  <div style=\"position: absolute; bottom: 40px; left: 80px; display: flex; gap: 30px;\">\n    <div style=\"color: #64748b; font-size: 16px;\">\n      <span style=\"color: #38bdf8; font-size: 24px; font-weight: 700; display: block;\">01</span>\n      온라인 간편 신청\n    </div>\n    <div style=\"color: #64748b; font-size: 16px;\">\n      <span style=\"color: #38bdf8; font-size: 24px; font-weight: 700; display: block;\">02</span>\n      전국 주요 거점 운영\n    </div>\n    <div style=\"color: #64748b; font-size: 16px;\">\n      <span style=\"color: #38bdf8; font-size: 24px; font-weight: 700; display: block;\">03</span>\n      시승 기념 사은품 증정\n    </div>\n  </div>\n</div>",
+  "outputBytes": 2508,
+  "usage": {
+    "promptTokenCount": 659,
+    "candidatesTokenCount": 1030,
+    "totalTokenCount": 1689,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-21T02:07:18.376Z"
+}

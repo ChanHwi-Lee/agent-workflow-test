@@ -1,0 +1,21 @@
+{
+  "id": "prompt_03",
+  "domain": "fashion",
+  "method": "method-c",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "패션 리테일 봄 세일 배너 만들어줘",
+  "latencyMs": 4920,
+  "outputText": "<div style=\"width: 1200px; height: 628px; background: linear-gradient(135deg, #FFF5F7 0%, #FFE4E8 100%); position: relative; overflow: hidden; font-family: 'Pretendard', sans-serif; display: flex; align-items: center; justify-content: space-between; padding: 0 80px; box-sizing: border-box;\">\n    <div style=\"position: absolute; top: -50px; right: -50px; width: 400px; height: 400px; background: rgba(255, 182, 193, 0.3); border-radius: 50%; filter: blur(60px);\"></div>\n    <div style=\"position: absolute; bottom: -50px; left: -50px; width: 300px; height: 300px; background: rgba(255, 105, 180, 0.2); border-radius: 50%; filter: blur(80px);\"></div>\n\n    <div style=\"z-index: 1; flex: 1;\">\n        <span style=\"display: inline-block; background: #FF3E6C; color: white; padding: 8px 20px; border-radius: 50px; font-weight: 700; font-size: 24px; margin-bottom: 20px; letter-spacing: -0.5px;\">SPRING SPECIAL</span>\n        <h1 style=\"font-size: 92px; color: #2D2D2D; margin: 0; line-height: 1.1; font-weight: 800; letter-spacing: -3px;\">봄맞이<br><span style=\"color: #FF3E6C;\">패션 위크</span> 세일</h1>\n        <p style=\"font-size: 32px; color: #666; margin: 20px 0 40px 0; font-weight: 400;\">최대 70% 할인된 가격으로<br>설레는 봄 스타일을 완성하세요.</p>\n        <div style=\"background: #2D2D2D; color: white; padding: 20px 40px; display: inline-block; font-size: 28px; font-weight: 600; border-radius: 12px;\">지금 쇼핑하기 →</div>\n    </div>\n\n    <div style=\"position: relative; width: 450px; height: 500px; background: #FFF; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); overflow: hidden; display: flex; align-items: center; justify-content: center; transform: rotate(5deg);\">\n        <img src=\"placeholder://fashion-model-spring-outfit\" width=\"450\" height=\"500\" style=\"object-fit: cover;\">\n        <div style=\"position: absolute; bottom: 30px; left: 30px; background: rgba(255, 255, 255, 0.9); padding: 15px 25px; border-radius: 20px; font-weight: 800; color: #FF3E6C; font-size: 24px;\">UP TO 70% OFF</div>\n    </div>\n\n    <svg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" style=\"position: absolute; top: 100px; left: 100px; opacity: 0.5;\">\n        <path d=\"M50 0 C 70 0, 100 30, 100 50 C 100 70, 70 100, 50 100 C 30 100, 0 70, 0 50 C 0 30, 30 0, 50 0 Z\" fill=\"#FFB6C1\" />\n    </svg>\n</div>",
+  "outputBytes": 2348,
+  "usage": {
+    "promptTokenCount": 661,
+    "candidatesTokenCount": 1001,
+    "totalTokenCount": 1662,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-21T02:07:06.982Z"
+}

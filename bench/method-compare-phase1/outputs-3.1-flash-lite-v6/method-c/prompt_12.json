@@ -1,0 +1,21 @@
+{
+  "id": "prompt_12",
+  "domain": "hotel",
+  "method": "method-c",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "제주도 럭셔리 호텔 여름 성수기 특가 배너",
+  "latencyMs": 4539,
+  "outputText": "<div style=\"width: 1200px; height: 628px; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); position: relative; overflow: hidden; font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; color: #ffffff; padding: 60px; box-sizing: border-box;\">\n    <div style=\"position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.15; background-image: radial-gradient(circle at 80% 20%, #ffcc33 0%, transparent 40%);\"></div>\n    \n    <div style=\"position: relative; z-index: 1;\">\n        <div style=\"display: inline-block; background: rgba(255, 255, 255, 0.15); padding: 8px 20px; border-radius: 50px; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.3);\">\n            Jeju Luxury Summer Escape\n        </div>\n        \n        <h1 style=\"font-size: 84px; font-weight: 800; margin: 0 0 20px 0; line-height: 1.1; background: linear-gradient(to right, #ffffff, #a8c0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;\">\n            제주도 럭셔리 호텔<br>여름 성수기 특가\n        </h1>\n        \n        <p style=\"font-size: 28px; font-weight: 300; margin-bottom: 50px; opacity: 0.9; line-height: 1.6;\">\n            가장 완벽한 휴식, 지금 특별한 가격으로 만나보세요.<br>\n            <span style=\"color: #ffcc33; font-weight: 600;\">#제주호캉스 #여름휴가 #럭셔리패키지</span>\n        </p>\n        \n        <div style=\"display: flex; gap: 20px; align-items: center;\">\n            <div style=\"background: #ffcc33; color: #000; padding: 20px 40px; border-radius: 8px; font-size: 22px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.3);\">\n                지금 예약하기\n            </div>\n            <div style=\"font-size: 18px; opacity: 0.8;\">\n                기간 한정 혜택 (~8.31)\n            </div>\n        </div>\n    </div>\n\n    <div style=\"position: absolute; right: 60px; bottom: 60px; width: 400px; height: 300px; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 4px solid rgba(255,255,255,0.1);\">\n        <img src=\"placeholder://luxury-hotel-pool-jeju\" style=\"width: 100%; height: 100%; object-fit: cover;\">\n    </div>\n\n    <svg viewBox=\"0 0 100 100\" style=\"position: absolute; right: -50px; top: -50px; width: 300px; height: 300px; opacity: 0.1;\">\n        <circle cx=\"50\" cy=\"50\" r=\"40\" stroke=\"white\" stroke-width=\"2\" fill=\"none\" />\n    </svg>\n</div>",
+  "outputBytes": 2500,
+  "usage": {
+    "promptTokenCount": 665,
+    "candidatesTokenCount": 964,
+    "totalTokenCount": 1629,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-21T02:07:20.734Z"
+}

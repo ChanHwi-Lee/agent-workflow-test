@@ -1,0 +1,21 @@
+{
+  "id": "prompt_07",
+  "domain": "event_sale",
+  "method": "method-c",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "블랙프라이데이 최대 70% 할인 이벤트 배너 만들어줘",
+  "latencyMs": 3256,
+  "outputText": "<div style=\"width: 1200px; height: 628px; background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; font-family: 'Pretendard', sans-serif; color: #ffffff;\">\n    <svg width=\"1200\" height=\"628\" style=\"position: absolute; top: 0; left: 0;\">\n        <defs>\n            <linearGradient id=\"g1\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\">\n                <stop offset=\"0%\" style=\"stop-color:#ff3333;stop-opacity:0.1\" />\n                <stop offset=\"100%\" style=\"stop-color:#ff0000;stop-opacity:0\" />\n            </linearGradient>\n        </defs>\n        <circle cx=\"1000\" cy=\"100\" r=\"300\" fill=\"url(#g1)\" />\n        <circle cx=\"200\" cy=\"500\" r=\"200\" fill=\"url(#g1)\" />\n    </svg>\n    \n    <div style=\"position: absolute; top: 40px; left: 60px; font-size: 24px; font-weight: 700; letter-spacing: 4px; color: #ff3333; border: 2px solid #ff3333; padding: 8px 20px;\">\n        BLACK FRIDAY\n    </div>\n\n    <div style=\"text-align: center; z-index: 1;\">\n        <h1 style=\"font-size: 120px; font-weight: 900; margin: 0; line-height: 1; letter-spacing: -2px;\">\n            최대 <span style=\"color: #ff3333;\">70%</span> 할인\n        </h1>\n        <p style=\"font-size: 40px; font-weight: 300; margin: 20px 0 0 0; color: #cccccc;\">\n            1년에 단 한 번, 놓칠 수 없는 파격적인 혜택\n        </p>\n    </div>\n\n    <div style=\"margin-top: 60px; padding: 20px 60px; background-color: #ff3333; color: #ffffff; font-size: 32px; font-weight: 800; border-radius: 50px; box-shadow: 0 10px 30px rgba(255, 51, 51, 0.4);\">\n        지금 바로 확인하기 →\n    </div>\n\n    <div style=\"position: absolute; bottom: 40px; right: 60px; font-size: 18px; color: #666666;\">\n        기간: 11.20 - 11.30\n    </div>\n</div>",
+  "outputBytes": 1836,
+  "usage": {
+    "promptTokenCount": 665,
+    "candidatesTokenCount": 736,
+    "totalTokenCount": 1401,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-21T02:07:13.130Z"
+}

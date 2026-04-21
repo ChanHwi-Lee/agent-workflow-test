@@ -1,0 +1,21 @@
+{
+  "id": "prompt_20",
+  "domain": "generic_event",
+  "method": "method-c",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "여름 휴가 시즌 프로모션 배너 만들어줘",
+  "latencyMs": 3895,
+  "outputText": "<div style=\"width: 1200px; height: 628px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; padding: 0 80px; box-sizing: border-box; font-family: sans-serif;\">\n    <div style=\"position: absolute; top: -100px; right: -100px; width: 400px; height: 400px; background: rgba(255, 255, 255, 0.1); border-radius: 50%;\"></div>\n    <div style=\"position: absolute; bottom: -50px; left: -50px; width: 300px; height: 300px; background: rgba(255, 255, 255, 0.05); border-radius: 50%;\"></div>\n    \n    <div style=\"z-index: 1; color: white;\">\n        <div style=\"background: #ffcc00; color: #333; padding: 8px 20px; border-radius: 30px; font-weight: bold; font-size: 24px; display: inline-block; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);\">SUMMER SPECIAL</div>\n        <h1 style=\"font-size: 84px; margin: 0; line-height: 1.1; text-shadow: 0 5px 15px rgba(0,0,0,0.3);\">여름 휴가,<br>특별한 혜택으로 떠나세요!</h1>\n        <p style=\"font-size: 32px; margin: 20px 0; opacity: 0.9;\">최대 50% 할인 쿠폰팩 지금 바로 다운로드</p>\n        <div style=\"margin-top: 40px; background: white; color: #007bff; padding: 20px 40px; border-radius: 50px; font-size: 28px; font-weight: bold; display: inline-block; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.2);\">지금 바로 예약하기 →</div>\n    </div>\n\n    <div style=\"width: 450px; height: 450px; position: relative;\">\n        <svg viewBox=\"0 0 200 200\" style=\"width: 100%; height: 100%;\">\n            <circle cx=\"100\" cy=\"100\" r=\"90\" fill=\"#ffde59\" />\n            <path d=\"M100 20 A80 80 0 0 1 180 100 L100 100 Z\" fill=\"#ffb703\" />\n            <circle cx=\"100\" cy=\"100\" r=\"40\" fill=\"white\" />\n            <g transform=\"translate(100, 100)\">\n                <line x1=\"0\" y1=\"-60\" x2=\"0\" y2=\"-85\" stroke=\"#ffb703\" stroke-width=\"8\" stroke-linecap=\"round\" />\n                <line x1=\"0\" y1=\"60\" x2=\"0\" y2=\"85\" stroke=\"#ffb703\" stroke-width=\"8\" stroke-linecap=\"round\" />\n                <line x1=\"-60\" y1=\"0\" x2=\"-85\" y2=\"0\" stroke=\"#ffb703\" stroke-width=\"8\" stroke-linecap=\"round\" />\n                <line x1=\"60\" y1=\"0\" x2=\"85\" y2=\"0\" stroke=\"#ffb703\" stroke-width=\"8\" stroke-linecap=\"round\" />\n            </g>\n        </svg>\n        <div style=\"position: absolute; top: 100px; left: 100px; font-size: 100px;\">🏖️</div>\n    </div>\n</div>",
+  "outputBytes": 2445,
+  "usage": {
+    "promptTokenCount": 661,
+    "candidatesTokenCount": 1020,
+    "totalTokenCount": 1681,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-21T02:07:30.453Z"
+}

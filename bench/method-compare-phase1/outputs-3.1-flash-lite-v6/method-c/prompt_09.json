@@ -1,0 +1,21 @@
+{
+  "id": "prompt_09",
+  "domain": "education",
+  "method": "method-c",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "코딩 부트캠프 수강생 모집 배너 - 얼리버드 40% 할인",
+  "latencyMs": 5152,
+  "outputText": "<div style=\"width: 1200px; height: 628px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); position: relative; overflow: hidden; font-family: 'Pretendard', sans-serif; color: #ffffff; padding: 60px; box-sizing: border-box;\">\n    <div style=\"position: absolute; top: -100px; right: -100px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%); border-radius: 50%;\"></div>\n    \n    <div style=\"display: flex; flex-direction: column; justify-content: center; height: 100%; max-width: 700px; z-index: 1;\">\n        <div style=\"display: inline-block; background: #3b82f6; color: #fff; padding: 8px 20px; border-radius: 50px; font-size: 20px; font-weight: 700; margin-bottom: 24px; width: fit-content;\">\n            2024년 상반기 코딩 부트캠프\n        </div>\n        \n        <h1 style=\"font-size: 72px; font-weight: 800; line-height: 1.1; margin: 0 0 20px 0; letter-spacing: -2px;\">\n            개발자로의 첫걸음,<br>\n            <span style=\"color: #38bdf8;\">지금 시작하세요</span>\n        </h1>\n        \n        <p style=\"font-size: 28px; color: #94a3b8; margin: 0 0 40px 0; font-weight: 400;\">\n            기초부터 실무 프로젝트까지, 6개월 완성 과정\n        </p>\n        \n        <div style=\"display: flex; align-items: center; gap: 20px; background: rgba(255, 255, 255, 0.05); padding: 30px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1);\">\n            <span style=\"font-size: 24px;\">얼리버드 혜택</span>\n            <span style=\"font-size: 64px; font-weight: 900; color: #fbbf24;\">40% OFF</span>\n            <div style=\"height: 50px; width: 2px; background: #475569;\"></div>\n            <span style=\"font-size: 20px; color: #cbd5e1;\">선착순 모집 중</span>\n        </div>\n    </div>\n\n    <div style=\"position: absolute; right: 80px; top: 150px; width: 350px; height: 350px; border: 10px solid #3b82f6; border-radius: 40px; display: flex; align-items: center; justify-content: center; transform: rotate(10deg);\">\n        <svg viewBox=\"0 0 100 100\" style=\"width: 200px; height: 200px; fill: #38bdf8;\">\n            <path d=\"M20 30 L50 10 L80 30 L80 70 L50 90 L20 70 Z\" fill=\"none\" stroke=\"#38bdf8\" stroke-width=\"4\"></path>\n            <text x=\"50\" y=\"55\" font-size=\"12\" text-anchor=\"middle\" fill=\"#fff\" font-weight=\"bold\">&lt;CODE/&gt;</text>\n        </svg>\n    </div>\n\n    <div style=\"position: absolute; bottom: 60px; left: 60px; font-size: 18px; color: #64748b;\">\n        * 조기 마감 시 할인 혜택이 종료될 수 있습니다.\n    </div>\n</div>",
+  "outputBytes": 2596,
+  "usage": {
+    "promptTokenCount": 671,
+    "candidatesTokenCount": 1022,
+    "totalTokenCount": 1693,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-21T02:07:16.194Z"
+}

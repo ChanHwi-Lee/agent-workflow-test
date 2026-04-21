@@ -1,0 +1,21 @@
+{
+  "id": "prompt_13",
+  "domain": "travel",
+  "method": "method-c",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "동남아 패키지 여행 얼리버드 예약 배너",
+  "latencyMs": 4379,
+  "outputText": "<div style=\"width: 1200px; height: 628px; background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); position: relative; overflow: hidden; font-family: 'Pretendard', sans-serif; color: #ffffff; padding: 60px; box-sizing: border-box;\">\n    <div style=\"position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.1; background: radial-gradient(circle at 80% 20%, #ffffff 0%, transparent 50%);\"></div>\n    \n    <div style=\"position: relative; z-index: 1;\">\n        <div style=\"background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); padding: 10px 20px; border-radius: 50px; display: inline-block; font-size: 20px; font-weight: 600; margin-bottom: 20px; letter-spacing: 2px;\">\n            EARLY BIRD SPECIAL\n        </div>\n        \n        <h1 style=\"font-size: 85px; font-weight: 800; margin: 0; line-height: 1.1; text-shadow: 0 4px 15px rgba(0,0,0,0.2);\">\n            동남아 여행,<br/>미리 준비하면 혜택이 쏟아져요!\n        </h1>\n        \n        <p style=\"font-size: 32px; margin: 30px 0; font-weight: 300; opacity: 0.9;\">\n            지금 예약하고 최대 30% 할인과 추가 특전까지 누려보세요.\n        </p>\n        \n        <div style=\"margin-top: 50px; display: flex; gap: 20px;\">\n            <div style=\"background: #ffcc00; color: #333; padding: 20px 40px; border-radius: 12px; font-size: 24px; font-weight: 700; box-shadow: 0 10px 20px rgba(0,0,0,0.2);\">\n                지금 바로 예약하기\n            </div>\n            <div style=\"background: rgba(255, 255, 255, 0.1); border: 2px solid #ffffff; padding: 20px 40px; border-radius: 12px; font-size: 24px; font-weight: 600;\">\n                상품 자세히 보기\n            </div>\n        </div>\n    </div>\n\n    <svg viewBox=\"0 0 400 400\" style=\"position: absolute; right: -50px; bottom: -50px; width: 500px; height: 500px; opacity: 0.8;\">\n        <path d=\"M200 50 C 350 50, 400 200, 350 300 C 300 400, 100 400, 50 300 C 0 200, 50 50, 200 50 Z\" fill=\"#ffffff\" opacity=\"0.1\" />\n        <circle cx=\"300\" cy=\"150\" r=\"40\" fill=\"#ffffff\" opacity=\"0.3\" />\n        <circle cx=\"100\" cy=\"350\" r=\"20\" fill=\"#ffffff\" opacity=\"0.2\" />\n    </svg>\n\n    <div style=\"position: absolute; bottom: 60px; right: 60px; text-align: right;\">\n        <div style=\"font-size: 18px; opacity: 0.8;\">예약 기간: ~ 2024.05.31</div>\n        <div style=\"font-size: 18px; opacity: 0.8;\">여행 가능 기간: 2024.06 ~ 09</div>\n    </div>\n</div>",
+  "outputBytes": 2462,
+  "usage": {
+    "promptTokenCount": 663,
+    "candidatesTokenCount": 1024,
+    "totalTokenCount": 1687,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-21T02:07:21.872Z"
+}

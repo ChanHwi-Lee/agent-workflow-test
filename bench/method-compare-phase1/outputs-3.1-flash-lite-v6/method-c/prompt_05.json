@@ -1,0 +1,21 @@
+{
+  "id": "prompt_05",
+  "domain": "beauty",
+  "method": "method-c",
+  "attempt": 0,
+  "ok": true,
+  "model": "gemini-3.1-flash-lite-preview",
+  "prompt": "여름 신상 립스틱 출시 배너 - 20% 할인 쿠폰",
+  "latencyMs": 3346,
+  "outputText": "<div style=\"width: 1200px; height: 628px; background: linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%); position: relative; overflow: hidden; font-family: 'Pretendard', sans-serif; display: flex; align-items: center; justify-content: space-between; padding: 0 80px; box-sizing: border-box;\">\n    <div style=\"z-index: 2;\">\n        <span style=\"background: #FF6B6B; color: white; padding: 8px 20px; border-radius: 50px; font-size: 24px; font-weight: bold; letter-spacing: 2px;\">SUMMER COLLECTION</span>\n        <h1 style=\"font-size: 96px; color: #333; margin: 20px 0; line-height: 1.1; font-weight: 900;\">\n            촉촉한 여름,<br><span style=\"color: #FF6B6B;\">NEW 립스틱</span> 출시\n        </h1>\n        <div style=\"background: white; width: fit-content; padding: 20px 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 2px dashed #FF6B6B;\">\n            <p style=\"margin: 0; font-size: 32px; color: #555;\">지금 바로 20% 할인 쿠폰 받기</p>\n            <p style=\"margin: 5px 0 0 0; font-size: 48px; font-weight: bold; color: #FF6B6B;\">20% OFF</p>\n        </div>\n    </div>\n\n    <div style=\"position: relative; width: 450px; height: 450px;\">\n        <div style=\"position: absolute; width: 100%; height: 100%; background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%); border-radius: 50%;\"></div>\n        <img src=\"placeholder://lipstick-product-shot\" width=\"400\" height=\"400\" style=\"position: relative; z-index: 3; filter: drop-shadow(0 20px 20px rgba(0,0,0,0.2)); transform: rotate(15deg);\">\n    </div>\n\n    <svg width=\"1200\" height=\"628\" style=\"position: absolute; top: 0; left: 0; z-index: 1;\">\n        <circle cx=\"100\" cy=\"100\" r=\"60\" fill=\"rgba(255,255,255,0.5)\" />\n        <circle cx=\"1100\" cy=\"500\" r=\"100\" fill=\"rgba(255,255,255,0.4)\" />\n        <path d=\"M0,500 Q300,400 600,500 T1200,500 V628 H0 Z\" fill=\"rgba(255,255,255,0.3)\" />\n    </svg>\n</div>",
+  "outputBytes": 1924,
+  "usage": {
+    "promptTokenCount": 668,
+    "candidatesTokenCount": 805,
+    "totalTokenCount": 1473,
+    "thoughtsTokenCount": null,
+    "cachedContentTokenCount": null
+  },
+  "finishReason": "STOP",
+  "finishedAt": "2026-04-21T02:07:09.871Z"
+}
