@@ -52,12 +52,27 @@ export const ExecutionSlotKeySchema = Type.Union(
   ExecutionSlotKeyValues.map((value) => Type.Literal(value)),
 );
 
-export const LayerTypeValues = [
+// VisibleLayerTypeValues = Toolditor canvas 에 materialize 되는 모든 primitive
+// 종류. "unknown" 은 runtime state 마커라 여기 들어가지 않는다.
+//
+// v6 확장 (2026-04-21):
+//   - "bitmap": 투명 배경 raster illustration (png 기반 주력 장식)
+//   - "svg":    inline vector 그래픽 (LLM 이 직접 SVG 작성)
+//
+// Toolditor FE 의 mutationObjectBuilder.ts materialization 은 Phase 2 에서
+// 별도 repo 변경으로 수행된다. 계약만 먼저 open.
+export const VisibleLayerTypeValues = [
   "group",
   "shape",
   "text",
   "image",
   "sticker",
+  "bitmap",
+  "svg",
+] as const;
+
+export const LayerTypeValues = [
+  ...VisibleLayerTypeValues,
   "unknown",
 ] as const;
 
@@ -66,9 +81,7 @@ export const LayerTypeSchema = Type.Union(
 );
 
 export const VisibleLayerTypeSchema = Type.Union(
-  ["group", "shape", "text", "image", "sticker"].map((value) =>
-    Type.Literal(value),
-  ),
+  VisibleLayerTypeValues.map((value) => Type.Literal(value)),
 );
 
 export const MutationOperationValues = [

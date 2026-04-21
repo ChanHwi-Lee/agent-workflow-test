@@ -8,6 +8,7 @@ import {
   JsonObjectSchema,
   LayerTypeSchema,
   PrimitiveMetadataRecordSchema,
+  VisibleLayerTypeValues,
 } from "../common.js";
 
 const CanvasLayerTypeOrNullSchema = Type.Union([LayerTypeSchema, Type.Null()]);
@@ -59,9 +60,7 @@ const CreateLayerCommandSchema = Type.Object(
     layerBlueprint: Type.Object(
       {
         layerType: Type.Union(
-          ["group", "shape", "text", "image", "sticker"].map((value) =>
-            Type.Literal(value),
-          ),
+          VisibleLayerTypeValues.map((value) => Type.Literal(value)),
         ),
         bounds: BoundsSchema,
         transform: Type.Optional(JsonObjectSchema),
@@ -188,6 +187,9 @@ export const CanvasMutationCommandSchema = Type.Union([
   DeleteLayerCommandSchema,
   SaveTemplateCommandSchema,
 ]);
+
+export { CreateLayerCommandSchema };
+export type CreateLayerCommand = Static<typeof CreateLayerCommandSchema>;
 
 export const CanvasMutationEnvelopeSchema = Type.Object(
   {
