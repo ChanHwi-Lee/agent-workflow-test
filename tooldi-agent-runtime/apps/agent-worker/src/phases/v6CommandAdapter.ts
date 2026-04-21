@@ -17,6 +17,7 @@
 
 import type { CreateLayerCommand, JsonValue } from "@tooldi/agent-contracts";
 
+import { parseFirstFontFamily } from "./v6FontRegistry.js";
 import type {
   V6ImageCommand,
   V6LinearGradient,
@@ -142,7 +143,10 @@ function rectTokens(cmd: V6RectCommand): Record<string, unknown> {
 function textTokens(cmd: V6TextCommand): Record<string, unknown> {
   return {
     fillColor: cmd.color,
-    fontFamily: cmd.fontFamily,
+    // Phase 2.5: Playwright's computed-style fontFamily is the full CSS cascade
+    // ("\"701_400\", sans-serif"). Toolditor expects the first token only,
+    // which is the Toolditor ID we injected in v6FontRegistry.
+    fontFamily: parseFirstFontFamily(cmd.fontFamily),
     fontSize: cmd.fontSize,
     fontWeight: cmd.fontWeight,
     fontStyle: cmd.fontStyle,

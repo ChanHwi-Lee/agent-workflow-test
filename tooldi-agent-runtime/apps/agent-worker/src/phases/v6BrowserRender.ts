@@ -19,6 +19,10 @@
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page, Route } from "playwright";
 
+import {
+  buildFontFaceStyleBlock,
+  injectFontFaceStyle,
+} from "./v6FontRegistry.js";
 import type {
   V6Canvas,
   V6ComputedStyle,
@@ -30,6 +34,11 @@ import type {
 const TRANSPARENT_PNG_B64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 const TRANSPARENT_PNG = Buffer.from(TRANSPARENT_PNG_B64, "base64");
+
+// Phase 2.5 prod path parity: inject Toolditor webfont @font-face rules before
+// setContent so Playwright measures glyph metrics with the same font set the
+// canvas will render with. Computed once per process; registry access is sync.
+const FONT_FACE_STYLE_BLOCK = buildFontFaceStyleBlock();
 
 export interface V6RenderOptions {
   readonly canvas: V6Canvas;
@@ -53,7 +62,8 @@ export async function extractFromPage(
     width: options.canvas.width,
     height: options.canvas.height,
   });
-  await page.setContent(html, { waitUntil: "networkidle" });
+  const htmlWithFonts = injectFontFaceStyle(html, FONT_FACE_STYLE_BLOCK);
+  await page.setContent(htmlWithFonts, { waitUntil: "networkidle" });
 
   const fontsTimeout = options.fontsReadyTimeoutMs ?? 5000;
   await page.evaluate(async (timeoutMs: number) => {

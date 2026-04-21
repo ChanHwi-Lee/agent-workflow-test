@@ -152,6 +152,19 @@ test("adaptV6Commands — text → layerType 'text' with fillColor + font tokens
   assert.equal(metadata.sourcePath, "0.1");
 });
 
+test("adaptV6Commands — text fontFamily cascade picks first token (Toolditor ID)", () => {
+  // Playwright's computed-style fontFamily often includes a full cascade with
+  // quotes. Adapter must hand Toolditor only the first token (the injected
+  // Toolditor ID) without surrounding quotes.
+  const cascadeText: V6TextCommand = {
+    ...TEXT_CMD,
+    fontFamily: '"701_400", sans-serif',
+  };
+  const { commands } = adaptV6Commands([cascadeText], { runId: "font" });
+  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<string, unknown>;
+  assert.equal(tokens.fontFamily, "701_400");
+});
+
 test("adaptV6Commands — text lineHeight 'normal' serialized as null", () => {
   const normalText: V6TextCommand = { ...TEXT_CMD, lineHeight: "normal" };
   const { commands } = adaptV6Commands([normalText], { runId: "r6" });

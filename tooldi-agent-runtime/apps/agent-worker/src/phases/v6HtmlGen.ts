@@ -4,10 +4,6 @@
 //   - Stage 1 출력은 free HTML. grammar 검증은 Stage 1 이후 v6HtmlValidator
 //     (security-only) 에서만 수행.
 //   - 이 모듈은 REST 호출과 usage 메트릭 추출만 책임. 출력은 그대로 반환한다.
-//
-// v5MethodBHtmlGen.ts 와 구조는 유사하지만, v6 의 minimal-constraint prompt 와
-// canvas-size 주입 로직 (user message) 을 쓴다. v5 파일은 Phase 4 LangGraph
-// 노드 교체 시점까지 병존한다.
 
 import {
   V6_DEFAULT_MODEL,

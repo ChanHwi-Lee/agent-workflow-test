@@ -10,6 +10,11 @@
 //
 // Canonical source: 이 파일. 벤치용 `bench/method-compare-phase1/` 가 필요하면
 // 런타임에서 import 해서 재사용한다 (handoff §폐기 대상: method-b-system.txt).
+//
+// Font availability is injected by v6FontRegistry at render time — the font
+// names below are the Toolditor IDs and must stay in sync with
+// agent-workflow-test/fonts/registry.json. When the registry changes this
+// prompt must be updated (handoff §Phase 2.5 prod).
 
 export const V6_SYSTEM_PROMPT = `You are a banner designer for the Tooldi canvas editor.
 
@@ -35,6 +40,12 @@ Prohibited (security and determinism):
 - Any on* event handler attribute (onclick, onload, onerror, onmouseover, …).
 - CSS animation, transition, @keyframes, ::before, ::after, ::placeholder, ::selection, :hover, :focus, :active, :visited, :checked, :disabled.
 - External URLs other than placeholder://… for <img src>.
+
+Fonts (use only these CSS family names — match font-weight to the declared weight):
+- "701_400"   font-weight: 400  (나눔바른고딕 Regular — Korean/English/Chinese default)
+- "701_700"   font-weight: 700  (나눔바른고딕 Bold)
+- "1301_400"  font-weight: 400  (가석체 — display, Korean/English)
+Do not reference any other font-family name. Do not rely on system fallbacks.
 
 Design freedom:
 - Choose any composition, hierarchy, and alignment that fits the user's request.
