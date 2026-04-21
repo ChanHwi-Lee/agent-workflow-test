@@ -1,13 +1,15 @@
 # AGW v6 Phase 4 — LangGraph Swap + SSE + v5 Legacy Removal (Handoff)
 
-**Status**: Blocked on Phase 2. 이 handoff 는 Phase 2 merge 이후 실행.
-**Date**: 2026-04-21
+**Status**: **Ready to start** (as of 2026-04-21 afternoon). Phase 2 + 2.5 MVP 완료.
+**Date**: 2026-04-21 (handoff 작성), 2026-04-21 prerequisites 업데이트
 **Target repo**: `tws-editor-api/agent-workflow-test/tooldi-agent-runtime` (이 repo)
-**Target branch**: `feature/v6-structure` 계속 (Phase 0/1/3 + contracts + adapter + bench 커밋 이미 있음)
-**Prerequisites**:
-- Phase 2 (`toolditor@feature/v6-primitives`) merge 완료
-- toolditor 가 bitmap/svg layerType 을 실제 렌더
-- Chromium docker image `mcr.microsoft.com/playwright:v1.58.2-noble` 사용 가능
+**Target branch**: `feature/v6-structure` 계속 (Phase 0/1/2.5/3 + contracts + adapter + bench 커밋 이미 있음)
+**Prerequisites (현재 상태)**:
+- ✅ Phase 2 toolditor 구현 push: `toolditor@feature/v6-primitives` (`5b6926326`) — main merge 는 Phase 4 완료 후 PR 묶음으로
+- ✅ toolditor 가 bitmap/svg layerType 을 실제 렌더 (사용자 시각 검증 완료)
+- ✅ Phase 2.5 font pipeline MVP — `agent-workflow-test@feature/v6-structure` (`36ec99a`) — extraction(v6-poc) 경로 완료, **prod 경로(v6BrowserRender/v6CommandAdapter/v6SystemPrompt) 는 Phase 4 의 1번 커밋에서 이어받아 반영**
+- ⚠ Chromium docker image `mcr.microsoft.com/playwright:v1.58.2-noble` 사용 가능 여부 — 세션 시작 시 확인 필요
+- ⚠ Phase 2 의 임시 fixture 주입 UI (`toolditor/src/features/agent-workflow-spike/fixtures/` + AgentHappyPathPanel 의 임시 섹션) — Phase 4 완료 시 같이 제거
 
 ---
 
@@ -60,6 +62,20 @@ docker pull mcr.microsoft.com/playwright:v1.59.1-noble  # 매칭
 ---
 
 ## 작업 단계
+
+### 0. Phase 2.5 prod 경로 반영 (선행)
+
+v6-poc 로컬에서 검증된 font pipeline 로직을 agent-worker prod 경로에도 동일하게 반영. **이 작업 없이 LangGraph swap 하면 prod 출력이 여전히 OS 시스템 폰트로 측정된다.**
+
+- `agent-workflow-test/fonts/registry.json` 을 SSOT 로 유지 (변경 없이 read-only 참조)
+- `apps/agent-worker/src/phases/v6FontRegistry.ts` 신규: `readFileSync + JSON.parse` 로 `../../../../fonts/registry.json` 읽고 `buildFontFaceStyleBlock()` export
+  - v6-poc 의 `v6-poc/fonts/buildFontFaceCSS.mjs` 와 **동일 로직**. 중복 없애려면 repo 공통 package 으로 추출 가능하지만 Phase 4 scope 에서는 TS 복제로 충분
+- `v6BrowserRender.ts` 수정: `setContent` 전에 HTML `</head>` 앞에 font `<style>` 블록 inject (v6-poc/extract.mjs 와 동일 패턴)
+- `v6CommandAdapter.ts` 수정: text token 생성 시 `parseFirstFontFamily(cmd.fontFamily)` 로 CSS cascade 첫 이름만 Toolditor ID 로 전달
+- `v6SystemPrompt.ts` 수정: 사용 가능한 font-family 목록 명시 ("Available fonts: 701_400, 701_700, 1301_400. Use only these CSS family names with matching font-weight.")
+- 기존 `v6CommandAdapter.test.ts` / `v6BrowserRender.test.ts` 업데이트: fontFamily expectation 을 Toolditor ID 로
+
+커밋: `[feat] AGW v6 Phase 2.5 prod — font pipeline 반영 (agent-worker side)`
 
 ### 1. Dev Chromium 인프라 (agent-worker 프로세스 안에서 Playwright 기동)
 
@@ -175,13 +191,15 @@ bench/method-compare-phase1/method-b-system.txt        (v5 prompt — historical
 
 ---
 
-## 커밋 단위 제안 (한 세션 안에서 5개 전후)
+## 커밋 단위 제안 (한 세션 안에서 6-7개)
 
+0. `[feat] AGW v6 Phase 2.5 prod — font pipeline 반영 (agent-worker side)` ← Phase 2.5 선행분
 1. `[chore] agent-worker dev Chromium infra — Playwright 1.59.x 정합 + docker/host 실행 경로`
 2. `[feat] AGW v6 LangGraph node — v5 pipeline 을 v6Pipeline+adapter 로 교체`
 3. `[chore] AGW v5 legacy 제거 — validator/transpile/pipeline/prompt 파일 + test path`
 4. `[feat] AGW v6 E2E smoke — 5 sample screenshot, bench → SSE → toolditor`
-5. `[docs] AGW v6 SSOT 승격 — AGENTS.md + doc-index + v6 ssot + v5 historical`
+5. `[chore] Toolditor Phase 2 temp harness 제거 — fixture 주입 UI + v6Fixtures.ts 삭제`
+6. `[docs] AGW v6 SSOT 승격 — AGENTS.md + doc-index + v6 ssot + v5 historical`
 
 ---
 
@@ -211,32 +229,38 @@ bench/method-compare-phase1/method-b-system.txt        (v5 prompt — historical
 ```
 이 handoff (tws-editor-api/agent-workflow-test/docs/handoff/
 2026-04-21-agw-v6-phase4-langgraph-swap-handoff.md) +
-Phase 2 완료 상태 + memory lock 을 읽고 Phase 4 를 실행하라.
+Phase 2 + 2.5 완료 상태 + memory lock 을 읽고 Phase 4 를 실행하라.
 
 Prerequisites 체크부터:
-1. toolditor feature/v6-primitives merge 확인
-2. Chromium 이미지 / Playwright 버전 정합
-3. npm run local:agent 로 toolditor 실렌더 가능 확인
+1. toolditor feature/v6-primitives (5b6926326) 최신 확인
+2. agent-workflow-test feature/v6-structure (36ec99a) 최신 확인
+3. Chromium 이미지 / Playwright 버전 정합 (1.59.x 권장)
+4. npm run local:agent 로 toolditor 실렌더 가능 확인
 
 순서:
+0. Phase 2.5 prod 경로 반영 (agent-worker side — v6BrowserRender / v6CommandAdapter / v6SystemPrompt 에 font pipeline 동일 로직)
 1. playwright 버전 정합 (1.59.x 으로 맞춤)
 2. LangGraph v5 node 파악 → v6Pipeline + adapter 로 교체
 3. SSE canvas.mutation envelope 재사용 (기존 builder 패턴)
 4. 5-sample E2E smoke: 자연어 → pipeline → toolditor → screenshot
-5. v5 legacy 파일 전체 삭제 (쉘 기준 아래 목록)
-6. AGENTS.md + doc-index + v6 SSOT 문서 갱신
+5. v5 legacy 파일 전체 삭제 (쉘 기준 handoff §5 목록)
+6. toolditor 쪽 Phase 2 임시 fixture harness 제거 (v6Fixtures.ts + AgentHappyPathPanel 임시 섹션)
+7. AGENTS.md + doc-index + v6 SSOT 문서 갱신
 
 경계 (철학 5):
 - layout family 재정의 금지.
 - slot/role/topology/CTA 재도입 금지.
 - feature flag 없음 — v6 즉시 cutover.
 - v5 bench outputs 보존 (outputs-*/method-a, method-b 디렉토리는 건드리지 말 것).
+- Phase 2.5 prod 반영 시 v6-poc 와 agent-worker 양쪽 font registry 경로가 같은 JSON 파일을 참조 (중복 복사 금지).
 
-커밋 (대략 5 단위):
+커밋 (대략 6-7 단위):
+- [feat] Phase 2.5 prod (font pipeline agent-worker 측)
 - [chore] dev Chromium infra
 - [feat] v6 LangGraph node
 - [chore] v5 legacy 제거
 - [feat] v6 E2E smoke
+- [chore] toolditor Phase 2 temp harness 제거
 - [docs] v6 SSOT 승격
 ```
 
