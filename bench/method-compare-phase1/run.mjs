@@ -42,6 +42,14 @@ const promptsToRun = limit ? prompts.slice(0, limit) : prompts;
 
 const systemA = await readFile(resolve(__dirname, "method-a-system.txt"), "utf8");
 const systemB = await readFile(resolve(__dirname, "method-b-system.txt"), "utf8");
+const systemC = await readFile(resolve(__dirname, "method-c-system.txt"), "utf8");
+
+// Canvas size for method-c (v6 free HTML). method-a/b do not require canvas
+// size in the user message; method-c does because the v6 system prompt says
+// "canvas size is given in the user message". Mirrors runtime
+// `buildV6UserMessage` in `apps/agent-worker/src/phases/v6SystemPrompt.ts`.
+const CANVAS_WIDTH = 1200;
+const CANVAS_HEIGHT = 628;
 
 function parseArgs(argv) {
   const out = {};
@@ -57,7 +65,21 @@ function parseArgs(argv) {
 function methodsToRun() {
   if (only === "method-a") return ["method-a"];
   if (only === "method-b") return ["method-b"];
-  return ["method-a", "method-b"];
+  if (only === "method-c") return ["method-c"];
+  return ["method-a", "method-b", "method-c"];
+}
+
+function systemPromptFor(method) {
+  if (method === "method-a") return systemA;
+  if (method === "method-b") return systemB;
+  return systemC;
+}
+
+function userMessageFor(method, prompt) {
+  if (method === "method-c") {
+    return `Canvas: ${CANVAS_WIDTH}px × ${CANVAS_HEIGHT}px.\n\nUser request:\n${prompt.trim()}`;
+  }
+  return prompt;
 }
 
 function sleep(ms) {
@@ -67,10 +89,10 @@ function sleep(ms) {
 // Direct REST call — gives us full usageMetadata (incl. thoughtsTokenCount)
 // and avoids SDK-version drift for preview model ids.
 async function callGeminiRest({ method, prompt }) {
-  const systemInstruction =
-    method === "method-a" ? systemA : systemB;
+  const systemInstruction = systemPromptFor(method);
+  const userText = userMessageFor(method, prompt);
   const generationConfig = {
-    temperature: 0.2,
+    temperature: method === "method-c" ? 0.7 : 0.2,
     topP: 0.95,
     maxOutputTokens: 8192,
   };
@@ -81,7 +103,7 @@ async function callGeminiRest({ method, prompt }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${GOOGLE_API_KEY}`;
   const body = {
     systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    contents: [{ role: "user", parts: [{ text: userText }] }],
     generationConfig,
   };
 
