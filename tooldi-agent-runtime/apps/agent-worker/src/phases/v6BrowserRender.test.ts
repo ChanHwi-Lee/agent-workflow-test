@@ -50,3 +50,36 @@ test("renderAndExtract — extracts text elements that contain line breaks", asy
     await browser.close();
   }
 });
+
+test("renderAndExtract — keeps direct text when an inline child has its own style", async () => {
+  const browser = await launchEphemeralBrowser();
+  try {
+    const result = await renderAndExtract(
+      browser,
+      `<div style="width:1200px;height:628px;position:relative;">
+        <h1 style="font-size:80px;line-height:1.1;margin:0;color:#0277BD;">
+          올여름 필수템!<br>
+          <span style="color:#01579B;">강아지 쿨매트</span>
+        </h1>
+      </div>`,
+      {
+        canvas: { width: 1200, height: 628 },
+        fontsReadyTimeoutMs: 100,
+      },
+    );
+
+    const texts = result.elements
+      .filter((el) => el.isTextLeaf)
+      .map((el) => el.text);
+    assert.ok(
+      texts.includes("올여름 필수템!"),
+      "expected direct h1 text before <br> to be extracted",
+    );
+    assert.ok(
+      texts.includes("강아지 쿨매트"),
+      "expected styled span text to still be extracted",
+    );
+  } finally {
+    await browser.close();
+  }
+});

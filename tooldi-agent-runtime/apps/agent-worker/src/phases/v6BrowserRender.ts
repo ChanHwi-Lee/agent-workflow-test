@@ -171,6 +171,66 @@ export async function extractFromPage(
       const results: V6RenderedElementRaw[] = [];
       let serial = 0;
 
+      function normalizeText(raw: string): string {
+        return raw
+          .replace(/[^\S\n]+/g, " ")
+          .replace(/ *\n */g, "\n")
+          .trim();
+      }
+
+      function trimmedTextNode(
+        node: ChildNode,
+      ): { text: string; start: number; end: number } | null {
+        if (node.nodeType !== TEXT_NODE) return null;
+        const raw = node.nodeValue ?? "";
+        const first = raw.search(/\S/);
+        if (first < 0) return null;
+
+        let end = raw.length;
+        while (end > first && /\s/.test(raw.charAt(end - 1))) end--;
+
+        const text = normalizeText(raw.slice(first, end));
+        if (text.length === 0) return null;
+        return { text, start: first, end };
+      }
+
+      function pushDirectTextRuns(el: Element, path: string): void {
+        const cs = getComputedStyle(el);
+        Array.from(el.childNodes).forEach((node, i) => {
+          const textNode = trimmedTextNode(node);
+          if (!textNode) return;
+
+          const range = document.createRange();
+          range.setStart(node, textNode.start);
+          range.setEnd(node, textNode.end);
+          const rect = range.getBoundingClientRect();
+          if (rect.width <= 0 || rect.height <= 0) return;
+
+          results.push({
+            serial: serial++,
+            path: `${path}.#text${i}`,
+            tagName: "#text",
+            bounds: {
+              left: rect.left,
+              top: rect.top,
+              width: rect.width,
+              height: rect.height,
+            },
+            style: pickStyle(cs),
+            isTextLeaf: true,
+            text: textNode.text,
+            img: null,
+            svg: null,
+            hasChildren: false,
+            visible:
+              rect.width > 0 &&
+              rect.height > 0 &&
+              cs.visibility !== "hidden" &&
+              cs.display !== "none",
+          });
+        });
+      }
+
       function visit(el: Element, path: string): void {
         const tag = el.tagName.toLowerCase();
 
@@ -264,6 +324,7 @@ export async function extractFromPage(
         });
 
         if (leaf) return;
+        pushDirectTextRuns(el, path);
         children.forEach((child, i) =>
           visit(child, path ? `${path}.${i}` : `${i}`),
         );
