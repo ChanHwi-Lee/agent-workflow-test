@@ -77,6 +77,30 @@ test("runV6HtmlGen returns HTML concatenated from Gemini parts", async () => {
   assert.match(userText, /봄 세일/);
 });
 
+test("runV6HtmlGen은 기본 temperature를 0.35로 사용한다", async () => {
+  const { fetch, lastRequest } = makeMockFetch({
+    candidates: [
+      {
+        content: { parts: [{ text: '<div style="width:1200px;height:628px;"></div>' }] },
+        finishReason: "STOP",
+      },
+    ],
+  });
+
+  await runV6HtmlGen({
+    canvasWidth: 1200,
+    canvasHeight: 628,
+    userPrompt: "봄 세일 이벤트 배너",
+    apiKey: "fake",
+    fetchImpl: fetch,
+  });
+
+  const reqBody = lastRequest.body as {
+    generationConfig: { temperature?: number };
+  };
+  assert.equal(reqBody.generationConfig.temperature, 0.35);
+});
+
 test("runV6HtmlGen strips markdown fences if the model emits them", async () => {
   const { fetch } = makeMockFetch({
     candidates: [
@@ -170,6 +194,21 @@ test("buildV6UserMessage — includes canvas dimensions and trimmed user prompt"
   assert.match(msg, /봄 세일 이벤트 배너 만들어줘/);
   // No leading/trailing whitespace on the user section.
   assert.ok(!msg.endsWith(" "));
+});
+
+test("buildV6UserMessage는 레이아웃 예산용 copy load 요약을 포함한다", () => {
+  const msg = buildV6UserMessage({
+    canvasWidth: 1200,
+    canvasHeight: 628,
+    userPrompt:
+      "명낭상점 강아지 여름 쿨매트 1+1 특가. 4월 30일까지 한정 할인.",
+  });
+
+  assert.match(msg, /Copy load for layout budgeting/);
+  assert.match(msg, /Korean chars:/);
+  assert.match(msg, /Latin\/digit chars:/);
+  assert.match(msg, /copy load class:/);
+  assert.match(msg, /Do not render these metrics as visible copy/i);
 });
 
 test("buildV6UserMessage — appends optional trend context as execution-oriented visual input", () => {

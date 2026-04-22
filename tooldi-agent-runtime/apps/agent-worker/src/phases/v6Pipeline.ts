@@ -26,6 +26,10 @@ import type {
   V6MappingResult,
   V6PrimitiveCommand,
 } from "./v6Types.js";
+import {
+  buildV6RenderQualityReport,
+  type V6RenderQualityReport,
+} from "./v6RenderQualityReport.js";
 
 export interface V6PipelineInput {
   readonly runId: string;
@@ -62,6 +66,7 @@ export interface V6PipelineResult {
   readonly runId: string;
   readonly html: string;
   readonly extraction: V6ExtractionResult;
+  readonly renderQualityReport: V6RenderQualityReport;
   readonly commands: ReadonlyArray<V6PrimitiveCommand>;
   readonly validationIssues: ReadonlyArray<V6HtmlValidationIssue>;
   readonly usage: V6Usage | null;
@@ -126,6 +131,7 @@ export async function runV6Pipeline(
     height: input.canvasHeight,
   });
   const renderMs = Date.now() - renderStart;
+  const renderQualityReport = buildV6RenderQualityReport(extraction);
 
   const mapping = deps.mapElements(extraction);
   if (mapping.commands.length === 0) {
@@ -138,6 +144,7 @@ export async function runV6Pipeline(
     runId: input.runId,
     html,
     extraction,
+    renderQualityReport,
     commands: mapping.commands,
     validationIssues: validation.issues,
     usage: genResult.usage,

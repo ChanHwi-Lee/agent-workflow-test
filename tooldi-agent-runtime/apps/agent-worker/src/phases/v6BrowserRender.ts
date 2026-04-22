@@ -124,6 +124,16 @@ export async function extractFromPage(
         };
       }
 
+      function pickLayout(el: Element): V6RenderedElementLayoutRaw {
+        const htmlEl = el as HTMLElement;
+        return {
+          clientWidth: htmlEl.clientWidth,
+          clientHeight: htmlEl.clientHeight,
+          scrollWidth: htmlEl.scrollWidth,
+          scrollHeight: htmlEl.scrollHeight,
+        };
+      }
+
       function elementChildren(el: Element): Element[] {
         return Array.from(el.childNodes).filter(
           (n) => n.nodeType === ELEMENT_NODE,
@@ -222,6 +232,7 @@ export async function extractFromPage(
             img: null,
             svg: null,
             hasChildren: false,
+            layout: null,
             visible:
               rect.width > 0 &&
               rect.height > 0 &&
@@ -253,6 +264,7 @@ export async function extractFromPage(
             img: null,
             svg: { outerHTML: el.outerHTML },
             hasChildren: false,
+            layout: pickLayout(el),
             visible:
               rect.width > 0 &&
               rect.height > 0 &&
@@ -288,6 +300,7 @@ export async function extractFromPage(
             },
             svg: null,
             hasChildren: false,
+            layout: pickLayout(el),
             visible:
               rect.width > 0 &&
               rect.height > 0 &&
@@ -316,6 +329,7 @@ export async function extractFromPage(
           img: null,
           svg: null,
           hasChildren: children.length > 0,
+          layout: pickLayout(el),
           visible:
             rect.width > 0 &&
             rect.height > 0 &&
@@ -389,9 +403,17 @@ interface V6RenderedElementRaw {
   svg: { outerHTML: string } | null;
   hasChildren: boolean;
   visible: boolean;
+  layout: V6RenderedElementLayoutRaw | null;
 }
 
 type V6ComputedStyleRaw = V6ComputedStyle;
+
+interface V6RenderedElementLayoutRaw {
+  clientWidth: number;
+  clientHeight: number;
+  scrollWidth: number;
+  scrollHeight: number;
+}
 
 // Re-declare for verifying structural compatibility between page-side raw
 // types and module-side public types without circular imports.

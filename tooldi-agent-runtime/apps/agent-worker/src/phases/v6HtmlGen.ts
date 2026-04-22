@@ -61,7 +61,7 @@ export async function runV6HtmlGen(
   const model = options.model ?? V6_DEFAULT_MODEL;
   const fetchImpl = options.fetchImpl ?? fetch;
   const generationConfig = {
-    temperature: options.temperature ?? 0.7,
+    temperature: options.temperature ?? 0.35,
     topP: options.topP ?? 0.95,
     maxOutputTokens: options.maxOutputTokens ?? 8192,
   };

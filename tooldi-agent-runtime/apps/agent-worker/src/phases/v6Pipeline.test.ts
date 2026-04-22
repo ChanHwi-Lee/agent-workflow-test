@@ -119,6 +119,8 @@ test("runV6Pipeline — runs Stage 1→2→3 in order and returns commands", asy
   assert.equal(result.html, FAKE_HTML);
   assert.equal(result.usage?.totalTokenCount, 30);
   assert.equal(result.model, "gemini-3.1-flash-lite-preview");
+  assert.equal(result.renderQualityReport.status, "observed");
+  assert.equal(result.renderQualityReport.passed, true);
   assert.equal(result.latency.htmlGenMs, 123);
   assert.ok(result.latency.renderMs >= 0);
   assert.ok(result.latency.totalMs >= 0);

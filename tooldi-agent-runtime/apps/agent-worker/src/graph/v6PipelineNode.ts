@@ -277,6 +277,39 @@ export function registerV6PipelineNode(
       commands: v6Result.commands,
     });
 
+    const renderQualityReportRef = await persistArtifactTask(
+      `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/v6-render-quality-report.json`,
+      v6Result.renderQualityReport,
+      {
+        artifactKind: "v6-render-quality-report",
+        runId: state.job.runId,
+        traceId: state.job.traceId,
+        attemptSeq: String(state.job.attemptSeq),
+      },
+    );
+    const quality = v6Result.renderQualityReport.metrics;
+    const renderQualityEvent = await appendEventTask(state.job.runId, {
+      traceId: state.job.traceId,
+      attempt: state.job.attemptSeq,
+      queueJobId: state.job.queueJobId,
+      event: {
+        type: "log",
+        level:
+          quality.offCanvasElementCount > 0 ||
+          quality.scrollOverflowElementCount > 0
+            ? "warn"
+            : "info",
+        message:
+          `[v6-render-quality] ref=${renderQualityReportRef} ` +
+          `issues=${v6Result.renderQualityReport.issues.length} ` +
+          `hardGateCandidate=${v6Result.renderQualityReport.hardGateCandidate ? "yes" : "no"} ` +
+          `offCanvas=${quality.offCanvasElementCount} ` +
+          `scrollOverflow=${quality.scrollOverflowElementCount} ` +
+          `highTextDensity=${quality.highTextDensityElementCount}`,
+      },
+    });
+    cooperativeStopRequested ||= renderQualityEvent.cancelRequested;
+
     if (state.hydrated.request.options?.debugHtmlPreview) {
       const v6DebugHtmlRef = await persistArtifactTask(
         `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/debug-v6-html.json`,

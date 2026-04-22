@@ -22,6 +22,7 @@ Output a single self-contained HTML snippet that will be rendered in a headless 
 
 Output format:
 - Exactly one root <div>. The root must have explicit width and height in px matching the canvas size.
+- The root <div> must include box-sizing:border-box and overflow:hidden in its inline style. Its rendered border-box must equal the canvas size exactly. If the root uses padding or border, box-sizing:border-box is mandatory so padding cannot expand the canvas.
 - No surrounding prose. No markdown code fences. No <!DOCTYPE>, <html>, <head>, <body>, or <style> block.
 - Styling exclusively via inline style attribute on each element. No class attribute, no external CSS, no external JS.
 - Raw HTML only, nothing before or after.
@@ -53,6 +54,16 @@ Design freedom:
 - No required primitive set. Use whatever combination of text / shape / image / svg best expresses the idea.
 - Korean and mixed-language copy are expected; size text so it fits within its bounding element (the browser wraps text; your width/height are honored).
 
+Layout quality target:
+- Before writing HTML, silently plan the canvas budget. Keep important text and product/hero imagery inside a safe area: about 40px on 1200px-wide canvases, 32px on 1080px square canvases, and at least 24px on smaller canvases.
+- The root canvas is not a content box. Do not create a root like width:1200px plus padding:80px unless box-sizing:border-box is present. Internal safe-area padding should not make the root render larger than the canvas.
+- Never crop or hide text. Avoid fixed-height text boxes with overflow:hidden. If text is tight, prefer this order: reduce font size, widen the text box, increase box height, wrap at a natural phrase boundary.
+- Korean glyphs are visually denser than Latin. For large Korean display text, keep roughly 8-14 Korean characters per line when possible; break at natural Korean phrase or particle boundaries. Avoid one-character dangling lines.
+- Reserve enough vertical budget for top labels, headline, supporting copy, price/details, and CTA. Do not anchor a CTA or important note so close to the bottom that it can be clipped.
+- Top badges or labels must sit fully inside the canvas, not clipped above the top edge.
+- Use line-height and padding that match the font size. For large Korean headlines, line-height usually needs at least 1.05-1.18.
+- Visual decorations may bleed slightly, but readable text and images must stay visible within the canvas.
+
 Output ONLY the HTML snippet.`;
 
 export const V6_DEFAULT_MODEL = "gemini-3.1-flash-lite-preview";
@@ -72,6 +83,7 @@ export interface V6UserInput {
  */
 export function buildV6UserMessage(input: V6UserInput): string {
   const trendContext = input.trendContext?.trim();
+  const copyLoadSummary = buildCopyLoadSummary(input.userPrompt);
   const trendBlock = trendContext
     ? `
 
@@ -86,5 +98,40 @@ Do not mention sources, citations, research notes, or trend names in the visible
   return `Canvas: ${input.canvasWidth}px × ${input.canvasHeight}px.
 
 User request:
-${input.userPrompt.trim()}${trendBlock}`;
+${input.userPrompt.trim()}
+
+Copy load for layout budgeting (do not render these metrics as visible copy):
+${copyLoadSummary}${trendBlock}`;
+}
+
+function buildCopyLoadSummary(userPrompt: string): string {
+  const text = userPrompt.trim();
+  const chars = Array.from(text);
+  const nonSpaceChars = chars.filter((ch) => !/\s/.test(ch)).length;
+  const koreanChars = chars.filter((ch) => /[가-힣]/u.test(ch)).length;
+  const latinDigitChars = chars.filter((ch) => /[A-Za-z0-9]/u.test(ch)).length;
+  const punctuationChars = chars.filter((ch) =>
+    /[`'"“”‘’.,!?~·:;()[\]{}<>/\\|-]/u.test(ch),
+  ).length;
+  const longestToken =
+    text
+      .split(/\s+/)
+      .map((token) => Array.from(token).length)
+      .sort((a, b) => b - a)[0] ?? 0;
+  const density =
+    koreanChars >= latinDigitChars * 1.2
+      ? "Korean-dominant"
+      : latinDigitChars > koreanChars * 1.2
+        ? "Latin/digit-dominant"
+        : "mixed";
+  const loadClass =
+    nonSpaceChars >= 90 ? "high" : nonSpaceChars >= 45 ? "medium" : "low";
+
+  return `- non-space chars: ${nonSpaceChars}
+- Korean chars: ${koreanChars}
+- Latin/digit chars: ${latinDigitChars}
+- punctuation chars: ${punctuationChars}
+- longest uninterrupted token chars: ${longestToken}
+- density: ${density}
+- copy load class: ${loadClass}`;
 }

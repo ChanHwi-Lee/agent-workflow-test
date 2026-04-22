@@ -70,6 +70,13 @@ export interface V6RenderedSvg {
   readonly outerHTML: string;
 }
 
+export interface V6RenderedElementLayout {
+  readonly clientWidth: number;
+  readonly clientHeight: number;
+  readonly scrollWidth: number;
+  readonly scrollHeight: number;
+}
+
 export interface V6RenderedElement {
   readonly serial: number;
   readonly path: string;
@@ -82,6 +89,7 @@ export interface V6RenderedElement {
   readonly svg: V6RenderedSvg | null;
   readonly hasChildren: boolean;
   readonly visible: boolean;
+  readonly layout?: V6RenderedElementLayout | null;
 }
 
 export interface V6ExtractionResult {
