@@ -17,6 +17,7 @@ export type V6RenderQualityIssueCode =
 export interface V6RenderQualityIssue {
   readonly code: V6RenderQualityIssueCode;
   readonly severity: "info" | "warn";
+  readonly blocking: boolean;
   readonly path: string;
   readonly tag: string;
   readonly message: string;
@@ -29,6 +30,7 @@ export interface V6RenderQualityMetrics {
   readonly textElementCount: number;
   readonly imageElementCount: number;
   readonly svgElementCount: number;
+  readonly blockingIssueCount: number;
   readonly hardGateCandidateCount: number;
   readonly offCanvasElementCount: number;
   readonly scrollOverflowElementCount: number;
@@ -45,6 +47,27 @@ export interface V6RenderQualityReport {
   readonly canvas: V6Canvas;
   readonly metrics: V6RenderQualityMetrics;
   readonly issues: ReadonlyArray<V6RenderQualityIssue>;
+  readonly blockingIssues: ReadonlyArray<V6RenderQualityIssue>;
+}
+
+export function formatV6RenderQualityRetryFeedback(
+  report: V6RenderQualityReport,
+): string {
+  if (report.blockingIssues.length === 0) {
+    return "No blocking render-quality issue was detected.";
+  }
+  const lines = report.blockingIssues.slice(0, 6).map((issue, index) => {
+    const metrics = Object.entries(issue.metrics)
+      .map(([key, value]) => `${key}=${String(value)}`)
+      .join(", ");
+    return `${index + 1}. ${issue.code} at path=${issue.path} tag=${issue.tag}; ${metrics}`;
+  });
+  return [
+    `Canvas: ${report.canvas.width}x${report.canvas.height}`,
+    "Blocking render-quality issues:",
+    ...lines,
+    "Fix only geometry/layout safety: root border-box must match canvas; visible text and images must stay inside canvas; visible text must not scroll/crop.",
+  ].join("\n");
 }
 
 const ROOT_TOLERANCE_PX = 2;
@@ -62,15 +85,15 @@ export function buildV6RenderQualityReport(
   let scrollOverflowElementCount = 0;
   let zeroAreaElementCount = 0;
   let highTextDensityElementCount = 0;
-  let hardGateCandidateCount = 0;
+  let blockingIssueCount = 0;
   let maxTextDensity = 0;
 
   const root = elements.find((el) => el.path === "0") ?? elements[0] ?? null;
   if (root && !rootMatchesCanvas(root.bounds, extraction.canvas)) {
-    hardGateCandidateCount += 1;
-    issues.push({
+    pushIssue(issues, {
       code: "root_bounds_mismatch",
       severity: "warn",
+      blocking: true,
       path: root.path,
       tag: root.tagName,
       message: "root element bounds do not match the canvas size",
@@ -83,14 +106,17 @@ export function buildV6RenderQualityReport(
         canvasHeight: extraction.canvas.height,
       },
     });
+    blockingIssueCount += 1;
   }
 
   for (const el of elements) {
     if (isZeroArea(el.bounds)) {
       zeroAreaElementCount += 1;
-      issues.push({
+      const blocking = isBlockingZeroAreaElement(el);
+      pushIssue(issues, {
         code: "zero_area_element",
-        severity: "info",
+        severity: blocking ? "warn" : "info",
+        blocking,
         path: el.path,
         tag: el.tagName,
         message: "element has zero-area bounds",
@@ -100,6 +126,7 @@ export function buildV6RenderQualityReport(
           visible: el.visible,
         },
       });
+      if (blocking) blockingIssueCount += 1;
     }
 
     if (!el.visible) continue;
@@ -107,33 +134,33 @@ export function buildV6RenderQualityReport(
     const outside = offCanvasAmounts(el.bounds, extraction.canvas);
     if (outside.total > OFF_CANVAS_TOLERANCE_PX) {
       offCanvasElementCount += 1;
-      if (isHardGateOffCanvasElement(el)) {
-        hardGateCandidateCount += 1;
-      }
-      issues.push({
+      const blocking = isBlockingOffCanvasElement(el);
+      pushIssue(issues, {
         code: offCanvasIssueCode(el),
         severity: "warn",
+        blocking,
         path: el.path,
         tag: el.tagName,
         message: "visible element extends outside the canvas",
         metrics: outside,
       });
+      if (blocking) blockingIssueCount += 1;
     }
 
     const overflow = scrollOverflowAmounts(el);
     if (overflow.total > SCROLL_OVERFLOW_TOLERANCE_PX) {
       scrollOverflowElementCount += 1;
-      if (el.isTextLeaf) {
-        hardGateCandidateCount += 1;
-      }
-      issues.push({
+      const blocking = isBlockingScrollOverflowElement(el);
+      pushIssue(issues, {
         code: "scroll_overflow",
         severity: "warn",
+        blocking,
         path: el.path,
         tag: el.tagName,
         message: "element scroll size exceeds client size",
         metrics: overflow,
       });
+      if (blocking) blockingIssueCount += 1;
     }
 
     if (el.isTextLeaf && el.text) {
@@ -141,9 +168,10 @@ export function buildV6RenderQualityReport(
       maxTextDensity = Math.max(maxTextDensity, density);
       if (density > HIGH_TEXT_DENSITY_THRESHOLD) {
         highTextDensityElementCount += 1;
-        issues.push({
+        pushIssue(issues, {
           code: "high_text_density",
           severity: "info",
+          blocking: false,
           path: el.path,
           tag: el.tagName,
           message: "text density is high for the measured width",
@@ -158,12 +186,13 @@ export function buildV6RenderQualityReport(
       }
     }
   }
+  const blockingIssues = issues.filter((issue) => issue.blocking);
 
   return {
     version: 1,
     status: "observed",
     passed: true,
-    hardGateCandidate: hardGateCandidateCount > 0,
+    hardGateCandidate: blockingIssues.length > 0,
     canvas: extraction.canvas,
     metrics: {
       elementCount: elements.length,
@@ -171,7 +200,8 @@ export function buildV6RenderQualityReport(
       textElementCount: visible.filter((el) => el.isTextLeaf && el.text).length,
       imageElementCount: visible.filter((el) => el.tagName === "img").length,
       svgElementCount: visible.filter((el) => el.tagName === "svg").length,
-      hardGateCandidateCount,
+      blockingIssueCount,
+      hardGateCandidateCount: blockingIssueCount,
       offCanvasElementCount,
       scrollOverflowElementCount,
       zeroAreaElementCount,
@@ -179,6 +209,7 @@ export function buildV6RenderQualityReport(
       maxTextDensity: round(maxTextDensity),
     },
     issues,
+    blockingIssues,
   };
 }
 
@@ -220,8 +251,23 @@ function offCanvasIssueCode(el: V6RenderedElement): V6RenderQualityIssueCode {
   return "off_canvas_element";
 }
 
-function isHardGateOffCanvasElement(el: V6RenderedElement): boolean {
+function isBlockingOffCanvasElement(el: V6RenderedElement): boolean {
   return el.isTextLeaf || el.tagName === "img";
+}
+
+function isBlockingScrollOverflowElement(el: V6RenderedElement): boolean {
+  return el.isTextLeaf;
+}
+
+function isBlockingZeroAreaElement(el: V6RenderedElement): boolean {
+  return el.tagName === "img";
+}
+
+function pushIssue(
+  issues: V6RenderQualityIssue[],
+  issue: V6RenderQualityIssue,
+): void {
+  issues.push(issue);
 }
 
 function scrollOverflowAmounts(el: V6RenderedElement) {

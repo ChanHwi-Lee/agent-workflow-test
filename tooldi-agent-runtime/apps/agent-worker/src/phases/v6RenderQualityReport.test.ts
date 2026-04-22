@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildV6RenderQualityReport } from "./v6RenderQualityReport.js";
+import {
+  buildV6RenderQualityReport,
+  formatV6RenderQualityRetryFeedback,
+} from "./v6RenderQualityReport.js";
 import type {
   V6ExtractionResult,
   V6RenderedElement,
@@ -89,6 +92,8 @@ test("렌더 품질 리포트는 정상 루트와 텍스트를 통과 관측 상
   assert.equal(report.metrics.elementCount, 2);
   assert.equal(report.metrics.textElementCount, 1);
   assert.equal(report.hardGateCandidate, false);
+  assert.equal(report.blockingIssues.length, 0);
+  assert.equal(report.metrics.blockingIssueCount, 0);
   assert.equal(report.metrics.hardGateCandidateCount, 0);
   assert.equal(report.metrics.offCanvasElementCount, 0);
   assert.equal(report.metrics.scrollOverflowElementCount, 0);
@@ -113,6 +118,8 @@ test("렌더 품질 리포트는 캔버스 밖 텍스트와 스크롤 오버플�
   assert.equal(report.metrics.offCanvasElementCount, 1);
   assert.equal(report.metrics.scrollOverflowElementCount, 1);
   assert.equal(report.hardGateCandidate, true);
+  assert.equal(report.blockingIssues.length, 2);
+  assert.equal(report.metrics.blockingIssueCount, 2);
   assert.equal(report.metrics.hardGateCandidateCount, 2);
   assert.equal(
     report.issues.some((issue) => issue.code === "off_canvas_text"),
@@ -140,6 +147,8 @@ test("렌더 품질 리포트는 root border-box가 canvas보다 크면 hard gat
   );
 
   assert.equal(report.hardGateCandidate, true);
+  assert.equal(report.blockingIssues.length, 1);
+  assert.equal(report.metrics.blockingIssueCount, 1);
   assert.equal(report.metrics.hardGateCandidateCount, 1);
   assert.equal(
     report.issues.some((issue) => issue.code === "root_bounds_mismatch"),
@@ -164,9 +173,55 @@ test("렌더 품질 리포트는 svg off-canvas를 hard gate 후보로 승격하
 
   assert.equal(report.metrics.offCanvasElementCount, 1);
   assert.equal(report.hardGateCandidate, false);
+  assert.equal(report.blockingIssues.length, 0);
+  assert.equal(report.metrics.blockingIssueCount, 0);
   assert.equal(report.metrics.hardGateCandidateCount, 0);
   assert.equal(
     report.issues.some((issue) => issue.code === "off_canvas_element"),
     true,
   );
+});
+
+test("렌더 품질 리포트는 0 크기 이미지를 blocking issue로 표시한다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.0",
+        tagName: "img",
+        bounds: { left: 400, top: 120, width: 0, height: 0 },
+        img: { src: "placeholder://dog", naturalWidth: 0, naturalHeight: 0, alt: "" },
+        visible: false,
+        layout: { clientWidth: 0, clientHeight: 0, scrollWidth: 0, scrollHeight: 0 },
+      }),
+    ]),
+  );
+
+  assert.equal(report.hardGateCandidate, true);
+  assert.equal(report.blockingIssues.length, 1);
+  assert.equal(report.blockingIssues[0]?.code, "zero_area_element");
+});
+
+test("렌더 품질 재시도 피드백은 geometry 정보만 요약한다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.0",
+        tagName: "h1",
+        bounds: { left: -12, top: 40, width: 120, height: 80 },
+        isTextLeaf: true,
+        text: "이 텍스트 내용은 피드백에 들어가면 안 된다",
+        layout: { clientWidth: 120, clientHeight: 80, scrollWidth: 220, scrollHeight: 120 },
+      }),
+    ]),
+  );
+
+  const feedback = formatV6RenderQualityRetryFeedback(report);
+  assert.match(feedback, /off_canvas_text/);
+  assert.match(feedback, /scroll_overflow/);
+  assert.match(feedback, /path=0\.0/);
+  assert.doesNotMatch(feedback, /이 텍스트 내용/);
 });

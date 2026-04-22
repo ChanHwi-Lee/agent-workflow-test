@@ -211,6 +211,21 @@ test("buildV6UserMessage는 레이아웃 예산용 copy load 요약을 포함한
   assert.match(msg, /Do not render these metrics as visible copy/i);
 });
 
+test("buildV6UserMessage는 재시도용 렌더 품질 피드백을 보이지 않는 지시로 포함한다", () => {
+  const msg = buildV6UserMessage({
+    canvasWidth: 1200,
+    canvasHeight: 628,
+    userPrompt: "강아지 쿨매트 배너",
+    renderQualityFeedback:
+      "1. root_bounds_mismatch at path=0 tag=div; width=1360, canvasWidth=1200",
+  });
+
+  assert.match(msg, /Previous render-quality failure to fix/);
+  assert.match(msg, /root_bounds_mismatch/);
+  assert.match(msg, /geometry only/);
+  assert.match(msg, /Do not add semantic roles/);
+});
+
 test("buildV6UserMessage — appends optional trend context as execution-oriented visual input", () => {
   const msg = buildV6UserMessage({
     canvasWidth: 1080,

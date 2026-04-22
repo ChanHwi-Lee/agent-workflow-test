@@ -23,6 +23,11 @@ import type {
   V6PipelineDependencies,
   V6PipelineResult,
 } from "../phases/v6Pipeline.js";
+import { V6RenderQualityError } from "../phases/v6Pipeline.js";
+import {
+  formatV6RenderQualityRetryFeedback,
+  type V6RenderQualityReport,
+} from "../phases/v6RenderQualityReport.js";
 import type { V6Canvas } from "../phases/v6Types.js";
 import { buildHeartbeatBase } from "./graphHelpers.js";
 import { shouldStopAfterCurrentAction } from "./nodeUtils.js";
@@ -63,6 +68,7 @@ export function createProductionV6Dependencies(
           canvasHeight: args.canvasHeight,
           userPrompt: args.userPrompt,
           trendContext: args.trendContext ?? null,
+          renderQualityFeedback: args.renderQualityFeedback ?? null,
           ...(options.claudeCodeModel
             ? { model: options.claudeCodeModel }
             : {}),
@@ -80,6 +86,7 @@ export function createProductionV6Dependencies(
         canvasHeight: args.canvasHeight,
         userPrompt: args.userPrompt,
         trendContext: args.trendContext ?? null,
+        renderQualityFeedback: args.renderQualityFeedback ?? null,
         apiKey: args.apiKey,
       });
     },
@@ -102,6 +109,19 @@ export interface V6SyntheticPlanArgs {
   operationFamily: ExecutablePlan["intent"]["operationFamily"];
   artifactType: string;
   commands: ReadonlyArray<CreateLayerCommand>;
+}
+
+interface PersistRenderQualityFailureArgs {
+  readonly runId: string;
+  readonly traceId: string;
+  readonly queueJobId: string;
+  readonly attemptSeq: number;
+  readonly generationAttempt: number;
+  readonly model: string;
+  readonly html: string;
+  readonly canvasWidth: number;
+  readonly canvasHeight: number;
+  readonly report: V6RenderQualityReport;
 }
 
 export function buildV6SyntheticPlan(args: V6SyntheticPlanArgs): ExecutablePlan {
@@ -222,6 +242,55 @@ export function registerV6PipelineNode(
     const userPrompt = state.hydrated.request.userInput.prompt;
     const canvasWidth = state.hydrated.request.editorContext.canvasWidth;
     const canvasHeight = state.hydrated.request.editorContext.canvasHeight;
+    const persistRenderQualityFailure = async (
+      args: PersistRenderQualityFailureArgs,
+    ): Promise<string> => {
+      const reportRef = await persistArtifactTask(
+        `runs/${args.runId}/attempts/${args.attemptSeq}/v6-render-quality-report-attempt-${args.generationAttempt}.json`,
+        args.report,
+        {
+          artifactKind: "v6-render-quality-report",
+          runId: args.runId,
+          traceId: args.traceId,
+          attemptSeq: String(args.attemptSeq),
+          generationAttempt: String(args.generationAttempt),
+        },
+      );
+      await persistArtifactTask(
+        `runs/${args.runId}/attempts/${args.attemptSeq}/v6-render-quality-failure-attempt-${args.generationAttempt}.json`,
+        {
+          generationAttempt: args.generationAttempt,
+          model: args.model,
+          html: args.html,
+          canvasWidth: args.canvasWidth,
+          canvasHeight: args.canvasHeight,
+          blockingIssues: args.report.blockingIssues,
+          reportRef,
+        },
+        {
+          artifactKind: "v6-render-quality-failure",
+          runId: args.runId,
+          traceId: args.traceId,
+          attemptSeq: String(args.attemptSeq),
+          generationAttempt: String(args.generationAttempt),
+        },
+      );
+      const failEvent = await appendEventTask(args.runId, {
+        traceId: args.traceId,
+        attempt: args.attemptSeq,
+        queueJobId: args.queueJobId,
+        event: {
+          type: "log",
+          level: "warn",
+          message:
+            `[v6-render-quality] blocking generationAttempt=${args.generationAttempt} ` +
+            `ref=${reportRef} issues=${args.report.issues.length} ` +
+            `blocking=${args.report.blockingIssues.length}`,
+        },
+      });
+      cooperativeStopRequested ||= failEvent.cancelRequested;
+      return reportRef;
+    };
 
     // Bind the browser supplier into renderAndExtract for this run. Keeping
     // the browser lifetime inside the node (vs. caller) makes the node
@@ -246,17 +315,76 @@ export function registerV6PipelineNode(
           ? state.v6TrendBrief?.contextForHtmlGen ?? null
           : null;
 
-      v6Result = await runV6Pipeline(
-        {
+      const pipelineInput = {
+        runId: state.job.runId,
+        canvasWidth,
+        canvasHeight,
+        userPrompt,
+        trendContext,
+        apiKey: apiKey ?? "",
+      };
+
+      try {
+        v6Result = await runV6Pipeline(pipelineInput, boundDeps);
+      } catch (error) {
+        if (!(error instanceof V6RenderQualityError)) {
+          throw error;
+        }
+
+        await persistRenderQualityFailure({
           runId: state.job.runId,
+          traceId: state.job.traceId,
+          queueJobId: state.job.queueJobId,
+          attemptSeq: state.job.attemptSeq,
+          generationAttempt: 1,
+          model: error.model,
+          html: error.html,
           canvasWidth,
           canvasHeight,
-          userPrompt,
-          trendContext,
-          apiKey: apiKey ?? "",
-        },
-        boundDeps,
-      );
+          report: error.report,
+        });
+        const retryEvent = await appendEventTask(state.job.runId, {
+          traceId: state.job.traceId,
+          attempt: state.job.attemptSeq,
+          queueJobId: state.job.queueJobId,
+          event: {
+            type: "log",
+            level: "warn",
+            message:
+              `[v6-render-quality] retrying generation after blocking issues ` +
+              `blocking=${error.blockingIssues.length}`,
+          },
+        });
+        cooperativeStopRequested ||= retryEvent.cancelRequested;
+
+        try {
+          v6Result = await runV6Pipeline(
+            {
+              ...pipelineInput,
+              renderQualityFeedback: formatV6RenderQualityRetryFeedback(
+                error.report,
+              ),
+            },
+            boundDeps,
+          );
+        } catch (retryError) {
+          if (retryError instanceof V6RenderQualityError) {
+            await persistRenderQualityFailure({
+              runId: state.job.runId,
+              traceId: state.job.traceId,
+              queueJobId: state.job.queueJobId,
+              attemptSeq: state.job.attemptSeq,
+              generationAttempt: 2,
+              model: retryError.model,
+              html: retryError.html,
+              canvasWidth,
+              canvasHeight,
+              report: retryError.report,
+            });
+          }
+          throw retryError;
+        }
+      }
     } finally {
       if (browserHandle.current) {
         try {

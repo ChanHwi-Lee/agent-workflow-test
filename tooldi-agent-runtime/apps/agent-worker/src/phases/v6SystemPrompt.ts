@@ -73,6 +73,7 @@ export interface V6UserInput {
   readonly canvasHeight: number;
   readonly userPrompt: string;
   readonly trendContext?: string | null;
+  readonly renderQualityFeedback?: string | null;
 }
 
 /**
@@ -83,6 +84,7 @@ export interface V6UserInput {
  */
 export function buildV6UserMessage(input: V6UserInput): string {
   const trendContext = input.trendContext?.trim();
+  const renderQualityFeedback = input.renderQualityFeedback?.trim();
   const copyLoadSummary = buildCopyLoadSummary(input.userPrompt);
   const trendBlock = trendContext
     ? `
@@ -94,6 +96,14 @@ Use the trend context as a design execution brief, not as copy. Preserve the use
 When trend context is present, do not stop at palette/decoration. Apply it through concrete visual choices: product/hero imagery, material or sensory texture, dimensional layering, motif shapes, and typography hierarchy.
 Do not mention sources, citations, research notes, or trend names in the visible design copy.`
     : "";
+  const retryBlock = renderQualityFeedback
+    ? `
+
+Previous render-quality failure to fix (geometry only; do not render this text):
+${renderQualityFeedback}
+
+Regenerate the full HTML from scratch. Keep the same user facts and copy, but fix the listed geometry failures. Do not add semantic roles, classes, data attributes, or explanatory text.`
+    : "";
 
   return `Canvas: ${input.canvasWidth}px × ${input.canvasHeight}px.
 
@@ -101,7 +111,7 @@ User request:
 ${input.userPrompt.trim()}
 
 Copy load for layout budgeting (do not render these metrics as visible copy):
-${copyLoadSummary}${trendBlock}`;
+${copyLoadSummary}${trendBlock}${retryBlock}`;
 }
 
 function buildCopyLoadSummary(userPrompt: string): string {

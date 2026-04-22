@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   V6EmptyCommandsError,
   V6HtmlValidationError,
+  V6RenderQualityError,
   runV6Pipeline,
 } from "./v6Pipeline.js";
 import type {
@@ -57,6 +58,40 @@ const FAKE_GEN_RESULT: V6HtmlGenResult = {
 const FAKE_EXTRACTION: V6ExtractionResult = {
   canvas: { width: 1200, height: 628 },
   elements: [],
+};
+
+const BLOCKING_EXTRACTION: V6ExtractionResult = {
+  canvas: { width: 1200, height: 628 },
+  elements: [
+    {
+      serial: 0,
+      path: "0",
+      tagName: "div",
+      bounds: { left: 0, top: 0, width: 1200, height: 628 },
+      style: {} as V6ExtractionResult["elements"][number]["style"],
+      isTextLeaf: false,
+      text: null,
+      img: null,
+      svg: null,
+      hasChildren: true,
+      visible: true,
+      layout: { clientWidth: 1200, clientHeight: 628, scrollWidth: 1200, scrollHeight: 628 },
+    },
+    {
+      serial: 1,
+      path: "0.0",
+      tagName: "h1",
+      bounds: { left: -16, top: 40, width: 240, height: 80 },
+      style: {} as V6ExtractionResult["elements"][number]["style"],
+      isTextLeaf: true,
+      text: "봄 세일 이벤트",
+      img: null,
+      svg: null,
+      hasChildren: false,
+      visible: true,
+      layout: { clientWidth: 240, clientHeight: 80, scrollWidth: 240, scrollHeight: 80 },
+    },
+  ],
 };
 
 const FAKE_COMMAND: V6RectCommand = {
@@ -149,6 +184,29 @@ test("runV6Pipeline — passes optional trend context only to HTML generation", 
   );
 });
 
+test("runV6Pipeline은 렌더 품질 재시도 피드백을 HTML generation에 전달한다", async () => {
+  let observedFeedback: string | null | undefined;
+  const deps = makeDeps({
+    generateHtml: async (args) => {
+      observedFeedback = args.renderQualityFeedback;
+      return FAKE_GEN_RESULT;
+    },
+  });
+
+  await runV6Pipeline(
+    makeInput({
+      renderQualityFeedback:
+        "1. off_canvas_text at path=0.1 tag=h1; left=16",
+    }),
+    deps,
+  );
+
+  assert.equal(
+    observedFeedback,
+    "1. off_canvas_text at path=0.1 tag=h1; left=16",
+  );
+});
+
 test("runV6Pipeline — throws V6HtmlValidationError when validation fails; skips render and map", async () => {
   let renderCalled = false;
   let mapCalled = false;
@@ -198,6 +256,30 @@ test("runV6Pipeline — throws V6EmptyCommandsError when mapper returns 0 comman
       return true;
     },
   );
+});
+
+test("runV6Pipeline은 렌더 품질 blocking issue가 있으면 primitive map 전에 실패한다", async () => {
+  let mapCalled = false;
+  const deps = makeDeps({
+    renderAndExtract: async () => BLOCKING_EXTRACTION,
+    mapElements: () => {
+      mapCalled = true;
+      return { canvas: BLOCKING_EXTRACTION.canvas, commands: [FAKE_COMMAND] };
+    },
+  });
+
+  await assert.rejects(
+    () => runV6Pipeline(makeInput(), deps),
+    (err: unknown) => {
+      assert.ok(err instanceof V6RenderQualityError);
+      assert.equal(err.html, FAKE_HTML);
+      assert.equal(err.blockingIssues.length, 1);
+      assert.equal(err.blockingIssues[0]?.code, "off_canvas_text");
+      assert.equal(err.report.hardGateCandidate, true);
+      return true;
+    },
+  );
+  assert.equal(mapCalled, false, "map should not run when render quality gate fails");
 });
 
 test("runV6Pipeline — propagates generator errors (e.g. API failure)", async () => {

@@ -16,6 +16,7 @@ export interface V6HtmlGenOptions {
   readonly canvasHeight: number;
   readonly userPrompt: string;
   readonly trendContext?: string | null;
+  readonly renderQualityFeedback?: string | null;
   readonly apiKey: string;
   readonly model?: string;
   readonly temperature?: number;
@@ -71,6 +72,7 @@ export async function runV6HtmlGen(
     canvasHeight: options.canvasHeight,
     userPrompt: options.userPrompt,
     trendContext: options.trendContext ?? null,
+    renderQualityFeedback: options.renderQualityFeedback ?? null,
   });
 
   const url = `${GEMINI_REST_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(options.apiKey)}`;

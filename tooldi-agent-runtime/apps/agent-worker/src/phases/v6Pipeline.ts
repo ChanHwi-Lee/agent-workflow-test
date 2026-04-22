@@ -28,6 +28,7 @@ import type {
 } from "./v6Types.js";
 import {
   buildV6RenderQualityReport,
+  type V6RenderQualityIssue,
   type V6RenderQualityReport,
 } from "./v6RenderQualityReport.js";
 
@@ -37,6 +38,7 @@ export interface V6PipelineInput {
   readonly canvasHeight: number;
   readonly userPrompt: string;
   readonly trendContext?: string | null;
+  readonly renderQualityFeedback?: string | null;
   readonly apiKey: string;
 }
 
@@ -46,6 +48,7 @@ export interface V6PipelineDependencies {
     canvasHeight: number;
     userPrompt: string;
     trendContext?: string | null;
+    renderQualityFeedback?: string | null;
     apiKey: string;
   }) => Promise<V6HtmlGenResult>;
   readonly validateHtml: (html: string) => V6HtmlValidationResult;
@@ -105,6 +108,35 @@ export class V6EmptyCommandsError extends Error {
   }
 }
 
+export class V6RenderQualityError extends Error {
+  readonly html: string;
+  readonly extraction: V6ExtractionResult;
+  readonly report: V6RenderQualityReport;
+  readonly blockingIssues: ReadonlyArray<V6RenderQualityIssue>;
+  readonly model: string;
+
+  constructor(
+    html: string,
+    extraction: V6ExtractionResult,
+    report: V6RenderQualityReport,
+    model: string,
+  ) {
+    const summary = report.blockingIssues
+      .slice(0, 3)
+      .map((issue) => `${issue.code}:${issue.path}`)
+      .join("; ");
+    super(
+      `v6 render quality gate failed (${report.blockingIssues.length} blocking issue${report.blockingIssues.length === 1 ? "" : "s"}): ${summary}`,
+    );
+    this.name = "V6RenderQualityError";
+    this.html = html;
+    this.extraction = extraction;
+    this.report = report;
+    this.blockingIssues = report.blockingIssues;
+    this.model = model;
+  }
+}
+
 export async function runV6Pipeline(
   input: V6PipelineInput,
   deps: V6PipelineDependencies,
@@ -116,6 +148,7 @@ export async function runV6Pipeline(
     canvasHeight: input.canvasHeight,
     userPrompt: input.userPrompt,
     trendContext: input.trendContext ?? null,
+    renderQualityFeedback: input.renderQualityFeedback ?? null,
     apiKey: input.apiKey,
   });
   const html = genResult.html;
@@ -132,6 +165,14 @@ export async function runV6Pipeline(
   });
   const renderMs = Date.now() - renderStart;
   const renderQualityReport = buildV6RenderQualityReport(extraction);
+  if (renderQualityReport.blockingIssues.length > 0) {
+    throw new V6RenderQualityError(
+      html,
+      extraction,
+      renderQualityReport,
+      genResult.model,
+    );
+  }
 
   const mapping = deps.mapElements(extraction);
   if (mapping.commands.length === 0) {

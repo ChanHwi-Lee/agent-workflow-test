@@ -15,6 +15,7 @@ export interface V6ClaudeCodeHtmlGenOptions {
   readonly canvasHeight: number;
   readonly userPrompt: string;
   readonly trendContext?: string | null;
+  readonly renderQualityFeedback?: string | null;
   readonly model?: string;
   readonly effort?: "low" | "medium" | "high" | "xhigh" | "max";
   readonly timeoutMs?: number;
@@ -36,6 +37,7 @@ export async function runV6ClaudeCodeHtmlGen(
     canvasHeight: options.canvasHeight,
     userPrompt: options.userPrompt,
     trendContext: options.trendContext ?? null,
+    renderQualityFeedback: options.renderQualityFeedback ?? null,
   });
 
   const { stdout, stderr, exitCode, timedOut, latencyMs } = await runClaudeCodeText({

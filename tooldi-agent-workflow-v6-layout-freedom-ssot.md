@@ -133,12 +133,13 @@ v6는 2026-04-21 실행된 다음 실증에 근거한다.
 - **출력**: `V6RenderQualityReport` — root/canvas mismatch, off-canvas, scroll overflow, zero-area, text density 등의 닫힌 failure mode 목록.
 - **닫힌 축**:
   - primitive type: `text`, `image`, `bitmap`, `svg`, `rect` (Stage 3 primitive table 과 동일, 하위 분류 금지)
-  - failure mode: `root_bounds_mismatch`, `off_canvas_*`, `scroll_overflow`, `zero_area`, `count_zero`, `high_text_density`
+  - failure mode: `root_bounds_mismatch`, `off_canvas_*`, `scroll_overflow`, `zero_area`, `high_text_density`
 - **정책 원칙**:
   - hard gate 후보는 root bounds mismatch, visible text/image loss, visible text scroll overflow 처럼 정보 손실 위험이 큰 정적 primitive 정책으로만 정한다.
   - `rect/svg` off-canvas bleed 는 의미를 추정하지 않고 warning 으로 둔다. "장식이라서"가 아니라 해당 primitive type 전체에 동일한 loss tolerance 를 적용하는 정책이다.
   - 텍스트 내용, 이미지 src hint, class name, 부모/자식 DOM 역할, 도메인/intent, layout family 를 검사하지 않는다.
-- **현재 상태**: Phase P0/P0.1 에서는 관측 artifact 와 `hardGateCandidate` 플래그만 남기며 run 을 실패시키지 않는다. hard gate / attempt-level regeneration 은 별도 SSOT 개정 후 적용한다.
+- **현재 상태**: `V6RenderQualityReport` 는 관측 artifact 를 남기고, blocking issue 가 있으면 첫 생성 결과를 폐기한 뒤 geometry-only feedback 으로 Stage 1 을 1회 재시도한다. 두 번째 생성도 blocking issue 를 남기면 primitive mapping 전 run 을 실패시킨다.
+  - `count_zero` 는 Stage 3 의 `V6EmptyCommandsError` 로 별도 처리한다.
 
 ### Stage 3 — Primitive Map + Command Adapter + SSE Envelope
 
