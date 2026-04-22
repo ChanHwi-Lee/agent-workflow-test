@@ -35,20 +35,27 @@ import type {
 export function mapRenderedElements(
   extraction: V6ExtractionResult,
 ): V6MappingResult {
+  const context = buildMappingContext(extraction.elements);
   const commands: V6PrimitiveCommand[] = [];
   for (const el of extraction.elements) {
-    for (const cmd of mapElement(el, extraction.canvas)) commands.push(cmd);
+    for (const cmd of mapElement(el, extraction.canvas, context)) commands.push(cmd);
   }
   return { canvas: extraction.canvas, commands };
+}
+
+interface MappingContext {
+  readonly clipRadiusByPath: ReadonlyMap<string, V6BorderRadius>;
+  readonly elementByPath: ReadonlyMap<string, V6RenderedElement>;
 }
 
 function mapElement(
   el: V6RenderedElement,
   canvas: V6Canvas,
+  context: MappingContext,
 ): V6PrimitiveCommand[] {
   if (!el.visible) return [];
   if (el.tagName === "svg") return [buildSvg(el)];
-  if (el.tagName === "img") return [buildImage(el)];
+  if (el.tagName === "img") return [buildImage(el, context)];
 
   const out: V6PrimitiveCommand[] = [];
   if (hasVisiblePaint(el)) out.push(buildRect(el));
@@ -189,7 +196,10 @@ function clampBoundsToCanvas(
   };
 }
 
-function buildImage(el: V6RenderedElement): V6PrimitiveCommand {
+function buildImage(
+  el: V6RenderedElement,
+  context: MappingContext,
+): V6PrimitiveCommand {
   const img = el.img;
   if (!img) {
     throw new Error(
@@ -208,7 +218,7 @@ function buildImage(el: V6RenderedElement): V6PrimitiveCommand {
     naturalWidth: img.naturalWidth,
     naturalHeight: img.naturalHeight,
     objectFit: el.style.objectFit,
-    borderRadius: pickBorderRadius(el),
+    borderRadius: pickImageBorderRadius(el, context),
     alt: img.alt,
   };
   return transform ? { ...cmd, transform } : cmd;
@@ -236,6 +246,22 @@ function buildSvg(el: V6RenderedElement): V6PrimitiveCommand {
 
 // --------- style helpers ---------
 
+function buildMappingContext(
+  elements: ReadonlyArray<V6RenderedElement>,
+): MappingContext {
+  const clipRadiusByPath = new Map<string, V6BorderRadius>();
+  const elementByPath = new Map<string, V6RenderedElement>();
+  for (const el of elements) {
+    elementByPath.set(el.path, el);
+    if (!el.visible || !hasClippingOverflow(el)) continue;
+    const radius = pickBorderRadius(el);
+    if (!isZeroBorderRadius(radius)) {
+      clipRadiusByPath.set(el.path, radius);
+    }
+  }
+  return { clipRadiusByPath, elementByPath };
+}
+
 function hasVisiblePaint(el: V6RenderedElement): boolean {
   const bg = parseColor(el.style.backgroundColor);
   if (bg && bg.alpha > 0) return true;
@@ -254,6 +280,13 @@ function hasVisiblePaint(el: V6RenderedElement): boolean {
   return false;
 }
 
+function hasClippingOverflow(el: V6RenderedElement): boolean {
+  const overflow = el.style.overflow
+    .split(/\s+/)
+    .map((value) => value.trim().toLowerCase());
+  return overflow.includes("hidden") || overflow.includes("clip");
+}
+
 function pickFill(el: V6RenderedElement): V6Fill {
   const grad = parseLinearGradient(el.style.backgroundImage);
   if (grad) return grad;
@@ -269,12 +302,64 @@ function pickStroke(el: V6RenderedElement): V6Stroke | null {
 }
 
 function pickBorderRadius(el: V6RenderedElement): V6BorderRadius {
-  const tl = parsePx(el.style.borderTopLeftRadius) ?? 0;
-  const tr = parsePx(el.style.borderTopRightRadius) ?? 0;
-  const br = parsePx(el.style.borderBottomRightRadius) ?? 0;
-  const bl = parsePx(el.style.borderBottomLeftRadius) ?? 0;
+  const tl = parseRadiusPx(el.style.borderTopLeftRadius, el.bounds) ?? 0;
+  const tr = parseRadiusPx(el.style.borderTopRightRadius, el.bounds) ?? 0;
+  const br = parseRadiusPx(el.style.borderBottomRightRadius, el.bounds) ?? 0;
+  const bl = parseRadiusPx(el.style.borderBottomLeftRadius, el.bounds) ?? 0;
   if (tl === tr && tr === br && br === bl) return tl;
   return [tl, tr, br, bl];
+}
+
+function pickImageBorderRadius(
+  el: V6RenderedElement,
+  context: MappingContext,
+): V6BorderRadius {
+  const selfRadius = pickBorderRadius(el);
+  if (!isZeroBorderRadius(selfRadius)) return selfRadius;
+
+  const parentClip = findSameBoundsAncestorClip(el, context);
+  return parentClip ?? selfRadius;
+}
+
+function findSameBoundsAncestorClip(
+  el: V6RenderedElement,
+  context: MappingContext,
+): V6BorderRadius | null {
+  for (const ancestorPath of ancestorPaths(el.path)) {
+    const clipRadius = context.clipRadiusByPath.get(ancestorPath);
+    if (!clipRadius) continue;
+    const ancestor = context.elementByPath.get(ancestorPath);
+    if (ancestor && sameBounds(ancestor.bounds, el.bounds)) return clipRadius;
+  }
+  return null;
+}
+
+function ancestorPaths(path: string): string[] {
+  const parts = path.split(".");
+  const out: string[] = [];
+  for (let i = parts.length - 1; i > 0; i -= 1) {
+    out.push(parts.slice(0, i).join("."));
+  }
+  return out;
+}
+
+function sameBounds(
+  a: V6RenderedElement["bounds"],
+  b: V6RenderedElement["bounds"],
+): boolean {
+  const tolerance = 2;
+  return (
+    Math.abs(a.left - b.left) <= tolerance &&
+    Math.abs(a.top - b.top) <= tolerance &&
+    Math.abs(a.width - b.width) <= tolerance &&
+    Math.abs(a.height - b.height) <= tolerance
+  );
+}
+
+function isZeroBorderRadius(radius: V6BorderRadius): boolean {
+  return Array.isArray(radius)
+    ? radius.every((value) => value === 0)
+    : radius === 0;
 }
 
 function classifyImage(src: string): "image" | "bitmap" {
@@ -293,6 +378,30 @@ function parsePx(s: string): number | null {
   if (!s || s === "normal" || s === "auto" || s === "none") return null;
   const m = /^(-?\d+(?:\.\d+)?)px$/.exec(s);
   return m && m[1] !== undefined ? parseFloat(m[1]) : null;
+}
+
+function parseRadiusPx(
+  s: string,
+  bounds: V6RenderedElement["bounds"],
+): number | null {
+  if (!s || s === "normal" || s === "auto" || s === "none") return null;
+  const tokens = s.split(/\s+/).filter(Boolean);
+  const x = parseLengthOrPercentPx(tokens[0] ?? "", bounds.width);
+  const y = parseLengthOrPercentPx(tokens[1] ?? tokens[0] ?? "", bounds.height);
+  if (x === null && y === null) return null;
+  if (x === null) return y;
+  if (y === null) return x;
+  return round(Math.min(x, y));
+}
+
+function parseLengthOrPercentPx(token: string, axisSize: number): number | null {
+  const px = /^(-?\d+(?:\.\d+)?)px$/.exec(token);
+  if (px?.[1] !== undefined) return parseFloat(px[1]);
+  const pct = /^(-?\d+(?:\.\d+)?)%$/.exec(token);
+  if (pct?.[1] !== undefined) {
+    return (Math.max(0, axisSize) * parseFloat(pct[1])) / 100;
+  }
+  return null;
 }
 
 function parseOpacity(s: string): number {

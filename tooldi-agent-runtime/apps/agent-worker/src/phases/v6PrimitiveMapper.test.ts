@@ -304,6 +304,135 @@ test("mapRenderedElements — borderRadius returns tuple when corners differ", (
   assert.deepEqual(rect.borderRadius, [4, 8, 12, 16]);
 });
 
+test("mapRenderedElements — 퍼센트 borderRadius를 bounds 기준 px radius로 정규화한다", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        bounds: { left: 670, top: 89, width: 450, height: 450 },
+        style: {
+          backgroundColor: "rgb(255, 255, 255)",
+          borderTopLeftRadius: "50%",
+          borderTopRightRadius: "50%",
+          borderBottomRightRadius: "50%",
+          borderBottomLeftRadius: "50%",
+        },
+      }),
+    ),
+  );
+  const rect = result.commands[0] as V6RectCommand;
+  assert.equal(rect.borderRadius, 225);
+});
+
+test("mapRenderedElements — 이미지 퍼센트 borderRadius도 px radius로 보존한다", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        tagName: "img",
+        bounds: { left: 695, top: 114, width: 400, height: 400 },
+        img: {
+          src: "placeholder://cute-dog-on-cooling-mat",
+          naturalWidth: 1,
+          naturalHeight: 1,
+          alt: "cute dog on cooling mat",
+        },
+        style: {
+          objectFit: "cover",
+          borderTopLeftRadius: "50%",
+          borderTopRightRadius: "50%",
+          borderBottomRightRadius: "50%",
+          borderBottomLeftRadius: "50%",
+        },
+      }),
+    ),
+  );
+  const image = result.commands[0] as V6ImageCommand;
+  assert.equal(image.primitive, "bitmap");
+  assert.equal(image.objectFit, "cover");
+  assert.equal(image.borderRadius, 200);
+});
+
+test("mapRenderedElements — 같은 bounds의 rounded overflow 부모 clip을 이미지 radius로 반영한다", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        serial: 1,
+        path: "0.2.0",
+        bounds: { left: 695, top: 114, width: 410, height: 410 },
+        style: {
+          backgroundColor: "rgb(225, 245, 254)",
+          borderTopLeftRadius: "50%",
+          borderTopRightRadius: "50%",
+          borderBottomRightRadius: "50%",
+          borderBottomLeftRadius: "50%",
+          overflow: "hidden",
+        },
+      }),
+      el({
+        serial: 2,
+        path: "0.2.0.0",
+        tagName: "img",
+        bounds: { left: 695, top: 114, width: 410, height: 410 },
+        img: {
+          src: "placeholder://happy-dog-on-cooling-mat",
+          naturalWidth: 1,
+          naturalHeight: 1,
+          alt: "happy dog on cooling mat",
+        },
+        style: {
+          objectFit: "cover",
+        },
+      }),
+    ),
+  );
+
+  const image = result.commands.find(
+    (cmd): cmd is V6ImageCommand => cmd.primitive === "bitmap",
+  );
+  assert.ok(image, "expected a bitmap command");
+  assert.equal(image.borderRadius, 205);
+});
+
+test("mapRenderedElements — bounds가 다른 부모 clip은 이미지 radius로 추정하지 않는다", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        serial: 1,
+        path: "0.2",
+        bounds: { left: 670, top: 89, width: 450, height: 450 },
+        style: {
+          backgroundColor: "rgb(255, 255, 255)",
+          borderTopLeftRadius: "50%",
+          borderTopRightRadius: "50%",
+          borderBottomRightRadius: "50%",
+          borderBottomLeftRadius: "50%",
+          overflow: "hidden",
+        },
+      }),
+      el({
+        serial: 2,
+        path: "0.2.0",
+        tagName: "img",
+        bounds: { left: 695, top: 114, width: 410, height: 410 },
+        img: {
+          src: "placeholder://happy-dog-on-cooling-mat",
+          naturalWidth: 1,
+          naturalHeight: 1,
+          alt: "happy dog on cooling mat",
+        },
+        style: {
+          objectFit: "cover",
+        },
+      }),
+    ),
+  );
+
+  const image = result.commands.find(
+    (cmd): cmd is V6ImageCommand => cmd.primitive === "bitmap",
+  );
+  assert.ok(image, "expected a bitmap command");
+  assert.equal(image.borderRadius, 0);
+});
+
 test("mapRenderedElements — <img> jpg → image, png → bitmap, placeholder:// → bitmap", () => {
   const cases: Array<{ src: string; expected: "image" | "bitmap" }> = [
     { src: "https://cdn/foo.jpg", expected: "image" },
