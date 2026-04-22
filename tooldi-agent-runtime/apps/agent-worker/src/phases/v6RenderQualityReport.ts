@@ -182,6 +182,11 @@ export function buildV6RenderQualityReport(
   };
 }
 
+// Deliberately static primitive policy. Do not split primitive types into
+// semantic subtypes such as decorative-svg/logo-svg/hero-image/cta-text.
+// Render QA is allowed to inspect geometry, visibility, scroll metrics, and
+// primitive type only; content/domain/role/class/src-hint checks belong outside
+// v6 and would recreate v2 slot/topology drift.
 function rootMatchesCanvas(bounds: V6Bounds, canvas: V6Canvas): boolean {
   return (
     Math.abs(bounds.left) <= ROOT_TOLERANCE_PX &&

@@ -78,6 +78,10 @@ v6는 2026-04-21 실행된 다음 실증에 근거한다.
 | Chromium/Puppeteer/html2canvas 렌더링을 pixel raster 로 변환해 편집 UI 에 주입 | editability 파괴. DOM parse 만 허용. |
 | 모델 default 를 bench 없이 교체 | 계승. `bench/method-compare-phase1/` 재실행 + parity/cost/latency 증거 PR 필수. |
 | slot/role/cluster completeness 를 completion gate 로 복구 | 계승. 완료 판정은 editability + renderability + save truth 3축만. |
+| Primitive type 하위 분류를 QA/게이트 contract 로 도입 | `text/image/bitmap/svg/rect` 는 닫힌 primitive 집합이다. `decorative-svg`, `logo-svg`, `hero-image`, `cta-text` 같은 하위 vocabulary 를 만들면 slot/role 을 이름만 바꿔 복구하는 것이므로 금지한다. |
+| Render QA 에서 content / src / class / parent role 을 검사 | Render QA 는 bounds, visibility, scroll metrics, primitive type 같은 렌더 관측값만 본다. 텍스트 내용, `placeholder://` hint, class name, 부모 DOM 의 의미를 검사하면 semantic slot/topology 회귀가 된다. |
+| Render QA threshold 를 domain / intent / layout family 별로 분기 | threshold 는 canvas geometry 와 닫힌 primitive type 에 대한 정적 정책이어야 한다. "카페라서", "학원이라서", "좌우형이라서" 같은 분기는 layout family/topology 복구 신호다. |
+| Primitive count 를 semantic completeness 로 해석 | `0 primitives` 같은 렌더 실패 판정은 허용되지만, "CTA 가 없다", "hero 가 없다", "가격이 2개다" 같은 completeness gate 는 금지한다. |
 
 ---
 
@@ -121,6 +125,20 @@ v6는 2026-04-21 실행된 다음 실증에 근거한다.
   - `v6BrowserRender.ts`: Playwright Chromium 기동 (Phase 4 시점 ephemeral; Phase 5 warm pool) → `setContent` 전에 @font-face 주입(§3) → `page.evaluate` 안에서 DOM traversal, `getBoundingClientRect` + `getComputedStyle` 캡처.
 - **불변량**: 같은 HTML 입력 → 같은 `V6ExtractionResult` (Linux headless Chromium 기준 pixel-identical; macOS/Windows drift 는 Phase 5 에서 측정).
 - **Placeholder 이미지**: `placeholder://*` route 인터셉터가 1×1 transparent PNG 반환.
+
+#### Stage 2.5 — Render QA Observation / Gate Candidate
+
+- **목적**: 브라우저가 계산한 렌더 결과가 캔버스 안전 불변식을 깨는지 관측한다. 이 단계는 디자인을 평가하지 않고, 렌더링 안전성만 검사한다.
+- **입력**: `V6ExtractionResult`.
+- **출력**: `V6RenderQualityReport` — root/canvas mismatch, off-canvas, scroll overflow, zero-area, text density 등의 닫힌 failure mode 목록.
+- **닫힌 축**:
+  - primitive type: `text`, `image`, `bitmap`, `svg`, `rect` (Stage 3 primitive table 과 동일, 하위 분류 금지)
+  - failure mode: `root_bounds_mismatch`, `off_canvas_*`, `scroll_overflow`, `zero_area`, `count_zero`, `high_text_density`
+- **정책 원칙**:
+  - hard gate 후보는 root bounds mismatch, visible text/image loss, visible text scroll overflow 처럼 정보 손실 위험이 큰 정적 primitive 정책으로만 정한다.
+  - `rect/svg` off-canvas bleed 는 의미를 추정하지 않고 warning 으로 둔다. "장식이라서"가 아니라 해당 primitive type 전체에 동일한 loss tolerance 를 적용하는 정책이다.
+  - 텍스트 내용, 이미지 src hint, class name, 부모/자식 DOM 역할, 도메인/intent, layout family 를 검사하지 않는다.
+- **현재 상태**: Phase P0/P0.1 에서는 관측 artifact 와 `hardGateCandidate` 플래그만 남기며 run 을 실패시키지 않는다. hard gate / attempt-level regeneration 은 별도 SSOT 개정 후 적용한다.
 
 ### Stage 3 — Primitive Map + Command Adapter + SSE Envelope
 

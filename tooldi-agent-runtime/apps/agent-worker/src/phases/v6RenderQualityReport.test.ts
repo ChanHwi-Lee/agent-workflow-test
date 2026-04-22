@@ -146,3 +146,27 @@ test("렌더 품질 리포트는 root border-box가 canvas보다 크면 hard gat
     true,
   );
 });
+
+test("렌더 품질 리포트는 svg off-canvas를 hard gate 후보로 승격하지 않는다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.0",
+        tagName: "svg",
+        bounds: { left: 1180, top: 40, width: 120, height: 120 },
+        svg: { outerHTML: '<svg viewBox="0 0 120 120"></svg>' },
+        layout: { clientWidth: 120, clientHeight: 120, scrollWidth: 120, scrollHeight: 120 },
+      }),
+    ]),
+  );
+
+  assert.equal(report.metrics.offCanvasElementCount, 1);
+  assert.equal(report.hardGateCandidate, false);
+  assert.equal(report.metrics.hardGateCandidateCount, 0);
+  assert.equal(
+    report.issues.some((issue) => issue.code === "off_canvas_element"),
+    true,
+  );
+});
