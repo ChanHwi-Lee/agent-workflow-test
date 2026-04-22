@@ -96,9 +96,42 @@ test("runV6HtmlGen은 기본 temperature를 0.35로 사용한다", async () => {
   });
 
   const reqBody = lastRequest.body as {
-    generationConfig: { temperature?: number };
+    generationConfig: {
+      temperature?: number;
+      thinkingConfig?: { thinkingLevel?: string };
+    };
   };
   assert.equal(reqBody.generationConfig.temperature, 0.35);
+  assert.deepEqual(reqBody.generationConfig.thinkingConfig, {
+    thinkingLevel: "low",
+  });
+});
+
+test("runV6HtmlGen은 thinking level을 낮은 토큰 예산 값으로 조절할 수 있다", async () => {
+  const { fetch, lastRequest } = makeMockFetch({
+    candidates: [
+      {
+        content: { parts: [{ text: '<div style="width:1200px;height:628px;"></div>' }] },
+        finishReason: "STOP",
+      },
+    ],
+  });
+
+  await runV6HtmlGen({
+    canvasWidth: 1200,
+    canvasHeight: 628,
+    userPrompt: "봄 세일 이벤트 배너",
+    apiKey: "fake",
+    thinkingLevel: "minimal",
+    fetchImpl: fetch,
+  });
+
+  const reqBody = lastRequest.body as {
+    generationConfig: { thinkingConfig?: { thinkingLevel?: string } };
+  };
+  assert.deepEqual(reqBody.generationConfig.thinkingConfig, {
+    thinkingLevel: "minimal",
+  });
 });
 
 test("runV6HtmlGen strips markdown fences if the model emits them", async () => {

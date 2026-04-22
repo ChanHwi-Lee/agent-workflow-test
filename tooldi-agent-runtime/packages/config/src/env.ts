@@ -65,6 +65,7 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
   tooldiContentApiCookie: string | null;
   googleApiKey: string | null;
   htmlGenProvider: "gemini" | "claude_code";
+  htmlGenThinkingLevel: "minimal" | "low" | "medium" | "high";
   claudeCodeModel: string;
   claudeCodeEffort: "low" | "medium" | "high" | "xhigh" | "max";
   claudeCodeTimeoutMs: number;
@@ -359,6 +360,12 @@ export function loadAgentWorkerEnv(
       "HTML_GEN_PROVIDER",
       ["gemini", "claude_code"] as const,
       "gemini",
+    ),
+    htmlGenThinkingLevel: readEnumValue(
+      source,
+      "HTML_GEN_THINKING_LEVEL",
+      ["minimal", "low", "medium", "high"] as const,
+      "low",
     ),
     claudeCodeModel: readString(source, "CLAUDE_CODE_MODEL", "sonnet"),
     claudeCodeEffort: readEnumValue(

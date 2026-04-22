@@ -22,6 +22,7 @@ export interface V6HtmlGenOptions {
   readonly temperature?: number;
   readonly topP?: number;
   readonly maxOutputTokens?: number;
+  readonly thinkingLevel?: "minimal" | "low" | "medium" | "high";
   readonly fetchImpl?: typeof fetch;
 }
 
@@ -65,6 +66,10 @@ export async function runV6HtmlGen(
     temperature: options.temperature ?? 0.35,
     topP: options.topP ?? 0.95,
     maxOutputTokens: options.maxOutputTokens ?? 8192,
+    // Gemini 3 exposes budgeted reasoning through thinkingLevel. Keep the
+    // default low so layout-budget reasoning is enabled without large token
+    // growth. Do not request thought summaries in output.
+    thinkingConfig: { thinkingLevel: options.thinkingLevel ?? "low" },
   };
 
   const userMessage = buildV6UserMessage({

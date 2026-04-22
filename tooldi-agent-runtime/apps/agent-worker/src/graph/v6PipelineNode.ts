@@ -52,6 +52,7 @@ export type V6BrowserSupplier = () => Promise<Browser>;
 
 export interface V6ProductionDependencyOptions {
   readonly htmlGenProvider?: "gemini" | "claude_code";
+  readonly htmlGenThinkingLevel?: "minimal" | "low" | "medium" | "high";
   readonly claudeCodeModel?: string;
   readonly claudeCodeEffort?: "low" | "medium" | "high" | "xhigh" | "max";
   readonly claudeCodeTimeoutMs?: number;
@@ -88,6 +89,7 @@ export function createProductionV6Dependencies(
         trendContext: args.trendContext ?? null,
         renderQualityFeedback: args.renderQualityFeedback ?? null,
         apiKey: args.apiKey,
+        thinkingLevel: options.htmlGenThinkingLevel ?? "low",
       });
     },
     validateHtml: validateV6Html,
@@ -190,6 +192,7 @@ export function registerV6PipelineNode(
 
   const baseDeps = createProductionV6Dependencies({
     htmlGenProvider: dependencies.env.htmlGenProvider,
+    htmlGenThinkingLevel: dependencies.env.htmlGenThinkingLevel,
     claudeCodeModel: dependencies.env.claudeCodeModel,
     claudeCodeEffort: dependencies.env.claudeCodeEffort,
     claudeCodeTimeoutMs: dependencies.env.claudeCodeTimeoutMs,

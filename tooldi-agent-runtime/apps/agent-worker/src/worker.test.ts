@@ -37,6 +37,7 @@ function createEnv(): AgentWorkerEnv {
     tooldiContentApiCookie: null,
     googleApiKey: null,
     htmlGenProvider: "gemini",
+    htmlGenThinkingLevel: "low",
     claudeCodeModel: "sonnet",
     claudeCodeEffort: "low",
     claudeCodeTimeoutMs: 180000,
@@ -90,6 +91,7 @@ test("loadAgentWorkerEnv defaults Tooldi catalog source to placeholder mode", ()
   assert.equal(env.langGraphCheckpointerMode, "postgres");
   assert.equal(env.templatePlannerMode, "heuristic");
   assert.equal(env.htmlGenProvider, "gemini");
+  assert.equal(env.htmlGenThinkingLevel, "low");
   assert.equal(env.claudeCodeModel, "sonnet");
   assert.equal(env.claudeCodeEffort, "low");
   assert.equal(env.claudeCodeTimeoutMs, 180000);
@@ -121,6 +123,25 @@ test("loadAgentWorkerEnv reads Claude Code v6 HTML generator env", () => {
   assert.equal(env.claudeCodeModel, "sonnet");
   assert.equal(env.claudeCodeEffort, "low");
   assert.equal(env.claudeCodeTimeoutMs, 90000);
+});
+
+test("loadAgentWorkerEnv는 Gemini HTML 생성 thinking level 값을 읽는다", () => {
+  const env = loadAgentWorkerEnv({
+    NODE_ENV: "test",
+    LOG_LEVEL: "info",
+    POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
+    REDIS_URL: "redis://localhost:6379/9",
+    BULLMQ_QUEUE_NAME: "agent-workflow-interactive-test",
+    OBJECT_STORE_MODE: "memory",
+    OBJECT_STORE_ROOT_DIR: "/tmp/tooldi-agent-runtime-object-store-test",
+    OBJECT_STORE_BUCKET: "tooldi-agent-runtime-test",
+    OBJECT_STORE_PREFIX: "agent-runtime-test",
+    WORKER_QUEUE_TRANSPORT_MODE: "disabled",
+    AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
+    HTML_GEN_THINKING_LEVEL: "medium",
+  });
+
+  assert.equal(env.htmlGenThinkingLevel, "medium");
 });
 
 test("loadAgentWorkerEnv reads optional trend research env", () => {

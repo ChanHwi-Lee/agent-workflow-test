@@ -90,6 +90,7 @@ function createEnv(): AgentWorkerEnv {
     tooldiContentApiCookie: null,
     googleApiKey: "test-google-api-key",
     htmlGenProvider: "gemini",
+    htmlGenThinkingLevel: "low",
     claudeCodeModel: "sonnet",
     claudeCodeEffort: "low",
     claudeCodeTimeoutMs: 180000,
