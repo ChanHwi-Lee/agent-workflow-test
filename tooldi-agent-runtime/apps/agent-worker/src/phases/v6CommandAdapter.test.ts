@@ -171,6 +171,38 @@ test("adaptV6Commands — text fontFamily cascade picks first token (Toolditor I
   assert.equal(tokens.fontFamily, "701_400");
 });
 
+test("adaptV6Commands — Toolditor font ID suffix가 있으면 fontWeight를 suffix 기준으로 정규화한다", () => {
+  const regularFaceComputedBold: V6TextCommand = {
+    ...TEXT_CMD,
+    fontFamily: '"1301_400", sans-serif',
+    fontWeight: "700",
+  };
+  const boldFaceComputedRegular: V6TextCommand = {
+    ...TEXT_CMD,
+    fontFamily: '"701_700", sans-serif',
+    fontWeight: "400",
+  };
+
+  const { commands } = adaptV6Commands(
+    [regularFaceComputedBold, boldFaceComputedRegular],
+    { runId: "font-weight" },
+  );
+
+  const firstTokens = commands[0]?.layerBlueprint.styleTokens as Record<string, unknown>;
+  const firstMetadata = commands[0]?.layerBlueprint.metadata as Record<string, unknown>;
+  assert.equal(firstTokens.fontFamily, "1301_400");
+  assert.equal(firstTokens.fontWeight, "400");
+  assert.equal(firstMetadata.computedFontWeight, "700");
+  assert.equal(firstMetadata.normalizedFontWeight, "400");
+
+  const secondTokens = commands[1]?.layerBlueprint.styleTokens as Record<string, unknown>;
+  const secondMetadata = commands[1]?.layerBlueprint.metadata as Record<string, unknown>;
+  assert.equal(secondTokens.fontFamily, "701_700");
+  assert.equal(secondTokens.fontWeight, "700");
+  assert.equal(secondMetadata.computedFontWeight, "400");
+  assert.equal(secondMetadata.normalizedFontWeight, "700");
+});
+
 test("adaptV6Commands — text lineHeight 'normal' serialized as null", () => {
   const normalText: V6TextCommand = { ...TEXT_CMD, lineHeight: "normal" };
   const { commands } = adaptV6Commands([normalText], { runId: "r6" });

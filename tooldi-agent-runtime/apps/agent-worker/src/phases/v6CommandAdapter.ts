@@ -141,14 +141,16 @@ function rectTokens(cmd: V6RectCommand): Record<string, unknown> {
 }
 
 function textTokens(cmd: V6TextCommand): Record<string, unknown> {
+  const fontFamily = parseFirstFontFamily(cmd.fontFamily);
+  const fontWeight = normalizeToolditorFontWeight(fontFamily, cmd.fontWeight);
   return {
     fillColor: cmd.color,
     // Phase 2.5: Playwright's computed-style fontFamily is the full CSS cascade
     // ("\"701_400\", sans-serif"). Toolditor expects the first token only,
     // which is the Toolditor ID we injected in v6FontRegistry.
-    fontFamily: parseFirstFontFamily(cmd.fontFamily),
+    fontFamily,
     fontSize: cmd.fontSize,
-    fontWeight: cmd.fontWeight,
+    fontWeight,
     fontStyle: cmd.fontStyle,
     textAlign: cmd.textAlign,
     lineHeight: cmd.lineHeight === "normal" ? null : cmd.lineHeight,
@@ -175,7 +177,7 @@ function buildMetadata(
   };
   switch (cmd.primitive) {
     case "text":
-      return { ...base, text: cmd.text };
+      return metadataForText(base, cmd);
     case "image":
     case "bitmap":
       return metadataForImage(base, cmd);
@@ -184,6 +186,34 @@ function buildMetadata(
     case "rect":
       return base;
   }
+}
+
+function normalizeToolditorFontWeight(
+  fontFamily: string,
+  computedFontWeight: string,
+): string {
+  const suffix = /_(\d{3,4})$/.exec(fontFamily)?.[1];
+  return suffix ?? computedFontWeight;
+}
+
+function metadataForText(
+  base: Record<string, string | number | boolean | null>,
+  cmd: V6TextCommand,
+): Record<string, string | number | boolean | null> {
+  const fontFamily = parseFirstFontFamily(cmd.fontFamily);
+  const normalizedWeight = normalizeToolditorFontWeight(
+    fontFamily,
+    cmd.fontWeight,
+  );
+  const metadata: Record<string, string | number | boolean | null> = {
+    ...base,
+    text: cmd.text,
+  };
+  if (normalizedWeight !== cmd.fontWeight) {
+    metadata.computedFontWeight = cmd.fontWeight;
+    metadata.normalizedFontWeight = normalizedWeight;
+  }
+  return metadata;
 }
 
 function metadataForImage(
