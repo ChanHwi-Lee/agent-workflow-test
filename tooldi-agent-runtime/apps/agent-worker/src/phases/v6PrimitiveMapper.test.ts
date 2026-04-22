@@ -111,7 +111,10 @@ test("mapRenderedElements — linear-gradient preserves angle and stops", () => 
   );
   const cmd = result.commands[0] as V6RectCommand;
   const fill = cmd.fill;
-  assert.ok(fill !== null && typeof fill !== "string", "fill must be gradient object");
+  assert.ok(
+    fill !== null && typeof fill !== "string",
+    "fill must be gradient object",
+  );
   if (fill === null || typeof fill === "string") return;
   assert.equal(fill.type, "linear-gradient");
   assert.equal(fill.angle, 135);
@@ -122,7 +125,7 @@ test("mapRenderedElements — linear-gradient preserves angle and stops", () => 
   assert.equal(fill.stops[1]?.offset, 1);
 });
 
-test("mapRenderedElements — emits text for text leaf, inset by padding+border", () => {
+test("mapRenderedElements — emits text for text leaf, inset by padding+border with safety bounds", () => {
   const result = mapRenderedElements(
     extract(
       el({
@@ -157,13 +160,65 @@ test("mapRenderedElements — emits text for text leaf, inset by padding+border"
   assert.deepEqual(textCmd.bounds, {
     left: 100 + 48 + 2,
     top: 200 + 18 + 2,
-    width: 220 - 48 - 48 - 2 - 2,
-    height: 60 - 18 - 18 - 2 - 2,
+    width: 220 - 48 - 48 - 2 - 2 + 6,
+    height: 60 - 18 - 18 - 2 - 2 + 10.8,
   });
   assert.equal(textCmd.text, "Click");
   assert.equal(textCmd.color, "#0F172A");
   assert.equal(textCmd.fontSize, 18);
   assert.equal(textCmd.fontWeight, "700");
+});
+
+test("mapRenderedElements — centered text safety expands around the center", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        isTextLeaf: true,
+        text: "Centered",
+        bounds: { left: 100, top: 80, width: 200, height: 40 },
+        style: {
+          fontSize: "40px",
+          textAlign: "center",
+        },
+      }),
+    ),
+  );
+  const textCmd = result.commands.find(
+    (c): c is V6TextCommand => c.primitive === "text",
+  );
+  assert.ok(textCmd, "expected a text command");
+  assert.deepEqual(textCmd.bounds, {
+    left: 95,
+    top: 80,
+    width: 210,
+    height: 64,
+  });
+});
+
+test("mapRenderedElements — right-aligned text safety expands to the left", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        isTextLeaf: true,
+        text: "Right",
+        bounds: { left: 100, top: 80, width: 200, height: 40 },
+        style: {
+          fontSize: "40px",
+          textAlign: "right",
+        },
+      }),
+    ),
+  );
+  const textCmd = result.commands.find(
+    (c): c is V6TextCommand => c.primitive === "text",
+  );
+  assert.ok(textCmd, "expected a text command");
+  assert.deepEqual(textCmd.bounds, {
+    left: 90,
+    top: 80,
+    width: 210,
+    height: 64,
+  });
 });
 
 test("mapRenderedElements — textAlign 'start' is normalized to 'left'", () => {
@@ -366,8 +421,14 @@ test("mapRenderedElements — serial + path preserved for traceability", () => {
 // --------- parser-level tests ---------
 
 test("parseColor — rgb and rgba", () => {
-  assert.deepEqual(parseColor("rgb(255, 100, 50)"), { hex: "#FF6432", alpha: 1 });
-  assert.deepEqual(parseColor("rgba(0, 0, 0, 0.5)"), { hex: "#000000", alpha: 0.5 });
+  assert.deepEqual(parseColor("rgb(255, 100, 50)"), {
+    hex: "#FF6432",
+    alpha: 1,
+  });
+  assert.deepEqual(parseColor("rgba(0, 0, 0, 0.5)"), {
+    hex: "#000000",
+    alpha: 0.5,
+  });
   assert.equal(parseColor("rgba(0, 0, 0, 0)"), null);
   assert.equal(parseColor("transparent"), null);
   assert.equal(parseColor(""), null);

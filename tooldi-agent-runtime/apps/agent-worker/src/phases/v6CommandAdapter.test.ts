@@ -146,6 +146,12 @@ test("adaptV6Commands — text → layerType 'text' with fillColor + font tokens
   assert.equal(tokens.fontWeight, "800");
   assert.equal(tokens.textAlign, "left");
   assert.equal(tokens.lineHeight, 1.1);
+  assert.deepEqual(c.layerBlueprint.bounds, {
+    x: TEXT_CMD.bounds.left,
+    y: TEXT_CMD.bounds.top,
+    width: TEXT_CMD.bounds.width,
+    height: TEXT_CMD.bounds.height,
+  });
   const metadata = c.layerBlueprint.metadata;
   assert.equal(metadata.text, "SPRING SALE");
   assert.equal(metadata.v6Primitive, "text");
@@ -244,4 +250,3 @@ test("adaptV6Commands — v6 source trace metadata preserved on every command", 
     assert.equal(typeof c.layerBlueprint.metadata.v6Primitive, "string");
   }
 });
-

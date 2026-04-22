@@ -39,6 +39,8 @@ const TRANSPARENT_PNG = Buffer.from(TRANSPARENT_PNG_B64, "base64");
 // setContent so Playwright measures glyph metrics with the same font set the
 // canvas will render with. Computed once per process; registry access is sync.
 const FONT_FACE_STYLE_BLOCK = buildFontFaceStyleBlock();
+const RENDER_RESET_STYLE_BLOCK =
+  '<style id="agw-v6-render-reset">html,body{margin:0;width:100%;height:100%;}body{overflow:hidden;}</style>';
 
 export interface V6RenderOptions {
   readonly canvas: V6Canvas;
@@ -63,7 +65,11 @@ export async function extractFromPage(
     height: options.canvas.height,
   });
   const htmlWithFonts = injectFontFaceStyle(html, FONT_FACE_STYLE_BLOCK);
-  await page.setContent(htmlWithFonts, { waitUntil: "networkidle" });
+  const htmlForRender = injectFontFaceStyle(
+    htmlWithFonts,
+    RENDER_RESET_STYLE_BLOCK,
+  );
+  await page.setContent(htmlForRender, { waitUntil: "networkidle" });
 
   const fontsTimeout = options.fontsReadyTimeoutMs ?? 5000;
   await page.evaluate(async (timeoutMs: number) => {
@@ -127,20 +133,38 @@ export async function extractFromPage(
       function isTextLeaf(el: Element): boolean {
         const children = Array.from(el.childNodes);
         if (children.length === 0) return false;
-        if (children.some((n) => n.nodeType === ELEMENT_NODE)) return false;
+        const elementChildren = children.filter(
+          (n) => n.nodeType === ELEMENT_NODE,
+        ) as Element[];
+        if (elementChildren.some((child) => child.tagName.toLowerCase() !== "br")) {
+          return false;
+        }
         const combined = children
-          .filter((n) => n.nodeType === TEXT_NODE)
-          .map((n) => n.nodeValue ?? "")
+          .map((n) =>
+            n.nodeType === TEXT_NODE
+              ? (n.nodeValue ?? "")
+              : n.nodeType === ELEMENT_NODE &&
+                  (n as Element).tagName.toLowerCase() === "br"
+                ? "\n"
+                : "",
+          )
           .join("");
         return combined.trim().length > 0;
       }
 
       function elementText(el: Element): string {
         return Array.from(el.childNodes)
-          .filter((n) => n.nodeType === TEXT_NODE)
-          .map((n) => n.nodeValue ?? "")
+          .map((n) =>
+            n.nodeType === TEXT_NODE
+              ? (n.nodeValue ?? "")
+              : n.nodeType === ELEMENT_NODE &&
+                  (n as Element).tagName.toLowerCase() === "br"
+                ? "\n"
+                : "",
+          )
           .join("")
-          .replace(/\s+/g, " ")
+          .replace(/[^\S\n]+/g, " ")
+          .replace(/ *\n */g, "\n")
           .trim();
       }
 
@@ -295,7 +319,12 @@ interface V6RenderedElementRaw {
   style: V6ComputedStyleRaw;
   isTextLeaf: boolean;
   text: string | null;
-  img: { src: string; naturalWidth: number; naturalHeight: number; alt: string } | null;
+  img: {
+    src: string;
+    naturalWidth: number;
+    naturalHeight: number;
+    alt: string;
+  } | null;
   svg: { outerHTML: string } | null;
   hasChildren: boolean;
   visible: boolean;
@@ -305,5 +334,7 @@ type V6ComputedStyleRaw = V6ComputedStyle;
 
 // Re-declare for verifying structural compatibility between page-side raw
 // types and module-side public types without circular imports.
-const _typecheck: V6RenderedElementRaw extends V6RenderedElement ? true : false = true;
+const _typecheck: V6RenderedElementRaw extends V6RenderedElement
+  ? true
+  : false = true;
 void _typecheck;
