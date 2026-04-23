@@ -60,13 +60,14 @@ export function formatV6RenderQualityRetryFeedback(
     const metrics = Object.entries(issue.metrics)
       .map(([key, value]) => `${key}=${String(value)}`)
       .join(", ");
-    return `${index + 1}. ${issue.code} at path=${issue.path} tag=${issue.tag}; ${metrics}`;
+    return `${index + 1}. ${issue.code} at path=${issue.path} tag=${issue.tag}; ${metrics}; fix=${retryFixHint(issue)}`;
   });
   return [
     `Canvas: ${report.canvas.width}x${report.canvas.height}`,
     "Blocking render-quality issues:",
     ...lines,
     "Fix only geometry/layout safety: root border-box must match canvas; visible text and images must stay inside canvas; visible text must not scroll/crop.",
+    "For Korean text, prefer measured 2-3 line blocks, natural phrase breaks, lower font-size, wider boxes, or taller boxes. Do not hide overflow.",
   ].join("\n");
 }
 
@@ -74,6 +75,24 @@ const ROOT_TOLERANCE_PX = 2;
 const OFF_CANVAS_TOLERANCE_PX = 1;
 const SCROLL_OVERFLOW_TOLERANCE_PX = 1;
 const HIGH_TEXT_DENSITY_THRESHOLD = 0.16;
+
+function retryFixHint(issue: V6RenderQualityIssue): string {
+  switch (issue.code) {
+    case "root_bounds_mismatch":
+      return "make the root div width/height exactly match the canvas and use box-sizing:border-box if padding or border exists";
+    case "off_canvas_text":
+      return "move or resize the text box inside the safe area; reduce font-size or line count if needed";
+    case "off_canvas_image":
+      return "move or resize the image so the visible image bounds stay inside the canvas";
+    case "zero_area_element":
+      return "give the element explicit non-zero width and height";
+    case "scroll_overflow":
+      return "increase text box width/height, reduce font-size, split at natural phrase boundaries, or shorten visible copy; never rely on clipped or scrolling text";
+    case "off_canvas_element":
+    case "high_text_density":
+      return "adjust bounds or text density without introducing semantic roles or layout slots";
+  }
+}
 
 export function buildV6RenderQualityReport(
   extraction: V6ExtractionResult,

@@ -59,6 +59,11 @@ Layout quality target:
 - The root canvas is not a content box. Do not create a root like width:1200px plus padding:80px unless box-sizing:border-box is present. Internal safe-area padding should not make the root render larger than the canvas.
 - Never crop or hide text. Avoid fixed-height text boxes with overflow:hidden. If text is tight, prefer this order: reduce font size, widen the text box, increase box height, wrap at a natural phrase boundary.
 - Korean glyphs are visually denser than Latin. For large Korean display text, keep roughly 8-14 Korean characters per line when possible; break at natural Korean phrase or particle boundaries. Avoid one-character dangling lines.
+- Do not use huge typography as the only way to create impact. Use contrast, weight, color blocks, spacing, and imagery so headline text can remain within its real layout budget.
+- For Korean headlines longer than about 12 non-space characters, plan 2-3 controlled lines instead of one oversized line or a 4+ line vertical stack. On a 1200×628 landscape canvas, a normal headline block should usually stay under roughly 260px tall so supporting copy, details, and CTA still fit.
+- For every visible text element, make the element height large enough for the planned number of lines: font-size × line-height × lines plus padding. Do not set a smaller height and rely on clipping, scroll overflow, or hidden overflow to mask it.
+- Avoid partial inline styling inside one wrapping sentence, such as a colored <span> embedded in the middle of a multi-line headline. Tooldi converts visible text into separate editable text layers, so mixed inline fragments can lose browser inline flow. If a word or phrase needs emphasis, make that phrase a separate full line or block with its own width, height, and line-height.
+- Use "1301_400" only for short display words or accents. For long Korean informational headlines, prefer "701_700" so the text remains readable and easier to fit.
 - Reserve enough vertical budget for top labels, headline, supporting copy, price/details, and CTA. Do not anchor a CTA or important note so close to the bottom that it can be clipped.
 - Top badges or labels must sit fully inside the canvas, not clipped above the top edge.
 - Use line-height and padding that match the font size. For large Korean headlines, line-height usually needs at least 1.05-1.18.
@@ -136,6 +141,12 @@ function buildCopyLoadSummary(userPrompt: string): string {
         : "mixed";
   const loadClass =
     nonSpaceChars >= 90 ? "high" : nonSpaceChars >= 45 ? "medium" : "low";
+  const layoutHint =
+    loadClass === "high"
+      ? "High copy load: use compact hierarchy, fewer oversized text blocks, and generous text box heights."
+      : loadClass === "medium"
+        ? "Medium copy load: split Korean phrases intentionally and keep display text within a measured height budget."
+        : "Low copy load: stronger display type is possible, but visible text still needs enough width and height.";
 
   return `- non-space chars: ${nonSpaceChars}
 - Korean chars: ${koreanChars}
@@ -143,5 +154,6 @@ function buildCopyLoadSummary(userPrompt: string): string {
 - punctuation chars: ${punctuationChars}
 - longest uninterrupted token chars: ${longestToken}
 - density: ${density}
-- copy load class: ${loadClass}`;
+- copy load class: ${loadClass}
+- layout hint: ${layoutHint}`;
 }

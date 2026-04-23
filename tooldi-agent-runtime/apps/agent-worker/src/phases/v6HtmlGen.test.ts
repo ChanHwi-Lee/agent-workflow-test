@@ -81,7 +81,9 @@ test("runV6HtmlGen은 기본 temperature를 0.35로 사용한다", async () => {
   const { fetch, lastRequest } = makeMockFetch({
     candidates: [
       {
-        content: { parts: [{ text: '<div style="width:1200px;height:628px;"></div>' }] },
+        content: {
+          parts: [{ text: '<div style="width:1200px;height:628px;"></div>' }],
+        },
         finishReason: "STOP",
       },
     ],
@@ -111,7 +113,9 @@ test("runV6HtmlGen은 thinking level을 낮은 토큰 예산 값으로 조절할
   const { fetch, lastRequest } = makeMockFetch({
     candidates: [
       {
-        content: { parts: [{ text: '<div style="width:1200px;height:628px;"></div>' }] },
+        content: {
+          parts: [{ text: '<div style="width:1200px;height:628px;"></div>' }],
+        },
         finishReason: "STOP",
       },
     ],
@@ -139,7 +143,11 @@ test("runV6HtmlGen strips markdown fences if the model emits them", async () => 
     candidates: [
       {
         content: {
-          parts: [{ text: '```html\n<div style="width:800px;height:400px;"></div>\n```' }],
+          parts: [
+            {
+              text: '```html\n<div style="width:800px;height:400px;"></div>\n```',
+            },
+          ],
         },
         finishReason: "STOP",
       },
@@ -207,10 +215,7 @@ test("runV6HtmlGen throws V6HtmlGenerationError on non-JSON response", async () 
 
 test("stripMarkdownFences — handles ```html, ```, and no-fence inputs", () => {
   assert.equal(stripMarkdownFences("<div></div>"), "<div></div>");
-  assert.equal(
-    stripMarkdownFences("```html\n<div></div>\n```"),
-    "<div></div>",
-  );
+  assert.equal(stripMarkdownFences("```html\n<div></div>\n```"), "<div></div>");
   assert.equal(stripMarkdownFences("```\n<div></div>\n```"), "<div></div>");
   assert.equal(stripMarkdownFences("   <div></div>   "), "<div></div>");
   // Un-closed fence — keep content trimmed.
@@ -233,14 +238,14 @@ test("buildV6UserMessage는 레이아웃 예산용 copy load 요약을 포함한
   const msg = buildV6UserMessage({
     canvasWidth: 1200,
     canvasHeight: 628,
-    userPrompt:
-      "명낭상점 강아지 여름 쿨매트 1+1 특가. 4월 30일까지 한정 할인.",
+    userPrompt: "명낭상점 강아지 여름 쿨매트 1+1 특가. 4월 30일까지 한정 할인.",
   });
 
   assert.match(msg, /Copy load for layout budgeting/);
   assert.match(msg, /Korean chars:/);
   assert.match(msg, /Latin\/digit chars:/);
   assert.match(msg, /copy load class:/);
+  assert.match(msg, /layout hint:/);
   assert.match(msg, /Do not render these metrics as visible copy/i);
 });
 

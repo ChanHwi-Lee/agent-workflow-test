@@ -60,7 +60,12 @@ function element(overrides: Partial<V6RenderedElement>): V6RenderedElement {
     svg: null,
     hasChildren: false,
     visible: true,
-    layout: { clientWidth: 1200, clientHeight: 628, scrollWidth: 1200, scrollHeight: 628 },
+    layout: {
+      clientWidth: 1200,
+      clientHeight: 628,
+      scrollWidth: 1200,
+      scrollHeight: 628,
+    },
     ...overrides,
   };
 }
@@ -82,7 +87,12 @@ test("렌더 품질 리포트는 정상 루트와 텍스트를 통과 관측 상
         bounds: { left: 80, top: 80, width: 480, height: 96 },
         isTextLeaf: true,
         text: "강아지 쿨매트",
-        layout: { clientWidth: 480, clientHeight: 96, scrollWidth: 480, scrollHeight: 96 },
+        layout: {
+          clientWidth: 480,
+          clientHeight: 96,
+          scrollWidth: 480,
+          scrollHeight: 96,
+        },
       }),
     ]),
   );
@@ -110,7 +120,12 @@ test("렌더 품질 리포트는 캔버스 밖 텍스트와 스크롤 오버플�
         bounds: { left: -12, top: 40, width: 120, height: 80 },
         isTextLeaf: true,
         text: "우리 아이를 위한 시원한 여름 쿨매트",
-        layout: { clientWidth: 120, clientHeight: 80, scrollWidth: 310, scrollHeight: 128 },
+        layout: {
+          clientWidth: 120,
+          clientHeight: 80,
+          scrollWidth: 310,
+          scrollHeight: 128,
+        },
       }),
     ]),
   );
@@ -141,7 +156,12 @@ test("렌더 품질 리포트는 root border-box가 canvas보다 크면 hard gat
       element({
         path: "0",
         bounds: { left: 0, top: 0, width: 1360, height: 628 },
-        layout: { clientWidth: 1360, clientHeight: 628, scrollWidth: 1360, scrollHeight: 628 },
+        layout: {
+          clientWidth: 1360,
+          clientHeight: 628,
+          scrollWidth: 1360,
+          scrollHeight: 628,
+        },
       }),
     ]),
   );
@@ -166,7 +186,12 @@ test("렌더 품질 리포트는 svg off-canvas를 hard gate 후보로 승격하
         tagName: "svg",
         bounds: { left: 1180, top: 40, width: 120, height: 120 },
         svg: { outerHTML: '<svg viewBox="0 0 120 120"></svg>' },
-        layout: { clientWidth: 120, clientHeight: 120, scrollWidth: 120, scrollHeight: 120 },
+        layout: {
+          clientWidth: 120,
+          clientHeight: 120,
+          scrollWidth: 120,
+          scrollHeight: 120,
+        },
       }),
     ]),
   );
@@ -191,9 +216,19 @@ test("렌더 품질 리포트는 0 크기 이미지를 blocking issue로 표시�
         path: "0.0",
         tagName: "img",
         bounds: { left: 400, top: 120, width: 0, height: 0 },
-        img: { src: "placeholder://dog", naturalWidth: 0, naturalHeight: 0, alt: "" },
+        img: {
+          src: "placeholder://dog",
+          naturalWidth: 0,
+          naturalHeight: 0,
+          alt: "",
+        },
         visible: false,
-        layout: { clientWidth: 0, clientHeight: 0, scrollWidth: 0, scrollHeight: 0 },
+        layout: {
+          clientWidth: 0,
+          clientHeight: 0,
+          scrollWidth: 0,
+          scrollHeight: 0,
+        },
       }),
     ]),
   );
@@ -214,7 +249,12 @@ test("렌더 품질 재시도 피드백은 geometry 정보만 요약한다", () 
         bounds: { left: -12, top: 40, width: 120, height: 80 },
         isTextLeaf: true,
         text: "이 텍스트 내용은 피드백에 들어가면 안 된다",
-        layout: { clientWidth: 120, clientHeight: 80, scrollWidth: 220, scrollHeight: 120 },
+        layout: {
+          clientWidth: 120,
+          clientHeight: 80,
+          scrollWidth: 220,
+          scrollHeight: 120,
+        },
       }),
     ]),
   );
@@ -223,5 +263,8 @@ test("렌더 품질 재시도 피드백은 geometry 정보만 요약한다", () 
   assert.match(feedback, /off_canvas_text/);
   assert.match(feedback, /scroll_overflow/);
   assert.match(feedback, /path=0\.0/);
+  assert.match(feedback, /increase text box width\/height/);
+  assert.match(feedback, /natural phrase boundaries/);
+  assert.match(feedback, /Do not hide overflow/);
   assert.doesNotMatch(feedback, /이 텍스트 내용/);
 });
