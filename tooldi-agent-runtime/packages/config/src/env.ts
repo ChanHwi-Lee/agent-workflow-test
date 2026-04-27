@@ -59,6 +59,10 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
   langGraphCheckpointerMode: "memory" | "postgres";
   langGraphCheckpointerPostgresUrl: string | null;
   langGraphCheckpointerSchema: string;
+  postgresPoolMax: number;
+  postgresPoolConnectionTimeoutMs: number;
+  postgresPoolIdleTimeoutMs: number;
+  postgresApplicationName: string;
   tooldiCatalogSourceMode: "placeholder" | "tooldi_api" | "tooldi_api_direct";
   tooldiContentApiBaseUrl: string | null;
   tooldiContentApiTimeoutMs: number | null;
@@ -343,6 +347,22 @@ export function loadAgentWorkerEnv(
       source,
       "LANGGRAPH_CHECKPOINTER_SCHEMA",
       "agent_langgraph",
+    ),
+    postgresPoolMax: readNumber(source, "POSTGRES_POOL_MAX", 10),
+    postgresPoolConnectionTimeoutMs: readNumber(
+      source,
+      "POSTGRES_POOL_CONNECTION_TIMEOUT_MS",
+      5000,
+    ),
+    postgresPoolIdleTimeoutMs: readNumber(
+      source,
+      "POSTGRES_POOL_IDLE_TIMEOUT_MS",
+      30000,
+    ),
+    postgresApplicationName: readString(
+      source,
+      "POSTGRES_APPLICATION_NAME",
+      "agent-worker",
     ),
     tooldiCatalogSourceMode,
     tooldiContentApiBaseUrl,
