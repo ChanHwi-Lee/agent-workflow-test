@@ -165,6 +165,8 @@ async function createHarness(options: {
   service: RunRecoveryService;
   dispatcher: RecordingInterviewResumeDispatcher;
   events: RecordingRunEventService;
+  runRepository: RunRepository;
+  runAttemptRepository: RunAttemptRepository;
 }> {
   const db = {} as PgClient;
   const runRepository = new RunRepository(db);
@@ -190,6 +192,8 @@ async function createHarness(options: {
     ),
     dispatcher,
     events,
+    runRepository,
+    runAttemptRepository,
   };
 }
 
@@ -307,6 +311,34 @@ test("인터뷰 대기 시간이 지나면 빈 답변으로 자동 resume job을
   }
 });
 
+test("인터뷰 대기 이벤트는 run과 attempt를 인터뷰 대기 상태로 표시한다", async () => {
+  const { service, runRepository, runAttemptRepository } = await createHarness();
+
+  await service.appendWorkerEvent({
+    runId: RUN_ID,
+    traceId: TRACE_ID,
+    attemptSeq: ATTEMPT_SEQ,
+    queueJobId: QUEUE_JOB_ID,
+    event: {
+      type: "interview.awaiting",
+      questions: [QUESTION],
+      timeoutMs: 300_000,
+    },
+    receivedAt: NOW,
+  });
+
+  const run = await runRepository.findById(RUN_ID);
+  const attempt = await runAttemptRepository.findByRunIdAndAttemptSeq(
+    RUN_ID,
+    ATTEMPT_SEQ,
+  );
+
+  assert.equal(run?.status, "executing");
+  assert.equal(run?.statusReasonCode, "awaiting_interview");
+  assert.equal(attempt?.attemptState, "running");
+  assert.equal(attempt?.statusReasonCode, "awaiting_interview");
+});
+
 test("사용자 답변이 도착하면 대기 중인 자동 fallback timer를 취소한다", async () => {
   mock.timers.enable({ apis: ["setTimeout"] });
   try {
@@ -345,4 +377,38 @@ test("사용자 답변이 도착하면 대기 중인 자동 fallback timer를 �
   } finally {
     mock.timers.reset();
   }
+});
+
+test("사용자 답변이 도착하면 인터뷰 대기 상태 표시를 해제한다", async () => {
+  const { service, runRepository, runAttemptRepository } = await createHarness();
+
+  await service.appendWorkerEvent({
+    runId: RUN_ID,
+    traceId: TRACE_ID,
+    attemptSeq: ATTEMPT_SEQ,
+    queueJobId: QUEUE_JOB_ID,
+    event: {
+      type: "interview.awaiting",
+      questions: [QUESTION],
+      timeoutMs: 300_000,
+    },
+    receivedAt: NOW,
+  });
+  await service.acceptInterviewAnswer({
+    runId: RUN_ID,
+    traceId: TRACE_ID,
+    answers: [ANSWER],
+    receivedAt: NOW,
+  });
+
+  const run = await runRepository.findById(RUN_ID);
+  const attempt = await runAttemptRepository.findByRunIdAndAttemptSeq(
+    RUN_ID,
+    ATTEMPT_SEQ,
+  );
+
+  assert.equal(run?.status, "executing");
+  assert.equal(run?.statusReasonCode, null);
+  assert.equal(attempt?.attemptState, "running");
+  assert.equal(attempt?.statusReasonCode, null);
 });

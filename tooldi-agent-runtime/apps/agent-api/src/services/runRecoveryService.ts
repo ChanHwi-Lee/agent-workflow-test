@@ -16,6 +16,7 @@ import type { RunAttemptRecord } from "../repositories/runAttemptRepository.js";
 import type { RunAttemptRepository } from "../repositories/runAttemptRepository.js";
 import type { RunRecord } from "../repositories/runRepository.js";
 import type { RunRepository } from "../repositories/runRepository.js";
+import { INTERVIEW_AWAITING_REASON_CODE } from "./interviewRunState.js";
 import type { RunEventService } from "./runEventService.js";
 
 export interface InterviewResumeDispatcher {
@@ -362,6 +363,21 @@ export class RunRecoveryService {
           command.event.timeoutMs,
           receivedAt,
         );
+        if (!cancelRequested) {
+          await this.runRepository.updateStatus(
+            command.runId,
+            "executing",
+            INTERVIEW_AWAITING_REASON_CODE,
+          );
+          await this.runAttemptRepository.updateAttemptState(
+            command.runId,
+            command.attemptSeq,
+            "running",
+            attempt.workerId ?? undefined,
+            attempt.lastHeartbeatAt ?? undefined,
+            INTERVIEW_AWAITING_REASON_CODE,
+          );
+        }
         this.scheduleAutoFallback({
           runId: command.runId,
           traceId: command.traceId,
@@ -375,6 +391,17 @@ export class RunRecoveryService {
         // 1차 backbone 에서는 dispatcher 없이는 no-op (logger.warn) — agent-worker
         // resume entrypoint 와 BullMQ resume job 결선 후 본격 동작.
         this.cancelAutoFallback(command.runId, command.attemptSeq);
+        if (!cancelRequested) {
+          await this.runRepository.updateStatus(command.runId, "executing", null);
+          await this.runAttemptRepository.updateAttemptState(
+            command.runId,
+            command.attemptSeq,
+            "running",
+            attempt.workerId ?? undefined,
+            attempt.lastHeartbeatAt ?? undefined,
+            null,
+          );
+        }
         if (this.interviewResumeDispatcher) {
           await this.interviewResumeDispatcher.dispatchInterviewResume({
             runId: command.runId,
