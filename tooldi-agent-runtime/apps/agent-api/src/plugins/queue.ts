@@ -7,13 +7,27 @@ import {
 } from "bullmq";
 import type { FastifyPluginAsync } from "fastify";
 
-import type { RunJobEnvelope } from "@tooldi/agent-contracts";
+import type {
+  InterviewResumeJobPayload,
+  RunJobEnvelope,
+} from "@tooldi/agent-contracts";
 import type { Logger } from "@tooldi/agent-observability";
+
+export const RUN_EXECUTE_JOB_NAME = "run.execute";
+export const INTERVIEW_RESUME_JOB_NAME = "interview.resume";
+
+export type RunQueueJobPayload = RunJobEnvelope | InterviewResumeJobPayload;
 
 export interface EnqueuedRunJob {
   jobId: string;
   enqueuedAt: string;
   payload: RunJobEnvelope;
+}
+
+export interface EnqueuedInterviewResumeJob {
+  jobId: string;
+  enqueuedAt: string;
+  payload: InterviewResumeJobPayload;
 }
 
 export type QueueTransportState =
@@ -41,6 +55,12 @@ export interface RunQueueProducer {
       timeoutMs?: number;
     },
   ): Promise<EnqueuedRunJob>;
+  enqueueInterviewResume(
+    payload: InterviewResumeJobPayload,
+    options?: {
+      timeoutMs?: number;
+    },
+  ): Promise<EnqueuedInterviewResumeJob>;
   listJobs(): Promise<readonly EnqueuedRunJob[]>;
   tryRemoveQueuedJob(queueJobId: string): Promise<boolean>;
   observeTransport(observer: QueueTransportObserver): () => void;
@@ -74,6 +94,16 @@ class InMemoryRunQueueProducer implements RunQueueProducer {
     return job;
   }
 
+  async enqueueInterviewResume(
+    payload: InterviewResumeJobPayload,
+  ): Promise<EnqueuedInterviewResumeJob> {
+    return {
+      jobId: `${payload.queueJobId}:resume:${Date.now()}`,
+      enqueuedAt: new Date().toISOString(),
+      payload,
+    };
+  }
+
   async listJobs(): Promise<readonly EnqueuedRunJob[]> {
     return this.jobs;
   }
@@ -101,7 +131,7 @@ class InMemoryRunQueueProducer implements RunQueueProducer {
 
 class BullMqRunQueueProducer implements RunQueueProducer {
   private readonly observers = new Set<QueueTransportObserver>();
-  private readonly queue: Queue<RunJobEnvelope>;
+  private readonly queue: Queue<RunQueueJobPayload>;
   private readonly queueEvents: QueueEvents;
   private readonly producerConnection: Redis;
   private readonly eventsConnection: Redis;
@@ -121,7 +151,7 @@ class BullMqRunQueueProducer implements RunQueueProducer {
     this.eventsConnection = new Redis(redisUrl, {
       maxRetriesPerRequest: null,
     });
-    this.queue = new Queue<RunJobEnvelope>(queueName, {
+    this.queue = new Queue<RunQueueJobPayload>(queueName, {
       connection: this.producerConnection,
     });
     this.queueEvents = new QueueEvents(queueName, {
@@ -137,7 +167,7 @@ class BullMqRunQueueProducer implements RunQueueProducer {
       timeoutMs?: number;
     } = {},
   ): Promise<EnqueuedRunJob> {
-    const addPromise = this.queue.add("run.execute", payload, {
+    const addPromise = this.queue.add(RUN_EXECUTE_JOB_NAME, payload, {
       jobId: payload.queueJobId,
       attempts: 1,
       ...(options.delayMs !== undefined ? { delay: options.delayMs } : {}),
@@ -166,7 +196,50 @@ class BullMqRunQueueProducer implements RunQueueProducer {
       return {
         jobId: this.asJobId(job),
         enqueuedAt: new Date(job.timestamp).toISOString(),
-        payload: job.data,
+        payload: job.data as RunJobEnvelope,
+      };
+    } finally {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
+    }
+  }
+
+  async enqueueInterviewResume(
+    payload: InterviewResumeJobPayload,
+    options: {
+      timeoutMs?: number;
+    } = {},
+  ): Promise<EnqueuedInterviewResumeJob> {
+    const resumeJobId = `${payload.queueJobId}:resume:${Date.now()}`;
+    const addPromise = this.queue.add(INTERVIEW_RESUME_JOB_NAME, payload, {
+      jobId: resumeJobId,
+      attempts: 1,
+      removeOnComplete: false,
+      removeOnFail: false,
+    });
+    let timeoutHandle: NodeJS.Timeout | undefined;
+    try {
+      const job =
+        options.timeoutMs === undefined
+          ? await addPromise
+          : await Promise.race([
+              addPromise,
+              new Promise<never>((_, reject) => {
+                timeoutHandle = setTimeout(() => {
+                  reject(
+                    new RunQueueEnqueueTimeoutError(
+                      `Timed out while enqueueing interview resume ${resumeJobId} after ${options.timeoutMs}ms`,
+                    ),
+                  );
+                }, options.timeoutMs);
+                timeoutHandle.unref?.();
+              }),
+            ]);
+      return {
+        jobId: this.asJobId(job),
+        enqueuedAt: new Date(job.timestamp).toISOString(),
+        payload: job.data as InterviewResumeJobPayload,
       };
     } finally {
       if (timeoutHandle) {
@@ -297,20 +370,22 @@ class BullMqRunQueueProducer implements RunQueueProducer {
     }
   }
 
-  private toEnqueuedRunJob(job: Job<RunJobEnvelope>): EnqueuedRunJob | null {
+  private toEnqueuedRunJob(job: Job<RunQueueJobPayload>): EnqueuedRunJob | null {
     const jobId = this.asJobId(job);
     if (jobId.length === 0) {
       return null;
     }
-
+    if (job.name !== RUN_EXECUTE_JOB_NAME) {
+      return null;
+    }
     return {
       jobId,
       enqueuedAt: new Date(job.timestamp).toISOString(),
-      payload: job.data,
+      payload: job.data as RunJobEnvelope,
     };
   }
 
-  private asJobId(job: Job<RunJobEnvelope>): string {
+  private asJobId(job: Job<RunQueueJobPayload>): string {
     return typeof job.id === "string" ? job.id : String(job.id ?? "");
   }
 }

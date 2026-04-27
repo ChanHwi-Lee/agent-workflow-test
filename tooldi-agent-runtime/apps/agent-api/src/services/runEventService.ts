@@ -2,6 +2,7 @@ import type { Logger } from "@tooldi/agent-observability";
 import type {
   AgentRunResultSummary,
   ErrorSummary,
+  InterviewQuestion,
   PublicRunEvent,
   RunRecoveryProjection,
 } from "@tooldi/agent-contracts";
@@ -116,6 +117,23 @@ export class RunEventService {
       type: "run.cancelled",
       runId,
       traceId,
+      at,
+    });
+  }
+
+  async appendInterviewAwaiting(
+    runId: string,
+    traceId: string,
+    questions: ReadonlyArray<InterviewQuestion>,
+    timeoutMs: number | undefined,
+    at: string,
+  ): Promise<void> {
+    await this.append({
+      type: "agent.interview_awaiting",
+      runId,
+      traceId,
+      questions: questions.map((q) => ({ ...q })),
+      ...(timeoutMs !== undefined ? { timeoutMs } : {}),
       at,
     });
   }

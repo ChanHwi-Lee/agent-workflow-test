@@ -24,6 +24,7 @@ import { RunBootstrapService } from "./services/runBootstrapService.js";
 import { RunCancelService } from "./services/runCancelService.js";
 import { RunEventService } from "./services/runEventService.js";
 import { RunFinalizeService } from "./services/runFinalizeService.js";
+import { QueueInterviewResumeDispatcher } from "./services/queueInterviewResumeDispatcher.js";
 import { RunRecoveryService } from "./services/runRecoveryService.js";
 import { RunWatchdogService } from "./services/runWatchdogService.js";
 import { eventsPostRoute } from "./routes/internal/events.post.js";
@@ -134,6 +135,10 @@ export async function buildApp(
       mutationLedgerRepository,
       runEventService,
       app.appLogger.child({ service: "run-recovery-service" }),
+      new QueueInterviewResumeDispatcher(
+        app.runQueue,
+        app.appLogger.child({ service: "queue-interview-resume-dispatcher" }),
+      ),
     ),
     runWatchdogService,
   };

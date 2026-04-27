@@ -1,4 +1,5 @@
 import type {
+  InterviewAnswer,
   WaitMutationAckResponse,
   WorkerAppendEventRequest,
   WorkerAppendEventResponse,
@@ -15,6 +16,17 @@ import type { RunAttemptRepository } from "../repositories/runAttemptRepository.
 import type { RunRecord } from "../repositories/runRepository.js";
 import type { RunRepository } from "../repositories/runRepository.js";
 import type { RunEventService } from "./runEventService.js";
+
+export interface InterviewResumeDispatcher {
+  dispatchInterviewResume(args: {
+    runId: string;
+    traceId: string;
+    attemptSeq: number;
+    queueJobId: string;
+    answers: ReadonlyArray<InterviewAnswer>;
+    receivedAt: string;
+  }): Promise<void>;
+}
 
 export interface HeartbeatCommand {
   runId: string;
@@ -57,6 +69,7 @@ export class RunRecoveryService {
     private readonly mutationLedgerRepository: MutationLedgerRepository,
     private readonly runEventService: RunEventService,
     private readonly logger: Logger,
+    private readonly interviewResumeDispatcher?: InterviewResumeDispatcher,
   ) {}
 
   async acceptHeartbeat(command: HeartbeatCommand): Promise<HeartbeatResponse> {
@@ -218,6 +231,48 @@ export class RunRecoveryService {
           command.runId,
           run.status,
           "awaiting_apply_ack",
+        );
+        break;
+      }
+      case "interview.awaiting":
+        await this.runEventService.appendInterviewAwaiting(
+          command.runId,
+          command.traceId,
+          command.event.questions,
+          command.event.timeoutMs,
+          receivedAt,
+        );
+        break;
+      case "interview.answer": {
+        // TODO(polishing): authn + rate-limit + run owner 검증.
+        // 1차 backbone 에서는 dispatcher 없이는 no-op (logger.warn) — agent-worker
+        // resume entrypoint 와 BullMQ resume job 결선 후 본격 동작.
+        if (this.interviewResumeDispatcher) {
+          await this.interviewResumeDispatcher.dispatchInterviewResume({
+            runId: command.runId,
+            traceId: command.traceId,
+            attemptSeq: command.attemptSeq,
+            queueJobId: command.queueJobId,
+            answers: command.event.answers,
+            receivedAt,
+          });
+        } else {
+          this.logger.warn(
+            "Received interview.answer but no resume dispatcher is configured; answers ignored",
+            {
+              runId: command.runId,
+              traceId: command.traceId,
+              attemptSeq: command.attemptSeq,
+              answerCount: command.event.answers.length,
+            },
+          );
+        }
+        await this.runEventService.appendLog(
+          command.runId,
+          command.traceId,
+          "info",
+          `Interview answer received (count=${command.event.answers.length})`,
+          receivedAt,
         );
         break;
       }

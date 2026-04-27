@@ -35,6 +35,10 @@ class FailingRunQueueProducer implements RunQueueProducer {
     throw this.error;
   }
 
+  async enqueueInterviewResume(): Promise<never> {
+    throw this.error;
+  }
+
   async listJobs(): Promise<readonly EnqueuedRunJob[]> {
     return [];
   }

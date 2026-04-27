@@ -97,6 +97,12 @@ class FakeRunQueueProducer implements RunQueueProducer {
     };
   }
 
+  async enqueueInterviewResume(): Promise<never> {
+    throw new Error(
+      "FakeRunQueueProducer.enqueueInterviewResume not used by watchdog tests",
+    );
+  }
+
   async listJobs(): Promise<readonly EnqueuedRunJob[]> {
     return this.enqueued.map(({ payload }) => ({
       jobId: payload.queueJobId,
