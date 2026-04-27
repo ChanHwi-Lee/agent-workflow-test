@@ -16,6 +16,7 @@ import type {
 } from "@tooldi/tool-adapters";
 import type { ToolRegistry } from "@tooldi/tool-registry";
 import type { BaseCheckpointSaver } from "@langchain/langgraph";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type { BackendCallbackClient } from "../clients/backendCallbackClient.js";
 import type {
@@ -55,6 +56,7 @@ export interface RunJobGraphDependencies {
   templateCatalogClient: TemplateCatalogClient;
   tooldiCatalogSourceClient?: TooldiCatalogSourceClient;
   langGraphCheckpointer?: BaseCheckpointSaver;
+  interviewRecordsDb?: NodePgDatabase;
   templatePlanner?: TemplatePlanner;
   templateCopyPlanGenerator?: TemplateCopyPlanGenerator;
   templateAbstractLayoutGenerator?: TemplateAbstractLayoutGenerator;

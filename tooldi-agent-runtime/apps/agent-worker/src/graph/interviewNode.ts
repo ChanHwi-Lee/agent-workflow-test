@@ -18,12 +18,14 @@ import {
   generateInterviewQuestions,
   reconcileResumeAnswers,
 } from "../phases/interviewLlm.js";
+import { insertInterviewRecord } from "../persistence/interviewRecordsRepository.js";
 import type { InterviewState } from "../types.js";
 import { RunJobGraphState } from "./runJobGraphState.js";
 import type { RunJobGraphDependencies } from "./runJobGraphTypes.js";
 import type { createRunJobGraphTasks } from "./graphTasks.js";
 
 const DEFAULT_INTERVIEW_TIMEOUT_MS = 300_000;
+const INTERVIEW_RECORDS_MODEL = "gemini-3.1-flash-lite-preview";
 
 interface InterruptResumeShape {
   readonly answers?: ReadonlyArray<InterviewAnswer>;
@@ -182,6 +184,30 @@ export function registerInterviewUserNode(
         totalQuestions: questions.length,
       },
     });
+
+    // best-effort sidecar (Anti-Pattern §1, §9): INSERT 실패는 logger.warn 만,
+    // run 흐름은 계속. memory mode (db=undefined) 면 자연 skip.
+    if (dependencies.interviewRecordsDb) {
+      await insertInterviewRecord(
+        dependencies.interviewRecordsDb,
+        dependencies.logger,
+        {
+          runId: state.job.runId,
+          attemptSeq: state.job.attemptSeq,
+          sessionId: state.hydrated.request.editorSessionId,
+          originalPrompt: prompt,
+          canvas,
+          interview: { questions, answers: matched },
+          derivedBrief: briefResult.derivedBrief,
+          builtUserPrompt,
+          usages: interview.usages,
+          timingsMs: interview.timings,
+          autoFilledCount: autoFilledIds.length,
+          autoFilledIds,
+          model: INTERVIEW_RECORDS_MODEL,
+        },
+      );
+    }
 
     return { interview };
   });
