@@ -12,6 +12,11 @@ import {
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
 import type { Logger } from "@tooldi/agent-observability";
 
+import {
+  isDuplicateResumeIgnoredError,
+  isInterviewPendingError,
+} from "../jobs/processRunJob.js";
+
 const RUN_EXECUTE_JOB_NAME = "run.execute";
 const INTERVIEW_RESUME_JOB_NAME = "interview.resume";
 
@@ -25,6 +30,49 @@ export interface CreateRunQueueConsumerOptions {
   logger: Logger;
   processRunJob(job: RunJobEnvelope): Promise<void>;
   resumeRunJob(payload: InterviewResumeJobPayload): Promise<void>;
+}
+
+export async function processRunExecuteQueueJob(
+  payload: RunJobEnvelope,
+  options: Pick<CreateRunQueueConsumerOptions, "logger" | "processRunJob">,
+): Promise<void> {
+  try {
+    await options.processRunJob(payload);
+  } catch (error) {
+    if (isInterviewPendingError(error)) {
+      options.logger.info("BullMQ run.execute paused awaiting interview answer", {
+        runId: error.payload.runId,
+        questionCount: error.payload.questions.length,
+        ...(error.payload.timeoutMs !== undefined
+          ? { timeoutMs: error.payload.timeoutMs }
+          : {}),
+      });
+      return;
+    }
+    throw error;
+  }
+}
+
+export async function processInterviewResumeQueueJob(
+  payload: InterviewResumeJobPayload,
+  options: Pick<CreateRunQueueConsumerOptions, "logger" | "resumeRunJob">,
+): Promise<void> {
+  try {
+    await options.resumeRunJob(payload);
+  } catch (error) {
+    if (isDuplicateResumeIgnoredError(error)) {
+      options.logger.info(
+        "Skipped duplicate interview.resume job (graph already past interrupt)",
+        {
+          runId: payload.runId,
+          attemptSeq: payload.attemptSeq,
+          queueJobId: payload.queueJobId,
+        },
+      );
+      return;
+    }
+    throw error;
+  }
 }
 
 class DisabledRunQueueConsumer implements RunQueueConsumer {
@@ -87,27 +135,12 @@ class BullMqRunQueueConsumer implements RunQueueConsumer {
   ): Promise<void> {
     if (job.name === RUN_EXECUTE_JOB_NAME) {
       const payload = this.validateRunJobEnvelope(job);
-      await options.processRunJob(payload);
+      await processRunExecuteQueueJob(payload, options);
       return;
     }
     if (job.name === INTERVIEW_RESUME_JOB_NAME) {
       const payload = this.validateInterviewResumePayload(job);
-      try {
-        await options.resumeRunJob(payload);
-      } catch (error) {
-        if (error instanceof Error && error.name === "DuplicateResumeIgnoredError") {
-          options.logger.info(
-            "Skipped duplicate interview.resume job (graph already past interrupt)",
-            {
-              runId: payload.runId,
-              attemptSeq: payload.attemptSeq,
-              queueJobId: payload.queueJobId,
-            },
-          );
-          return;
-        }
-        throw error;
-      }
+      await processInterviewResumeQueueJob(payload, options);
       return;
     }
     throw new Error(`BullMQ job has unsupported name: ${job.name}`);
