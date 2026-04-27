@@ -77,7 +77,9 @@ async function executePlanner(
   planner: TemplatePlanner,
   input: Parameters<TemplatePlanner["plan"]>[0],
 ): Promise<TemplateIntentDraft> {
-  const parsedDraft = TemplateIntentDraftSchema.safeParse(await planner.plan(input));
+  const parsedDraft = TemplateIntentDraftSchema.safeParse(
+    normalizePlannerDraftContract(await planner.plan(input)),
+  );
 
   if (parsedDraft.success) {
     return parsedDraft.data;
@@ -91,6 +93,23 @@ async function executePlanner(
     .join("; ");
 
   throw new Error(`Invalid planner draft: ${issues}`);
+}
+
+function normalizePlannerDraftContract(draft: unknown): unknown {
+  if (
+    draft === null ||
+    typeof draft !== "object" ||
+    !("goalSummary" in draft) ||
+    typeof draft.goalSummary !== "string" ||
+    draft.goalSummary.length <= 80
+  ) {
+    return draft;
+  }
+
+  return {
+    ...draft,
+    goalSummary: draft.goalSummary.slice(0, 80),
+  };
 }
 
 function formatPlannerError(error: unknown): string {

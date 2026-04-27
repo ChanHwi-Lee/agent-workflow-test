@@ -73,7 +73,8 @@ export function formatV6RenderQualityRetryFeedback(
 
 const ROOT_TOLERANCE_PX = 2;
 const OFF_CANVAS_TOLERANCE_PX = 1;
-const SCROLL_OVERFLOW_TOLERANCE_PX = 1;
+const SCROLL_OVERFLOW_X_TOLERANCE_PX = 1;
+const SCROLL_OVERFLOW_Y_TOLERANCE_PX = 4;
 const HIGH_TEXT_DENSITY_THRESHOLD = 0.16;
 
 function retryFixHint(issue: V6RenderQualityIssue): string {
@@ -167,7 +168,7 @@ export function buildV6RenderQualityReport(
     }
 
     const overflow = scrollOverflowAmounts(el);
-    if (overflow.total > SCROLL_OVERFLOW_TOLERANCE_PX) {
+    if (isScrollOverflowBeyondTolerance(overflow)) {
       scrollOverflowElementCount += 1;
       const blocking = isBlockingScrollOverflowElement(el);
       pushIssue(issues, {
@@ -297,6 +298,16 @@ function scrollOverflowAmounts(el: V6RenderedElement) {
   const x = Math.max(0, layout.scrollWidth - layout.clientWidth);
   const y = Math.max(0, layout.scrollHeight - layout.clientHeight);
   return { x: round(x), y: round(y), total: round(x + y) };
+}
+
+function isScrollOverflowBeyondTolerance(overflow: {
+  readonly x: number;
+  readonly y: number;
+}): boolean {
+  return (
+    overflow.x > SCROLL_OVERFLOW_X_TOLERANCE_PX ||
+    overflow.y > SCROLL_OVERFLOW_Y_TOLERANCE_PX
+  );
 }
 
 function computeTextDensity(text: string, width: number): number {

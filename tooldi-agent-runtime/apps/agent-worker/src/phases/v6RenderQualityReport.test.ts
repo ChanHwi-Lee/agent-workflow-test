@@ -150,6 +150,86 @@ test("렌더 품질 리포트는 캔버스 밖 텍스트와 스크롤 오버플�
   );
 });
 
+test("렌더 품질 리포트는 미세한 세로 스크롤 오차를 hard gate 후보로 보지 않는다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.0",
+        tagName: "h1",
+        bounds: { left: 80, top: 80, width: 480, height: 160 },
+        isTextLeaf: true,
+        text: "아이스 복숭아 라떼",
+        layout: {
+          clientWidth: 480,
+          clientHeight: 160,
+          scrollWidth: 480,
+          scrollHeight: 162,
+        },
+      }),
+    ]),
+  );
+
+  assert.equal(report.metrics.scrollOverflowElementCount, 0);
+  assert.equal(report.hardGateCandidate, false);
+  assert.equal(report.blockingIssues.length, 0);
+});
+
+test("렌더 품질 리포트는 작은 수평 텍스트 스크롤 오버플로를 계속 blocking으로 표시한다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.0",
+        tagName: "h1",
+        bounds: { left: 80, top: 80, width: 480, height: 160 },
+        isTextLeaf: true,
+        text: "아이스 복숭아 라떼",
+        layout: {
+          clientWidth: 480,
+          clientHeight: 160,
+          scrollWidth: 482,
+          scrollHeight: 160,
+        },
+      }),
+    ]),
+  );
+
+  assert.equal(report.metrics.scrollOverflowElementCount, 1);
+  assert.equal(report.hardGateCandidate, true);
+  assert.equal(report.blockingIssues.length, 1);
+  assert.equal(report.blockingIssues[0]?.code, "scroll_overflow");
+});
+
+test("렌더 품질 리포트는 실제 텍스트 스크롤 오버플로는 계속 blocking으로 표시한다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.0",
+        tagName: "h1",
+        bounds: { left: 80, top: 80, width: 480, height: 80 },
+        isTextLeaf: true,
+        text: "아이스 복숭아 라떼",
+        layout: {
+          clientWidth: 480,
+          clientHeight: 80,
+          scrollWidth: 480,
+          scrollHeight: 128,
+        },
+      }),
+    ]),
+  );
+
+  assert.equal(report.metrics.scrollOverflowElementCount, 1);
+  assert.equal(report.hardGateCandidate, true);
+  assert.equal(report.blockingIssues.length, 1);
+  assert.equal(report.blockingIssues[0]?.code, "scroll_overflow");
+});
+
 test("렌더 품질 리포트는 root border-box가 canvas보다 크면 hard gate 후보로 표시한다", () => {
   const report = buildV6RenderQualityReport(
     extraction([

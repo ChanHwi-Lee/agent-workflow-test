@@ -51,6 +51,78 @@ test("renderAndExtract — extracts text elements that contain line breaks", asy
   }
 });
 
+test("renderAndExtract — ignores formatting whitespace after a single br", async () => {
+  const browser = await launchEphemeralBrowser();
+  try {
+    const result = await renderAndExtract(
+      browser,
+      `<div style="width:1200px;height:628px;position:relative;">
+        <h1 style="font-size:72px;line-height:1.1;margin:0;">
+          향긋한 봄의 맛,<br>
+          제철 나물로 차린 한상
+        </h1>
+      </div>`,
+      {
+        canvas: { width: 1200, height: 628 },
+        fontsReadyTimeoutMs: 100,
+      },
+    );
+
+    const title = result.elements.find((el) => el.tagName === "h1");
+    assert.ok(title, "expected h1 element to be extracted");
+    assert.equal(title.text, "향긋한 봄의 맛,\n제철 나물로 차린 한상");
+  } finally {
+    await browser.close();
+  }
+});
+
+test("renderAndExtract — preserves explicit consecutive br blank lines", async () => {
+  const browser = await launchEphemeralBrowser();
+  try {
+    const result = await renderAndExtract(
+      browser,
+      `<div style="width:1200px;height:628px;position:relative;">
+        <h1 style="font-size:72px;line-height:1.1;margin:0;">첫 줄<br><br>둘째 줄</h1>
+      </div>`,
+      {
+        canvas: { width: 1200, height: 628 },
+        fontsReadyTimeoutMs: 100,
+      },
+    );
+
+    const title = result.elements.find((el) => el.tagName === "h1");
+    assert.ok(title, "expected h1 element to be extracted");
+    assert.equal(title.text, "첫 줄\n\n둘째 줄");
+  } finally {
+    await browser.close();
+  }
+});
+
+test("renderAndExtract — preserves explicit br separated by indentation", async () => {
+  const browser = await launchEphemeralBrowser();
+  try {
+    const result = await renderAndExtract(
+      browser,
+      `<div style="width:1200px;height:628px;position:relative;">
+        <h1 style="font-size:72px;line-height:1.1;margin:0;">
+          첫 줄<br>
+          <br>둘째 줄
+        </h1>
+      </div>`,
+      {
+        canvas: { width: 1200, height: 628 },
+        fontsReadyTimeoutMs: 100,
+      },
+    );
+
+    const title = result.elements.find((el) => el.tagName === "h1");
+    assert.ok(title, "expected h1 element to be extracted");
+    assert.equal(title.text, "첫 줄\n\n둘째 줄");
+  } finally {
+    await browser.close();
+  }
+});
+
 test("renderAndExtract — keeps direct text when an inline child has its own style", async () => {
   const browser = await launchEphemeralBrowser();
   try {

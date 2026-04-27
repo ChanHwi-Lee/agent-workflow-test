@@ -162,16 +162,41 @@ export async function extractFromPage(
         return combined.trim().length > 0;
       }
 
-      function elementText(el: Element): string {
-        return Array.from(el.childNodes)
-          .map((n) =>
-            n.nodeType === TEXT_NODE
-              ? (n.nodeValue ?? "")
-              : n.nodeType === ELEMENT_NODE &&
-                  (n as Element).tagName.toLowerCase() === "br"
-                ? "\n"
-                : "",
-          )
+      function preservesSourceLineBreaks(whiteSpace: string): boolean {
+        return (
+          whiteSpace === "pre" ||
+          whiteSpace === "pre-wrap" ||
+          whiteSpace === "pre-line" ||
+          whiteSpace === "break-spaces"
+        );
+      }
+
+      function normalizeTextNodeForElementText(
+        raw: string,
+        whiteSpace: string,
+      ): string {
+        if (preservesSourceLineBreaks(whiteSpace)) {
+          return normalizeText(raw);
+        }
+        // In normal browser whitespace handling, source newlines/indentation are
+        // layout whitespace, not visual line breaks. Only <br> should emit "\n".
+        return raw.replace(/\s+/g, " ").trim();
+      }
+
+      function elementText(el: Element, whiteSpace: string): string {
+        const parts = Array.from(el.childNodes).map((n) => {
+          if (n.nodeType === TEXT_NODE) {
+            const raw = n.nodeValue ?? "";
+            if (raw.trim().length === 0) return "";
+            return normalizeTextNodeForElementText(raw, whiteSpace);
+          }
+          return n.nodeType === ELEMENT_NODE &&
+            (n as Element).tagName.toLowerCase() === "br"
+            ? "\n"
+            : "";
+        });
+
+        return parts
           .join("")
           .replace(/[^\S\n]+/g, " ")
           .replace(/ *\n */g, "\n")
@@ -325,7 +350,7 @@ export async function extractFromPage(
           },
           style: pickStyle(cs),
           isTextLeaf: leaf,
-          text: leaf ? elementText(el) : null,
+          text: leaf ? elementText(el, cs.whiteSpace) : null,
           img: null,
           svg: null,
           hasChildren: children.length > 0,

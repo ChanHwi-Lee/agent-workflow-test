@@ -6,7 +6,7 @@ import {
   runV6HtmlGen,
   stripMarkdownFences,
 } from "./v6HtmlGen.js";
-import { buildV6UserMessage } from "./v6SystemPrompt.js";
+import { V6_SYSTEM_PROMPT, buildV6UserMessage } from "./v6SystemPrompt.js";
 
 function makeMockFetch(
   body: unknown,
@@ -136,6 +136,13 @@ test("runV6HtmlGen은 thinking level을 낮은 토큰 예산 값으로 조절할
   assert.deepEqual(reqBody.generationConfig.thinkingConfig, {
     thinkingLevel: "minimal",
   });
+});
+
+test("V6_SYSTEM_PROMPT는 placeholder 이미지 영역을 실제 asset 영역으로 취급하도록 지시한다", () => {
+  assert.match(V6_SYSTEM_PROMPT, /Placeholder images are replaced later/);
+  assert.match(V6_SYSTEM_PROMPT, /visually occupied/);
+  assert.match(V6_SYSTEM_PROMPT, /solid\/semi-opaque backing shape/);
+  assert.match(V6_SYSTEM_PROMPT, /Do not rely on blank placeholder space/);
 });
 
 test("runV6HtmlGen strips markdown fences if the model emits them", async () => {
