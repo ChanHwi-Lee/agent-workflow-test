@@ -52,6 +52,8 @@ export interface V6ComputedStyle {
   readonly transform: string;
   readonly transformOrigin: string;
   readonly boxShadow: string;
+  readonly textShadow?: string;
+  readonly filter?: string;
   readonly objectFit: string;
   readonly overflow: string;
   readonly display: string;
@@ -100,21 +102,58 @@ export interface V6ExtractionResult {
 export interface V6GradientStop {
   readonly color: string;
   readonly offset: number;
+  readonly alpha?: number;
+  readonly cssColor?: string;
 }
 
 export interface V6LinearGradient {
   readonly type: "linear-gradient";
   readonly angle: number;
   readonly stops: ReadonlyArray<V6GradientStop>;
+  readonly css?: string;
 }
 
-export type V6Fill = string | V6LinearGradient | null;
+export interface V6RadialGradient {
+  readonly type: "radial-gradient";
+  readonly shape: "circle" | "ellipse" | null;
+  readonly position: string | null;
+  readonly stops: ReadonlyArray<V6GradientStop>;
+  readonly css?: string;
+}
+
+export interface V6SolidPaint {
+  readonly type: "solid";
+  readonly color: string;
+  readonly alpha: number;
+  readonly cssColor: string;
+}
+
+export interface V6UnsupportedPaint {
+  readonly type: "unsupported-paint";
+  readonly css: string;
+  readonly reason: string;
+}
+
+export type V6Paint =
+  | V6SolidPaint
+  | V6LinearGradient
+  | V6RadialGradient
+  | V6UnsupportedPaint;
+
+export type V6Fill =
+  | string
+  | V6LinearGradient
+  | V6RadialGradient
+  | V6UnsupportedPaint
+  | null;
 
 export type V6BorderRadius = number | readonly [number, number, number, number];
 
 export interface V6Stroke {
   readonly color: string;
   readonly width: number;
+  readonly alpha?: number;
+  readonly cssColor?: string;
 }
 
 export interface V6SourceRef {
@@ -129,11 +168,13 @@ interface V6BaseCommand {
   readonly bounds: V6Bounds;
   readonly opacity: number;
   readonly transform?: string;
+  readonly filter?: string | null;
 }
 
 export interface V6RectCommand extends V6BaseCommand {
   readonly primitive: "rect";
   readonly fill: V6Fill;
+  readonly paint?: V6Paint;
   readonly borderRadius: V6BorderRadius;
   readonly stroke: V6Stroke | null;
   readonly shadow: string | null;
@@ -151,6 +192,9 @@ export interface V6TextCommand extends V6BaseCommand {
   readonly lineHeight: number | "normal";
   readonly letterSpacing: number;
   readonly color: string;
+  readonly colorAlpha?: number;
+  readonly colorCssColor?: string;
+  readonly textShadow?: string | null;
 }
 
 export interface V6ImageCommand extends V6BaseCommand {

@@ -155,3 +155,26 @@ test("renderAndExtract — keeps direct text when an inline child has its own st
     await browser.close();
   }
 });
+
+test("renderAndExtract는 textShadow와 filter 계산값을 수집한다", async () => {
+  const browser = await launchEphemeralBrowser();
+  try {
+    const result = await renderAndExtract(
+      browser,
+      `<div style="width:1200px;height:628px;position:relative;">
+        <p style="margin:0;font-size:40px;text-shadow:2px 4px 8px rgba(0, 0, 0, 0.4);filter:blur(1px);">그림자</p>
+      </div>`,
+      {
+        canvas: { width: 1200, height: 628 },
+        fontsReadyTimeoutMs: 100,
+      },
+    );
+
+    const text = result.elements.find((el) => el.tagName === "p");
+    assert.ok(text, "expected p element to be extracted");
+    assert.equal(text.style.textShadow, "rgba(0, 0, 0, 0.4) 2px 4px 8px");
+    assert.equal(text.style.filter, "blur(1px)");
+  } finally {
+    await browser.close();
+  }
+});

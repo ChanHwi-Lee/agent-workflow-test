@@ -38,6 +38,46 @@ const RECT_GRADIENT: V6RectCommand = {
   shadow: "0 4px 12px rgba(0,0,0,0.2)",
 };
 
+const RECT_ALPHA: V6RectCommand = {
+  ...RECT_SOLID,
+  fill: "#FF6432",
+  paint: {
+    type: "solid",
+    color: "#FF6432",
+    alpha: 0.42,
+    cssColor: "rgba(255, 100, 50, 0.42)",
+  },
+  stroke: {
+    color: "#0F172A",
+    width: 3,
+    alpha: 0.35,
+    cssColor: "rgba(15, 23, 42, 0.35)",
+  },
+};
+
+const RECT_RADIAL: V6RectCommand = {
+  ...RECT_SOLID,
+  fill: {
+    type: "radial-gradient",
+    shape: "circle",
+    position: "75% 50%",
+    css: "radial-gradient(circle at 75% 50%, #FF4500, #8B0000)",
+    stops: [
+      { color: "#FF4500", offset: 0, alpha: 1, cssColor: "#FF4500" },
+      { color: "#8B0000", offset: 1, alpha: 1, cssColor: "#8B0000" },
+    ],
+  },
+};
+
+const RECT_UNSUPPORTED_PAINT: V6RectCommand = {
+  ...RECT_SOLID,
+  fill: {
+    type: "unsupported-paint",
+    css: "conic-gradient(from 45deg, red, blue)",
+    reason: "unsupported-background-image",
+  },
+};
+
 const TEXT_CMD: V6TextCommand = {
   type: "create",
   primitive: "text",
@@ -93,7 +133,12 @@ test("adaptV6Commands — rect solid → shape with fillColor", () => {
   assert.ok(c);
   assert.equal(c.op, "createLayer");
   assert.equal(c.layerBlueprint.layerType, "shape");
-  assert.deepEqual(c.layerBlueprint.bounds, { x: 10, y: 20, width: 300, height: 200 });
+  assert.deepEqual(c.layerBlueprint.bounds, {
+    x: 10,
+    y: 20,
+    width: 300,
+    height: 200,
+  });
   assert.equal(c.executionSlotKey, null, "v6 emits slot-free");
   assert.equal(c.parentRef.position, "append");
   assert.equal(c.clientLayerKey, "v6:r1:001:shape");
@@ -104,9 +149,30 @@ test("adaptV6Commands — rect solid → shape with fillColor", () => {
   assert.equal(tokens.opacity, 0.9);
 });
 
+test("adaptV6Commands는 fillColor 호환성과 fillPaint alpha를 함께 직렬화한다", () => {
+  const { commands } = adaptV6Commands([RECT_ALPHA], { runId: "alpha" });
+  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<
+    string,
+    unknown
+  >;
+  assert.equal(tokens.fillColor, "#FF6432");
+  const fillPaint = tokens.fillPaint as Record<string, unknown>;
+  assert.equal(fillPaint.type, "solid");
+  assert.equal(fillPaint.color, "#FF6432");
+  assert.equal(fillPaint.alpha, 0.42);
+  assert.equal(fillPaint.cssColor, "rgba(255, 100, 50, 0.42)");
+  assert.deepEqual(tokens.stroke, { color: "#0F172A", width: 3 });
+  const strokePaint = tokens.strokePaint as Record<string, unknown>;
+  assert.equal(strokePaint.alpha, 0.35);
+  assert.equal(strokePaint.cssColor, "rgba(15, 23, 42, 0.35)");
+});
+
 test("adaptV6Commands — rect gradient → fill.type='linear-gradient' with stops", () => {
   const { commands } = adaptV6Commands([RECT_GRADIENT], { runId: "r2" });
-  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<string, unknown>;
+  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<
+    string,
+    unknown
+  >;
   const fill = tokens.fill as Record<string, unknown>;
   assert.equal(fill.type, "linear-gradient");
   assert.equal(fill.angle, 135);
@@ -116,9 +182,54 @@ test("adaptV6Commands — rect gradient → fill.type='linear-gradient' with sto
   assert.equal(stops[1]?.offset, 1);
 });
 
+test("adaptV6Commands는 radial-gradient fill token을 직렬화한다", () => {
+  const { commands } = adaptV6Commands([RECT_RADIAL], { runId: "radial" });
+  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<
+    string,
+    unknown
+  >;
+  const fill = tokens.fill as Record<string, unknown>;
+  assert.equal(fill.type, "radial-gradient");
+  assert.equal(fill.shape, "circle");
+  assert.equal(fill.position, "75% 50%");
+  assert.equal(
+    fill.css,
+    "radial-gradient(circle at 75% 50%, #FF4500, #8B0000)",
+  );
+  const stops = fill.stops as Array<Record<string, unknown>>;
+  assert.equal(stops[0]?.color, "#FF4500");
+  assert.equal(stops[1]?.color, "#8B0000");
+  const fillPaint = tokens.fillPaint as Record<string, unknown>;
+  assert.equal(fillPaint.type, "radial-gradient");
+});
+
+test("adaptV6Commands는 unsupported paint warning을 metadata와 styleTokens에 남긴다", () => {
+  const { commands } = adaptV6Commands([RECT_UNSUPPORTED_PAINT], {
+    runId: "unsupported",
+  });
+  const command = commands[0];
+  assert.ok(command);
+  const tokens = command.layerBlueprint.styleTokens as Record<string, unknown>;
+  const fill = tokens.fill as Record<string, unknown>;
+  assert.equal(fill.type, "unsupported-paint");
+  assert.equal(fill.reason, "unsupported-background-image");
+  assert.equal(tokens.paintWarning, "unsupported-background-image");
+  assert.equal(
+    command.layerBlueprint.metadata.v6PaintWarning,
+    "unsupported-background-image",
+  );
+  assert.equal(
+    command.layerBlueprint.metadata.unsupportedPaintCss,
+    "conic-gradient(from 45deg, red, blue)",
+  );
+});
+
 test("adaptV6Commands — rect per-corner borderRadius serializes as object", () => {
   const { commands } = adaptV6Commands([RECT_GRADIENT], { runId: "r3" });
-  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<string, unknown>;
+  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<
+    string,
+    unknown
+  >;
   assert.deepEqual(tokens.borderRadius, {
     topLeft: 4,
     topRight: 8,
@@ -129,7 +240,10 @@ test("adaptV6Commands — rect per-corner borderRadius serializes as object", ()
 
 test("adaptV6Commands — rect stroke + shadow flow into styleTokens", () => {
   const { commands } = adaptV6Commands([RECT_GRADIENT], { runId: "r4" });
-  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<string, unknown>;
+  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<
+    string,
+    unknown
+  >;
   assert.deepEqual(tokens.stroke, { color: "#111111", width: 2 });
   assert.equal(tokens.shadow, "0 4px 12px rgba(0,0,0,0.2)");
 });
@@ -167,7 +281,10 @@ test("adaptV6Commands — text fontFamily cascade picks first token (Toolditor I
     fontFamily: '"701_400", sans-serif',
   };
   const { commands } = adaptV6Commands([cascadeText], { runId: "font" });
-  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<string, unknown>;
+  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<
+    string,
+    unknown
+  >;
   assert.equal(tokens.fontFamily, "701_400");
 });
 
@@ -188,15 +305,27 @@ test("adaptV6Commands — Toolditor font ID suffix가 있으면 fontWeight를 su
     { runId: "font-weight" },
   );
 
-  const firstTokens = commands[0]?.layerBlueprint.styleTokens as Record<string, unknown>;
-  const firstMetadata = commands[0]?.layerBlueprint.metadata as Record<string, unknown>;
+  const firstTokens = commands[0]?.layerBlueprint.styleTokens as Record<
+    string,
+    unknown
+  >;
+  const firstMetadata = commands[0]?.layerBlueprint.metadata as Record<
+    string,
+    unknown
+  >;
   assert.equal(firstTokens.fontFamily, "1301_400");
   assert.equal(firstTokens.fontWeight, "400");
   assert.equal(firstMetadata.computedFontWeight, "700");
   assert.equal(firstMetadata.normalizedFontWeight, "400");
 
-  const secondTokens = commands[1]?.layerBlueprint.styleTokens as Record<string, unknown>;
-  const secondMetadata = commands[1]?.layerBlueprint.metadata as Record<string, unknown>;
+  const secondTokens = commands[1]?.layerBlueprint.styleTokens as Record<
+    string,
+    unknown
+  >;
+  const secondMetadata = commands[1]?.layerBlueprint.metadata as Record<
+    string,
+    unknown
+  >;
   assert.equal(secondTokens.fontFamily, "701_700");
   assert.equal(secondTokens.fontWeight, "700");
   assert.equal(secondMetadata.computedFontWeight, "400");
@@ -206,8 +335,31 @@ test("adaptV6Commands — Toolditor font ID suffix가 있으면 fontWeight를 su
 test("adaptV6Commands — text lineHeight 'normal' serialized as null", () => {
   const normalText: V6TextCommand = { ...TEXT_CMD, lineHeight: "normal" };
   const { commands } = adaptV6Commands([normalText], { runId: "r6" });
-  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<string, unknown>;
+  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<
+    string,
+    unknown
+  >;
   assert.equal(tokens.lineHeight, null);
+});
+
+test("adaptV6Commands는 textShadow와 filter를 styleTokens에 직렬화한다", () => {
+  const shadowText: V6TextCommand = {
+    ...TEXT_CMD,
+    textShadow: "2px 4px 8px rgba(0,0,0,0.4)",
+    filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.25))",
+    colorAlpha: 0.8,
+    colorCssColor: "rgba(210, 105, 30, 0.8)",
+  };
+  const { commands } = adaptV6Commands([shadowText], { runId: "text-shadow" });
+  const tokens = commands[0]?.layerBlueprint.styleTokens as Record<
+    string,
+    unknown
+  >;
+  assert.equal(tokens.textShadow, "2px 4px 8px rgba(0,0,0,0.4)");
+  assert.equal(tokens.filter, "drop-shadow(0px 2px 4px rgba(0,0,0,0.25))");
+  const fillPaint = tokens.fillPaint as Record<string, unknown>;
+  assert.equal(fillPaint.alpha, 0.8);
+  assert.equal(fillPaint.cssColor, "rgba(210, 105, 30, 0.8)");
 });
 
 test("adaptV6Commands — image (jpg) → layerType 'image' with src metadata", () => {
@@ -244,7 +396,12 @@ test("adaptV6Commands — svg → layerType 'svg' with outerHTML metadata", () =
 });
 
 test("adaptV6Commands — sequence ordering: commands[i].clientLayerKey seq matches order", () => {
-  const mixed: V6PrimitiveCommand[] = [RECT_SOLID, TEXT_CMD, BITMAP_CMD, SVG_CMD];
+  const mixed: V6PrimitiveCommand[] = [
+    RECT_SOLID,
+    TEXT_CMD,
+    BITMAP_CMD,
+    SVG_CMD,
+  ];
   const { commands } = adaptV6Commands(mixed, { runId: "ord" });
   assert.equal(commands.length, 4);
   assert.equal(commands[0]?.clientLayerKey, "v6:ord:001:shape");
@@ -264,7 +421,13 @@ test("adaptV6Commands — zero-size bounds are clamped to 1×1 (contract exclusi
 });
 
 test("adaptV6Commands — executionSlotKey always null (slot-free philosophy)", () => {
-  const mixed: V6PrimitiveCommand[] = [RECT_SOLID, TEXT_CMD, IMAGE_CMD, BITMAP_CMD, SVG_CMD];
+  const mixed: V6PrimitiveCommand[] = [
+    RECT_SOLID,
+    TEXT_CMD,
+    IMAGE_CMD,
+    BITMAP_CMD,
+    SVG_CMD,
+  ];
   const { commands } = adaptV6Commands(mixed, { runId: "slot" });
   for (const c of commands) {
     assert.equal(c.executionSlotKey, null);

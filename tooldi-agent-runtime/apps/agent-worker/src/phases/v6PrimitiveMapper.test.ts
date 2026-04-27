@@ -5,6 +5,7 @@ import {
   mapRenderedElements,
   parseColor,
   parseLinearGradient,
+  parseRadialGradient,
 } from "./v6PrimitiveMapper.js";
 import type {
   V6ComputedStyle,
@@ -47,6 +48,8 @@ const DEFAULT_STYLE: V6ComputedStyle = {
   transform: "none",
   transformOrigin: "0px 0px",
   boxShadow: "none",
+  textShadow: "none",
+  filter: "none",
   objectFit: "fill",
   overflow: "visible",
   display: "block",
@@ -98,6 +101,30 @@ test("mapRenderedElements — emits rect for solid-color div", () => {
   assert.deepEqual(cmd.bounds, { left: 10, top: 20, width: 200, height: 100 });
 });
 
+test("mapRenderedElements는 rgba 배경 fill과 stroke의 alpha를 보존한다", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        style: {
+          backgroundColor: "rgba(255, 100, 50, 0.42)",
+          borderTopWidth: "2px",
+          borderTopColor: "rgba(15, 23, 42, 0.35)",
+        },
+      }),
+    ),
+  );
+  const cmd = result.commands[0] as V6RectCommand;
+  assert.equal(cmd.fill, "#FF6432");
+  assert.equal(cmd.paint?.type, "solid");
+  if (cmd.paint?.type === "solid") {
+    assert.equal(cmd.paint.alpha, 0.42);
+    assert.equal(cmd.paint.cssColor, "rgba(255, 100, 50, 0.42)");
+  }
+  assert.equal(cmd.stroke?.color, "#0F172A");
+  assert.equal(cmd.stroke?.alpha, 0.35);
+  assert.equal(cmd.stroke?.cssColor, "rgba(15, 23, 42, 0.35)");
+});
+
 test("mapRenderedElements — linear-gradient preserves angle and stops", () => {
   const result = mapRenderedElements(
     extract(
@@ -123,6 +150,29 @@ test("mapRenderedElements — linear-gradient preserves angle and stops", () => 
   assert.equal(fill.stops[0]?.offset, 0);
   assert.equal(fill.stops[1]?.color, "#FF7043");
   assert.equal(fill.stops[1]?.offset, 1);
+});
+
+test("mapRenderedElements는 radial-gradient를 non-null fill paint로 보존한다", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        style: {
+          backgroundImage:
+            "radial-gradient(circle at 75% 50%, #FF4500, #8B0000)",
+        },
+      }),
+    ),
+  );
+  const cmd = result.commands[0] as V6RectCommand;
+  const fill = cmd.fill;
+  assert.ok(fill !== null && typeof fill !== "string");
+  assert.equal(fill.type, "radial-gradient");
+  if (fill.type !== "radial-gradient") return;
+  assert.equal(fill.shape, "circle");
+  assert.equal(fill.position, "75% 50%");
+  assert.equal(fill.stops[0]?.color, "#FF4500");
+  assert.equal(fill.stops[1]?.color, "#8B0000");
+  assert.equal(cmd.paint?.type, "radial-gradient");
 });
 
 test("mapRenderedElements — emits text for text leaf, inset by padding+border with safety bounds", () => {
@@ -499,6 +549,29 @@ test("mapRenderedElements — no paint + no text → no command (wrapper skipped
   assert.equal(result.commands.length, 0);
 });
 
+test("mapRenderedElements는 unsupported backgroundImage를 fill 없는 rect로 숨기지 않는다", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        style: {
+          backgroundImage: "conic-gradient(from 45deg, red, blue)",
+        },
+      }),
+    ),
+  );
+  const cmd = result.commands[0] as V6RectCommand;
+  assert.equal(cmd.primitive, "rect");
+  assert.ok(
+    cmd.fill !== null,
+    "unsupported paint should be explicit fill token",
+  );
+  assert.equal(typeof cmd.fill, "object");
+  if (cmd.fill !== null && typeof cmd.fill === "object") {
+    assert.equal(cmd.fill.type, "unsupported-paint");
+  }
+  assert.equal(cmd.paint?.type, "unsupported-paint");
+});
+
 test("mapRenderedElements — opacity and transform flow through", () => {
   const result = mapRenderedElements(
     extract(
@@ -529,7 +602,29 @@ test("mapRenderedElements — stroke captured when border width > 0", () => {
     ),
   );
   const cmd = result.commands[0] as V6RectCommand;
-  assert.deepEqual(cmd.stroke, { color: "#0F172A", width: 2 });
+  assert.equal(cmd.stroke?.color, "#0F172A");
+  assert.equal(cmd.stroke?.width, 2);
+});
+
+test("mapRenderedElements는 textShadow와 filter 문자열을 text command에 보존한다", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        isTextLeaf: true,
+        text: "Shadow",
+        style: {
+          textShadow: "2px 4px 8px rgba(0, 0, 0, 0.4)",
+          filter: "drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.25))",
+        },
+      }),
+    ),
+  );
+  const cmd = result.commands.find(
+    (c): c is V6TextCommand => c.primitive === "text",
+  );
+  assert.ok(cmd, "expected text command");
+  assert.equal(cmd.textShadow, "2px 4px 8px rgba(0, 0, 0, 0.4)");
+  assert.equal(cmd.filter, "drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.25))");
 });
 
 test("mapRenderedElements — serial + path preserved for traceability", () => {
@@ -553,13 +648,23 @@ test("parseColor — rgb and rgba", () => {
   assert.deepEqual(parseColor("rgb(255, 100, 50)"), {
     hex: "#FF6432",
     alpha: 1,
+    cssColor: "rgb(255, 100, 50)",
   });
   assert.deepEqual(parseColor("rgba(0, 0, 0, 0.5)"), {
     hex: "#000000",
     alpha: 0.5,
+    cssColor: "rgba(0, 0, 0, 0.5)",
   });
-  assert.equal(parseColor("rgba(0, 0, 0, 0)"), null);
-  assert.equal(parseColor("transparent"), null);
+  assert.deepEqual(parseColor("rgba(0, 0, 0, 0)"), {
+    hex: "#000000",
+    alpha: 0,
+    cssColor: "rgba(0, 0, 0, 0)",
+  });
+  assert.deepEqual(parseColor("transparent"), {
+    hex: "#000000",
+    alpha: 0,
+    cssColor: "transparent",
+  });
   assert.equal(parseColor(""), null);
   assert.equal(parseColor("none"), null);
 });
@@ -593,6 +698,30 @@ test("parseLinearGradient — explicit stop percentages preserved", () => {
   assert.ok(g);
   assert.equal(g.stops[0]?.offset, 0.2);
   assert.equal(g.stops[1]?.offset, 0.8);
+});
+
+test("parseLinearGradient는 stop alpha를 보존한다", () => {
+  const g = parseLinearGradient(
+    "linear-gradient(90deg, rgba(255,0,0,0.25), #0000FF80)",
+  );
+  assert.ok(g);
+  assert.equal(g.stops[0]?.color, "#FF0000");
+  assert.equal(g.stops[0]?.alpha, 0.25);
+  assert.equal(g.stops[0]?.cssColor, "rgba(255,0,0,0.25)");
+  assert.equal(g.stops[1]?.color, "#0000FF");
+  assert.equal(g.stops[1]?.alpha, 0.502);
+  assert.equal(g.stops[1]?.cssColor, "#0000FF80");
+});
+
+test("parseRadialGradient는 circle position과 stop을 보존한다", () => {
+  const g = parseRadialGradient(
+    "radial-gradient(circle at 75% 50%, #FF4500, #8B0000)",
+  );
+  assert.ok(g);
+  assert.equal(g.shape, "circle");
+  assert.equal(g.position, "75% 50%");
+  assert.equal(g.stops[0]?.color, "#FF4500");
+  assert.equal(g.stops[1]?.color, "#8B0000");
 });
 
 test("parseLinearGradient — `none` and empty return null", () => {

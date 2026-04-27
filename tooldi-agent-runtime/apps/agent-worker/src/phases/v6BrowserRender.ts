@@ -116,6 +116,8 @@ export async function extractFromPage(
           transform: cs.transform,
           transformOrigin: cs.transformOrigin,
           boxShadow: cs.boxShadow,
+          textShadow: cs.textShadow,
+          filter: cs.filter,
           objectFit: cs.objectFit,
           overflow: cs.overflow,
           display: cs.display,
@@ -146,7 +148,9 @@ export async function extractFromPage(
         const elementChildren = children.filter(
           (n) => n.nodeType === ELEMENT_NODE,
         ) as Element[];
-        if (elementChildren.some((child) => child.tagName.toLowerCase() !== "br")) {
+        if (
+          elementChildren.some((child) => child.tagName.toLowerCase() !== "br")
+        ) {
           return false;
         }
         const combined = children

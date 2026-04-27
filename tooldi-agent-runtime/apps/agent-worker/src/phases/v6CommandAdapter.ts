@@ -21,10 +21,15 @@ import { parseFirstFontFamily } from "./v6FontRegistry.js";
 import type {
   V6ImageCommand,
   V6LinearGradient,
+  V6Paint,
   V6PrimitiveCommand,
+  V6RadialGradient,
   V6RectCommand,
   V6SvgCommand,
+  V6SolidPaint,
+  V6Stroke,
   V6TextCommand,
+  V6UnsupportedPaint,
 } from "./v6Types.js";
 
 type VisibleLayerType = CreateLayerCommand["layerBlueprint"]["layerType"];
@@ -108,6 +113,9 @@ function buildStyleTokens(cmd: V6PrimitiveCommand): Record<string, unknown> {
   if (cmd.transform !== undefined) {
     base.transform = cmd.transform;
   }
+  if (cmd.filter) {
+    base.filter = cmd.filter;
+  }
   switch (cmd.primitive) {
     case "rect":
       return { ...base, ...rectTokens(cmd) };
@@ -123,19 +131,18 @@ function buildStyleTokens(cmd: V6PrimitiveCommand): Record<string, unknown> {
 
 function rectTokens(cmd: V6RectCommand): Record<string, unknown> {
   const tokens: Record<string, unknown> = {};
-  if (cmd.fill !== null) {
-    if (typeof cmd.fill === "string") {
-      tokens.fillColor = cmd.fill;
-    } else {
-      tokens.fill = gradientTokens(cmd.fill);
-    }
+  const paint = resolveRectPaint(cmd);
+  if (paint !== null) {
+    appendPaintTokens(tokens, paint);
   }
   tokens.borderRadius = normalizeBorderRadius(cmd.borderRadius);
   if (cmd.stroke !== null) {
     tokens.stroke = { color: cmd.stroke.color, width: cmd.stroke.width };
+    tokens.strokePaint = strokePaintTokens(cmd.stroke);
   }
   if (cmd.shadow !== null) {
     tokens.shadow = cmd.shadow;
+    tokens.boxShadow = cmd.shadow;
   }
   return tokens;
 }
@@ -143,8 +150,14 @@ function rectTokens(cmd: V6RectCommand): Record<string, unknown> {
 function textTokens(cmd: V6TextCommand): Record<string, unknown> {
   const fontFamily = parseFirstFontFamily(cmd.fontFamily);
   const fontWeight = normalizeToolditorFontWeight(fontFamily, cmd.fontWeight);
-  return {
+  const tokens: Record<string, unknown> = {
     fillColor: cmd.color,
+    fillPaint: solidPaintTokens({
+      type: "solid",
+      color: cmd.color,
+      alpha: cmd.colorAlpha ?? 1,
+      cssColor: cmd.colorCssColor ?? cmd.color,
+    }),
     // Phase 2.5: Playwright's computed-style fontFamily is the full CSS cascade
     // ("\"701_400\", sans-serif"). Toolditor expects the first token only,
     // which is the Toolditor ID we injected in v6FontRegistry.
@@ -157,6 +170,10 @@ function textTokens(cmd: V6TextCommand): Record<string, unknown> {
     letterSpacing: cmd.letterSpacing,
     textDecoration: cmd.textDecoration,
   };
+  if (cmd.textShadow) {
+    tokens.textShadow = cmd.textShadow;
+  }
+  return tokens;
 }
 
 function imageTokens(cmd: V6ImageCommand): Record<string, unknown> {
@@ -184,7 +201,7 @@ function buildMetadata(
     case "svg":
       return metadataForSvg(base, cmd);
     case "rect":
-      return base;
+      return metadataForRect(base, cmd);
   }
 }
 
@@ -194,6 +211,20 @@ function normalizeToolditorFontWeight(
 ): string {
   const suffix = /_(\d{3,4})$/.exec(fontFamily)?.[1];
   return suffix ?? computedFontWeight;
+}
+
+function metadataForRect(
+  base: Record<string, string | number | boolean | null>,
+  cmd: V6RectCommand,
+): Record<string, string | number | boolean | null> {
+  const paint = resolveRectPaint(cmd);
+  if (paint?.type !== "unsupported-paint") return base;
+  return {
+    ...base,
+    v6PaintWarning: paint.reason,
+    unsupportedPaintCss: paint.css,
+    unsupportedPaintReason: paint.reason,
+  };
 }
 
 function metadataForText(
@@ -282,11 +313,96 @@ function normalizeBorderRadius(
   };
 }
 
-function gradientTokens(g: V6LinearGradient): Record<string, unknown> {
+function resolveRectPaint(cmd: V6RectCommand): V6Paint | null {
+  if (cmd.paint !== undefined) return cmd.paint;
+  if (cmd.fill === null) return null;
+  if (typeof cmd.fill === "string") {
+    return {
+      type: "solid",
+      color: cmd.fill,
+      alpha: 1,
+      cssColor: cmd.fill,
+    };
+  }
+  return cmd.fill;
+}
+
+function appendPaintTokens(
+  tokens: Record<string, unknown>,
+  paint: V6Paint,
+): void {
+  switch (paint.type) {
+    case "solid":
+      tokens.fillColor = paint.color;
+      tokens.fillPaint = solidPaintTokens(paint);
+      break;
+    case "linear-gradient":
+    case "radial-gradient": {
+      const fill = gradientTokens(paint);
+      tokens.fill = fill;
+      tokens.fillPaint = fill;
+      break;
+    }
+    case "unsupported-paint": {
+      const fill = unsupportedPaintTokens(paint);
+      tokens.fill = fill;
+      tokens.fillPaint = fill;
+      tokens.paintWarning = paint.reason;
+      break;
+    }
+  }
+}
+
+function solidPaintTokens(paint: V6SolidPaint): Record<string, unknown> {
   return {
+    type: "solid",
+    color: paint.color,
+    alpha: paint.alpha,
+    cssColor: paint.cssColor,
+  };
+}
+
+function strokePaintTokens(stroke: V6Stroke): Record<string, unknown> {
+  return {
+    type: "solid",
+    color: stroke.color,
+    width: stroke.width,
+    alpha: stroke.alpha ?? 1,
+    cssColor: stroke.cssColor ?? stroke.color,
+  };
+}
+
+function gradientTokens(
+  g: V6LinearGradient | V6RadialGradient,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {
     type: g.type,
-    angle: g.angle,
-    stops: g.stops.map((s) => ({ color: s.color, offset: s.offset })),
+    stops: g.stops.map((s) => ({
+      color: s.color,
+      offset: s.offset,
+      alpha: s.alpha ?? 1,
+      cssColor: s.cssColor ?? s.color,
+    })),
+  };
+  if (g.css !== undefined) {
+    out.css = g.css;
+  }
+  if (g.type === "linear-gradient") {
+    out.angle = g.angle;
+  } else {
+    out.shape = g.shape;
+    out.position = g.position;
+  }
+  return out;
+}
+
+function unsupportedPaintTokens(
+  paint: V6UnsupportedPaint,
+): Record<string, unknown> {
+  return {
+    type: paint.type,
+    css: paint.css,
+    reason: paint.reason,
   };
 }
 
