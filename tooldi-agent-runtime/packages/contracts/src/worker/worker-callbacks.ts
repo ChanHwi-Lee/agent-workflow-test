@@ -15,6 +15,10 @@ import {
   WarningItemSchema,
 } from "../common.js";
 import {
+  InterviewAnswerSchema,
+  InterviewQuestionSchema,
+} from "./interview.js";
+import {
   TemplateSaveEvidenceSchema,
   TemplateSaveReceiptSchema,
 } from "../canvas/template-save-receipt.js";
@@ -135,6 +139,21 @@ const WorkerAppendEventSchema = Type.Union([
       rollbackGroupId: IdentifierSchema,
       expectedBaseRevision: Type.Optional(Type.Integer({ minimum: 0 })),
       mutation: CanvasMutationEnvelopeSchema,
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      type: Type.Literal("interview.awaiting"),
+      questions: Type.Array(InterviewQuestionSchema, { minItems: 1, maxItems: 5 }),
+      timeoutMs: Type.Optional(Type.Integer({ minimum: 1 })),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      type: Type.Literal("interview.answer"),
+      answers: Type.Array(InterviewAnswerSchema),
     },
     { additionalProperties: false },
   ),

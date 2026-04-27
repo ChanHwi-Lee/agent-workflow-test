@@ -4,6 +4,7 @@ import type { Static } from "@sinclair/typebox";
 import { AgentRunResultSummarySchema } from "../artifacts/run-result.js";
 import { CanvasMutationEnvelopeSchema } from "../canvas/canvas-mutation.js";
 import { IdentifierSchema, IsoDateTimeSchema, RetryableErrorSummarySchema } from "../common.js";
+import { InterviewQuestionSchema } from "../worker/interview.js";
 import { RunRecoveryProjectionSchema } from "./run-recovery.js";
 
 const RunPhaseEventSchema = Type.Object(
@@ -112,6 +113,18 @@ const RunCancelledEventSchema = Type.Object(
   { additionalProperties: false },
 );
 
+const AgentInterviewAwaitingEventSchema = Type.Object(
+  {
+    type: Type.Literal("agent.interview_awaiting"),
+    runId: IdentifierSchema,
+    traceId: IdentifierSchema,
+    questions: Type.Array(InterviewQuestionSchema, { minItems: 1, maxItems: 5 }),
+    timeoutMs: Type.Optional(Type.Integer({ minimum: 1 })),
+    at: IsoDateTimeSchema,
+  },
+  { additionalProperties: false },
+);
+
 export const PublicRunEventSchema = Type.Union([
   RunAcceptedEventSchema,
   RunPhaseEventSchema,
@@ -119,6 +132,7 @@ export const PublicRunEventSchema = Type.Union([
   RunRecoveryEventSchema,
   CanvasMutationEventSchema,
   CancelRequestedEventSchema,
+  AgentInterviewAwaitingEventSchema,
   RunCompletedEventSchema,
   RunFailedEventSchema,
   RunCancelledEventSchema,

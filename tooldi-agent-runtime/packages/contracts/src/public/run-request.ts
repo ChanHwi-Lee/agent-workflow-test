@@ -89,6 +89,8 @@ export const StartAgentWorkflowRunRequestSchema = Type.Object(
         milestoneDeadlinesMs: MilestoneDeadlinesSchema,
         requestedOutputCount: Type.Literal(1),
         allowInternalAiPrimitives: Type.Boolean(),
+        interviewEnabled: Type.Optional(Type.Boolean()),
+        interviewTimeoutMs: Type.Optional(Type.Integer({ minimum: 1 })),
       },
       { additionalProperties: false },
     ),
