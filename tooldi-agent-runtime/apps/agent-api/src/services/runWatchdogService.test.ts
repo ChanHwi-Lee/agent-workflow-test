@@ -217,6 +217,7 @@ async function seedRun(
     attemptSeq?: number;
     queueJobId?: string;
     status?: "planning_queued" | "planning" | "cancel_requested";
+    statusReasonCode?: string | null;
     lastAckedSeq?: number;
     leaseRecognizedAt?: string | null;
   } = {},
@@ -257,7 +258,7 @@ async function seedRun(
     documentId: "document-1",
     pageId: "page-1",
     status: options.status ?? "planning_queued",
-    statusReasonCode: null,
+    statusReasonCode: options.statusReasonCode ?? null,
     attemptSeq,
     queueJobId,
     requestRef: `request_ref_${requestId}`,
@@ -723,6 +724,71 @@ test("RunWatchdogService synthesizes terminal recovery when finalize callback is
     assert.equal(runEventService.recoveries[0]?.state, "finalize_only");
     assert.equal(runEventService.recoveries[0]?.resumeMode, "finalize_only");
     assert.equal(finalizeRecovery.calls[0]?.result.finalStatus, "save_failed_after_apply");
+
+    await service.close();
+  } finally {
+    await db.end();
+  }
+});
+
+test("RunWatchdogService는 인터뷰 대기 run의 completed transport를 finalize 누락으로 닫지 않는다", async () => {
+  const db = createPgClient({
+    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
+  });
+  await db.connect();
+
+  try {
+    const runRepository = new RunRepository(db);
+    const runRequestRepository = new RunRequestRepository(db);
+    const runAttemptRepository = new RunAttemptRepository(db);
+    const runRecoveryRepository = new RunRecoveryRepository(db);
+    const logger = new RecordingLogger();
+    const runEventService = new RecordingRunEventService();
+    const finalizeRecovery = new RecordingFinalizeRecovery();
+    const queue = new FakeRunQueueProducer();
+    const service = new RunWatchdogService(
+      runRepository,
+      runAttemptRepository,
+      runRecoveryRepository,
+      runEventService,
+      finalizeRecovery,
+      queue,
+      logger,
+      {
+        pickupTimeoutMs: 1000,
+        retryDelayMs: 1,
+        maxQueueAttempts: 2,
+        enqueueTimeoutMs: 10,
+        finalizeGraceMs: 5,
+      },
+    );
+
+    const seeded = await seedRun(runRepository, runRequestRepository, runAttemptRepository, {
+      status: "planning",
+      statusReasonCode: "awaiting_interview",
+      leaseRecognizedAt: new Date().toISOString(),
+    });
+
+    await service.observeSignal({
+      queueJobId: seeded.queueJobId,
+      state: "completed",
+      occurredAt: new Date().toISOString(),
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 15));
+
+    const run = await runRepository.findById(seeded.runId);
+    assert.equal(run?.status, "planning");
+    assert.equal(run?.statusReasonCode, "awaiting_interview");
+    assert.equal(finalizeRecovery.calls.length, 0);
+    assert.equal(runEventService.recoveries.length, 0);
+    assert.equal(runEventService.failures.length, 0);
+    assert.equal(
+      logger.records.some((record) =>
+        record.message.includes("canonical close deferred"),
+      ),
+      true,
+    );
 
     await service.close();
   } finally {

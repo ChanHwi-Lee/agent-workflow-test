@@ -21,6 +21,7 @@ import {
 import type { RunAttemptRecord, RunAttemptRepository } from "../repositories/runAttemptRepository.js";
 import type { RunRecoveryRepository } from "../repositories/runRecoveryRepository.js";
 import type { RunRecord, RunRepository } from "../repositories/runRepository.js";
+import { INTERVIEW_AWAITING_REASON_CODE } from "./interviewRunState.js";
 import type { RunEventService } from "./runEventService.js";
 import type { RunFinalizeService } from "./runFinalizeService.js";
 
@@ -115,6 +116,18 @@ export class RunWatchdogService {
     this.logObservedSignal(run, attempt.attemptSeq, signal);
 
     if (signal.state === "completed") {
+      if (run.statusReasonCode === INTERVIEW_AWAITING_REASON_CODE) {
+        this.logger.info(
+          "Queue transport completed while run awaits interview answer; canonical close deferred",
+          {
+            runId: run.runId,
+            traceId: run.traceId,
+            attemptSeq: attempt.attemptSeq,
+            queueJobId: signal.queueJobId,
+          },
+        );
+        return;
+      }
       this.trackFinalizeGrace(run, attempt);
       return;
     }
