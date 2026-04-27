@@ -1,0 +1,6 @@
+node_modules/
+dist/
+runs/
+*.tsbuildinfo
+.env
+.env.local

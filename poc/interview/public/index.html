@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>AGW Interview HITL PoC — A/B Dashboard</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <h1>A/B Dashboard — Interview HITL PoC</h1>
+  <div class="controls">
+    <label>A (no interview) <select id="sel-a"></select></label>
+    <label>B (interview) <select id="sel-b"></select></label>
+    <label>Seed <select id="sel-seed"></select></label>
+    <label>Run idx <select id="sel-idx"></select></label>
+    <button id="btn-prev">◀ Prev</button>
+    <button id="btn-next">Next ▶</button>
+    <span id="progress"></span>
+  </div>
+</header>
+<main>
+  <section class="pane" id="pane-a">
+    <h2>A · 인터뷰 없음</h2>
+    <figure><img id="img-a" alt="A screenshot"></figure>
+    <details>
+      <summary>HTML / meta</summary>
+      <button id="html-a">HTML open in new tab</button>
+      <pre id="meta-a"></pre>
+    </details>
+  </section>
+  <section class="pane" id="pane-b">
+    <h2>B · 인터뷰 포함</h2>
+    <figure><img id="img-b" alt="B screenshot"></figure>
+    <details open>
+      <summary>Interview Q&amp;A</summary>
+      <div id="interview-b"></div>
+    </details>
+    <details>
+      <summary>HTML / meta</summary>
+      <button id="html-b">HTML open in new tab</button>
+      <pre id="meta-b"></pre>
+    </details>
+  </section>
+</main>
+<footer>
+  <h3>평가 (1=나쁨 … 5=훌륭 · A, B 각각 절대 기준)</h3>
+  <div class="axes"></div>
+  <textarea id="comment" placeholder="코멘트 (선택)"></textarea>
+  <div class="save-row">
+    <button id="btn-save">Save &amp; Next</button>
+    <span id="status"></span>
+  </div>
+</footer>
+<script src="/app.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "name": "@tooldi-poc/interview",
+  "version": "0.0.1",
+  "private": true,
+  "description": "AGW Interview HITL PoC — self-play A/B runner + dashboard",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "smoke": "node --enable-source-maps dist/smoke.js",
+    "smoke:interview": "node --enable-source-maps --env-file=../../tooldi-agent-runtime/.env.local dist/smoke-interview.js",
+    "run:a": "node --enable-source-maps --env-file=../../tooldi-agent-runtime/.env.local dist/run-a.js",
+    "run:b": "node --enable-source-maps --env-file=../../tooldi-agent-runtime/.env.local dist/run-b.js",
+    "dashboard": "node --enable-source-maps dist/dashboard/server.js",
+    "aggregate": "node --enable-source-maps dist/aggregate.js"
+  },
+  "dependencies": {
+    "playwright": "^1.59.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.0.0"
+  }
+}
