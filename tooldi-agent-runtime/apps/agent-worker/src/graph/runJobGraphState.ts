@@ -19,6 +19,7 @@ import type {
   FreeformLayoutPlan,
   HydratedPlanningInput,
   IntentNormalizationReport,
+  InterviewState,
   JudgePlan,
   MutationProposalDraft as WorkerMutationProposalDraft,
   CanonicalDesignBrief,
@@ -173,6 +174,7 @@ export const RunJobGraphState = Annotation.Root({
   lastMutationAck: replaceValue<WaitMutationAckResponse | null>(() => null),
   stageAckHistory: replaceValue<StageAckRecord[]>(() => []),
   refineAttempt: replaceValue<0 | 1>(() => 0),
+  interview: replaceValue<InterviewState | null>(() => null),
   finalizeDraft: replaceValue<FinalizeRunDraft | null>(() => null),
   result: replaceValue<ProcessRunJobResult | null>(() => null),
 });

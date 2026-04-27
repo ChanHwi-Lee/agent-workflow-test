@@ -3,6 +3,8 @@ import type {
   ExecutionSlotKey,
   ExecutablePlan,
   IntentEnvelope,
+  InterviewAnswer,
+  InterviewQuestion,
   RunRepairContext,
   RunFinalizeRequest,
   RunJobEnvelope,
@@ -29,6 +31,29 @@ export interface StoredRunSnapshot {
   brandContext: StartAgentWorkflowRunRequest["brandContext"];
   referenceAssets: StartAgentWorkflowRunRequest["referenceAssets"];
   runPolicy: StartAgentWorkflowRunRequest["runPolicy"];
+}
+
+export interface InterviewTimings {
+  questionsMs: number;
+  answersMs: number;
+  briefMs: number;
+  totalMs: number;
+}
+
+export interface InterviewUsages {
+  questions: unknown | null;
+  answers: unknown | null;
+  brief: unknown | null;
+}
+
+export interface InterviewState {
+  questions: ReadonlyArray<InterviewQuestion>;
+  answers: ReadonlyArray<InterviewAnswer>;
+  derivedBrief: string;
+  autoFilledIds: ReadonlyArray<string>;
+  builtUserPrompt: string;
+  timings: InterviewTimings;
+  usages: InterviewUsages;
 }
 
 export interface HydratedPlanningInput {

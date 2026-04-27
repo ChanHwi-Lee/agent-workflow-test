@@ -9,7 +9,12 @@ export function registerRunJobGraphEdges(graph: any) {
   return graph
     .addEdge("hydrate_input", "plan_intent_draft")
     .addEdge("plan_intent_draft", "normalize_intent")
-    .addEdge("normalize_intent", "gate_scope")
+    .addConditionalEdges("normalize_intent", (state: any) =>
+      state.hydrated?.snapshot?.runPolicy?.interviewEnabled === true
+        ? "interview_user"
+        : "gate_scope",
+    )
+    .addEdge("interview_user", "gate_scope")
     .addConditionalEdges("gate_scope", (state: any) =>
       state.finalizeDraft
         ? "send_finalize"

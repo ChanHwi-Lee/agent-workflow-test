@@ -242,7 +242,8 @@ export function registerV6PipelineNode(
     });
     cooperativeStopRequested ||= enterEvent.cancelRequested;
 
-    const userPrompt = state.hydrated.request.userInput.prompt;
+    const userPrompt =
+      state.interview?.builtUserPrompt ?? state.hydrated.request.userInput.prompt;
     const canvasWidth = state.hydrated.request.editorContext.canvasWidth;
     const canvasHeight = state.hydrated.request.editorContext.canvasHeight;
     const persistRenderQualityFailure = async (
