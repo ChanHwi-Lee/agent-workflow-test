@@ -32,6 +32,7 @@ import { finalizePostRoute } from "./routes/internal/finalize.post.js";
 import { heartbeatsPostRoute } from "./routes/internal/heartbeats.post.js";
 import { mutationAcksGetRoute } from "./routes/internal/mutation-acks.get.js";
 import { cancelPostRoute } from "./routes/public/cancel.post.js";
+import { interviewAnswerPostRoute } from "./routes/public/interview-answer.post.js";
 import { mutationAcksPostRoute } from "./routes/public/mutation-acks.post.js";
 import { runArtifactsGetRoute } from "./routes/public/run-artifacts.get.js";
 import { runEventsSseRoute } from "./routes/public/run-events.sse.js";
@@ -154,6 +155,7 @@ export async function buildApp(
   await app.register(runEventsSseRoute);
   await app.register(mutationAcksPostRoute);
   await app.register(cancelPostRoute);
+  await app.register(interviewAnswerPostRoute);
   await app.register(eventsPostRoute);
   await app.register(mutationAcksGetRoute);
   await app.register(finalizePostRoute);

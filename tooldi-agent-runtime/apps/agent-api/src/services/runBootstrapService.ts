@@ -327,6 +327,7 @@ export class RunBootstrapService {
       streamUrl: `${root}/events`,
       cancelUrl: `${root}/cancel`,
       mutationAckUrl: `${root}/mutation-acks`,
+      interviewAnswerUrl: `${root}/interview-answer`,
     };
   }
 }

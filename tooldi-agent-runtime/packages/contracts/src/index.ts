@@ -6,6 +6,7 @@ export * from "./canvas/mutation-ack.js";
 export * from "./canvas/template-save-receipt.js";
 export * from "./common.js";
 export * from "./http/route-schemas.js";
+export * from "./public/interview-answer.js";
 export * from "./public/public-run-event.js";
 export * from "./public/run-accepted.js";
 export * from "./public/run-cancel.js";

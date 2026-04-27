@@ -1,5 +1,6 @@
 import type {
   InterviewAnswer,
+  InterviewAnswerResponse,
   WaitMutationAckResponse,
   WorkerAppendEventRequest,
   WorkerAppendEventResponse,
@@ -27,6 +28,15 @@ export interface InterviewResumeDispatcher {
     receivedAt: string;
   }): Promise<void>;
 }
+
+export interface AcceptInterviewAnswerCommand {
+  runId: string;
+  traceId: string;
+  answers: ReadonlyArray<InterviewAnswer>;
+  receivedAt?: string;
+}
+
+const DEFAULT_INTERVIEW_TIMEOUT_MS = 300_000;
 
 export interface HeartbeatCommand {
   runId: string;
@@ -63,6 +73,8 @@ export interface WaitMutationAckCommand {
 }
 
 export class RunRecoveryService {
+  private readonly autoFallbackTimers = new Map<string, NodeJS.Timeout>();
+
   constructor(
     private readonly runRepository: RunRepository,
     private readonly runAttemptRepository: RunAttemptRepository,
@@ -71,6 +83,114 @@ export class RunRecoveryService {
     private readonly logger: Logger,
     private readonly interviewResumeDispatcher?: InterviewResumeDispatcher,
   ) {}
+
+  async acceptInterviewAnswer(
+    command: AcceptInterviewAnswerCommand,
+  ): Promise<InterviewAnswerResponse> {
+    const run = await this.runRepository.findById(command.runId);
+    if (!run) {
+      throw new NotFoundError(`Run not found: ${command.runId}`);
+    }
+    if (run.traceId !== command.traceId) {
+      throw new ConflictError(
+        `Trace mismatch for run ${command.runId}: expected ${run.traceId}, received ${command.traceId}`,
+      );
+    }
+    if (run.queueJobId === null) {
+      throw new ConflictError(
+        `Run ${command.runId} has no active queue job to receive interview answers`,
+      );
+    }
+    if (isTerminalRunStatus(run.status)) {
+      throw new ConflictError(
+        `Run ${command.runId} already reached terminal status: ${run.status}`,
+      );
+    }
+
+    const receivedAt = command.receivedAt ?? new Date().toISOString();
+    await this.appendWorkerEvent({
+      runId: command.runId,
+      traceId: command.traceId,
+      attemptSeq: run.attemptSeq,
+      queueJobId: run.queueJobId,
+      event: { type: "interview.answer", answers: [...command.answers] },
+      receivedAt,
+    });
+
+    return {
+      accepted: true,
+      runId: command.runId,
+      receivedAt,
+    };
+  }
+
+  private buildAutoFallbackKey(runId: string, attemptSeq: number): string {
+    return `${runId}:${attemptSeq}`;
+  }
+
+  private cancelAutoFallback(runId: string, attemptSeq: number): void {
+    const key = this.buildAutoFallbackKey(runId, attemptSeq);
+    const handle = this.autoFallbackTimers.get(key);
+    if (handle) {
+      clearTimeout(handle);
+      this.autoFallbackTimers.delete(key);
+    }
+  }
+
+  private scheduleAutoFallback(args: {
+    runId: string;
+    traceId: string;
+    attemptSeq: number;
+    queueJobId: string;
+    timeoutMs: number;
+  }): void {
+    const dispatcher = this.interviewResumeDispatcher;
+    if (!dispatcher) {
+      this.logger.warn(
+        "Auto-fallback timer skipped: no interview resume dispatcher configured",
+        {
+          runId: args.runId,
+          attemptSeq: args.attemptSeq,
+        },
+      );
+      return;
+    }
+
+    const key = this.buildAutoFallbackKey(args.runId, args.attemptSeq);
+    const previous = this.autoFallbackTimers.get(key);
+    if (previous) {
+      clearTimeout(previous);
+    }
+
+    const handle = setTimeout(() => {
+      this.autoFallbackTimers.delete(key);
+      void (async () => {
+        try {
+          await dispatcher.dispatchInterviewResume({
+            runId: args.runId,
+            traceId: args.traceId,
+            attemptSeq: args.attemptSeq,
+            queueJobId: args.queueJobId,
+            answers: [],
+            receivedAt: new Date().toISOString(),
+          });
+          this.logger.info("Auto-fallback dispatched after interview timeout", {
+            runId: args.runId,
+            attemptSeq: args.attemptSeq,
+            timeoutMs: args.timeoutMs,
+          });
+        } catch (error) {
+          this.logger.error("Auto-fallback dispatch failed", {
+            runId: args.runId,
+            attemptSeq: args.attemptSeq,
+            error: error instanceof Error ? error.message : "unknown",
+          });
+        }
+      })();
+    }, args.timeoutMs);
+    handle.unref?.();
+    this.autoFallbackTimers.set(key, handle);
+  }
 
   async acceptHeartbeat(command: HeartbeatCommand): Promise<HeartbeatResponse> {
     const { run } = await this.findRunAndAttempt(
@@ -242,11 +362,19 @@ export class RunRecoveryService {
           command.event.timeoutMs,
           receivedAt,
         );
+        this.scheduleAutoFallback({
+          runId: command.runId,
+          traceId: command.traceId,
+          attemptSeq: command.attemptSeq,
+          queueJobId: command.queueJobId,
+          timeoutMs: command.event.timeoutMs ?? DEFAULT_INTERVIEW_TIMEOUT_MS,
+        });
         break;
       case "interview.answer": {
         // TODO(polishing): authn + rate-limit + run owner 검증.
         // 1차 backbone 에서는 dispatcher 없이는 no-op (logger.warn) — agent-worker
         // resume entrypoint 와 BullMQ resume job 결선 후 본격 동작.
+        this.cancelAutoFallback(command.runId, command.attemptSeq);
         if (this.interviewResumeDispatcher) {
           await this.interviewResumeDispatcher.dispatchInterviewResume({
             runId: command.runId,

@@ -12,6 +12,7 @@ export function createFakeRunAccepted(
     streamUrl: "/api/agent-workflow/runs/run_accepted_1/events",
     cancelUrl: "/api/agent-workflow/runs/run_accepted_1/cancel",
     mutationAckUrl: "/api/agent-workflow/runs/run_accepted_1/mutation-acks",
+    interviewAnswerUrl: "/api/agent-workflow/runs/run_accepted_1/interview-answer",
     ...overrides,
   };
 }

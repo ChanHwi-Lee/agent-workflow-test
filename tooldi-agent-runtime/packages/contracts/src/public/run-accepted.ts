@@ -13,6 +13,7 @@ export const RunAcceptedSchema = Type.Object(
     streamUrl: UrlOrPathSchema,
     cancelUrl: UrlOrPathSchema,
     mutationAckUrl: UrlOrPathSchema,
+    interviewAnswerUrl: UrlOrPathSchema,
   },
   { additionalProperties: false },
 );
