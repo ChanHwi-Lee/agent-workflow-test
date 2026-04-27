@@ -125,6 +125,25 @@ export interface ResumeRunArgs {
   answers: unknown;
 }
 
+export class DuplicateResumeIgnoredError extends Error {
+  readonly runId: string;
+  readonly attemptSeq: number;
+  constructor(runId: string, attemptSeq: number) {
+    super(
+      `resumeRunJob: no pending interrupt for runId=${runId} attemptSeq=${attemptSeq}; ignoring duplicate resume`,
+    );
+    this.name = "DuplicateResumeIgnoredError";
+    this.runId = runId;
+    this.attemptSeq = attemptSeq;
+  }
+}
+
+export function isDuplicateResumeIgnoredError(
+  value: unknown,
+): value is DuplicateResumeIgnoredError {
+  return value instanceof DuplicateResumeIgnoredError;
+}
+
 export async function resumeRunJob(
   args: ResumeRunArgs,
   dependencies: ProcessRunJobDependencies,
@@ -136,6 +155,20 @@ export async function resumeRunJob(
     },
     recursionLimit: 128,
   };
+
+  const preState = await graph.getState(config);
+  const pendingInterrupts = preState.tasks.flatMap(
+    (task) => (task.interrupts as PendingInterruptPayload[] | undefined) ?? [],
+  );
+  if (pendingInterrupts.length === 0) {
+    const existingResult = (preState.values as { result?: ProcessRunJobResult } | null)
+      ?.result;
+    if (existingResult) {
+      return existingResult;
+    }
+    throw new DuplicateResumeIgnoredError(args.runId, args.attemptSeq);
+  }
+
   const finalState = await graph.invoke(
     new Command({ resume: { answers: args.answers } }),
     config,

@@ -92,7 +92,22 @@ class BullMqRunQueueConsumer implements RunQueueConsumer {
     }
     if (job.name === INTERVIEW_RESUME_JOB_NAME) {
       const payload = this.validateInterviewResumePayload(job);
-      await options.resumeRunJob(payload);
+      try {
+        await options.resumeRunJob(payload);
+      } catch (error) {
+        if (error instanceof Error && error.name === "DuplicateResumeIgnoredError") {
+          options.logger.info(
+            "Skipped duplicate interview.resume job (graph already past interrupt)",
+            {
+              runId: payload.runId,
+              attemptSeq: payload.attemptSeq,
+              queueJobId: payload.queueJobId,
+            },
+          );
+          return;
+        }
+        throw error;
+      }
       return;
     }
     throw new Error(`BullMQ job has unsupported name: ${job.name}`);
