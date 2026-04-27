@@ -28,7 +28,11 @@ import type { ToolRegistry } from "@tooldi/tool-registry";
 import { createBackendCallbackClient, type BackendCallbackClient } from "./clients/backendCallbackClient.js";
 import { createWorkerLogger } from "./lib/logger.js";
 import { createRunQueueConsumer, type RunQueueConsumer } from "./lib/runQueueConsumer.js";
-import { processRunJob, type ProcessRunJobDependencies } from "./jobs/processRunJob.js";
+import {
+  processRunJob,
+  resumeRunJob,
+  type ProcessRunJobDependencies,
+} from "./jobs/processRunJob.js";
 import { createAssetStorageClient } from "./tools/adapters/assetStorageAdapter.js";
 import { createImagePrimitiveClient } from "./tools/adapters/imagePrimitiveAdapter.js";
 import { createTemplateCatalogClient } from "./tools/adapters/templateCatalogAdapter.js";
@@ -65,6 +69,11 @@ export interface AgentWorkerRuntime extends ProcessRunJobDependencies {
   env: AgentWorkerEnv;
   tooldiCatalogSourceClient: TooldiCatalogSourceClient;
   processRunJob(job: RunJobEnvelope): Promise<ProcessRunJobResult>;
+  resumeRunJob(
+    runId: string,
+    attemptSeq: number,
+    answers: unknown,
+  ): Promise<ProcessRunJobResult>;
   close(): Promise<void>;
 }
 
@@ -147,6 +156,9 @@ export async function buildWorkerRuntime(
     async processRunJob(job: RunJobEnvelope) {
       return processRunJob(job, runtime);
     },
+    async resumeRunJob(runId: string, attemptSeq: number, answers: unknown) {
+      return resumeRunJob({ runId, attemptSeq, answers }, runtime);
+    },
     async close() {
       if (queueConsumer) {
         await queueConsumer.close();
@@ -166,6 +178,9 @@ export async function buildWorkerRuntime(
         logger,
         processRunJob: async (job) => {
           await runtime.processRunJob(job);
+        },
+        resumeRunJob: async (payload) => {
+          await runtime.resumeRunJob(payload.runId, payload.attemptSeq, payload.answers);
         },
       }));
   } catch (error) {

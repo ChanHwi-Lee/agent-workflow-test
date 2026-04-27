@@ -1,4 +1,7 @@
+import { Command } from "@langchain/langgraph";
+
 import type {
+  InterviewQuestion,
   RunJobEnvelope,
 } from "@tooldi/agent-contracts";
 import { buildLangGraphThreadId } from "@tooldi/agent-graph";
@@ -33,26 +36,121 @@ export interface ProcessRunJobDependencies extends RunJobGraphDependencies {
   templatePlanner?: TemplatePlanner;
 }
 
+export interface InterviewAwaitingPayload {
+  type: "interview.awaiting";
+  runId: string;
+  questions: ReadonlyArray<InterviewQuestion>;
+  timeoutMs?: number;
+}
+
+export class InterviewPendingError extends Error {
+  readonly payload: InterviewAwaitingPayload;
+  constructor(payload: InterviewAwaitingPayload) {
+    super(`Run paused awaiting interview answer: runId=${payload.runId}`);
+    this.name = "InterviewPendingError";
+    this.payload = payload;
+  }
+}
+
+export function isInterviewPendingError(
+  value: unknown,
+): value is InterviewPendingError {
+  return value instanceof InterviewPendingError;
+}
+
+function buildRunConfig(job: RunJobEnvelope) {
+  return {
+    configurable: {
+      thread_id: buildLangGraphThreadId(job.runId, job.attemptSeq),
+    },
+    recursionLimit: 128,
+  };
+}
+
+interface PendingInterruptPayload {
+  readonly value?: unknown;
+}
+
+function isInterviewAwaitingPayload(
+  raw: unknown,
+): raw is InterviewAwaitingPayload {
+  if (!raw || typeof raw !== "object") return false;
+  const obj = raw as Record<string, unknown>;
+  return (
+    obj.type === "interview.awaiting" &&
+    typeof obj.runId === "string" &&
+    Array.isArray(obj.questions)
+  );
+}
+
+async function detectInterviewInterrupt(
+  graph: ReturnType<typeof buildRunJobGraph>,
+  config: ReturnType<typeof buildRunConfig>,
+): Promise<InterviewAwaitingPayload | null> {
+  const snapshot = await graph.getState(config);
+  const interrupts = snapshot.tasks.flatMap(
+    (task) => (task.interrupts as PendingInterruptPayload[] | undefined) ?? [],
+  );
+  for (const entry of interrupts) {
+    if (isInterviewAwaitingPayload(entry.value)) {
+      return entry.value;
+    }
+  }
+  return null;
+}
+
 export async function processRunJob(
   job: RunJobEnvelope,
   dependencies: ProcessRunJobDependencies,
 ): Promise<ProcessRunJobResult> {
   const graph = buildRunJobGraph(dependencies);
-  const finalState = await graph.invoke(
-    {
-      job,
-    },
-    {
-      configurable: {
-        thread_id: buildLangGraphThreadId(job.runId, job.attemptSeq),
-      },
-      recursionLimit: 128,
-    },
-  );
+  const config = buildRunConfig(job);
+  const finalState = await graph.invoke({ job }, config);
 
-  if (!finalState.result) {
-    throw new Error("LangGraph run completed without a ProcessRunJobResult");
+  if (finalState.result) {
+    return finalState.result;
   }
 
-  return finalState.result;
+  const pendingInterview = await detectInterviewInterrupt(graph, config);
+  if (pendingInterview) {
+    throw new InterviewPendingError(pendingInterview);
+  }
+
+  throw new Error("LangGraph run completed without a ProcessRunJobResult");
+}
+
+export interface ResumeRunArgs {
+  runId: string;
+  attemptSeq: number;
+  answers: unknown;
+}
+
+export async function resumeRunJob(
+  args: ResumeRunArgs,
+  dependencies: ProcessRunJobDependencies,
+): Promise<ProcessRunJobResult> {
+  const graph = buildRunJobGraph(dependencies);
+  const config = {
+    configurable: {
+      thread_id: buildLangGraphThreadId(args.runId, args.attemptSeq),
+    },
+    recursionLimit: 128,
+  };
+  const finalState = await graph.invoke(
+    new Command({ resume: { answers: args.answers } }),
+    config,
+  );
+
+  if (finalState.result) {
+    return finalState.result;
+  }
+
+  const pendingInterview = await detectInterviewInterrupt(graph, config);
+  if (pendingInterview) {
+    throw new InterviewPendingError(pendingInterview);
+  }
+
+  throw new Error(
+    "LangGraph resume completed without a ProcessRunJobResult and without a follow-up interrupt",
+  );
 }
