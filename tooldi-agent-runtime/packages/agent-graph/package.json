@@ -23,6 +23,10 @@
     "@langchain/langgraph": "^1.2.8",
     "@langchain/langgraph-checkpoint-postgres": "^1.0.1",
     "@tooldi/agent-config": "workspace:*",
-    "@tooldi/agent-observability": "workspace:*"
+    "@tooldi/agent-observability": "workspace:*",
+    "pg": "8.20.0"
+  },
+  "devDependencies": {
+    "@types/pg": "8.20.0"
   }
 }
