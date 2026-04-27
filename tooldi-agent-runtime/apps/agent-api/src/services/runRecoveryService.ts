@@ -431,6 +431,17 @@ export class RunRecoveryService {
         );
         break;
       }
+      case "interview.completed":
+        await this.runEventService.appendInterviewCompleted(
+          command.runId,
+          command.traceId,
+          command.attemptSeq,
+          command.event.autoFilledCount,
+          command.event.autoFilledIds,
+          command.event.totalQuestions,
+          receivedAt,
+        );
+        break;
     }
 
     this.logger.debug("Accepted worker event", {

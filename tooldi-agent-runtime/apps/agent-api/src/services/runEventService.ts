@@ -138,6 +138,28 @@ export class RunEventService {
     });
   }
 
+  async appendInterviewCompleted(
+    runId: string,
+    traceId: string,
+    attemptSeq: number,
+    autoFilledCount: number,
+    autoFilledIds: ReadonlyArray<string>,
+    totalQuestions: number,
+    answeredAt: string,
+  ): Promise<void> {
+    await this.append({
+      type: "agent.interview_completed",
+      runId,
+      traceId,
+      attemptSeq,
+      autoFilledCount,
+      autoFilledIds: [...autoFilledIds],
+      totalQuestions,
+      answeredAt,
+      at: answeredAt,
+    });
+  }
+
   async appendCompleted(
     runId: string,
     traceId: string,

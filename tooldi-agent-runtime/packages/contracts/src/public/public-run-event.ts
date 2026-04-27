@@ -125,6 +125,21 @@ const AgentInterviewAwaitingEventSchema = Type.Object(
   { additionalProperties: false },
 );
 
+const AgentInterviewCompletedEventSchema = Type.Object(
+  {
+    type: Type.Literal("agent.interview_completed"),
+    runId: IdentifierSchema,
+    traceId: IdentifierSchema,
+    attemptSeq: Type.Integer({ minimum: 1 }),
+    autoFilledCount: Type.Integer({ minimum: 0 }),
+    autoFilledIds: Type.Array(IdentifierSchema),
+    totalQuestions: Type.Integer({ minimum: 1 }),
+    answeredAt: IsoDateTimeSchema,
+    at: IsoDateTimeSchema,
+  },
+  { additionalProperties: false },
+);
+
 export const PublicRunEventSchema = Type.Union([
   RunAcceptedEventSchema,
   RunPhaseEventSchema,
@@ -133,6 +148,7 @@ export const PublicRunEventSchema = Type.Union([
   CanvasMutationEventSchema,
   CancelRequestedEventSchema,
   AgentInterviewAwaitingEventSchema,
+  AgentInterviewCompletedEventSchema,
   RunCompletedEventSchema,
   RunFailedEventSchema,
   RunCancelledEventSchema,

@@ -171,6 +171,18 @@ export function registerInterviewUserNode(
       },
     };
 
+    await appendEventTask(state.job.runId, {
+      traceId: state.job.traceId,
+      attempt: state.job.attemptSeq,
+      queueJobId: state.job.queueJobId,
+      event: {
+        type: "interview.completed",
+        autoFilledCount: autoFilledIds.length,
+        autoFilledIds,
+        totalQuestions: questions.length,
+      },
+    });
+
     return { interview };
   });
 }

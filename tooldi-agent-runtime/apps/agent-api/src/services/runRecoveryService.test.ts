@@ -61,6 +61,15 @@ class RecordingRunEventService {
     questions: ReadonlyArray<InterviewQuestion>;
     timeoutMs: number | undefined;
   }> = [];
+  readonly interviewCompleted: Array<{
+    runId: string;
+    traceId: string;
+    attemptSeq: number;
+    autoFilledCount: number;
+    autoFilledIds: ReadonlyArray<string>;
+    totalQuestions: number;
+    answeredAt: string;
+  }> = [];
   readonly logs: Array<{
     runId: string;
     traceId: string;
@@ -75,6 +84,26 @@ class RecordingRunEventService {
     timeoutMs: number | undefined,
   ): Promise<void> {
     this.interviewAwaiting.push({ runId, traceId, questions, timeoutMs });
+  }
+
+  async appendInterviewCompleted(
+    runId: string,
+    traceId: string,
+    attemptSeq: number,
+    autoFilledCount: number,
+    autoFilledIds: ReadonlyArray<string>,
+    totalQuestions: number,
+    answeredAt: string,
+  ): Promise<void> {
+    this.interviewCompleted.push({
+      runId,
+      traceId,
+      attemptSeq,
+      autoFilledCount,
+      autoFilledIds,
+      totalQuestions,
+      answeredAt,
+    });
   }
 
   async appendLog(
@@ -337,6 +366,36 @@ test("인터뷰 대기 이벤트는 run과 attempt를 인터뷰 대기 상태로
   assert.equal(run?.statusReasonCode, "awaiting_interview");
   assert.equal(attempt?.attemptState, "running");
   assert.equal(attempt?.statusReasonCode, "awaiting_interview");
+});
+
+test("인터뷰 완료 이벤트는 자동 답변 통계를 public event로 전달한다", async () => {
+  const { service, events } = await createHarness();
+
+  await service.appendWorkerEvent({
+    runId: RUN_ID,
+    traceId: TRACE_ID,
+    attemptSeq: ATTEMPT_SEQ,
+    queueJobId: QUEUE_JOB_ID,
+    event: {
+      type: "interview.completed",
+      autoFilledCount: 1,
+      autoFilledIds: ["tone"],
+      totalQuestions: 3,
+    },
+    receivedAt: NOW,
+  });
+
+  assert.deepEqual(events.interviewCompleted, [
+    {
+      runId: RUN_ID,
+      traceId: TRACE_ID,
+      attemptSeq: ATTEMPT_SEQ,
+      autoFilledCount: 1,
+      autoFilledIds: ["tone"],
+      totalQuestions: 3,
+      answeredAt: NOW,
+    },
+  ]);
 });
 
 test("사용자 답변이 도착하면 대기 중인 자동 fallback timer를 취소한다", async () => {

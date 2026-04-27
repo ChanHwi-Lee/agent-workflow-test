@@ -157,6 +157,15 @@ const WorkerAppendEventSchema = Type.Union([
     },
     { additionalProperties: false },
   ),
+  Type.Object(
+    {
+      type: Type.Literal("interview.completed"),
+      autoFilledCount: Type.Integer({ minimum: 0 }),
+      autoFilledIds: Type.Array(IdentifierSchema),
+      totalQuestions: Type.Integer({ minimum: 1 }),
+    },
+    { additionalProperties: false },
+  ),
 ]);
 
 export const WorkerAppendEventRequestSchema = Type.Object(
