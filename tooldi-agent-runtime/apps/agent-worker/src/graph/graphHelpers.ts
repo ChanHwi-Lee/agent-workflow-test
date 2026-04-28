@@ -26,7 +26,6 @@ type SourceSearchPhoto = SourceSearchSummary["photo"];
 type SourceSearchFont = SourceSearchSummary["font"];
 
 const FINALIZE_ARTIFACT_REF_KEYS = [
-  "semanticBriefDraftRef",
   "briefCompilationReportRef",
   "copyPlanRef",
   "copyPlanNormalizationReportRef",
@@ -64,7 +63,6 @@ const RESULT_ARTIFACT_REF_KEYS = [
   ...RESULT_ONLY_ARTIFACT_REF_KEYS,
 ] as const;
 
-type FinalizeArtifactRefKey = (typeof FINALIZE_ARTIFACT_REF_KEYS)[number];
 type ResultArtifactRefKey = (typeof RESULT_ARTIFACT_REF_KEYS)[number];
 
 type ArtifactRefState = {

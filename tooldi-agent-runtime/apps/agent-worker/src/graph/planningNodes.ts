@@ -1,8 +1,5 @@
 import type { StateGraph } from "@langchain/langgraph";
-import { parseTemplateSemanticBriefDraft } from "@tooldi/agent-llm";
-import type { TemplateSemanticBriefDraft } from "@tooldi/agent-llm";
 
-import { buildPlannerDraft } from "../phases/buildPlannerDraft.js";
 import { buildNormalizedIntent } from "../phases/buildNormalizedIntent.js";
 import { finalizeRun } from "../phases/finalizeRun.js";
 import { hydratePlanningInput } from "../phases/hydratePlanningInput.js";
@@ -73,95 +70,13 @@ export function registerPlanningNodes(
         cooperativeStopRequested,
       };
     })
-    .addNode("plan_intent_draft", async (state) => {
-      if (!state.hydrated) {
-        throw new Error("plan_intent_draft requires hydrated input");
-      }
-
-      let cooperativeStopRequested = state.cooperativeStopRequested;
-      const plannerResolution = await buildPlannerDraft(
-        state.hydrated,
-        dependencies.templatePlanner
-          ? { templatePlanner: dependencies.templatePlanner }
-          : undefined,
-      );
-      const { plannerDraft } = plannerResolution;
-
-      if (plannerResolution.fallbackReason) {
-        const fallbackEvent = await appendEventTask(state.job.runId, {
-          traceId: state.job.traceId,
-          attempt: state.job.attemptSeq,
-          queueJobId: state.job.queueJobId,
-          event: {
-            type: "log",
-            level: "warn",
-            message: plannerResolution.fallbackReason,
-          },
-        });
-        cooperativeStopRequested ||= fallbackEvent.cancelRequested;
-      }
-
-      if (!plannerDraft) {
-        return {
-          resolvedPlannerMode: plannerResolution.plannerMode,
-          semanticBriefDraftRef: null,
-          cooperativeStopRequested,
-        };
-      }
-
-      const semanticBriefDraftRef = await persistArtifactTask(
-        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/semantic-brief-draft.json`,
-        plannerDraft,
-        {
-          artifactKind: "semantic-brief-draft",
-          runId: state.job.runId,
-          traceId: state.job.traceId,
-          attemptSeq: String(state.job.attemptSeq),
-        },
-      );
-
-      const draftEvent = await appendEventTask(state.job.runId, {
-        traceId: state.job.traceId,
-        attempt: state.job.attemptSeq,
-        queueJobId: state.job.queueJobId,
-        event: {
-          type: "log",
-          level: "info",
-          message: "Planner draft prepared before intent normalization",
-        },
-      });
-      cooperativeStopRequested ||= draftEvent.cancelRequested;
-
-      return {
-        resolvedPlannerMode: plannerResolution.plannerMode,
-        semanticBriefDraftRef,
-        cooperativeStopRequested,
-      };
-    })
     .addNode("normalize_intent", async (state) => {
       if (!state.hydrated) {
         throw new Error("normalize_intent requires hydrated input");
       }
 
       let cooperativeStopRequested = state.cooperativeStopRequested;
-      const persistedPlannerDraft = state.semanticBriefDraftRef
-        ? await readWorkerJsonArtifact<TemplateSemanticBriefDraft>(
-            dependencies.objectStore,
-            dependencies.env.objectStoreBucket,
-            state.semanticBriefDraftRef,
-            parseTemplateSemanticBriefDraft,
-          )
-        : null;
-      const normalizedIntent = await buildNormalizedIntent(
-        state.hydrated,
-        {
-          ...(dependencies.templatePlanner
-            ? { templatePlanner: dependencies.templatePlanner }
-            : {}),
-          plannerDraft: persistedPlannerDraft,
-          plannerMode: state.resolvedPlannerMode,
-        },
-      );
+      const normalizedIntent = await buildNormalizedIntent(state.hydrated);
       const {
         intent,
         semanticBriefDraft,
@@ -208,7 +123,7 @@ export function registerPlanningNodes(
       );
 
       return {
-        semanticBriefDraft: semanticBriefDraft,
+        semanticBriefDraft,
         intentNormalizationReport,
         briefCompilationReportRef,
         intent: canonicalIntent,

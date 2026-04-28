@@ -54,9 +54,6 @@ import type {
 import type {
   TemplatePriorSummary,
 } from "@tooldi/agent-contracts";
-import type {
-  TemplatePlannerMode,
-} from "@tooldi/agent-llm";
 import type { V6PipelineResult } from "../phases/v6Pipeline.js";
 import type { V6TrendBrief } from "../phases/v6TrendResearch.js";
 
@@ -75,9 +72,7 @@ export const RunJobGraphState = Annotation.Root({
   job: Annotation<RunJobEnvelope>(),
   cooperativeStopRequested: replaceValue(() => false),
   hydrated: replaceValue<HydratedPlanningInput | null>(() => null),
-  resolvedPlannerMode: replaceValue<TemplatePlannerMode>(() => "heuristic"),
   semanticBriefDraft: replaceValue<SemanticBriefDraftArtifact | null>(() => null),
-  semanticBriefDraftRef: replaceValue<string | null>(() => null),
   intentNormalizationReport: replaceValue<IntentNormalizationReport | null>(() => null),
   briefCompilationReportRef: replaceValue<string | null>(() => null),
   intent: replaceValue<CanonicalDesignBrief | null>(() => null),
@@ -179,4 +174,6 @@ export const RunJobGraphState = Annotation.Root({
   result: replaceValue<ProcessRunJobResult | null>(() => null),
 });
 
-export type RunJobGraphStateType = typeof RunJobGraphState.State;
+export type RunJobGraphStateType = typeof RunJobGraphState.State & {
+  semanticBriefDraftRef?: string | null;
+};

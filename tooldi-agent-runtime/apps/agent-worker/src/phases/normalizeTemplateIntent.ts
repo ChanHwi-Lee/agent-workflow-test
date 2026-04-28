@@ -1,9 +1,5 @@
 import { createRequestId } from "@tooldi/agent-domain";
-import {
-  createHeuristicTemplatePlanner,
-  normalizeTemplateAssetPolicy,
-  type TemplateSemanticBriefDraft,
-} from "@tooldi/agent-llm";
+import { normalizeTemplateAssetPolicy } from "@tooldi/agent-llm";
 
 import type {
   CanonicalDesignBrief,
@@ -12,7 +8,22 @@ import type {
   SemanticBriefDraftArtifact,
 } from "../types.js";
 import { createIntentNormalizationReport } from "./intentNormalizationReport.js";
-import { repairTemplateIntentDraft } from "./intentRepairPipeline.js";
+import {
+  buildNormalizedKeywords,
+  createDeterministicAssetPolicy,
+  deriveAudience,
+  deriveBackgroundColorHex,
+  deriveCampaignGoal,
+  deriveExplicitDomain,
+  deriveExpectedMenuType,
+  deriveExpectedPromotionStyle,
+  deriveLayoutIntent,
+  deriveOfferIntent,
+  deriveOfferSpecificity,
+  deriveSubjectBinding,
+  extractPromptSignals,
+  shouldPreferGraphicPromoStructure,
+} from "./intentInference.js";
 
 export interface NormalizeTemplateIntentResult {
   intent: CanonicalDesignBrief;
@@ -22,117 +33,131 @@ export interface NormalizeTemplateIntentResult {
 
 export async function normalizeTemplateIntent(
   input: HydratedPlanningInput,
-  plannerMode: CanonicalDesignBrief["plannerMode"],
   operationFamily: CanonicalDesignBrief["operationFamily"],
   canvasPreset: CanonicalDesignBrief["canvasPreset"],
-  plannerDraft: TemplateSemanticBriefDraft | null,
 ): Promise<NormalizeTemplateIntentResult> {
   const prompt = input.request.userInput.prompt.trim();
   const palette = [...input.snapshot.brandContext.palette];
-  const semanticBriefDraft =
-    operationFamily === "create_template" && plannerDraft
-      ? {
-          draftId: createRequestId(),
-          runId: input.job.runId,
-          traceId: input.job.traceId,
-          plannerMode,
-          operationFamily,
-          canvasPreset,
-          prompt,
-          palette,
-          draft: plannerDraft,
-        }
-      : null;
+  const promptSignals = extractPromptSignals(prompt);
+  const domain = deriveExplicitDomain(promptSignals) ?? "general_marketing";
+  const menuType = deriveExpectedMenuType(promptSignals, domain);
+  const fallbackPromotionStyle =
+    promptSignals.sale
+      ? "sale_campaign"
+      : promptSignals.newness || promptSignals.launch
+        ? menuType === null
+          ? "new_product_promo"
+          : "seasonal_menu_launch"
+        : "general_campaign";
+  const promotionStyle = deriveExpectedPromotionStyle(
+    promptSignals,
+    domain,
+    menuType,
+    fallbackPromotionStyle,
+  );
+  const offerIntent = deriveOfferIntent(promotionStyle);
+  const preferGraphicPromoStructure = shouldPreferGraphicPromoStructure(
+    promptSignals,
+    domain,
+    menuType,
+    offerIntent,
+  );
+  const subjectBinding = deriveSubjectBinding(
+    prompt,
+    domain,
+    menuType,
+    preferGraphicPromoStructure,
+  );
+  const assetPolicy = createDeterministicAssetPolicy(
+    domain,
+    menuType,
+    preferGraphicPromoStructure,
+  );
+  const normalizationNotes = [
+    "Canonical design brief was compiled deterministically from prompt and canvas context.",
+  ];
 
-  if (operationFamily !== "create_template" || !plannerDraft) {
-    const normalizationNotes = [
-      "No planner draft was available; normalized intent fell back to request defaults.",
-    ];
-    const intent: CanonicalDesignBrief = {
-      intentId: createRequestId(),
-      runId: input.job.runId,
-      traceId: input.job.traceId,
-      plannerMode,
-      operationFamily,
-      artifactType: "LiveDraftArtifactBundle",
-      goalSummary: prompt,
-      requestedOutputCount: input.request.runPolicy.requestedOutputCount,
-      templateKind: "promo_banner",
-      domain: "general_marketing",
-      audience: "general_consumers",
-      campaignGoal: "promotion_awareness",
-      subjectBinding: "subjectless",
-      offerIntent: "announcement",
-      canvasPreset,
-      layoutIntent: "copy_focused",
-      tone: "bright_playful",
-      backgroundColorHex: "#ffffff",
-      assetPolicy: normalizeTemplateAssetPolicy(
-        "graphic_allowed_photo_optional",
-      ),
-      searchKeywords: ["봄"],
-      primaryVisualPolicy: "graphic_preferred",
-      facets: {
-        seasonality: prompt.includes("봄") ? "spring" : null,
-        menuType: null,
-        promotionStyle: "general_campaign",
-        offerSpecificity: "multi_item",
-      },
-      brandConstraints: {
-        palette,
-        typographyHint: null,
-        forbiddenStyles: [],
-      },
-      consistencyFlags: [],
-      normalizationNotes: [...normalizationNotes],
-      supportedInV1: false,
-      futureCapableOperations: [
-        "create_template",
-        "update_layer",
-        "delete_layer",
-      ],
-    };
-
-    return {
-      intent,
-      semanticBriefDraft,
-      intentNormalizationReport: createIntentNormalizationReport({
-        input,
-        plannerMode,
-        prompt,
-        draftAvailable: false,
-        repairs: [],
-        intent,
-      }),
-    };
+  if (preferGraphicPromoStructure) {
+    normalizationNotes.push(
+      "Generic promo wording selected a graphic-first structure before asset retrieval.",
+    );
+  }
+  if (operationFamily !== "create_template") {
+    normalizationNotes.push(
+      "Only empty-canvas create_template runs are supported in the current v1 slice.",
+    );
   }
 
-  const heuristicDraft = await createHeuristicTemplatePlanner().plan({
-    prompt,
-    canvasPreset,
-    palette,
-  });
-  const repaired = repairTemplateIntentDraft({
-    input,
-    plannerMode,
+  const intent: CanonicalDesignBrief = {
+    intentId: createRequestId(),
+    runId: input.job.runId,
+    traceId: input.job.traceId,
     operationFamily,
+    artifactType: "LiveDraftArtifactBundle",
+    goalSummary: prompt,
+    requestedOutputCount: input.request.runPolicy.requestedOutputCount,
+    templateKind:
+      promotionStyle === "sale_campaign"
+        ? "seasonal_sale_banner"
+        : "promo_banner",
+    domain,
+    audience: deriveAudience(domain),
+    campaignGoal: deriveCampaignGoal(promotionStyle),
+    subjectBinding,
+    offerIntent,
     canvasPreset,
-    plannerDraft,
-    heuristicDraft,
-    prompt,
-    palette,
-  });
+    layoutIntent: deriveLayoutIntent(
+      promptSignals,
+      domain,
+      promotionStyle,
+      menuType,
+    ),
+    tone: "bright_playful",
+    backgroundColorHex: deriveBackgroundColorHex(prompt),
+    assetPolicy,
+    searchKeywords: buildNormalizedKeywords(
+      prompt,
+      domain,
+      menuType,
+      subjectBinding === "subjectless",
+      offerIntent,
+    ),
+    primaryVisualPolicy: assetPolicy.primaryVisualPolicy,
+    facets: {
+      seasonality: promptSignals.spring ? "spring" : null,
+      menuType,
+      promotionStyle,
+      offerSpecificity: deriveOfferSpecificity(promotionStyle, menuType),
+    },
+    brandConstraints: {
+      palette,
+      typographyHint:
+        domain === "fashion_retail"
+          ? "세련된 고딕 계열로 명확한 가격/혜택 강조"
+          : domain === "cafe"
+            ? "가독성이 높은 둥근 고딕 계열"
+            : null,
+      forbiddenStyles: [],
+    },
+    consistencyFlags: [],
+    normalizationNotes,
+    supportedInV1: operationFamily === "create_template",
+    futureCapableOperations: [
+      "create_template",
+      "update_layer",
+      "delete_layer",
+    ],
+  };
 
   return {
-    intent: repaired.intent,
-    semanticBriefDraft,
+    intent,
+    semanticBriefDraft: null,
     intentNormalizationReport: createIntentNormalizationReport({
       input,
-      plannerMode,
       prompt,
-      draftAvailable: true,
-      repairs: repaired.repairs,
-      intent: repaired.intent,
+      draftAvailable: false,
+      repairs: [],
+      intent,
     }),
   };
 }

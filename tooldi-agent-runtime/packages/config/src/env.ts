@@ -40,22 +40,12 @@ export const workerQueueTransportModes = ["bullmq", "disabled"] as const;
 export type WorkerQueueTransportMode =
   (typeof workerQueueTransportModes)[number];
 
-export const templatePlannerProviders = [
-  "openai",
-  "anthropic",
-  "google",
-] as const;
-
 export interface AgentWorkerEnv extends SharedRuntimeEnv {
   workerConcurrency: number;
   heartbeatIntervalMs: number;
   leaseTtlMs: number;
   queueTransportMode: WorkerQueueTransportMode;
   agentInternalBaseUrl: string;
-  templatePlannerMode: "heuristic" | "langchain";
-  templatePlannerProvider: (typeof templatePlannerProviders)[number] | null;
-  templatePlannerModel: string | null;
-  templatePlannerTemperature: number;
   langGraphCheckpointerMode: "memory" | "postgres";
   langGraphCheckpointerPostgresUrl: string | null;
   langGraphCheckpointerSchema: string;
@@ -135,23 +125,6 @@ function readOptionalString(source: EnvSource, key: string): string | null {
     return null;
   }
   return value;
-}
-
-function readOptionalEnumValue<const Values extends readonly string[]>(
-  source: EnvSource,
-  key: string,
-  values: Values,
-): Values[number] | null {
-  const value = readOptionalString(source, key);
-  if (value === null) {
-    return null;
-  }
-  if (values.includes(value)) {
-    return value;
-  }
-  throw new Error(
-    `Unsupported ${key}: ${value}. Expected one of: ${values.join(", ")}`,
-  );
 }
 
 function readBoolean(
@@ -315,23 +288,6 @@ export function loadAgentWorkerEnv(
       source,
       "AGENT_INTERNAL_BASE_URL",
       "http://127.0.0.1:3000",
-    ),
-    templatePlannerMode: readEnumValue(
-      source,
-      "TEMPLATE_PLANNER_MODE",
-      ["heuristic", "langchain"] as const,
-      "heuristic",
-    ),
-    templatePlannerProvider: readOptionalEnumValue(
-      source,
-      "TEMPLATE_PLANNER_PROVIDER",
-      templatePlannerProviders,
-    ),
-    templatePlannerModel: readOptionalString(source, "TEMPLATE_PLANNER_MODEL"),
-    templatePlannerTemperature: readNumber(
-      source,
-      "TEMPLATE_PLANNER_TEMPERATURE",
-      0,
     ),
     langGraphCheckpointerMode: readEnumValue(
       source,

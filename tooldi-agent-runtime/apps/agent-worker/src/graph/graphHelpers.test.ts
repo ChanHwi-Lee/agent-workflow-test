@@ -6,7 +6,6 @@ import { buildArtifactRefs, buildFinalizeOptions, buildStageAckRecord } from "./
 test("graphHelpers는 정의된 artifact ref만 노출한다", () => {
   const refs = buildArtifactRefs({
     canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
-    semanticBriefDraftRef: null,
     briefCompilationReportRef: "runs/run-1/attempts/1/brief-compilation-report.json",
     compositionBriefRef: "runs/run-1/attempts/1/composition-brief.json",
     compositionVariantSetRef: null,
@@ -56,7 +55,6 @@ test("graphHelpers는 judge warning을 finalize option에 투영한다", () => {
   const options = buildFinalizeOptions(
     {
       canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
-      semanticBriefDraftRef: null,
       briefCompilationReportRef: null,
       compositionBriefRef: null,
       compositionVariantSetRef: null,
@@ -124,7 +122,6 @@ test("graphHelpers는 representative degraded warning을 finalize option에 투�
   const options = buildFinalizeOptions(
     {
       canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
-      semanticBriefDraftRef: null,
       briefCompilationReportRef: null,
       compositionBriefRef: null,
       compositionVariantSetRef: null,

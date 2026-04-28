@@ -10,20 +10,17 @@ import type {
 
 export function createIntentNormalizationReport(input: {
   input: HydratedPlanningInput;
-  plannerMode: NormalizedIntent["plannerMode"];
   prompt: string;
   draftAvailable: boolean;
   repairs: IntentNormalizationRepair[];
   intent: NormalizedIntent;
 }): IntentNormalizationReport {
-  const { input: hydratedInput, plannerMode, prompt, draftAvailable, repairs, intent } =
-    input;
+  const { input: hydratedInput, prompt, draftAvailable, repairs, intent } = input;
 
   return {
     reportId: createRequestId(),
     runId: hydratedInput.job.runId,
     traceId: hydratedInput.job.traceId,
-    plannerMode,
     prompt,
     draftAvailable,
     repairCount: repairs.length,

@@ -118,7 +118,6 @@ export function createFashionRetailNormalizedIntent(
     intentId: "intent-fashion-1",
     runId: "run-fashion-1",
     traceId: "trace-fashion-1",
-    plannerMode: "langchain",
     operationFamily: "create_template",
     artifactType: "LiveDraftArtifactBundle",
     goalSummary: "패션 리테일 봄 세일 웹배너",

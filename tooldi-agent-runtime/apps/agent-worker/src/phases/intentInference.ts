@@ -1,15 +1,10 @@
-import {
-  normalizeTemplateAssetPolicy,
-  type TemplateSemanticBriefDraft,
-} from "@tooldi/agent-llm";
+import { normalizeTemplateAssetPolicy } from "@tooldi/agent-llm";
 
 import type { NormalizedIntent } from "../types.js";
 import {
   fashionRetailBlockedKeywords,
   fashionRetailBlockedTextPattern,
   genericPromoBlockedKeywords,
-  menuDrivenPhotoSignalKeywords,
-  menuDrivenPhotoSignalPattern,
 } from "./intentKeywords.js";
 
 export function extractPromptSignals(prompt: string) {
@@ -58,24 +53,6 @@ export function deriveExplicitDomain(
     return "fashion_retail";
   }
   return null;
-}
-
-export function shouldPreferGraphicPromoStructure(
-  promptSignals: ReturnType<typeof extractPromptSignals>,
-  plannerDraft: TemplateSemanticBriefDraft,
-): boolean {
-  const noExplicitBusinessDomain =
-    !promptSignals.restaurant && !promptSignals.cafe && !promptSignals.fashion;
-  const noConcretePhotoSubject =
-    !promptSignals.menu && !promptSignals.drink && !promptSignals.newness;
-  const promoLanguagePresent =
-    promptSignals.sale ||
-    promptSignals.event ||
-    plannerDraft.offerIntent === "sale" ||
-    plannerDraft.offerIntent === "announcement" ||
-    plannerDraft.offerIntent === "evergreen";
-
-  return noExplicitBusinessDomain && noConcretePhotoSubject && promoLanguagePresent;
 }
 
 export function deriveExpectedMenuType(
@@ -144,6 +121,106 @@ export function deriveAudience(
     case "general_marketing":
       return "general_consumers";
   }
+}
+
+export function deriveOfferIntent(
+  promotionStyle: NormalizedIntent["facets"]["promotionStyle"],
+): NormalizedIntent["offerIntent"] {
+  switch (promotionStyle) {
+    case "sale_campaign":
+      return "sale";
+    case "seasonal_menu_launch":
+    case "new_product_promo":
+      return "launch";
+    case "general_campaign":
+      return "announcement";
+  }
+}
+
+export function deriveOfferSpecificity(
+  promotionStyle: NormalizedIntent["facets"]["promotionStyle"],
+  menuType: NormalizedIntent["facets"]["menuType"],
+): NormalizedIntent["facets"]["offerSpecificity"] {
+  return promotionStyle === "sale_campaign"
+    ? "broad_offer"
+    : menuType === null
+      ? "multi_item"
+      : "single_product";
+}
+
+export function shouldPreferGraphicPromoStructure(
+  promptSignals: ReturnType<typeof extractPromptSignals>,
+  domain: NormalizedIntent["domain"],
+  menuType: NormalizedIntent["facets"]["menuType"],
+  offerIntent: NormalizedIntent["offerIntent"],
+): boolean {
+  const noExplicitBusinessDomain = domain === "general_marketing";
+  const noConcretePhotoSubject =
+    !promptSignals.menu && !promptSignals.drink && !promptSignals.newness;
+  const promoLanguagePresent =
+    promptSignals.sale ||
+    promptSignals.event ||
+    offerIntent === "sale" ||
+    offerIntent === "announcement" ||
+    offerIntent === "evergreen";
+
+  return noExplicitBusinessDomain && menuType === null && noConcretePhotoSubject && promoLanguagePresent;
+}
+
+export function deriveSubjectBinding(
+  prompt: string,
+  domain: NormalizedIntent["domain"],
+  menuType: NormalizedIntent["facets"]["menuType"],
+  genericPromoStructureFocus: boolean,
+): NormalizedIntent["subjectBinding"] {
+  if (genericPromoStructureFocus || (domain === "general_marketing" && menuType === null)) {
+    return "subjectless";
+  }
+  if (menuType !== null) {
+    return "product_anchored";
+  }
+  if (
+    prompt.includes("매장") ||
+    prompt.includes("방문") ||
+    prompt.includes("식당") ||
+    prompt.includes("카페")
+  ) {
+    return "venue_anchored";
+  }
+  return "domain_anchored";
+}
+
+export function deriveLayoutIntent(
+  promptSignals: ReturnType<typeof extractPromptSignals>,
+  domain: NormalizedIntent["domain"],
+  promotionStyle: NormalizedIntent["facets"]["promotionStyle"],
+  menuType: NormalizedIntent["facets"]["menuType"],
+): NormalizedIntent["layoutIntent"] {
+  if (promptSignals.badge) {
+    return "badge_led";
+  }
+  if (
+    menuType !== null ||
+    domain === "cafe" ||
+    promotionStyle === "new_product_promo"
+  ) {
+    return "hero_focused";
+  }
+  return "copy_focused";
+}
+
+export function createDeterministicAssetPolicy(
+  domain: NormalizedIntent["domain"],
+  menuType: NormalizedIntent["facets"]["menuType"],
+  preferGraphicPromoStructure: boolean,
+): NormalizedIntent["assetPolicy"] {
+  if (preferGraphicPromoStructure || domain === "fashion_retail") {
+    return normalizeTemplateAssetPolicy("graphic_allowed_photo_optional");
+  }
+  if (domain === "restaurant" || domain === "cafe" || menuType !== null) {
+    return normalizeTemplateAssetPolicy("photo_preferred_graphic_allowed");
+  }
+  return normalizeTemplateAssetPolicy("graphic_allowed_photo_optional");
 }
 
 export function buildNormalizedKeywords(
@@ -251,49 +328,51 @@ export function normalizeKeyword(value: string): string {
   return value.trim().replace(/[^\p{L}\p{N}]/gu, "");
 }
 
-export function collectFashionMenuPhotoContradictionFields(
-  draft: TemplateSemanticBriefDraft,
-): string[] {
-  const fields: string[] = [];
-
-  if (menuDrivenPhotoSignalPattern.test(draft.goalSummary)) {
-    fields.push("goalSummary");
-  }
-  if (draft.campaignGoal === "menu_discovery") {
-    fields.push("campaignGoal");
-  }
-  if (draft.offerIntent === "launch") {
-    fields.push("offerIntent");
+export function deriveBackgroundColorHex(prompt: string): string {
+  let hash = 0;
+  for (const char of prompt) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
   }
 
-  return fields;
+  return hslToHex(hash % 360, 42, 88);
 }
 
-export function stableStringify(value: unknown): string {
-  return JSON.stringify(value) ?? "";
-}
+function hslToHex(h: number, s: number, l: number): string {
+  const normalizedS = s / 100;
+  const normalizedL = l / 100;
+  const chroma = (1 - Math.abs(2 * normalizedL - 1)) * normalizedS;
+  const hueSection = h / 60;
+  const secondary = chroma * (1 - Math.abs((hueSection % 2) - 1));
+  const match = normalizedL - chroma / 2;
 
-export function didCanonicalAssetPolicyMeaningfullyChange(
-  original: TemplateSemanticBriefDraft["assetPolicy"],
-  normalized: NormalizedIntent["assetPolicy"],
-): boolean {
-  if (typeof original === "string") {
-    return stableStringify(original) !== stableStringify(normalized);
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+
+  if (hueSection >= 0 && hueSection < 1) {
+    red = chroma;
+    green = secondary;
+  } else if (hueSection < 2) {
+    red = secondary;
+    green = chroma;
+  } else if (hueSection < 3) {
+    green = chroma;
+    blue = secondary;
+  } else if (hueSection < 4) {
+    green = secondary;
+    blue = chroma;
+  } else if (hueSection < 5) {
+    red = secondary;
+    blue = chroma;
+  } else {
+    red = chroma;
+    blue = secondary;
   }
 
-  const normalizedOriginal = normalizeTemplateAssetPolicy(original);
-  const comparableOriginal = {
-    ...normalizedOriginal,
-    allowedFamilies: normalizedOriginal.allowedFamilies.filter(
-      (family) => family !== "background",
-    ),
-  };
-  const comparableNormalized = {
-    ...normalized,
-    allowedFamilies: normalized.allowedFamilies.filter(
-      (family) => family !== "background",
-    ),
-  };
+  const toHex = (value: number) =>
+    Math.round((value + match) * 255)
+      .toString(16)
+      .padStart(2, "0");
 
-  return stableStringify(comparableOriginal) !== stableStringify(comparableNormalized);
+  return `#${toHex(red)}${toHex(green)}${toHex(blue)}`;
 }

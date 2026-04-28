@@ -1,15 +1,5 @@
 import { z } from "zod";
 
-export const templatePlannerModes = ["heuristic", "langchain"] as const;
-export type TemplatePlannerMode = (typeof templatePlannerModes)[number];
-
-export const templatePlannerProviders = [
-  "openai",
-  "anthropic",
-  "google",
-] as const;
-export type TemplatePlannerProvider = (typeof templatePlannerProviders)[number];
-
 export const legacyTemplateAssetPolicies = [
   "graphic_allowed_photo_optional",
   "photo_preferred_graphic_allowed",
@@ -273,48 +263,6 @@ export interface TemplateSemanticBriefContext {
   primaryVisualPolicy: TemplatePrimaryVisualPolicy;
 }
 
-export interface TemplatePlannerInput {
-  prompt: string;
-  canvasPreset: string;
-  palette: string[];
-}
-
-export interface TemplatePlanner {
-  readonly mode: TemplatePlannerMode;
-  plan(input: TemplatePlannerInput): Promise<TemplateSemanticBriefDraft>;
-}
-
-export interface TemplateCopyPlanGenerator {
-  readonly mode: TemplatePlannerMode;
-  generate(input: {
-    prompt: string;
-    brief: TemplateSemanticBriefContext;
-    priorContext?: string | null;
-  }): Promise<TemplateCopyPlanDraft>;
-}
-
-export interface TemplateAbstractLayoutGenerator {
-  readonly mode: TemplatePlannerMode;
-  generate(input: {
-    prompt: string;
-    brief: TemplateSemanticBriefContext;
-    priorContext?: string | null;
-  }): Promise<TemplateAbstractLayoutDraft>;
-}
-
-export interface StructuredOutputModel<TSchema extends z.ZodTypeAny> {
-  withStructuredOutput(schema: TSchema): {
-    invoke(
-      input:
-        | string
-        | Array<{
-            role: "system" | "user" | "assistant";
-            content: string;
-          }>,
-    ): Promise<z.infer<TSchema>>;
-  };
-}
-
 export function parseTemplateSemanticBriefDraft(
   value: unknown,
 ): TemplateSemanticBriefDraft {
@@ -324,7 +272,6 @@ export function parseTemplateSemanticBriefDraft(
 // Transitional compile-time aliases while worker internals are renamed to brief-native types.
 export const TemplateIntentDraftSchema = TemplateSemanticBriefDraftSchema;
 export type TemplateIntentDraft = TemplateSemanticBriefDraft;
-export const parseTemplateIntentDraft = parseTemplateSemanticBriefDraft;
 
 export function resolvePrimaryVisualFamily(
   primaryVisualPolicy: TemplatePrimaryVisualPolicy,

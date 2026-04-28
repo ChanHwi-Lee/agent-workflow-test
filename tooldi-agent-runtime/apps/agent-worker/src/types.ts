@@ -216,7 +216,6 @@ export interface SemanticBriefDraftArtifact {
   draftId: string;
   runId: string;
   traceId: string;
-  plannerMode: "heuristic" | "langchain";
   operationFamily: IntentEnvelope["operationFamily"];
   canvasPreset: "wide_1200x628" | "square_1080" | "story_1080x1920" | string;
   prompt: string;
@@ -228,7 +227,6 @@ export interface IntentNormalizationReport {
   reportId: string;
   runId: string;
   traceId: string;
-  plannerMode: "heuristic" | "langchain";
   prompt: string;
   draftAvailable: boolean;
   repairCount: number;
@@ -241,7 +239,6 @@ export interface CanonicalDesignBrief extends TemplateSemanticBriefContext {
   intentId: string;
   runId: string;
   traceId: string;
-  plannerMode: "heuristic" | "langchain";
   operationFamily: IntentEnvelope["operationFamily"];
   artifactType: string;
   requestedOutputCount: number;
@@ -283,7 +280,6 @@ export interface CopyPlan {
   planId: string;
   runId: string;
   traceId: string;
-  plannerMode: NormalizedIntent["plannerMode"];
   source: "heuristic" | "langchain";
   slots: CopyPlanSlot[];
   primaryMessage: string;
@@ -324,7 +320,6 @@ export interface AbstractLayoutPlan {
   planId: string;
   runId: string;
   traceId: string;
-  plannerMode: NormalizedIntent["plannerMode"];
   source: "heuristic" | "langchain";
   layoutFamily: AbstractLayoutFamily;
   copyAnchor: AbstractLayoutCopyAnchor;
@@ -525,7 +520,6 @@ export interface ConcreteLayoutPlan {
   planId: string;
   runId: string;
   traceId: string;
-  plannerMode: NormalizedIntent["plannerMode"];
   abstractLayoutFamily: AbstractLayoutFamily;
   resolvedSlotTopology: AbstractLayoutSlotTopology;
   primaryVisualFamily: "graphic" | "photo";
@@ -989,7 +983,6 @@ export interface AssetPlan {
   planId: string;
   runId: string;
   traceId: string;
-  plannerMode: NormalizedIntent["plannerMode"];
   primaryVisualFamily: "graphic" | "photo";
   backgroundBinding: AssetBackgroundBinding;
   graphicRoleBindings: GraphicRoleBinding[];
@@ -1192,7 +1185,6 @@ export interface SearchProfileArtifact {
   profileId: string;
   runId: string;
   traceId: string;
-  plannerMode: NormalizedIntent["plannerMode"];
   templateKind: NormalizedIntent["templateKind"];
   domain: NormalizedIntent["domain"];
   audience: NormalizedIntent["audience"];

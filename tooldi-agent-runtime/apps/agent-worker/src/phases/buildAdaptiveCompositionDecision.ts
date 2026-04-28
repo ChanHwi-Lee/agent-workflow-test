@@ -9,10 +9,12 @@
  */
 
 import { z } from "zod";
+
 import {
   createStructuredOutputModel,
-  type TemplatePlannerProvider,
+  type StructuredOutputProvider,
 } from "@tooldi/agent-llm";
+
 import type {
   AdaptiveCompositionDecision,
   MessageAtomPlan,
@@ -251,7 +253,7 @@ export interface BuildAdaptiveCompositionDecisionInput {
   messageAtomPlan: MessageAtomPlan;
   sceneStylePlan?: SceneStylePlan | null;
   palette: string[];
-  provider: TemplatePlannerProvider;
+  provider: StructuredOutputProvider;
   modelName: string;
   temperature: number;
 }

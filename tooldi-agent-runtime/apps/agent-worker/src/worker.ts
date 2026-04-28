@@ -4,11 +4,6 @@ import { fileURLToPath } from "node:url";
 import type { RunJobEnvelope } from "@tooldi/agent-contracts";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
 import {
-  createTemplateAbstractLayoutGenerator,
-  createTemplateCopyPlanGenerator,
-  createTemplatePlanner,
-} from "@tooldi/agent-llm";
-import {
   createWorkerGraphCheckpointer,
   type WorkerGraphCheckpointerHandle,
 } from "@tooldi/agent-graph";
@@ -70,9 +65,6 @@ export interface BuildWorkerRuntimeOptions {
   textLayoutHelper?: TextLayoutHelper;
   templateCatalogClient?: TemplateCatalogClient;
   tooldiCatalogSourceClient?: TooldiCatalogSourceClient;
-  templatePlanner?: ProcessRunJobDependencies["templatePlanner"];
-  templateCopyPlanGenerator?: ProcessRunJobDependencies["templateCopyPlanGenerator"];
-  templateAbstractLayoutGenerator?: ProcessRunJobDependencies["templateAbstractLayoutGenerator"];
   adaptiveCompositionDecisionBuilder?: AdaptiveCompositionDecisionBuilder;
   v6Overrides?: V6NodeOverrides;
   v6TrendResearcher?: ProcessRunJobDependencies["v6TrendResearcher"];
@@ -190,14 +182,6 @@ export async function buildWorkerRuntime(
       options.templateCatalogClient ?? createTemplateCatalogClient(),
     langGraphCheckpointer: graphCheckpointerHandle.checkpointer,
     ...(interviewRecordsDb ? { interviewRecordsDb } : {}),
-    templatePlanner:
-      options.templatePlanner ?? createTemplatePlanner(options.env, logger),
-    templateCopyPlanGenerator:
-      options.templateCopyPlanGenerator ??
-      createTemplateCopyPlanGenerator(options.env, logger),
-    templateAbstractLayoutGenerator:
-      options.templateAbstractLayoutGenerator ??
-      createTemplateAbstractLayoutGenerator(options.env, logger),
     adaptiveCompositionDecisionBuilder:
       options.adaptiveCompositionDecisionBuilder ??
       (async (input) => {

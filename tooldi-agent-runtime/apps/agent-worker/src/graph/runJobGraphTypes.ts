@@ -1,10 +1,4 @@
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
-import type {
-  TemplateAbstractLayoutGenerator,
-  TemplateCopyPlanGenerator,
-  TemplatePlanner,
-  TemplatePlannerProvider,
-} from "@tooldi/agent-llm";
 import type { Logger } from "@tooldi/agent-observability";
 import type { ObjectStoreClient } from "@tooldi/agent-persistence";
 import type {
@@ -28,6 +22,11 @@ import type {
 import type { V6NodeOverrides } from "./v6PipelineNode.js";
 import type { V6TrendResearcher } from "../phases/v6TrendResearch.js";
 
+export type AdaptiveCompositionModelProvider =
+  | "openai"
+  | "anthropic"
+  | "google";
+
 export interface AdaptiveCompositionDecisionBuilderInput {
   runId: string;
   traceId: string;
@@ -35,7 +34,7 @@ export interface AdaptiveCompositionDecisionBuilderInput {
   messageAtomPlan: MessageAtomPlan;
   sceneStylePlan?: SceneStylePlan | null;
   palette: string[];
-  provider: TemplatePlannerProvider | null;
+  provider: AdaptiveCompositionModelProvider | null;
   modelName: string | null;
   temperature: number;
 }
@@ -57,9 +56,6 @@ export interface RunJobGraphDependencies {
   tooldiCatalogSourceClient?: TooldiCatalogSourceClient;
   langGraphCheckpointer?: BaseCheckpointSaver;
   interviewRecordsDb?: NodePgDatabase;
-  templatePlanner?: TemplatePlanner;
-  templateCopyPlanGenerator?: TemplateCopyPlanGenerator;
-  templateAbstractLayoutGenerator?: TemplateAbstractLayoutGenerator;
   adaptiveCompositionDecisionBuilder?: AdaptiveCompositionDecisionBuilder;
   v6Overrides?: V6NodeOverrides;
   v6TrendResearcher?: V6TrendResearcher;
