@@ -34,9 +34,3 @@ export class ConflictError extends AgentApiError {
     super("conflict", message, 409, details);
   }
 }
-
-export class NotImplementedYetError extends AgentApiError {
-  constructor(message: string, details?: Record<string, unknown>) {
-    super("not_implemented_yet", message, 501, details);
-  }
-}

@@ -41,25 +41,6 @@ export const RunCompletionSnapshotSchema = Type.Object(
   { additionalProperties: false },
 );
 
-export const RunResultSchema = Type.Object(
-  {
-    finalStatus: TerminalRunStatusSchema,
-    draftId: Type.Union([IdentifierSchema, Type.Null()]),
-    finalRevision: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
-    createdLayerIds: Type.Array(IdentifierSchema),
-    updatedLayerIds: Type.Array(IdentifierSchema),
-    deletedLayerIds: Type.Array(IdentifierSchema),
-    fallbackCount: Type.Integer({ minimum: 0 }),
-    durabilityState: DurabilityStateSchema,
-    saveReceiptId: Type.Union([IdentifierSchema, Type.Null()]),
-    authoritativeCanvasFinalStateRef: Type.String({ minLength: 1 }),
-    errorSummary: Type.Union([ErrorSummarySchema, Type.Null()]),
-    warningSummary: Type.Array(WarningItemSchema),
-    traceId: IdentifierSchema,
-  },
-  { additionalProperties: false },
-);
-
 export const RunCompletionRecordSchema = Type.Object(
   {
     completionRecordId: IdentifierSchema,
@@ -131,5 +112,4 @@ export const RunCompletionRecordSchema = Type.Object(
 
 export type AgentRunResultSummary = Static<typeof AgentRunResultSummarySchema>;
 export type RunCompletionSnapshot = Static<typeof RunCompletionSnapshotSchema>;
-export type RunResult = Static<typeof RunResultSchema>;
 export type RunCompletionRecord = Static<typeof RunCompletionRecordSchema>;

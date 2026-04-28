@@ -477,16 +477,6 @@ export class RunRecoveryService {
     );
   }
 
-  async runWatchdogPlaceholder(runId: string, traceId: string): Promise<void> {
-    await this.runEventService.appendLog(
-      runId,
-      traceId,
-      "warn",
-      "Watchdog placeholder invoked; retry/cancel recovery rules will be implemented in a later step",
-      new Date().toISOString(),
-    );
-  }
-
   private async findRunAndAttempt(
     runId: string,
     traceId: string,

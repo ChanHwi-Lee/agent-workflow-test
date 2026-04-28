@@ -1,6 +1,5 @@
 import type {
   AgentRunResultSummary,
-  ErrorSummary,
   RunFinalizeRequest,
 } from "@tooldi/agent-contracts";
 import type { RunStatus } from "@tooldi/agent-domain";
@@ -214,16 +213,6 @@ export class RunFinalizeService {
       runStatus: updatedRun?.status ?? finalizedResult.finalStatus,
       ...(completionRecordRef ? { completionRecordRef } : {}),
     };
-  }
-
-  async failRun(
-    runId: string,
-    traceId: string,
-    error: ErrorSummary,
-    at: string,
-  ): Promise<void> {
-    await this.runRepository.updateStatus(runId, "failed");
-    await this.runEventService.appendFailed(runId, traceId, error, at);
   }
 
   private mapFinalStatusToAttemptState(
