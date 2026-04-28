@@ -1,23 +1,15 @@
 import { TooldiCatalogSourceError } from "@tooldi/tool-adapters";
 
-import { SpringCatalogActivationError } from "../phases/assembleTemplateCandidates.js";
-
 export function isSpringActivationFailure(
   error: unknown,
-): error is TooldiCatalogSourceError | SpringCatalogActivationError {
-  return (
-    error instanceof TooldiCatalogSourceError ||
-    error instanceof SpringCatalogActivationError
-  );
+): error is TooldiCatalogSourceError {
+  return error instanceof TooldiCatalogSourceError;
 }
 
 export function getSpringActivationErrorCode(
-  error: TooldiCatalogSourceError | SpringCatalogActivationError,
+  error: TooldiCatalogSourceError,
 ): string {
-  if (error instanceof TooldiCatalogSourceError) {
-    return `catalog_source_${error.code}`;
-  }
-  return error.code;
+  return `catalog_source_${error.code}`;
 }
 
 export function shouldStopAfterCurrentAction(response: {
