@@ -19,6 +19,7 @@
 2. [tooldi-agent-workflow-v6-layout-freedom-ssot.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v6-layout-freedom-ssot.md)
 3. [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
 4. [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
+5. [docs/README.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/README.md) — docs 폴더 안의 current/archive 라우팅 게이트.
 
 ## 로컬 실행
 
@@ -72,6 +73,6 @@ pnpm local:toolditor:eval:object-native:real
 
 - `v6-poc/`: v6 free HTML → browser render → primitive extraction 가능성을 증명한 PoC evidence.
 - `bench/method-compare-phase1/`: 모델/방식 비교 evidence. 기본 모델 교체 시 새 bench evidence를 추가해야 한다.
-- `docs/handoff/`: PR별 cleanup/evidence handoff archive.
+- `docs/archive/handoff/`: PR별 cleanup/evidence handoff archive. 현재 작업 지시로 직접 사용하지 않는다.
 - `docs/design/phase6-rag-assets/`: Phase 6 placeholder asset/RAG 설계 참고. 기존 template RAG를 live runtime에 재연결하면 안 된다.
 - v1~v5/adaptive/object-native/topology 문서: 배경 참고용 historical context. 현재 authority는 v6 SSOT와 이 README의 기준선이다.

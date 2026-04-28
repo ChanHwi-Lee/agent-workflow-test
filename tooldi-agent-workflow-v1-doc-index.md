@@ -70,19 +70,21 @@
 - [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
   - cleanup 이후 다음 구현 축. visual quality, Phase 6 asset/RAG, local/production parity, recovery hardening.
 
-### 2.4 cleanup evidence / handoff archive
+### 2.4 archived cleanup evidence / handoff archive
 
-- [docs/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md)
+아래 문서는 cleanup 근거와 회귀 가드 확인용 archive다. 현재 작업의 authority는 아니며, 먼저 `README`, AS-IS, v6 SSOT를 확인한 뒤 필요한 근거만 대조한다.
+
+- [docs/archive/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md)
   - v6 reachability와 legacy non-reachability baseline.
-- [docs/handoff/2026-04-28-agent-workflow-pr3-graph-topology-prune-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr3-graph-topology-prune-handoff.md)
+- [docs/archive/handoff/2026-04-28-agent-workflow-pr3-graph-topology-prune-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr3-graph-topology-prune-handoff.md)
   - legacy graph topology prune 작업 근거.
-- [docs/handoff/2026-04-28-agent-workflow-pr4-legacy-phase-deletion-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr4-legacy-phase-deletion-handoff.md)
+- [docs/archive/handoff/2026-04-28-agent-workflow-pr4-legacy-phase-deletion-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr4-legacy-phase-deletion-handoff.md)
   - legacy phase deletion 범위.
-- [docs/handoff/2026-04-28-agent-workflow-pr5-mixed-cleanup-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr5-mixed-cleanup-handoff.md)
+- [docs/archive/handoff/2026-04-28-agent-workflow-pr5-mixed-cleanup-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr5-mixed-cleanup-handoff.md)
   - mixed runtime cleanup, planner abstraction, public contract cleanup.
-- [docs/handoff/2026-04-28-agent-workflow-pr6-package-sweep-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr6-package-sweep-handoff.md)
+- [docs/archive/handoff/2026-04-28-agent-workflow-pr6-package-sweep-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr6-package-sweep-handoff.md)
   - package-level dead code sweep.
-- [docs/handoff/2026-04-28-agent-workflow-pr6b-types-cascade-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr6b-types-cascade-handoff.md)
+- [docs/archive/handoff/2026-04-28-agent-workflow-pr6b-types-cascade-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr6b-types-cascade-handoff.md)
   - state/type cascade cleanup.
 
 ### 2.5 reference / historical 문서

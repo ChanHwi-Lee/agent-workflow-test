@@ -62,7 +62,7 @@ AGW v5 Step 1 (프롬프트 하드닝) + Step 2 (HTML → Layer Graph Transpiler
 - 푸시 안 됨.
 
 **agent-worker** (`agent-workflow-test/tooldi-agent-runtime/`):
-- legacy engine removal 작업이 이전 스레드에서 진행 중. 상태 확인 필요 — `docs/handoff/2026-04-20-agw-legacy-engine-removal-handoff.md` 참조.
+- legacy engine removal 작업이 이전 스레드에서 진행 중. 상태 확인 필요 — `docs/archive/handoff/2026-04-20-agw-legacy-engine-removal-handoff.md` 참조.
 - `processRunJob orchestrates phases and backend callbacks in order` 테스트 1건 실패가 남아있을 가능성. D 착수 전 green 확보 필수.
 
 ### 검증 상태
@@ -178,7 +178,7 @@ Acceptance:
 
 **Scope (do)**:
 
-1. **사전 그린 확보**: `docs/handoff/2026-04-20-agw-legacy-engine-removal-handoff.md` 의 잔여 task (processRunJob 테스트 1건) 먼저 해소. `pnpm test`, `pnpm smoke:object-native` 그린 상태에서 D 착수.
+1. **사전 그린 확보**: `docs/archive/handoff/2026-04-20-agw-legacy-engine-removal-handoff.md` 의 잔여 task (processRunJob 테스트 1건) 먼저 해소. `pnpm test`, `pnpm smoke:object-native` 그린 상태에서 D 착수.
 
 2. **v5 stage 모듈 구현** (`apps/agent-worker/src/phases/` 아래):
    - `methodBHtmlGen.ts` — Gemini REST 호출. bench `run.mjs` 의 `callGeminiRest({ method: 'method-b', prompt })` 패턴 재사용. 환경변수 `GOOGLE_API_KEY` (agent-runtime `.env.local`, 서버사이드 전용).
@@ -364,8 +364,8 @@ interface ResolvedAsset {
 
 1. `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/AGENTS.md` — authority hierarchy
 2. `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md` — v5 normative
-3. `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-20-agw-v5-step1-prompt-hardening-handoff.md` — Step 1
-4. `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-20-agw-legacy-engine-removal-handoff.md` — agent-worker cleanup 잔여 task
+3. `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-20-agw-v5-step1-prompt-hardening-handoff.md` — Step 1
+4. `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-20-agw-legacy-engine-removal-handoff.md` — agent-worker cleanup 잔여 task
 5. 이 파일 (`2026-04-20-agw-v5-post-step2-handoff.md`, v2)
 6. `/home/ubuntu/github/tooldi/toolditor/src/features/agent-workflow-spike/lib/transpile/index.ts` — Step 2 PoC (포팅 대상)
 7. `/home/ubuntu/github/tooldi/toolditor/src/features/agent-workflow-spike/lib/mutationAdapter.ts` — frontend SSE+ack (재사용)
@@ -482,7 +482,7 @@ cat run.mjs | head -140   # Gemini REST 호출 패턴 — methodBHtmlGen.ts 구�
 
 새 스레드에 다음을 그대로 붙여넣어 시작하라:
 
-> `agent-workflow-test/AGENTS.md`, `tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md`, `docs/handoff/2026-04-20-agw-v5-step1-prompt-hardening-handoff.md`, `docs/handoff/2026-04-20-agw-legacy-engine-removal-handoff.md`, `docs/handoff/2026-04-20-agw-v5-post-step2-handoff.md` (v2, 본 파일) 를 순서대로 읽어 현재 상태 파악한 뒤, 이 handoff 의 **§Work Order** 에 따라 작업하라.
+> `agent-workflow-test/AGENTS.md`, `tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md`, `docs/archive/handoff/2026-04-20-agw-v5-step1-prompt-hardening-handoff.md`, `docs/archive/handoff/2026-04-20-agw-legacy-engine-removal-handoff.md`, `docs/archive/handoff/2026-04-20-agw-v5-post-step2-handoff.md` (v2, 본 파일) 를 순서대로 읽어 현재 상태 파악한 뒤, 이 handoff 의 **§Work Order** 에 따라 작업하라.
 >
 > **⚠️ 이전 스레드 오류 재발 방지 (§Critical Correction 필독)**: v5 §3.2 폐기 대상은 **agent-worker 내부 특정 모듈만** 이며 agent-workflow 레포/Queue/SSE/배포/HITL(langgraph) 기반은 **모두 유지** 대상이다. frontend 에서 Gemini 직접 호출 경로 **절대 추가 금지**. v5 6-stage 는 **agent-worker 안에서** 돈다. toolditor 는 기존 `POST /api/agent-workflow/runs` + SSE + mutationAdapter ack round-trip 경로를 그대로 사용한다.
 >
@@ -490,6 +490,6 @@ cat run.mjs | head -140   # Gemini REST 호출 패턴 — methodBHtmlGen.ts 구�
 >
 > **D 목표**: agent-worker 에 Method B HTML gen + grammar validator + transpile stage 를 조립해 기존 SSE 경로로 canvas 에 3~12 layer 렌더 증명. Step 2 의 `transpileHtmlToCommands` 는 toolditor 에서 agent-worker 로 포팅 (또는 공용 package 추출).
 >
-> **D 착수 전 필수**: `docs/handoff/2026-04-20-agw-legacy-engine-removal-handoff.md` 의 잔여 task (processRunJob 테스트 1건) 를 먼저 그린 확보.
+> **D 착수 전 필수**: `docs/archive/handoff/2026-04-20-agw-legacy-engine-removal-handoff.md` 의 잔여 task (processRunJob 테스트 1건) 를 먼저 그린 확보.
 >
 > 작업 중 해결 곤란한 지점이 있으면 사용자에게 먼저 물어본 뒤 진행. 커밋 규칙: 대괄호 prefix, Co-Authored-By 금지, `git add -A` 금지, 푸시 금지. **RAG 인터페이스는 반드시 실 DB/S3/API 연동으로 구현** (abstract placeholder 금지).

@@ -246,7 +246,7 @@ E2E:
 
 - `agent-workflow-test/AGENTS.md`: v6 SSOT가 현재 authority이며 v5 constrained HTML과 template-aware adaptive composition은 historical로 밀려 있다.
 - `agent-workflow-test/tooldi-agent-workflow-v6-layout-freedom-ssot.md`: v6는 free HTML, browser layout, primitive extract 3단계이며 `placeholder://<hint>` 이미지를 허용한다. `sandbox/embedding-test`는 Phase 6 RAG 재사용 후보로만 언급된다.
-- `agent-workflow-test/docs/handoff/2026-04-21-agw-v6-phase6-rag-placeholder-swap-design-handoff.md`: Phase 6는 `placeholder://<hint>`를 실제 Tooldi asset ID/S3 URL로 바꾸는 설계 단계다. bounds/style 변경 금지, synthetic asset 금지, template 컬렉션 제외, 레거시 retrieval 재-wire 금지가 명시되어 있다.
+- `agent-workflow-test/docs/archive/handoff/2026-04-21-agw-v6-phase6-rag-placeholder-swap-design-handoff.md`: Phase 6는 `placeholder://<hint>`를 실제 Tooldi asset ID/S3 URL로 바꾸는 설계 단계다. bounds/style 변경 금지, synthetic asset 금지, template 컬렉션 제외, 레거시 retrieval 재-wire 금지가 명시되어 있다.
 - `agent-workflow-test/tooldi-agent-runtime/apps/agent-worker/src/graph/v6PipelineNode.ts`: 현재 node는 `runV6Pipeline` 결과를 받은 뒤 바로 `adaptV6Commands`를 호출한다. request, intent, dependencies가 있는 위치라 RAG 호출을 넣기 가장 단순하다.
 - `agent-workflow-test/tooldi-agent-runtime/apps/agent-worker/src/phases/v6Pipeline.ts`: pipeline은 HTML 생성, 검증, 브라우저 렌더, primitive mapping까지만 수행한다. 외부 catalog/Qdrant I/O를 넣지 않는 것이 현재 DI 경계와 맞다.
 - `agent-workflow-test/tooldi-agent-runtime/apps/agent-worker/src/phases/v6PrimitiveMapper.ts`: `placeholder://` 이미지는 `bitmap`으로 분류되고, `src`, `naturalWidth`, `naturalHeight`, `alt`, `bounds`가 primitive command에 보존된다.

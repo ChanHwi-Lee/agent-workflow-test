@@ -369,7 +369,7 @@ runtime 실패 처리:
 - `/home/ubuntu/github/tooldi/tws-editor-api/embedding-test/pyproject.toml`
   - Python 3.12, `qdrant-client`, `transformers==4.51.3`, `torch==2.5.1+cu124`, `pillow`, `boto3`, `pymysql`, `fastapi`, `uvicorn` 조합이다.
 
-- `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-21-agw-v6-phase6-rag-placeholder-swap-design-handoff.md`
+- `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-21-agw-v6-phase6-rag-placeholder-swap-design-handoff.md`
   - Phase 6 는 `placeholder://<hint>` 를 실제 Tooldi asset ID + S3 URL 로 바꾸는 단계다.
   - template collection 은 Phase 6 범위가 아니고, photo/graphic collection 이 대상이다.
   - RAG 실패는 run fail 이 아니라 `unresolvedPlaceholder` marker 로 degrade 한다.

@@ -309,7 +309,7 @@ test("runJobGraph compiles with v6-only topology", () => {
 PR 1 의 baseline 테스트 패턴을 참고. PR 1 에서 `legacy nodes not reached` assertion 이 이미 도입되었으므로 **새 테스트는 "compile 단계에서 노드 자체가 등록조차 되지 않는다"** 를 단정해 한 단계 더 강하게 잠근다.
 
 PR 1 evidence 노트:
-`/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md`
+`/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md`
 
 #### 5.2 v6 happy path 테스트 — create-layer + save mutation
 
@@ -426,7 +426,7 @@ prepare_execution / advance_after_ack / emit_stage 분기를 v6-only 단순화.
 
 ### PR 1 evidence
 
-- `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md`
+- `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md`
 
 ### 작업기록 (llm-store vault)
 
@@ -459,7 +459,7 @@ prepare_execution / advance_after_ack / emit_stage 분기를 v6-only 단순화.
 
 > Implement PR 3 graph topology prune for `agent-workflow-test/tooldi-agent-runtime`.
 >
-> Read `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr3-graph-topology-prune-handoff.md` first. It contains the locked scope, file-level steps, guard tests, acceptance criteria, and references.
+> Read `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr3-graph-topology-prune-handoff.md` first. It contains the locked scope, file-level steps, guard tests, acceptance criteria, and references.
 >
 > Repo root: `/home/ubuntu/github/tooldi/tws-editor-api`. Runtime workdir: `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-runtime`.
 >

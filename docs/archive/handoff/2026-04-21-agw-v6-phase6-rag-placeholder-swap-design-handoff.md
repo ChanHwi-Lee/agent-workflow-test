@@ -314,7 +314,7 @@ Phase 6 구현 스레드 시작 전, 이 handoff 에 후속 섹션으로 답을 
 ## 10. Start Prompt (다음 스레드용)
 
 ```
-이 handoff (tws-editor-api/agent-workflow-test/docs/handoff/
+이 handoff (tws-editor-api/agent-workflow-test/docs/archive/handoff/
 2026-04-21-agw-v6-phase6-rag-placeholder-swap-design-handoff.md) +
 v6 SSOT (tooldi-agent-workflow-v6-layout-freedom-ssot.md) +
 Phase 4 handoff + sandbox/embedding-test/README.md 를 읽고
@@ -366,7 +366,7 @@ Prerequisites 체크부터:
 ## 11. 참고 문서 & 모듈
 
 - v6 SSOT: `tooldi-agent-workflow-v6-layout-freedom-ssot.md` (§1 원칙, §2 3단계, §3 font pipeline)
-- Phase 4 handoff: `docs/handoff/2026-04-21-agw-v6-phase4-langgraph-swap-handoff.md`
+- Phase 4 handoff: `docs/archive/handoff/2026-04-21-agw-v6-phase4-langgraph-swap-handoff.md`
 - Phase 4 work-log: `obsidian-vault/작업기록/work-logs/2026-04-21-agw-v6-phase4-langgraph-cutover.md`
 - embedding PoC: `sandbox/embedding-test/README.md` + `embed_real_assets_poc.py`
 - Tooldi catalog types: `packages/tool-adapters/src/catalog/tooldiCatalogSourceTypes.ts`

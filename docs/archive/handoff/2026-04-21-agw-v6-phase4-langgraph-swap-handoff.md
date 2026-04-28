@@ -227,7 +227,7 @@ bench/method-compare-phase1/method-b-system.txt        (v5 prompt — historical
 ## Start Prompt (다음 스레드용)
 
 ```
-이 handoff (tws-editor-api/agent-workflow-test/docs/handoff/
+이 handoff (tws-editor-api/agent-workflow-test/docs/archive/handoff/
 2026-04-21-agw-v6-phase4-langgraph-swap-handoff.md) +
 Phase 2 + 2.5 완료 상태 + memory lock 을 읽고 Phase 4 를 실행하라.
 

@@ -12,7 +12,7 @@
 
 1. 권위 문서부터 읽는다.
    - `agent-workflow-test/tooldi-agent-workflow-v6-layout-freedom-ssot.md`
-   - `agent-workflow-test/docs/handoff/2026-04-21-agw-v6-phase6-rag-placeholder-swap-design-handoff.md`
+   - `agent-workflow-test/docs/archive/handoff/2026-04-21-agw-v6-phase6-rag-placeholder-swap-design-handoff.md`
    - `sandbox/embedding-test/README.md`
 2. 런타임 의존성을 설치한다.
    - Node runtime: `agent-workflow-test/tooldi-agent-runtime`
@@ -307,7 +307,7 @@ curl -s -X POST http://localhost:6333/collections/tooldi_graphics_v1/points/scro
    - 위치: `agent-workflow-test/docs/design/phase6-rag-assets/`
    - 이 문서와 병렬 설계 문서들이 Phase 6 의 결정 근거가 된다.
 2. 구현 핸드오프(implementation handoff)
-   - 위치 예: `agent-workflow-test/docs/handoff/2026-XX-XX-agw-v6-phase6-implementation-handoff.md`
+   - 위치 예: `agent-workflow-test/docs/archive/handoff/2026-XX-XX-agw-v6-phase6-implementation-handoff.md`
    - 포함할 것: 결정된 컬렉션 이름, sidecar 방식, resolver 파일 목록, test plan, bench plan.
 3. SSOT 갱신(SSOT update)
    - 위치: `agent-workflow-test/tooldi-agent-workflow-v6-layout-freedom-ssot.md`
@@ -362,7 +362,7 @@ curl -s -X POST http://localhost:6333/collections/tooldi_graphics_v1/points/scro
 | --- | --- |
 | `agent-workflow-test/AGENTS.md` | v6 SSOT 가 현재 authority 이고, v5 grammar/transpiler 경로는 폐기됐으며, v6 legacy rg 검증 힌트가 있다. |
 | `agent-workflow-test/tooldi-agent-workflow-v6-layout-freedom-ssot.md` | v6 원칙(P1~P5), 3단계 파이프라인, AC-V6-P1~P8, Phase 4 smoke p50 약 5.5초, AC-V6-P6 legacy 0-hit 기준을 확인했다. |
-| `agent-workflow-test/docs/handoff/2026-04-21-agw-v6-phase6-rag-placeholder-swap-design-handoff.md` | Phase 6 는 `placeholder://힌트` 를 실제 Tooldi asset ID/S3 URL 로 바꾸는 설계이며, template 컬렉션 재사용과 legacy retrieval 재연결이 금지임을 확인했다. |
+| `agent-workflow-test/docs/archive/handoff/2026-04-21-agw-v6-phase6-rag-placeholder-swap-design-handoff.md` | Phase 6 는 `placeholder://힌트` 를 실제 Tooldi asset ID/S3 URL 로 바꾸는 설계이며, template 컬렉션 재사용과 legacy retrieval 재연결이 금지임을 확인했다. |
 | `sandbox/embedding-test/README.md` | 현재 PoC 컬렉션은 `tooldi_real_asset_poc_v1`, `tooldi_real_asset_batch_v1` 이고, 소형 배치는 template 100 + bitmap shape 200 중심이라 Phase 6 acceptance 로 쓰면 안 됨을 확인했다. |
 | `sandbox/embedding-test/AGENTS.md` | Python 실행은 `uv run`, Qdrant 는 Docker Compose, 작업 전 `docker compose ps` 확인이 원칙임을 확인했다. |
 | `sandbox/embedding-test/docker-compose.yaml` | Qdrant 컨테이너 이름은 `qdrant`, 포트는 localhost `6333`/`6334` 임을 확인했다. |

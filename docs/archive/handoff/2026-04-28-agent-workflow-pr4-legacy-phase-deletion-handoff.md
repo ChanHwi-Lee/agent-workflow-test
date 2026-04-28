@@ -337,8 +337,8 @@ worker DI / tool-adapters / tool-registry 도 보존 — PR 6.
 
 ### 직전 PR 핸드오프
 
-- `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md`
-- `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr3-graph-topology-prune-handoff.md`
+- `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md`
+- `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr3-graph-topology-prune-handoff.md`
 
 ### 작업기록 (llm-store vault)
 
@@ -365,7 +365,7 @@ worker DI / tool-adapters / tool-registry 도 보존 — PR 6.
 
 > Implement PR 4 legacy phase file deletion for `agent-workflow-test/tooldi-agent-runtime`.
 >
-> Read `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr4-legacy-phase-deletion-handoff.md` first. It contains the locked deletion list, file-level steps, validation, acceptance criteria, and references.
+> Read `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr4-legacy-phase-deletion-handoff.md` first. It contains the locked deletion list, file-level steps, validation, acceptance criteria, and references.
 >
 > Repo root: `/home/ubuntu/github/tooldi/tws-editor-api`. Runtime workdir: `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-runtime`.
 >

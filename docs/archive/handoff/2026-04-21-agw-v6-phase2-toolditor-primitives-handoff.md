@@ -145,7 +145,7 @@ capability reference 의 경로 기준:
 | `src/types/element/AllTypes.ts` | strict union 확장 여부 검토 (기존 `bitmap` 이 `baseType.ts` runtime 엔 있으나 strict 엔 없을 수 있음) |
 | `src/static/ElementTypeGroup.ts` | UI grouping 에서 bitmap/svg 노출 여부 결정 (capability reference §4.3 참조) |
 
-**참고**: capability reference `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/toolditor-canvas-capability-reference.md` §§5.2 / §6.2 / §7.2 에 image/svg factory 의 기존 인터페이스 문서화되어 있음.
+**참고**: capability reference `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/historical-audits/toolditor-canvas-capability-reference.md` §§5.2 / §6.2 / §7.2 에 image/svg factory 의 기존 인터페이스 문서화되어 있음.
 
 ---
 
@@ -240,7 +240,7 @@ npm run local:agent  # → http://localhost:3010/editor
 ## Start Prompt (다음 스레드용)
 
 ```
-이 handoff (tws-editor-api/agent-workflow-test/docs/handoff/
+이 handoff (tws-editor-api/agent-workflow-test/docs/archive/handoff/
 2026-04-21-agw-v6-phase2-toolditor-primitives-handoff.md) +
 capability reference (tws-editor-api/agent-workflow-test/docs/
 toolditor-canvas-capability-reference.md) + memory lock

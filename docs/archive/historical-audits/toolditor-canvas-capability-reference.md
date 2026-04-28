@@ -1,5 +1,7 @@
 # Toolditor Canvas Capability Reference For AGW v5
 
+> Historical audit. 이 문서는 AGW v5 시점의 Toolditor canvas capability 조사 자료다. 현재 v6-only runtime의 구현 기준이 아니다. 현재 기준은 root `README.md`, AS-IS, roadmap, v6 SSOT를 먼저 따른다.
+
 Updated: 2026-04-21
 
 Status: reference only, non-normative. Source of truth is the code paths cited below.

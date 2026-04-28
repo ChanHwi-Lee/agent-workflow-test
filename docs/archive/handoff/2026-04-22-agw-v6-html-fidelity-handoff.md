@@ -115,7 +115,7 @@ Continue improving AGW v6 HTML-to-Toolditor fidelity after the v6-fidelity check
 Continue AGW v6 HTML-to-Toolditor fidelity from checkpoint `v6-fidelity`.
 
 First read:
-- /home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-22-agw-v6-html-fidelity-handoff.md
+- /home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-22-agw-v6-html-fidelity-handoff.md
 - /home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-runtime/apps/agent-worker/src/phases/v6BrowserRender.ts
 - /home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-runtime/apps/agent-worker/src/phases/v6PrimitiveMapper.ts
 - /home/ubuntu/github/tooldi/toolditor/src/features/agent-workflow-spike/lib/mutationAdapter.ts

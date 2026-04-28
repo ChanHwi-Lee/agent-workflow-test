@@ -2,7 +2,7 @@
 
 Date: 2026-04-21
 Branch: `agent-workflow-test@feature/v6-structure`
-Scope: handoff `docs/handoff/2026-04-21-agw-v6-structure-phase0-poc-handoff.md`
+Scope: handoff `docs/archive/handoff/2026-04-21-agw-v6-structure-phase0-poc-handoff.md`
 
 ## What was built
 

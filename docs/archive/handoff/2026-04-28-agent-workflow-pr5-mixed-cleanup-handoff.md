@@ -361,9 +361,9 @@ rg -n "from \"\\.\\.?/phases/(emitSkeletonMutations|layerCommandBuilder|planning
 
 ### 직전 PR 핸드오프
 
-- `agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md`
-- `agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr3-graph-topology-prune-handoff.md`
-- `agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr4-legacy-phase-deletion-handoff.md`
+- `agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md`
+- `agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr3-graph-topology-prune-handoff.md`
+- `agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr4-legacy-phase-deletion-handoff.md`
 
 ### 작업기록 (llm-store vault)
 
@@ -393,7 +393,7 @@ rg -n "from \"\\.\\.?/phases/(emitSkeletonMutations|layerCommandBuilder|planning
 
 > Implement PR 4.5 (preflight) → PR 5a → PR 5b → PR 5c for `agent-workflow-test/tooldi-agent-runtime`.
 >
-> Read `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr5-mixed-cleanup-handoff.md` first. It contains the locked PR series, scope, validation, acceptance criteria, MERGED-FINAL line mapping, and references.
+> Read `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/archive/handoff/2026-04-28-agent-workflow-pr5-mixed-cleanup-handoff.md` first. It contains the locked PR series, scope, validation, acceptance criteria, MERGED-FINAL line mapping, and references.
 >
 > Repo root: `/home/ubuntu/github/tooldi/tws-editor-api`. Runtime workdir: `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-runtime`. Toolditor (PR 5c only): `/home/ubuntu/github/tooldi/toolditor`.
 >

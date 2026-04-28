@@ -1,6 +1,6 @@
 # Phase 6 RAG Assets - Reference Index
 
-**Status**: 조사/설계 참조 문서. 구현하지 않는다.
+**Status**: current/future design draft. root current 문서보다 높은 authority는 아니다.
 
 이 폴더는 Phase 6에서 `placeholder://힌트`를 실제 Tooldi 사진/그래픽 에셋으로 바꾸기 위한 기준 자료다.
 
