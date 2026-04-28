@@ -1,5 +1,7 @@
 # Method-Compare Phase-1 Report
 
+> Historical bench evidence. 이 리포트는 모델/방식 선택 근거로 보존한다. 현재 live runtime path가 아니며, 기본 모델이나 생성 전략을 바꿀 때는 이 디렉터리에 새 bench evidence를 추가해야 한다.
+
 Generated: 2026-04-20T05:11:26.818Z
 Model: gemini-2.5-pro (temperature 0.2, top_p 0.95)
 Canvas: 1200 x 628

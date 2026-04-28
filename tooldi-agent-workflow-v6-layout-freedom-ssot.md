@@ -18,6 +18,8 @@
 
 이 문서는 2026-04-21자 기준 **자연어 에이전트 아키텍처의 유일 철학 SSOT**다. 충돌 발생 시 이 문서가 이긴다.
 
+2026-04-28 legacy cleanup PR0~PR7 이후 live runtime은 이 SSOT의 projection인 **v6-only `object_native_v1`** 로 잠겼다. PostgreSQL/Drizzle persistence, LangGraph `PostgresSaver`, required `workflowVariant`, full `latestSaveReceipt` finalize input, v6 mutation/save/finalize path가 현재 기준선이다.
+
 ### 0.1 이 문서가 대체하는 문서
 
 | 문서 | 상태 변경 |
@@ -212,6 +214,10 @@ v6는 2026-04-21 실행된 다음 실증에 근거한다.
 | `v5HtmlValidator`, `v5MethodBHtmlGen`, `v5MethodBSystemPrompt`, `v5PipelineOrchestrator`, `v5Transpile/`, `emitV5SkeletonMutations`, `v5PipelineNode` | v5 경로 전체 폐기 — v6 로 대체됨 |
 | `bench/method-compare-phase1/method-b-system.txt` | v5 prompt 텍스트. 폐기 |
 | Toolditor `features/agent-workflow-spike/fixtures/v6Fixtures.ts` + AgentHappyPathPanel 의 fixture 주입 섹션 | Phase 2 임시 harness. Phase 4 완료 시 제거 |
+| `build_template_prior_summary`, legacy build/refinement graph, `rule_judge`, `refineDecision` path | 2026-04-28 cleanup 완료. v6 route는 free HTML → render/extract → primitive map → mutation/save/finalize로 닫힌다. |
+| `TemplatePlanner`, `TEMPLATE_PLANNER_MODE`, heuristic/langchain planner switch | planner abstraction 제거. v6 normalization은 fixed deterministic draft path를 사용한다. |
+| LangGraph `MemorySaver` fallback | PostgreSQL `PostgresSaver` 전용화. HITL/resume/recovery는 PostgreSQL checkpoint를 기준으로 검증한다. |
+| tool registry / tool adapters / primitive-storage / text-layout adapter packages | live v6 경로에서 caller가 없는 package-level dead code로 제거. |
 
 ### 4.3 신설 (Phase 4)
 
@@ -237,6 +243,7 @@ v6는 2026-04-21 실행된 다음 실증에 근거한다.
 | AC-V6-P6 | v5 legacy 잔재가 source tree 에 없다 | `rg -n "v5HtmlValidator\|v5MethodBHtmlGen\|v5MethodBSystemPrompt\|v5PipelineOrchestrator\|emitV5SkeletonMutations\|v5Transpile\|v5PipelineNode\|V5PipelineDependencies\|V5_APPLY_OPERATION" agent-workflow-test/tooldi-agent-runtime --glob '!dist/**'` → 0 hits |
 | AC-V6-P7 | Phase 0 PoC round-trip pixel-identical | `v6-poc/PHASE-0-REPORT.md` md5 매칭 로그 |
 | AC-V6-P8 | Phase 4 5-sample E2E smoke 모두 렌더 에러 없음 | `v6-poc/smoke/summary.json` 에 `{ ok: true }` 5개 |
+| AC-V6-P9 | live runtime이 legacy object-native audit/refinement artifact를 필수로 요구하지 않는다 | `pnpm local:toolditor:eval:object-native:real` 이 legacy `object-native-reference-audit` 계열 artifact 없이 v6 run summary를 생성 |
 
 ---
 

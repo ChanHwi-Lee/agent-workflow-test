@@ -83,7 +83,7 @@ for (const [index, prompt] of limitedPrompts.entries()) {
   }
 
   console.log(
-    `[object-native-real-eval] ${ordinal} run=${result.runId} candidates=${result.candidateCount} queryErrors=${result.templatePriorFailedQueryCount ?? 0} selected=${result.nextSelectedTemplateCode ?? "n/a"} reselected=${result.reselectionApplied ? "yes" : "no"} readiness=${result.selectedReadiness ?? "n/a"} failure=${result.failureStage ?? "n/a"} semantic=${result.semanticGateReason ?? "n/a"} status=${result.compositionStatus ?? "n/a"} saveReceipt=${result.hasLatestSaveReceipt ? "yes" : "no"} saveEvidence=${result.hasLatestSaveEvidence ? "yes" : "no"}`,
+    `[object-native-real-eval] ${ordinal} run=${result.runId} v6Commands=${result.v6CommandCount ?? "n/a"} renderBlocking=${result.v6RenderBlockingIssueCount ?? "n/a"} saveReceipt=${result.hasLatestSaveReceipt ? "yes" : "no"} saveEvidence=${result.hasLatestSaveEvidence ? "yes" : "no"}`,
   );
 }
 
@@ -109,20 +109,13 @@ console.log(
       totalRuns: summary.totalRuns,
       completedRuns: summary.completedRuns,
       erroredRuns: summary.erroredRuns,
-      stableRuns: summary.stableRuns,
-      styleOnlyRuns: summary.styleOnlyRuns,
-      reselectionRuns: summary.reselectionRuns,
-      zeroDiversityRuns: summary.zeroDiversityRuns,
-      templatePriorQueryErrorRuns: summary.templatePriorQueryErrorRuns,
+      v6CommandCounts: summary.v6CommandCounts,
+      renderQualityBlockingRuns: summary.renderQualityBlockingRuns,
+      legacyArtifactPresence: summary.legacyArtifactPresence,
       saveReceiptMissingRuns: summary.saveReceiptMissingRuns,
       saveEvidenceMissingRuns: summary.saveEvidenceMissingRuns,
       saveTruthCounts: summary.saveTruthCounts,
       errorCounts: summary.errorCounts,
-      failureStageCounts: summary.failureStageCounts,
-      semanticGateReasonCounts: summary.semanticGateReasonCounts,
-      missingClusterFamilyCounts: summary.missingClusterFamilyCounts,
-      selectedTopologyCounts: summary.selectedTopologyCounts,
-      topologyCompletionCounts: summary.topologyCompletionCounts,
       nextStep: summary.nextStep,
       reportPath: outputPath,
     },
@@ -163,7 +156,6 @@ async function evaluatePrompt({
       objectStoreRootDir,
       objectStoreBucket,
       objectStorePrefix,
-      workflowVariant,
     });
 
     const auditEntries = artifacts.audit?.entries ?? [];
@@ -182,6 +174,12 @@ async function evaluatePrompt({
     const latestSaveReceipt = artifacts.bundle?.saveMetadata?.latestSaveReceipt ?? null;
     const latestSaveEvidence = artifacts.bundle?.saveMetadata?.latestSaveEvidence ?? null;
     const checkpoints = artifacts.bundle?.mutationLedger?.checkpoints ?? [];
+    const v6Commands =
+      artifacts.executablePlan?.actions?.[0]?.inputs?.v6Commands ?? [];
+    const v6RenderIssues = artifacts.v6RenderQualityReport?.issues ?? [];
+    const v6RenderBlockingIssues =
+      artifacts.v6RenderQualityReport?.blockingIssues ??
+      v6RenderIssues.filter((issue) => issue?.blocking === true);
     const selectedDiagnostics =
       artifacts.selection?.selectedDiagnostics ??
       artifacts.renderability?.selectedDiagnostics ??
@@ -235,6 +233,23 @@ async function evaluatePrompt({
       latestSaveReceipt,
       latestSaveEvidence,
       savedOutputTemplateCode: latestSaveReceipt?.outputTemplateCode ?? null,
+      hasLegacyObjectNativeArtifacts: {
+        audit: artifacts.audit !== null,
+        selection: artifacts.selection !== null,
+        renderability: artifacts.renderability !== null,
+        clusterGraph: artifacts.clusterGraph !== null,
+        templatePriorBundle: artifacts.templatePriorBundle !== null,
+      },
+      v6PlanSchemaVersion: artifacts.executablePlan?.planSchemaVersion ?? null,
+      v6CommandCount: Array.isArray(v6Commands) ? v6Commands.length : null,
+      v6RenderIssueCount: v6RenderIssues.length,
+      v6RenderBlockingIssueCount: v6RenderBlockingIssues.length,
+      v6RenderQualitySummary: artifacts.v6RenderQualityReport?.summary ?? null,
+      hasCanonicalDesignBrief: artifacts.canonicalDesignBrief !== null,
+      hasBriefCompilationReport: artifacts.briefCompilationReport !== null,
+      hasTrendBrief: artifacts.trendBrief !== null,
+      hasDebugV6Html: artifacts.debugV6Html !== null,
+      hasDebugUnrestrictedHtml: artifacts.debugUnrestrictedHtml !== null,
       objectNativeSummary: {
         auditSummary: artifacts.audit?.summary ?? null,
         selectionSummary: artifacts.selection?.summary ?? null,
@@ -293,6 +308,7 @@ async function driveRunLifecycle({ accepted, timeoutMs }) {
 
   let currentRevision = 0;
   const runLogs = [];
+  let reader = null;
 
   try {
     const response = await fetch(accepted.streamUrl, {
@@ -305,7 +321,7 @@ async function driveRunLifecycle({ accepted, timeoutMs }) {
       throw new Error(`Failed to open SSE stream: ${response.status}`);
     }
 
-    const reader = response.body.getReader();
+    reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
 
@@ -345,6 +361,7 @@ async function driveRunLifecycle({ accepted, timeoutMs }) {
           case "run.failed":
             throw new Error(`Run failed: ${event.data}`);
           case "run.completed":
+            await reader.cancel().catch(() => {});
             return { runLogs };
           default:
             break;
@@ -355,6 +372,10 @@ async function driveRunLifecycle({ accepted, timeoutMs }) {
     throw new Error("SSE stream closed before run.completed");
   } finally {
     clearTimeout(timeout);
+    controller.abort();
+    if (reader) {
+      await reader.cancel().catch(() => {});
+    }
   }
 }
 
@@ -411,7 +432,6 @@ async function readRunArtifacts({
   objectStoreRootDir,
   objectStoreBucket,
   objectStorePrefix,
-  workflowVariant,
 }) {
   const attemptRoot = resolve(
     objectStoreRootDir,
@@ -434,30 +454,32 @@ async function readRunArtifacts({
     clusterGraph,
     freeformLayoutPlan,
     qualityEvalSummary,
+    canonicalDesignBrief,
+    briefCompilationReport,
+    trendBrief,
+    v6RenderQualityReport,
+    debugV6Html,
+    debugUnrestrictedHtml,
+    executablePlan,
     topologyMatch,
     topologySelection,
     topologyCompletion,
     bundle,
   ] = await Promise.all([
-    readJsonWithRetry(resolve(attemptRoot, "template-prior-bundle.json")),
-    workflowVariant === "object_native_v1"
-      ? readJsonWithRetry(resolve(attemptRoot, "object-native-reference-audit.json"))
-      : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-reference-audit.json")),
-    workflowVariant === "object_native_v1"
-      ? readJsonWithRetry(resolve(attemptRoot, "object-native-candidate-selection.json"))
-      : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-candidate-selection.json")),
-    workflowVariant === "object_native_v1"
-      ? readJsonWithRetry(resolve(attemptRoot, "object-native-renderability-report.json"))
-      : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-renderability-report.json")),
-    workflowVariant === "object_native_v1"
-      ? readJsonWithRetry(resolve(attemptRoot, "object-native-cluster-graph.json"))
-      : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-cluster-graph.json")),
-    workflowVariant === "object_native_v1"
-      ? readJsonWithRetry(resolve(attemptRoot, "object-native-freeform-layout-plan.json"))
-      : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-freeform-layout-plan.json")),
-    workflowVariant === "object_native_v1"
-      ? readJsonWithRetry(resolve(attemptRoot, "object-native-quality-eval-summary.json"))
-      : readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-quality-eval-summary.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "template-prior-bundle.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-reference-audit.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-candidate-selection.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-renderability-report.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-cluster-graph.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-freeform-layout-plan.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-quality-eval-summary.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "canonical-design-brief.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "brief-compilation-report.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "v6-trend-brief.json")),
+    readJsonWithRetry(resolve(attemptRoot, "v6-render-quality-report.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "debug-v6-html.json")),
+    readJsonOrNullWithRetry(resolve(attemptRoot, "debug-unrestricted-html.json")),
+    readJsonWithRetry(resolve(attemptRoot, "executable-plan.json")),
     readJsonOrNullWithRetry(resolve(attemptRoot, "topology-match-report.json")),
     readJsonOrNullWithRetry(resolve(attemptRoot, "topology-selection.json")),
     readJsonOrNullWithRetry(resolve(attemptRoot, "topology-completion-report.json")),
@@ -472,6 +494,13 @@ async function readRunArtifacts({
     clusterGraph,
     freeformLayoutPlan,
     qualityEvalSummary,
+    canonicalDesignBrief,
+    briefCompilationReport,
+    trendBrief,
+    v6RenderQualityReport,
+    debugV6Html,
+    debugUnrestrictedHtml,
+    executablePlan,
     topologyMatch,
     topologySelection,
     topologyCompletion,
@@ -517,24 +546,29 @@ function buildAggregateSummary({
 }) {
   const completedResults = results.filter((result) => !result.error);
   const erroredResults = results.filter((result) => result.error);
-  const failureStageCounts = countBy(
-    completedResults.map((result) => result.failureStage ?? "unknown"),
-  );
-  const semanticGateReasonCounts = countBy(
-    completedResults.map((result) => result.semanticGateReason ?? "unknown"),
-  );
-  const compositionStatusCounts = countBy(
-    completedResults.map((result) => result.compositionStatus ?? "unknown"),
-  );
-  const clusterKindCounts = countBy(
-    completedResults.flatMap((result) => result.clusterKinds ?? []),
-  );
-  const missingClusterFamilyCounts = countBy(
-    completedResults.flatMap((result) => result.missingClusterFamilies ?? []),
-  );
   const errorCounts = countBy(
     erroredResults.map((result) => normalizeErrorMessage(result.error)),
   );
+  const v6CommandCounts = countBy(
+    completedResults.map((result) => String(result.v6CommandCount ?? "unknown")),
+  );
+  const legacyArtifactPresence = {
+    templatePriorBundle: completedResults.filter(
+      (result) => result.hasLegacyObjectNativeArtifacts?.templatePriorBundle,
+    ).length,
+    audit: completedResults.filter(
+      (result) => result.hasLegacyObjectNativeArtifacts?.audit,
+    ).length,
+    selection: completedResults.filter(
+      (result) => result.hasLegacyObjectNativeArtifacts?.selection,
+    ).length,
+    renderability: completedResults.filter(
+      (result) => result.hasLegacyObjectNativeArtifacts?.renderability,
+    ).length,
+    clusterGraph: completedResults.filter(
+      (result) => result.hasLegacyObjectNativeArtifacts?.clusterGraph,
+    ).length,
+  };
   const saveTruthCounts = {
     complete: completedResults.filter(
       (result) => result.hasLatestSaveReceipt && result.hasLatestSaveEvidence,
@@ -560,21 +594,11 @@ function buildAggregateSummary({
     totalRuns: results.length,
     completedRuns: completedResults.length,
     erroredRuns: erroredResults.length,
-    stableRuns: completedResults.filter(
-      (result) => result.compositionStatus === "stable",
+    v6CommandCounts,
+    renderQualityBlockingRuns: completedResults.filter(
+      (result) => (result.v6RenderBlockingIssueCount ?? 0) > 0,
     ).length,
-    styleOnlyRuns: completedResults.filter(
-      (result) => result.compositionStatus === "style_only",
-    ).length,
-    reselectionRuns: completedResults.filter(
-      (result) => result.reselectionApplied,
-    ).length,
-    zeroDiversityRuns: completedResults.filter(
-      (result) => result.candidateCount <= 1,
-    ).length,
-    templatePriorQueryErrorRuns: completedResults.filter(
-      (result) => (result.templatePriorFailedQueryCount ?? 0) > 0,
-    ).length,
+    legacyArtifactPresence,
     saveReceiptMissingRuns: completedResults.filter(
       (result) => !result.hasLatestSaveReceipt,
     ).length,
@@ -583,17 +607,9 @@ function buildAggregateSummary({
     ).length,
     saveTruthCounts,
     errorCounts,
-    failureStageCounts,
-    semanticGateReasonCounts,
-    compositionStatusCounts,
-    clusterKindCounts,
-    missingClusterFamilyCounts,
     nextStep: inferNextStep({
       completedResults,
       erroredResults,
-      errorCounts,
-      failureStageCounts,
-      semanticGateReasonCounts,
     }),
     results,
   };
@@ -602,73 +618,37 @@ function buildAggregateSummary({
 function inferNextStep({
   completedResults,
   erroredResults,
-  errorCounts,
-  failureStageCounts,
-  semanticGateReasonCounts,
 }) {
-  const invalidPayloadErrors =
-    errorCounts["template_list_invalid_payload"] ?? 0;
-
-  if (invalidPayloadErrors >= Math.ceil(Math.max(erroredResults.length, 1) / 2)) {
-    return "Real-source evaluation is blocked by template list payload failures for part of the prompt set. Fix the template-prior source contract before using the distribution to choose the next native-slice expansion.";
+  if (erroredResults.length > 0) {
+    return "Some v6 real eval runs failed. Inspect errorCounts and per-run logs before treating the browser run as acceptance evidence.";
   }
 
   if (completedResults.length === 0) {
-    return "No completed runs were captured. Verify the local real-source stack before using browser evidence.";
+    return "No completed runs were captured. Verify the local stack before using browser evidence.";
   }
 
-  const stableRuns = completedResults.filter(
-    (result) => result.compositionStatus === "stable",
+  const missingCommandRuns = completedResults.filter(
+    (result) => (result.v6CommandCount ?? 0) <= 0,
   ).length;
-  const zeroDiversityRuns = completedResults.filter(
-    (result) => result.candidateCount <= 1,
+  if (missingCommandRuns > 0) {
+    return "At least one completed run produced no v6 commands. Inspect executable-plan.json and render-quality artifacts.";
+  }
+
+  const renderBlockingRuns = completedResults.filter(
+    (result) => (result.v6RenderBlockingIssueCount ?? 0) > 0,
   ).length;
-  const templatePriorQueryErrorRuns = completedResults.filter(
-    (result) => (result.templatePriorFailedQueryCount ?? 0) > 0,
-  ).length;
-  const semanticGateFailures = failureStageCounts.semantic_gate_failure ?? 0;
-  const renderabilityFailures =
-    failureStageCounts.renderability_guard_failure ?? 0;
-  const bindingFailures = failureStageCounts.binding_failure ?? 0;
+  if (renderBlockingRuns > 0) {
+    return "Completed runs include render-quality blocking issues. Inspect v6-render-quality-report.json before accepting visual quality.";
+  }
+
   const saveEvidenceMissingRuns = completedResults.filter(
     (result) => !result.hasLatestSaveEvidence,
   ).length;
-
-  if (zeroDiversityRuns === completedResults.length) {
-    return "Real-source top-k diversity is too low to validate reselection. Expand or debug template-prior candidate breadth before widening the native slice.";
-  }
-
-  if (templatePriorQueryErrorRuns > 0) {
-    return "Some completed runs still hide template-prior query errors behind fallback. Fix source-contract diagnostics first, then judge diversity and native-slice coverage.";
-  }
-
-  if (semanticGateFailures >= Math.ceil(completedResults.length / 2)) {
-    if ((semanticGateReasonCounts.detection_miss ?? 0) > 0) {
-      return "Semantic gate failures are materially driven by detection misses. Expand cluster-family detection rules before touching renderability thresholds or browser polish.";
-    }
-    if ((semanticGateReasonCounts.insufficient_content_bearing_clusters ?? 0) > 0) {
-      return "Semantic gate failures are materially driven by low content-bearing cluster density. Broaden content-bearing cluster retention before touching renderability thresholds or browser polish.";
-    }
-    return "Semantic gate failures dominate. Inspect missing supported cluster families in real templates before touching renderability thresholds or browser polish.";
-  }
-
-  if (bindingFailures >= Math.ceil(completedResults.length / 2)) {
-    return "Binding failures dominate. Expand cluster-to-message binding coverage without reintroducing required named slots.";
-  }
-
-  if (renderabilityFailures >= Math.ceil(completedResults.length / 2)) {
-    return "Renderability guard failures dominate. Focus on native layout normalization and collision handling before browser review.";
-  }
-
   if (saveEvidenceMissingRuns > 0) {
     return "Save receipts exist but save evidence is missing in some completed runs. Fix save-truth materialization before treating browser runs as acceptance evidence.";
   }
 
-  if (stableRuns > 0) {
-    return "Stable real-source runs exist. Browser review is now warranted for the stable subset only, not for fallback-only cases.";
-  }
-
-  return "Real-source runs still fall back without a dominant failure cluster. Add more prompts and inspect per-run artifacts before expanding the native slice.";
+  return "v6 real eval completed with commands, render-quality reports, and save truth. Browser/HITL review is the next quality gate.";
 }
 
 function normalizeErrorMessage(error) {

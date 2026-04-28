@@ -1,357 +1,77 @@
-# 흐름
-
-<img width="6953" height="8100" alt="mermaid-diagram-2026-04-06-091504" src="https://github.com/user-attachments/assets/10f31bd3-6cbc-41b5-868b-d908d7a64638" />
-
-
-
 # agent-workflow-test
 
-2026-04-16 기준 진행 상태 메모.
+2026-04-28 기준 Tooldi Agent Workflow 문서/검증 워크스페이스다. 실제 런타임 코드는 `tooldi-agent-runtime/`에 있고, 현재 제품 경로는 **v6-only `object_native_v1`** 이다.
+
+## 현재 기준선
+
+- 설계 SSOT는 [tooldi-agent-workflow-v6-layout-freedom-ssot.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v6-layout-freedom-ssot.md)다.
+- API `workflowVariant`는 required literal `"object_native_v1"` 이다. API defaulting으로 variant를 보정하지 않는다.
+- Worker는 v6 free HTML 생성 → 브라우저 렌더/DOM 추출 → Tooldi primitive mapping → SSE mutation → save ack → finalize 경로만 사용한다.
+- API persistence는 PostgreSQL/Drizzle `agent_runtime` 스키마다. PostgreSQL 연결/마이그레이션 실패 시 boot는 실패해야 한다.
+- LangGraph checkpoint는 PostgreSQL `PostgresSaver` 전용이다. `MemorySaver` fallback은 코드베이스에서 제거했다.
+- `TemplatePlanner` abstraction, `TEMPLATE_PLANNER_MODE`, LangChain/heuristic planner mode switch, tool-registry/tool-adapters package path는 live runtime에서 제거했다.
+- Trend ON/OFF, debug HTML preview artifact, interview/resume, SSE, mutation ack, save ack, finalize, cancel, artifact fetch는 현재 지원 범위다.
+- `latestSaveReceipt`는 finalize 입력의 full payload로 요구한다. `latestSaveReceiptId`는 result/artifact summary 출력 필드로만 남을 수 있다.
 
 ## 먼저 읽을 문서
 
-- 문서 인덱스: [tooldi-agent-workflow-v1-doc-index.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-doc-index.md)
-- **설계 철학 SSOT (v5, 2026-04-20 제정)**: [tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md)
-- 현재 구현 상태: [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
-- runtime semantic contract: [tooldi-natural-language-agent-v1-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-natural-language-agent-v1-architecture.md)
-- 다음 작업 우선순위: [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
-- historical (adaptive composition / object-native / topology 배경 참고):
-  - [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md)
-  - [tooldi-agent-workflow-v1-create-template-representation-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-representation-design-lock.md)
-  - [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md)
-  - [tooldi-agent-workflow-vnext-object-native-reference-architecture.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-vnext-object-native-reference-architecture.md)
+1. [tooldi-agent-workflow-v1-doc-index.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-doc-index.md)
+2. [tooldi-agent-workflow-v6-layout-freedom-ssot.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v6-layout-freedom-ssot.md)
+3. [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
+4. [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
 
-## 2026-04-20 철학 전환 노트 (v5 SSOT)
+## 로컬 실행
 
-- 2026-04-20자로 설계 철학이 `Template-Aware Adaptive Composition` → `Constrained HTML Pipeline (v5)` 로 전환되었다.
-- default 모델은 `gemini-3.1-flash-lite-preview` 로 고정 (bench 증거: `/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/bench/method-compare-phase1/`).
-- 구현 전환은 진행 중이다. 현재 코드는 아직 adaptive composition 잔재(`buildObjectNativePath`, `ReferenceBlockKind`, `resolveRequiredExecutionSlots`, addable vocabulary 등)를 들고 있다. v5 §3.2 폐기 목록 기준 순차 제거 예정.
-- 설계 철학/파이프라인/재사용·폐기·신설 경계는 [v5 SSOT](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md)만 normative.
+이 repo 안의 스크립트가 브라우저 검증에 필요한 프로세스와 Docker 의존성을 관리한다.
 
-## 2026-04-09 현재 구현 스냅샷 (historical — v5 전환 이전)
+```bash
+cd /home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test
+bash scripts/local-stack.sh up
+bash scripts/local-stack.sh status
+```
 
-> 아래는 2026-04-09 시점 코드/설계 상태 기록이다. 2026-04-20자로 설계 철학은 v5 SSOT로 교체되었으므로, "현재" 문장 대신 "당시" 로 읽어라. 새로운 철학/파이프라인은 [v5 SSOT](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md) 를 본다.
-
-- worker orchestration 은 `BullMQ Worker + LangGraph` 로 동작했다.
-- planner/model abstraction 은 `LangChain JS` 로 정리됐고, 당시 local 기본 planner provider 는 `Google Gemini` 였다.
-- public 제품 표면은 `empty_canvas -> create_template` 1종이었다.
-- 당시 설계 철학 SSOT는 `template-aware adaptive composition` 이었다 (**2026-04-20 v5 SSOT로 대체됨**).
-  - template object graph가 구조의 1차 진실이라고 주장했다. (v5에서 폐기)
-  - message atoms는 content hint로 다뤘다. (v5에서 어휘 자체 폐기)
-  - completion은 `editability + renderability + save truth` 로 닫았다. (**이 판정 3축은 v5에서도 그대로 유지**)
-- 현재 worker 는 여전히 아래 legacy artifact chain을 남긴다.
-  - `normalized-intent`
-  - `copy-plan`
-  - `layout-plan-abstract`
-  - `asset-plan`
-  - `layout-plan-concrete`
-  - `search-profile`
-  - `candidate-set`
-  - `selection-decision`
-  - `typography-decision`
-  - `rule-judge-verdict`
-  - `execution-scene-summary`
-  - `judge-plan`
-  - `refine-decision`
-  - `executable-plan`
-- 위 artifact chain은 current runtime scaffolding 이며 설계 철학의 canonical source가 아니다.
-- terminal outcome 은 `completed`, `completed_with_warning`, `failed` 를 실제로 구분한다.
-- real Tooldi source representative slice 는 계속 동작한다.
-  - `background`
-  - `graphic`
-  - `font`
-  - `photo` 는 `wide_1200x628` 에서만 execution-enabled
-- black-box acceptance prompt 3종이 worker integration test에 고정됐다.
-  - `식당에서 신규 봄 계절메뉴를 만들어줘`
-  - `카페의 신메뉴 딸기 음료 홍보 템플릿 만들어줘`
-  - `패션 리테일 봄 세일 배너 만들어줘`
-- `create_template` 표현 전략은 이제 `message atoms -> projected template object graph -> adaptive composition decision -> executor materialization` 방향으로 고정한다.
-  - giant schema 금지
-  - slot completeness 금지
-  - capability-as-planning-ontology 금지
-- 현재 create-template 는 preflight `ruleJudge` 뒤에 **scene-aware, non-visual 1회 patch refine** 를 가진다.
-  - `execution-scene-summary -> judge-plan -> refine-decision -> patch mutation -> finalize`
-- current runtime 일부 경로는 아직 `executionSlotKey` 같은 legacy execution metadata를 남긴다.
-  - 이 필드는 current implementation drift일 뿐 구조 truth나 completion truth가 아니다.
-- `ConcreteLayoutPlan` 은 이제 `slotAnchors` 외에 `resolvedSlotBounds` 를 가지며, copy/photo/background placement authority는 이 bounds를 기준으로 정렬된다.
-- real save evidence 는 아직 synthetic finalize placeholder 에 의존한다.
-- `retrieval_prior_v2_reset` compat path는 제거되었고, 현재 기준선은 `object_native_v1` 단일 adaptive composition runtime이다.
-
-## 2026-04-15 현재 구현 추가
-
-- 외부/user-visible `workflowVariant` 표면은 `object_native_v1` 하나로 정리했다.
-  - active path는 top-k prior candidate에 대해 object-native audit / reselection / renderability report artifact를 남긴다.
-- 현재 object-native 경로는 top-k candidate를 audit하고, stable-capable candidate가 실제로 생겼을 때만 reselection을 의미 있게 다룬다.
-- fallback-only 후보끼리의 reselection heuristics는 architecture 전환 신호를 왜곡할 수 있어 runtime truth로 채택하지 않는다.
-- `object_native_v1` 는 이제 첫 native stable slice를 가진다.
-  - 지원 cluster family: `big_text`, `promo_band`, `cta`, `optional microtext/decor`
-  - 이 slice는 legacy reset contract 대신 object-native renderability guard로 stable을 판정한다.
-- object-native artifact는 이제 `failureStage` (`semantic_gate_failure`, `binding_failure`, `renderability_guard_failure`) 를 남긴다.
-  - candidate audit / selection / renderability report는 `missingClusterFamilies`, `textBearingClusterCount`, `contentClusterCount`, `bindingCoverage`, `renderabilityMetrics`, `semanticGateReason` 를 함께 남긴다.
-- `template-prior-bundle` 는 이제 query-level diagnostics 를 남긴다.
-  - `successfulQueryCount`, `failedQueryCount`, `queryDiagnostics[]`
-  - real Tooldi template search가 `result=false` 와 `trace_id` 만 돌려주는 empty-result payload는 invalid response가 아니라 empty result set으로 normalize 한다.
-  - real source query 하나가 실패해도 run 전체를 transport failure로 종료하지 않고 legacy fallback 판단까지 계속 간다.
-- `pnpm smoke:object-native` 는 deterministic adaptive decision stub을 주입한 representative fixture에서 `template-stable` reselection과 `status=stable` 을 검증한다.
-- worker 는 아래 artifact family를 새로 남긴다.
-  - `object-native-reference-audit`
-  - `object-native-candidate-selection`
-  - `object-native-renderability-report`
-  - `object-native-cluster-graph`
-- toolditor spike panel은 object-native 단일 실행 버튼과 object-native audit/selection/renderability log를 노출한다.
-- FE `saveTemplate` ack 는 이제 `saveEvidence` 뿐 아니라 canonical `saveReceipt` 도 함께 보낸다.
-- backend finalizer 는 `latestSaveReceiptId` 뿐 아니라 `LiveDraftArtifactBundle.saveMetadata.latestSaveReceipt` 를 실제 payload로 materialize 한다.
-  - completed 계열 finalize는 이제 `saveEvidence + saveReceipt + finalRevision` 이 모두 있어야 통과하고, 하나라도 빠지면 `save_failed_after_apply` 로 강등한다.
-
-## 범위
-
-- 이 저장소에는 Tooldi agent workflow v1 문서들과 `tooldi-agent-runtime/` backend workspace만 포함했다.
-- `toolditor/` 는 의도적으로 제외했다.
-
-## 문서 상태
-
-- 아래 문서들의 public/shared contract naming policy를 camelCase로 정리했다.
-  - `tooldi-agent-workflow-v1-functional-spec-to-be.md`
-  - `tooldi-agent-workflow-v1-backend-boundary.md`
-  - `toolditor-agent-workflow-v1-client-boundary.md`
-  - `tooldi-agent-backend-v1-bootstrap-instructions.md`
-- 정책은 다음으로 고정했다.
-  - public REST JSON / SSE / shared TS contract / worker callback payload = camelCase
-  - DB table / column / SQL migration = snake_case
-  - route layer에서 snake_case serializer/mapper를 두지 않음
-
-## 현재까지 완료한 것
-
-- bootstrap step 1: `tooldi-agent-runtime/` workspace root 생성
-- bootstrap step 2: `pnpm` workspace, `tsconfig`, root config skeleton 생성
-- bootstrap step 3: `packages/contracts` 생성
-- bootstrap step 4: `packages/domain`, `packages/config`, `packages/observability`, `packages/persistence` 생성
-- bootstrap step 5: `apps/agent-api` 생성
-- bootstrap step 6: public/internal route + contract hardening 완료
-- bootstrap step 7: `apps/agent-worker` execution-plane skeleton 생성
-- bootstrap step 8: BullMQ queue consume + backend callback HTTP skeleton 연결
-- bootstrap step 9: backend-owned lease / stalled / retry skeleton 연결
-- recovery projection skeleton: `run.recovery` public contract + backend decision snapshot + `repairContext` handoff 연결
-- happy-path phase A: backend finalization chain materialization 연결
-
-### 구현된 주요 골격
-
-- `packages/contracts`
-  - public/canvas/worker/artifact 계약 정의 존재
-  - `run.recovery` public contract와 worker `repairContext` 계약 존재
-- `packages/domain`
-  - run status, attempt state, workflow phase, invariant, ID helper 존재
-- `packages/config`
-  - API/worker 공통 env loader 존재
-- `packages/observability`
-  - logger, tracing, correlation skeleton 존재
-- `packages/persistence`
-  - PG placeholder, shared filesystem/memory object store placeholder, 초기 SQL migration 존재
-- `packages/tool-registry`
-  - enabled tool definition / registry skeleton 존재
-- `packages/tool-adapters`
-  - image/asset/text-layout adapter interface와 placeholder 구현 존재
-- `packages/testkit`
-  - fake run request / mutation / test run helper 존재
-- `apps/agent-api`
-  - `Fastify` app skeleton 존재
-  - plugin: config/logger/db/queue/sseHub 존재
-  - service: bootstrap/event/ack/finalize/cancel/recovery/watchdog skeleton 존재
-  - repository skeleton 존재
-- `apps/agent-worker`
-  - separate execution-plane app skeleton 존재
-  - BullMQ worker consumer, LangGraph-based run graph, backend callback HTTP client 존재
-  - boot smoke / orchestration test 존재
-
-### 현재 구현된 canonical happy-path 범위
-
-- backend 기준 happy-path는 아래 chain까지 초안 수준으로 materialize 된다.
+브라우저 진입점은 반드시 아래 주소를 사용한다.
 
 ```text
-POST /runs
--> BullMQ enqueue/dequeue
--> worker hydrate / phase orchestration
--> SSE canvas.mutation
--> FE 또는 smoke harness 의 MutationApplyAck
--> worker finalize callback
--> backend finalizer
--> LiveDraftArtifactBundle 저장
--> RunCompletionRecord 저장
--> run.completed SSE
+http://localhost:3010/editor
 ```
 
-- 즉 현재는 단순 transport 성공만이 아니라 backend 가 `EditableBannerDraftCommitPayload -> LiveDraftArtifactBundle -> RunCompletionRecord` chain 을 실제로 생성하는 단계까지 들어가 있다.
-- 다만 이 happy-path 는 아직 prototype close다.
-  - `latestSaveReceiptId`, `outputTemplateCode` 같은 save evidence 는 현재 worker/smoke 가 공급하는 synthetic placeholder 를 사용한다.
-  - 실제 editor save pipeline 이 연결되면 이 synthetic evidence 는 editor/save layer 가 공급하는 실증 값으로 대체되어야 한다.
-
-## 현재 확인된 상태
-
-- 아래 명령은 통과하는 상태다.
+`down`은 agent runtime/toolditor/embedding 프로세스를 내린다. PostgreSQL/Redis/Qdrant Docker 의존성까지 내리려면 `KEEP_DEPS=0`를 명시한다.
 
 ```bash
-cd tooldi-agent-runtime
-pnpm typecheck
+bash scripts/local-stack.sh down
+KEEP_DEPS=0 bash scripts/local-stack.sh down
+```
+
+관리 대상:
+
+- PostgreSQL: `127.0.0.1:55432`
+- Redis: `127.0.0.1:6380`
+- Qdrant: `127.0.0.1:6333`, `127.0.0.1:6334`
+- embedding service: `127.0.0.1:7070`
+- agent API/worker stack: `127.0.0.1:3100`
+- Toolditor: `localhost:3010`
+
+## 검증 명령
+
+```bash
+cd /home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-runtime
+pnpm -r --if-present typecheck
 pnpm build
-npm test
-```
-
-- real cross-process transport smoke:
-
-```bash
-cd tooldi-agent-runtime
-pnpm smoke:transport
-```
-
-- real-source object-native evaluation harness:
-
-```bash
-cd tooldi-agent-runtime
+pnpm -F @tooldi/agent-api test
+pnpm -F @tooldi/agent-worker test
+pnpm smoke:object-native
 pnpm local:toolditor:eval:object-native:real
 ```
 
-- 위 명령은 이미 떠 있는 `local:toolditor:stack:real` 에 붙어서 여러 `workflowVariant=object_native_v1` run을 실행하고, prompt별 `candidateCount / reselectionApplied / failureStage / semanticGateReason / compositionStatus / saveReceipt / saveEvidence` 분포와 `save truth` aggregate를 JSON report로 요약한다.
+`pnpm local:toolditor:eval:object-native:real`은 이미 떠 있는 local stack에 붙어 실제 SSE/mutation/save/finalize 흐름을 돌린다. v6-only 기준에서는 legacy `object-native-reference-audit`, `candidate-selection`, `renderability-report`, `cluster-graph` artifact가 필수가 아니다.
 
-- pickup-timeout retry smoke:
+## Historical Assets
 
-```bash
-cd tooldi-agent-runtime
-pnpm smoke:retry
-```
+아래 자산은 삭제하지 않는다. 현재 runtime path가 아니라 설계 결정과 회귀 방지용 evidence로 보존한다.
 
-- 최소 worker boot smoke:
-
-```bash
-cd tooldi-agent-runtime
-WORKER_EXIT_AFTER_BOOT=true WORKER_QUEUE_TRANSPORT_MODE=disabled pnpm --filter @tooldi/agent-worker start
-```
-
-- real transport smoke는 아래처럼 API와 worker를 따로 띄우는 기준이다.
-- 아래 명령은 프로세스를 따로 띄우는 수동 boot 경로일 뿐이며, 실제 end-to-end 검증은 위의 `pnpm smoke:transport`, `pnpm smoke:retry` 가 담당한다.
-
-```bash
-cd tooldi-agent-runtime
-pnpm --filter @tooldi/agent-api start
-AGENT_INTERNAL_BASE_URL=http://127.0.0.1:3000 pnpm --filter @tooldi/agent-worker start
-```
-
-- 기본 runtime 모드는 `BullMQ + Redis` transport를 사용한다.
-- 기본 object store placeholder 모드는 프로세스 간 공유 가능한 local filesystem 이다.
-- 테스트와 boot smoke만 `API_QUEUE_TRANSPORT_MODE=memory`, `WORKER_QUEUE_TRANSPORT_MODE=disabled`, `WORKER_EXIT_AFTER_BOOT=true` 같은 harness 전용 모드를 사용한다.
-- `pnpm smoke:transport` 는 현재 backend happy-path 를 실제로 검증한다.
-  - API accepted response
-  - BullMQ enqueue/dequeue
-  - worker hydrate
-  - SSE `canvas.mutation`
-  - mutation ack
-  - finalize callback
-  - `run.completed`
-- `npm test` 는 route/service/unit 수준에서 recovery projection 과 finalization materialization 을 함께 검증한다.
-- FE/외부 클라이언트는 `POST /runs` 로 시작하고 SSE 를 구독하며 `POST /mutation-acks`, `POST /cancel` 을 호출해야 한다.
-- create-run request 에 client-authored `traceId` 를 보내면 안 된다.
-- `runId`, `traceId`, `streamUrl`, `cancelUrl`, `mutationAckUrl` 은 accepted response 에서 받는다.
-- editor mutation apply semantics 자체는 backend 책임이 아니며, backend는 `CanvasMutationEnvelope` 와 `MutationApplyAckRequest` 계약만 책임진다.
-
-- `agent-api` 는 control-plane skeleton까지만 구현돼 있다.
-- `runBootstrapService` 는 ID 발급, placeholder request/snapshot 저장, BullMQ enqueue, accepted/queued event append까지 들어가 있다.
-- public/internal route 파일과 registration 이 존재한다.
-- route params/query/body/response schema authority는 `packages/contracts` 기준으로 맞췄다.
-- `/internal/.../events` 는 Fastify body schema 대신 shared TypeBox contract validator를 route entry 에서 사용한다.
-- `agent-api` 는 `Queue` producer와 `QueueEvents` subscriber를 소유한다. raw transport signal은 internal telemetry/watchdog input으로만 쓰고 public SSE/run.log source로 승격하지 않는다.
-- `agent-api` watchdog은 `QueueEvents` 와 pickup timeout을 transport trigger로만 해석하고, canonical run/attempt state는 backend row/event 기준으로 판정한다.
-- `enqueued -> dequeued` 전이는 첫 유효 heartbeat 또는 첫 phase append가 들어와야 lease owner를 인정한다.
-- retry는 queue-native retry가 아니라 backend가 새 `attemptSeq`, 새 `attemptId`, 새 `queueJobId` 로 delayed re-enqueue 하는 방식으로만 연다.
-- visible ack 0건이면 pickup timeout / stalled / failed transport signal에서 1회 retry를 열 수 있고, visible ack 이후에는 blind retry를 열지 않는다.
-- retry enqueue 실패나 enqueue timeout은 backend가 `queue_publish_failed` / `enqueue_timeout` 으로 terminal close 한다.
-- `QueueEvents.completed` 이후 finalize callback이 grace window 안에 오지 않으면 backend watchdog가 최소 terminal recovery를 수행한다.
-- backend watchdog 는 recovery decision 을 placeholder row로 남기고 필요 시 `run.recovery` SSE 를 먼저 발행한다.
-- pre-ack retry 는 `run.recovery(auto_retrying)` 를 남긴 뒤 새 attempt 를 연다.
-- post-ack failure 는 현재 full resume engine 대신 `run.recovery(not_retryable|finalize_only)` projection 후 보수적으로 닫는다.
-- `agent-worker` 는 separate process boundary를 유지한 채 phase stub를 순서대로 연결한다.
-- `agent-worker` 는 BullMQ `Worker` consumer를 가지고 `RunJobEnvelope` 기반 LangGraph run graph 를 실행한다.
-- 현재 Phase 0 parity migration 에서 `processRunJob` 는 compatibility facade 로 남아 있고, 내부 orchestration 은 LangGraph `StateGraph` 로 교체됐다.
-- 현재 top-level run graph 는 `hydrate_input -> normalize_intent -> gate_scope -> compute_retrieval_policy -> assemble_candidates -> select_composition -> select_typography -> persist_selection_artifacts -> build_plan -> staged execution -> finalize` 형태의 더 작은 node/edge 구조로 재구성돼 있다.
-- 현재 generic create-template skeleton 에서는 `build_search_profile`, `rule_judge`, `completed_with_warning` semantics 가 추가되어 artifact 기반 decision chain을 남긴다.
-- `agent-worker` 는 backend callback을 canonical internal HTTP routes로 호출하고, durable close는 backend에 남긴다.
-- API와 worker는 같은 filesystem object-store root를 공유해 `requestRef` / `snapshotRef` hydrate가 실제 분리 프로세스에서 가능하다.
-- worker 는 `normalizedIntentRef`, `executablePlanRef`, `repairContext` 를 받아 finalize handoff 에 실을 수 있다.
-- worker runtime 은 현재 `LANGGRAPH_CHECKPOINTER_MODE=memory|postgres` 를 지원한다.
-  - env loader 기본값은 `postgres`
-  - local `toolditor` wrapper script 는 docker 기반 local Postgres bootstrap 후 `postgres` mode 를 기본 사용한다
-  - Postgres mode 는 `LANGGRAPH_CHECKPOINTER_POSTGRES_URL` optional, `LANGGRAPH_CHECKPOINTER_SCHEMA` optional(default `agent_langgraph`) 를 사용한다.
-- worker planner 는 현재 `TEMPLATE_PLANNER_MODE=heuristic|langchain` 를 지원한다.
-  - 코드 기본값은 `heuristic`
-  - local `.env.local` 기준 현재 주력 provider 는 `google` 이다
-  - `langchain` mode 는 `TEMPLATE_PLANNER_PROVIDER=openai|anthropic|google`, `TEMPLATE_PLANNER_MODEL`, provider API key env 를 필요로 한다.
-  - 현재 LangChain planner 는 `buildNormalizedIntent` 단계에서 structured output 으로 generic `NormalizedIntent` 초안과 `searchKeywords`, `typographyHint` 를 생성하고, 실패 시 heuristic fallback 으로 내려간다.
-- worker 는 현재 최소 아래 artifact chain 을 남긴다.
-  - `normalized-intent.json`
-  - `search-profile.json`
-  - `template-candidate-set.json`
-  - `selection-decision.json`
-  - `typography-decision.json`
-  - `rule-judge-verdict.json`
-  - `executable-plan.json`
-- backend finalizer 는 mutation ledger + ack evidence + finalize payload 를 읽어 committed bundle/completion row를 materialize 한다.
-- `completed` 는 save evidence 가 있을 때만 허용되고, 없으면 `save_failed_after_apply` 로 downgrade 된다.
-- spring worker path 는 이제 opt-in real Tooldi source mode를 가진다.
-  - `TOOLDI_CATALOG_SOURCE_MODE=tooldi_api`
-  - `TOOLDI_CONTENT_API_BASE_URL=http://localhost:<port>`
-  - active family: `background`, `graphic(shape)`, `font`
-  - worker 는 `run.log` 에 query count / selected serial / selected font token 을 남긴다.
-- real Tooldi source mode는 `localhost` host만 지원한다. `127.0.0.1` 은 PHP local host/cookie policy 때문에 의도적으로 막았다.
-
-## 아직 안 된 것
-
-- 실제 editor save pipeline 연동
-  - synthetic `latestSaveReceiptId`, `outputTemplateCode` 를 실제 editor/save layer evidence 로 교체해야 한다.
-- visible ack 이후 `resumeFromSeq` / ledger-safe resume 실행
-- rollback / compensation canonical orchestration
-- final save / finalize grace recovery reconstruction 고도화
-- DB/object store/repository 의 production-grade durability
-- runtime runbook / operator 문서 정리
-
-## 주의할 점
-
-- 현재 queue / db / object store / SSE / repository 대부분은 placeholder 또는 in-memory 구현이다.
-- BullMQ queue와 worker callback HTTP transport는 연결됐고, retry/lease/watchdog skeleton 도 있다. 다만 recovery 는 projection skeleton 수준이며 full resume/rollback engine 은 아니다.
-- durable canonical writer ownership은 문서상 backend 기준으로 맞춰놨지만, DB/object store의 실제 production durability는 아직 아님.
-- 현재 `run.completed` happy-path 는 backend 가 canonical bundle/completion chain 을 만들 수 있다는 뜻이지, real editor save evidence 연동이 끝났다는 뜻은 아니다.
-
-## 내일 바로 이어서 볼 파일
-
-- `tooldi-agent-backend-v1-bootstrap-instructions.md`
-- `tooldi-agent-workflow-v1-backend-boundary.md`
-- `tooldi-agent-workflow-v1-functional-spec-to-be.md`
-- `tooldi-agent-runtime/apps/agent-worker/src/worker.ts`
-- `tooldi-agent-runtime/apps/agent-worker/src/jobs/processRunJob.ts`
-
-## 다음 작업 권장 순서
-
-1. 실제 editor 한 세션과 happy-path integration spike 수행
-2. synthetic save evidence 를 editor/save layer evidence 로 교체
-3. visible ack 이후 resume / rollback / finalize reconstruction 설계 재개
-4. DB/object store durability 고도화
-
-## 후속 구현 로드맵
-
-- 설계 철학과 migration direction은 [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 를 먼저 본다.
-- `create_template` intelligence projection은 [tooldi-agent-workflow-v1-template-intelligence-design-lock.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-template-intelligence-design-lock.md) 에 별도로 잠갔다.
-- `봄 템플릿 만들어줘` 한 건에 대한 실제 Tooldi 자산 기반 vertical slice 기준은 [tooldi-agent-workflow-v1-create-template-spring-vertical-slice.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-spring-vertical-slice.md) 에 정리했다.
-- 실제 Tooldi 콘텐츠 source family, PHP API / DB seam, real catalog adapter 기준선은 [tooldi-agent-workflow-v1-tooldi-content-discovery.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-tooldi-content-discovery.md) 에 정리했다.
-- 현재 worker runtime에는 `real Tooldi catalog source adapter` seam 이 추가되어 있고, spring slice는 opt-in real source mode에서 `background/shape/font` 를 실제 Tooldi PHP API로 조회할 수 있다.
-- `photo` 는 현재 `wide_1200x628` representative preset 에 한해 execution-enabled 상태다. 즉 real source mode에서 picture inventory 조회와 `photoBranchMode` / `photoBranchReason` evidence를 남기고, `photo_selected` 인 경우 실제 `hero_image` mutation 까지 내려간다.
-- 2026-04-07 localhost manual proof 에서 photo branch Turn 4 를 확인했다.
-  - hardening 전 real-source run 은 `graphic_preferred` fallback reasoning 을 surface 했다.
-  - hardening 후 real-source run 은 `photo_selected` 와 `hero_image` stage apply, `run.completed` 까지 확인했다.
-- `photo branch` 의 spec lock 과 Phase A 범위는 [tooldi-agent-workflow-v1-create-template-spring-photo-branch-phase-a.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-spring-photo-branch-phase-a.md) 에 정리한다.
-- `photo branch` 의 execution lock 은 [tooldi-agent-workflow-v1-create-template-spring-photo-branch-phase-b.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-spring-photo-branch-phase-b.md) 에 정리한다.
-- 다만 non-wide preset, multi-photo, auth/user-context source, photo background path 는 아직 다음 단계다.
-- planner / tool selection / search-compare-select / vision critique / real save evidence 연동 같은 다음 구현 축은 [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md) 에 별도로 정리했다.
-- 2026-04-08 기준 큰 방향은 custom worker orchestration 을 더 손으로 키우는 것이 아니라, TS LangGraph 기반 runtime 위에 LangChain JS planner/model layer 를 얹는 것이다.
-- 2026-04-08 기준 LangChain JS 와 provider adapter(OpenAI/Anthropic/Gemini)는 workspace 에 실제로 추가됐고, 현재 local 기본 planner provider 는 Gemini 다.
-- 현재 구현 상태와 문서 읽기 순서는 아래 두 문서를 기준으로 본다.
-  - [tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md)
-  - [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
-  - [tooldi-agent-workflow-v1-doc-index.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-doc-index.md)
-- 이 문서는 normative spec이 아니라 working roadmap이며, sibling authoritative docs를 override하지 않는다.
+- `v6-poc/`: v6 free HTML → browser render → primitive extraction 가능성을 증명한 PoC evidence.
+- `bench/method-compare-phase1/`: 모델/방식 비교 evidence. 기본 모델 교체 시 새 bench evidence를 추가해야 한다.
+- `docs/handoff/`: PR별 cleanup/evidence handoff archive.
+- `docs/design/phase6-rag-assets/`: Phase 6 placeholder asset/RAG 설계 참고. 기존 template RAG를 live runtime에 재연결하면 안 된다.
+- v1~v5/adaptive/object-native/topology 문서: 배경 참고용 historical context. 현재 authority는 v6 SSOT와 이 README의 기준선이다.

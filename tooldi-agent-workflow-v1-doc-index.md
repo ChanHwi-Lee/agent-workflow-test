@@ -8,7 +8,7 @@
 | 문서 목적 | 현재 구현 상태와 sibling 설계 문서를 어떤 순서로 읽어야 하는지, 무엇이 authority이고 무엇이 projection/historical인지 분명히 정리한다. |
 | 상태 | Draft |
 | 문서 유형 | Index / Reading Guide |
-| 작성일 | 2026-04-21 (v6 SSOT 제정 반영) |
+| 작성일 | 2026-04-28 (v6-only cleanup PR7 반영) |
 | 대상 독자 | PM, FE, Agent Backend, Worker, QA, Reviewer |
 
 ## 1. 먼저 읽을 문서
@@ -16,8 +16,8 @@
 ### 1.1 현재 구현 상태를 먼저 파악하려는 경우
 
 1. [README.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/README.md)
-2. [tooldi-agent-workflow-v6-layout-freedom-ssot.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v6-layout-freedom-ssot.md)
-3. [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
+2. [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
+3. [tooldi-agent-workflow-v6-layout-freedom-ssot.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v6-layout-freedom-ssot.md)
 4. [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
 
 ### 1.2 normative contract를 먼저 보려는 경우
@@ -64,13 +64,28 @@
 ### 2.3 current-state 문서
 
 - [README.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/README.md)
-  - bootstrap 이후 현재 구현 메모와 실행 가이드
+  - 2026-04-28 v6-only runtime 기준선, local stack, 검증 명령
 - [tooldi-agent-workflow-v1-create-template-current-state-as-is.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-current-state-as-is.md)
-  - 현재 코드가 실제로 무엇을 하는지와 v6 전환 진행 상황 gap 기록
+  - 현재 코드가 실제로 무엇을 하는지 기록. PostgreSQL/Drizzle, PostgresSaver, v6-only path, live artifacts 기준.
 - [tooldi-agent-workflow-v1-next-implementation-roadmap.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-next-implementation-roadmap.md)
-  - v6 SSOT 기준 다음 구현 축과 sequencing
+  - cleanup 이후 다음 구현 축. visual quality, Phase 6 asset/RAG, local/production parity, recovery hardening.
 
-### 2.4 reference / historical 문서
+### 2.4 cleanup evidence / handoff archive
+
+- [docs/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr1-baseline-lock-evidence.md)
+  - v6 reachability와 legacy non-reachability baseline.
+- [docs/handoff/2026-04-28-agent-workflow-pr3-graph-topology-prune-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr3-graph-topology-prune-handoff.md)
+  - legacy graph topology prune 작업 근거.
+- [docs/handoff/2026-04-28-agent-workflow-pr4-legacy-phase-deletion-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr4-legacy-phase-deletion-handoff.md)
+  - legacy phase deletion 범위.
+- [docs/handoff/2026-04-28-agent-workflow-pr5-mixed-cleanup-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr5-mixed-cleanup-handoff.md)
+  - mixed runtime cleanup, planner abstraction, public contract cleanup.
+- [docs/handoff/2026-04-28-agent-workflow-pr6-package-sweep-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr6-package-sweep-handoff.md)
+  - package-level dead code sweep.
+- [docs/handoff/2026-04-28-agent-workflow-pr6b-types-cascade-handoff.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/docs/handoff/2026-04-28-agent-workflow-pr6b-types-cascade-handoff.md)
+  - state/type cascade cleanup.
+
+### 2.5 reference / historical 문서
 
 - [tooldi-agent-workflow-v1-create-template-hardening-source-grounded-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-create-template-hardening-source-grounded-to-be.md)
   - source-grounded retrieval/judge hardening reference. v6에서는 RAG(Phase 6) 자체가 다시 설계되므로 historical 로 취급.
@@ -86,6 +101,12 @@
   - vector/semantic retrieval 도입 전 체크리스트. v6 Phase 6 RAG 설계 시 참고.
 - [tooldi-agent-backend-v1-bootstrap-instructions.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-backend-v1-bootstrap-instructions.md)
   - bootstrap/rebuild oriented guide
+- `v6-poc/`
+  - live runtime이 아니라 v6 architecture proof/evidence. 삭제하지 않고 historical evidence로 보존.
+- `bench/method-compare-phase1/`
+  - 모델/방식 비교 evidence. 모델 default 변경 시 새 bench evidence를 추가.
+- `docs/design/phase6-rag-assets/`
+  - Phase 6 placeholder asset/RAG 설계 참고. template prior/adaptive composition을 되살리는 근거로 쓰지 않는다.
 
 ## 3. 주제별 읽기 순서
 
@@ -136,8 +157,9 @@
 ## 5. 현재 가장 중요한 문장
 
 - 설계 철학은 **Layout Freedom Pipeline (v6)** 으로 확정되었다.
+- 현재 runtime은 **v6-only `object_native_v1`** 이다. 이름은 Toolditor wire contract로 남지만 내부 graph는 template prior/adaptive/refinement path가 아니다.
 - LLM 은 자유도 있는 HTML 을 출력하고, 브라우저가 layout 을 계산하며, 결정적 코드가 rendered DOM 을 Tooldi primitive 로 **추출**한다.
 - Layout family / slot / role / CTA / topology 는 contract 로 승격되지 않는다. CTA 처럼 보이는 조합도 단지 rect + text 두 primitive 로 표현된다.
 - primitive 매핑은 반드시 결정적이다 (LLM 2차 호출 금지). completion 은 `editability + renderability + save truth` 로 판정한다.
 - default 모델은 `gemini-3.1-flash-lite-preview`. 교체는 `bench/method-compare-phase1/` 의 parity 증거를 전제한다.
-- **v5 제약 HTML grammar (position:absolute 강제 · child 수 제한 · line-break sibling 분해)** 와 **Template-aware adaptive composition (v1~v4)** 개념은 모두 **폐기**되었다. 코드/문서에서 제거됨.
+- **v5 제약 HTML grammar (position:absolute 강제 · child 수 제한 · line-break sibling 분해)** 와 **Template-aware adaptive composition (v1~v4)** 개념은 모두 **폐기**되었다. PoC/bench/handoff는 evidence로 보존하지만 current runtime truth로 읽지 않는다.
