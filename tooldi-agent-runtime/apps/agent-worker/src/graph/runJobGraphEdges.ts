@@ -1,10 +1,3 @@
-/** Test-only export. Do not import from production runtime. */
-export function routeAfterBuildObjectNativePath(
-  state: { finalizeDraft?: unknown },
-): "send_finalize" | "build_search_profile" {
-  return state.finalizeDraft ? "send_finalize" : "build_search_profile";
-}
-
 export function registerRunJobGraphEdges(graph: any) {
   return graph
     .addEdge("hydrate_input", "plan_intent_draft")
@@ -22,75 +15,29 @@ export function registerRunJobGraphEdges(graph: any) {
     )
     .addEdge("maybe_research_visual_trends", "v6_freeform_layout_pipeline")
     .addEdge("v6_freeform_layout_pipeline", "prepare_execution")
-    .addEdge("build_template_prior_summary", "build_template_prior_bundle")
-    .addEdge("build_template_prior_bundle", "build_scene_plans")
-    .addEdge("build_scene_plans", "build_copy_and_abstract_layout_plan")
-    .addEdge("build_copy_and_abstract_layout_plan", "build_object_native_path")
-    .addConditionalEdges(
-      "build_object_native_path",
-      routeAfterBuildObjectNativePath,
-    )
-    .addEdge("build_search_profile", "compute_retrieval_policy")
-    .addEdge("compute_retrieval_policy", "assemble_candidates")
-    .addConditionalEdges("assemble_candidates", (state: any) =>
-      state.finalizeDraft ? "send_finalize" : "select_composition",
-    )
-    .addEdge("select_composition", "build_asset_plan")
-    .addEdge("build_asset_plan", "build_concrete_layout_plan")
-    .addEdge("build_concrete_layout_plan", "select_typography")
-    .addEdge("select_typography", "persist_selection_artifacts")
-    .addEdge("persist_selection_artifacts", "build_plan")
-    .addEdge("build_plan", "rule_judge")
-    .addConditionalEdges("rule_judge", (state: any) =>
-      state.ruleJudgeVerdict?.recommendation === "refuse"
-        ? "prepare_finalize"
-        : "prepare_execution",
-    )
     .addConditionalEdges("prepare_execution", (state: any) =>
       state.finalizeDraft
         ? "send_finalize"
         : state.currentProposal
           ? "emit_stage"
-          : "build_execution_scene_summary",
+          : "prepare_finalize",
     )
     .addConditionalEdges("emit_stage", (state: any) =>
-      state.currentMutationId ? "await_stage_ack" : "build_execution_scene_summary",
+      state.currentMutationId ? "await_stage_ack" : "prepare_finalize",
     )
     .addEdge("await_stage_ack", "advance_after_ack")
     .addConditionalEdges("advance_after_ack", (state: any) => {
-      const inV6Pipeline = Boolean(state.v6PipelineResult);
-      if (state.lastMutationAck?.status !== "acked" || state.cooperativeStopRequested) {
-        // v6 does not populate the copy/asset/layout legacy plans that
-        // build_execution_scene_summary requires — short-circuit to finalize
-        // so cancellation / rejection still surfaces cleanly.
-        return inV6Pipeline
-          ? "prepare_finalize"
-          : "build_execution_scene_summary";
+      if (
+        state.lastMutationAck?.status !== "acked" ||
+        state.cooperativeStopRequested
+      ) {
+        return "prepare_finalize";
       }
       if (state.currentProposal) {
         return "emit_stage";
       }
-      // v6 emits a single envelope and proceeds straight to save: the legacy
-      // refinement/judge/refine subgraph expects state (copyPlan, assetPlan,
-      // concreteLayoutPlan) that v6 does not produce.
-      return inV6Pipeline
-        ? "emit_save_stage"
-        : "build_execution_scene_summary";
+      return "emit_save_stage";
     })
-    .addEdge("build_execution_scene_summary", "build_judge_plan")
-    .addEdge("build_judge_plan", "decide_refine")
-    .addConditionalEdges("decide_refine", (state: any) =>
-      state.refineDecision?.decision === "patch"
-        ? "emit_refinement_patch"
-        : state.lastMutationAck?.status === "acked" &&
-            !state.cooperativeStopRequested
-          ? "emit_save_stage"
-          : "prepare_finalize",
-    )
-    .addConditionalEdges("emit_refinement_patch", (state: any) =>
-      state.currentMutationId ? "await_refinement_ack" : "prepare_finalize",
-    )
-    .addEdge("await_refinement_ack", "build_execution_scene_summary")
     .addConditionalEdges("emit_save_stage", (state: any) =>
       state.currentMutationId ? "await_save_ack" : "prepare_finalize",
     )
