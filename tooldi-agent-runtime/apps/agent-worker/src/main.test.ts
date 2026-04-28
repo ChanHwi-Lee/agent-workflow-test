@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
 
+const DEFAULT_TEST_POSTGRES_URL =
+  process.env.POSTGRES_URL ??
+  "postgres://postgres:postgres@127.0.0.1:55432/tooldi_agent_runtime_test";
+
 test("worker main entrypoint boots and exits cleanly", async () => {
   const currentFile = fileURLToPath(import.meta.url);
   const currentDir = dirname(currentFile);
@@ -20,7 +24,7 @@ test("worker main entrypoint boots and exits cleanly", async () => {
         ...process.env,
         NODE_ENV: "test",
         LOG_LEVEL: "info",
-        POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
+        POSTGRES_URL: DEFAULT_TEST_POSTGRES_URL,
         REDIS_URL: "redis://localhost:6379/9",
         BULLMQ_QUEUE_NAME: "agent-workflow-interactive-test",
         OBJECT_STORE_BUCKET: "tooldi-agent-runtime-test",

@@ -7,11 +7,15 @@ import { loadAgentWorkerEnv } from "./lib/config.js";
 import { createTooldiCatalogSourceClientForMode } from "./tools/adapters/tooldiCatalogSourceAdapter.js";
 import { buildWorkerRuntime } from "./worker.js";
 
+const DEFAULT_TEST_POSTGRES_URL =
+  process.env.POSTGRES_URL ??
+  "postgres://postgres:postgres@127.0.0.1:55432/tooldi_agent_runtime_test";
+
 function createEnv(): AgentWorkerEnv {
   return {
     nodeEnv: "test",
     logLevel: "debug",
-    postgresUrl: "postgres://localhost:5432/tooldi_agent_runtime_test",
+    postgresUrl: DEFAULT_TEST_POSTGRES_URL,
     redisUrl: "redis://localhost:6379/9",
     bullmqQueueName: "agent-workflow-interactive-test",
     objectStoreMode: "memory",

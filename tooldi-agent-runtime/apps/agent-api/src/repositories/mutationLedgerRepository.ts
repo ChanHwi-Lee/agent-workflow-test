@@ -1,10 +1,14 @@
+import { asc, eq, max } from "drizzle-orm";
+
 import type {
   CanvasMutationEnvelope,
   MutationApplyAckRequest,
   WaitMutationAckResponse,
   WorkerAppendEventRequest,
 } from "@tooldi/agent-contracts";
-import type { PgClient } from "@tooldi/agent-persistence";
+import { mutationLedger, type PgClient } from "@tooldi/agent-persistence";
+
+import { toDate, toIso } from "./pgRecordMapping.js";
 
 export interface ProposedMutationLedgerRecord {
   mutationId: string;
@@ -39,12 +43,7 @@ export interface MutationLedgerRecord extends ProposedMutationLedgerRecord {
 }
 
 export class MutationLedgerRepository {
-  private readonly records = new Map<string, MutationLedgerRecord>();
-  private readonly nextSeqByRun = new Map<string, number>();
-
-  constructor(private readonly db: PgClient) {
-    void this.db;
-  }
+  constructor(private readonly db: PgClient) {}
 
   async recordProposal(input: {
     runId: string;
@@ -53,7 +52,7 @@ export class MutationLedgerRepository {
     queueJobId: string;
     event: Extract<WorkerAppendEventRequest["event"], { type: "mutation.proposed" }>;
   }): Promise<MutationLedgerRecord> {
-    const assignedSeq = this.nextSequence(input.runId);
+    const assignedSeq = await this.nextSequence(input.runId);
     const canonicalMutation: CanvasMutationEnvelope = {
       ...input.event.mutation,
       runId: input.runId,
@@ -85,14 +84,29 @@ export class MutationLedgerRepository {
       ackStatus: null,
       ackRecord: null,
     };
-    this.records.set(record.mutationId, record);
-    return record;
+    const [stored] = await this.db.db
+      .insert(mutationLedger)
+      .values({
+        mutationId: record.mutationId,
+        runId: record.runId,
+        traceId: record.traceId,
+        attemptSeq: record.attemptSeq,
+        queueJobId: record.queueJobId,
+        seq: record.seq,
+        rollbackGroupId: record.rollbackGroupId,
+        expectedBaseRevision: record.expectedBaseRevision ?? null,
+        mutation: record.mutation,
+        proposedAt: toDate(record.proposedAt),
+        ackStatus: null,
+        ackRecord: null,
+      })
+      .returning();
+    return this.toRecord(stored!);
   }
 
   async recordAck(
     request: MutationApplyAckRequest,
   ): Promise<MutationAckLedgerRecord> {
-    const current = this.records.get(request.mutationId);
     const record: MutationAckLedgerRecord = {
       mutationId: request.mutationId,
       runId: request.runId,
@@ -107,13 +121,13 @@ export class MutationLedgerRepository {
       clientObservedAt: request.clientObservedAt,
     };
 
-    if (current) {
-      this.records.set(request.mutationId, {
-        ...current,
+    await this.db.db
+      .update(mutationLedger)
+      .set({
         ackStatus: request.status,
         ackRecord: record,
-      });
-    }
+      })
+      .where(eq(mutationLedger.mutationId, request.mutationId));
 
     return record;
   }
@@ -122,17 +136,24 @@ export class MutationLedgerRepository {
     runId: string,
     mutationId: string,
   ): Promise<MutationLedgerRecord | null> {
-    const record = this.records.get(mutationId);
+    const [record] = await this.db.db
+      .select()
+      .from(mutationLedger)
+      .where(eq(mutationLedger.mutationId, mutationId))
+      .limit(1);
     if (!record || record.runId !== runId) {
       return null;
     }
-    return record;
+    return this.toRecord(record);
   }
 
   async listByRunId(runId: string): Promise<MutationLedgerRecord[]> {
-    return [...this.records.values()]
-      .filter((record) => record.runId === runId)
-      .sort((left, right) => left.seq - right.seq);
+    const records = await this.db.db
+      .select()
+      .from(mutationLedger)
+      .where(eq(mutationLedger.runId, runId))
+      .orderBy(asc(mutationLedger.seq));
+    return records.map((record) => this.toRecord(record));
   }
 
   async waitForAck(
@@ -206,9 +227,38 @@ export class MutationLedgerRepository {
     }
   }
 
-  private nextSequence(runId: string): number {
-    const next = (this.nextSeqByRun.get(runId) ?? 0) + 1;
-    this.nextSeqByRun.set(runId, next);
-    return next;
+  private async nextSequence(runId: string): Promise<number> {
+    const [record] = await this.db.db
+      .select({
+        maxSeq: max(mutationLedger.seq),
+      })
+      .from(mutationLedger)
+      .where(eq(mutationLedger.runId, runId));
+    return Number(record?.maxSeq ?? 0) + 1;
+  }
+
+  private toRecord(row: typeof mutationLedger.$inferSelect): MutationLedgerRecord {
+    return {
+      mutationId: row.mutationId,
+      runId: row.runId,
+      traceId: row.traceId,
+      attemptSeq: row.attemptSeq,
+      queueJobId: row.queueJobId,
+      seq: row.seq,
+      rollbackGroupId: row.rollbackGroupId,
+      expectedBaseRevision: row.expectedBaseRevision ?? undefined,
+      mutation: row.mutation,
+      proposedAt: toIso(row.proposedAt),
+      ackStatus: row.ackStatus as MutationApplyAckRequest["status"] | null,
+      ackRecord: row.ackRecord
+        ? {
+            ...row.ackRecord,
+            resultingRevision: row.ackRecord.resultingRevision,
+            resolvedLayerIds: row.ackRecord.resolvedLayerIds,
+            commandResults: row.ackRecord.commandResults,
+            error: row.ackRecord.error,
+          }
+        : null,
+    };
   }
 }

@@ -5,7 +5,11 @@ import type {
   MutationApplyAckRequest,
   RunFinalizeRequest,
 } from "@tooldi/agent-contracts";
-import { createObjectStoreClient, createPgClient } from "@tooldi/agent-persistence";
+import {
+  createObjectStoreClient,
+  createPgClient,
+  resetAgentRuntimeData,
+} from "@tooldi/agent-persistence";
 import type { Logger } from "@tooldi/agent-observability";
 
 import { CompletionRepository } from "../repositories/completionRepository.js";
@@ -17,6 +21,10 @@ import { RunRepository } from "../repositories/runRepository.js";
 import { RunEventService } from "./runEventService.js";
 import { normalizeFinalizeInput } from "./runFinalizeInput.js";
 import { RunFinalizeService } from "./runFinalizeService.js";
+
+const DEFAULT_TEST_POSTGRES_URL =
+  process.env.POSTGRES_URL ??
+  "postgres://postgres:postgres@127.0.0.1:55432/tooldi_agent_runtime_test";
 
 class RecordingLogger implements Logger {
   readonly level = "debug" as const;
@@ -50,6 +58,15 @@ class InMemoryRunEventRepository {
   async listAfter() {
     return this.records;
   }
+}
+
+async function createTestDb() {
+  const db = createPgClient({
+    connectionString: DEFAULT_TEST_POSTGRES_URL,
+  });
+  await db.connect();
+  await resetAgentRuntimeData(db);
+  return db;
 }
 
 function createFinalizeRequest(overrides: Partial<RunFinalizeRequest> = {}): RunFinalizeRequest {
@@ -104,10 +121,7 @@ function createFinalizeRequest(overrides: Partial<RunFinalizeRequest> = {}): Run
 }
 
 test("RunFinalizeService materializes bundle and completion chain for completed happy-path", async () => {
-  const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
-  });
-  await db.connect();
+  const db = await createTestDb();
 
   try {
     const runRepository = new RunRepository(db);
@@ -597,10 +611,7 @@ test("normalizeFinalizeInput downgrades completed runs when save receipt is miss
 });
 
 test("RunFinalizeService accepts object-native completed runs without slotBindings", async () => {
-  const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
-  });
-  await db.connect();
+  const db = await createTestDb();
 
   try {
     const runRepository = new RunRepository(db);
@@ -897,10 +908,7 @@ test("RunFinalizeService accepts object-native completed runs without slotBindin
 });
 
 test("RunFinalizeService rejects completed runs with no live draft layers", async () => {
-  const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
-  });
-  await db.connect();
+  const db = await createTestDb();
 
   try {
     const runRepository = new RunRepository(db);

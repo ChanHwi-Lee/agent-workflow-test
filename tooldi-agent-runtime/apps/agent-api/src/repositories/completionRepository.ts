@@ -1,19 +1,40 @@
+import { eq } from "drizzle-orm";
+
 import type { RunCompletionRecord } from "@tooldi/agent-contracts";
-import type { PgClient } from "@tooldi/agent-persistence";
+import { runCompletions, type PgClient } from "@tooldi/agent-persistence";
 
 export class CompletionRepository {
-  private readonly records = new Map<string, RunCompletionRecord>();
-
-  constructor(private readonly db: PgClient) {
-    void this.db;
-  }
+  constructor(private readonly db: PgClient) {}
 
   async save(record: RunCompletionRecord): Promise<RunCompletionRecord> {
-    this.records.set(record.runId, record);
-    return record;
+    const [saved] = await this.db.db
+      .insert(runCompletions)
+      .values({
+        completionRecordId: record.completionRecordId,
+        runId: record.runId,
+        traceId: record.traceId,
+        record,
+        completedAt: new Date(record.completedAt),
+      })
+      .onConflictDoUpdate({
+        target: runCompletions.completionRecordId,
+        set: {
+          runId: record.runId,
+          traceId: record.traceId,
+          record,
+          completedAt: new Date(record.completedAt),
+        },
+      })
+      .returning();
+    return saved!.record;
   }
 
   async findByRunId(runId: string): Promise<RunCompletionRecord | null> {
-    return this.records.get(runId) ?? null;
+    const [record] = await this.db.db
+      .select()
+      .from(runCompletions)
+      .where(eq(runCompletions.runId, runId))
+      .limit(1);
+    return record?.record ?? null;
   }
 }

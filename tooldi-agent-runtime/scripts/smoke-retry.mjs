@@ -15,6 +15,9 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = resolve(currentDir, "..");
 const apiEntrypoint = resolve(workspaceRoot, "apps/agent-api/dist/main.js");
 const workerEntrypoint = resolve(workspaceRoot, "apps/agent-worker/dist/main.js");
+const postgresUrl =
+  process.env.POSTGRES_URL ??
+  "postgres://postgres:postgres@127.0.0.1:55432/tooldi_agent_runtime_test";
 
 const queueName = `agent-workflow-retry-smoke-${Date.now()}`;
 const objectStoreRootDir = await mkdtemp(
@@ -35,7 +38,7 @@ try {
         ...process.env,
         NODE_ENV: "test",
         LOG_LEVEL: "info",
-        POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
+        POSTGRES_URL: postgresUrl,
         REDIS_URL: "redis://localhost:6379/9",
         BULLMQ_QUEUE_NAME: queueName,
         OBJECT_STORE_MODE: "filesystem",
@@ -67,7 +70,7 @@ try {
         ...process.env,
         NODE_ENV: "test",
         LOG_LEVEL: "info",
-        POSTGRES_URL: "postgres://localhost:5432/tooldi_agent_runtime_test",
+        POSTGRES_URL: postgresUrl,
         REDIS_URL: "redis://localhost:6379/9",
         BULLMQ_QUEUE_NAME: queueName,
         OBJECT_STORE_MODE: "filesystem",

@@ -6,7 +6,9 @@ function createSharedEnv(queueName) {
   return {
     nodeEnv: "test",
     logLevel: "info",
-    postgresUrl: "postgres://localhost:5432/tooldi_agent_runtime_test",
+    postgresUrl:
+      process.env.POSTGRES_URL ??
+      "postgres://postgres:postgres@127.0.0.1:55432/tooldi_agent_runtime_test",
     redisUrl: "redis://localhost:6379/9",
     bullmqQueueName: queueName,
     objectStoreMode: "memory",

@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { RunStatus } from "@tooldi/agent-domain";
-import { createPgClient } from "@tooldi/agent-persistence";
+import {
+  createPgClient,
+  resetAgentRuntimeData,
+} from "@tooldi/agent-persistence";
 import type { Logger } from "@tooldi/agent-observability";
 
 import {
@@ -16,6 +19,10 @@ import { RunRecoveryRepository } from "../repositories/runRecoveryRepository.js"
 import { RunRepository } from "../repositories/runRepository.js";
 import { RunRequestRepository } from "../repositories/runRequestRepository.js";
 import { RunWatchdogService } from "./runWatchdogService.js";
+
+const DEFAULT_TEST_POSTGRES_URL =
+  process.env.POSTGRES_URL ??
+  "postgres://postgres:postgres@127.0.0.1:55432/tooldi_agent_runtime_test";
 
 class RecordingLogger implements Logger {
   readonly level = "debug" as const;
@@ -206,6 +213,28 @@ class RecordingFinalizeRecovery {
   }
 }
 
+async function createTestDb() {
+  const db = createPgClient({
+    connectionString: DEFAULT_TEST_POSTGRES_URL,
+  });
+  await db.connect();
+  await resetAgentRuntimeData(db);
+  return db;
+}
+
+async function waitForCondition(
+  predicate: () => boolean | Promise<boolean>,
+  timeoutMs = 250,
+): Promise<void> {
+  const startedAt = Date.now();
+  while (!(await predicate())) {
+    if (Date.now() - startedAt >= timeoutMs) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+}
+
 async function seedRun(
   runRepository: RunRepository,
   runRequestRepository: RunRequestRepository,
@@ -298,10 +327,7 @@ async function seedRun(
 }
 
 test("RunWatchdogService keeps active QueueEvents as internal telemetry only", async () => {
-  const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
-  });
-  await db.connect();
+  const db = await createTestDb();
 
   try {
     const runRepository = new RunRepository(db);
@@ -344,10 +370,7 @@ test("RunWatchdogService keeps active QueueEvents as internal telemetry only", a
 });
 
 test("RunWatchdogService schedules delayed retry after pickup timeout", async () => {
-  const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
-  });
-  await db.connect();
+  const db = await createTestDb();
 
   try {
     const runRepository = new RunRepository(db);
@@ -377,7 +400,10 @@ test("RunWatchdogService schedules delayed retry after pickup timeout", async ()
 
     const seeded = await seedRun(runRepository, runRequestRepository, runAttemptRepository);
     service.trackEnqueuedAttempt(seeded);
-    await new Promise((resolve) => setTimeout(resolve, 15));
+    await waitForCondition(async () => {
+      const run = await runRepository.findById(seeded.runId);
+      return queue.enqueued.length > 0 && run?.attemptSeq === 2;
+    });
 
     const run = await runRepository.findById(seeded.runId);
     const attempts = await runAttemptRepository.findByRunId(seeded.runId);
@@ -409,10 +435,7 @@ test("RunWatchdogService schedules delayed retry after pickup timeout", async ()
 });
 
 test("RunWatchdogService retries stalled attempt before first visible ack", async () => {
-  const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
-  });
-  await db.connect();
+  const db = await createTestDb();
 
   try {
     const runRepository = new RunRepository(db);
@@ -467,10 +490,7 @@ test("RunWatchdogService retries stalled attempt before first visible ack", asyn
 });
 
 test("RunWatchdogService refuses blind retry after visible ack", async () => {
-  const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
-  });
-  await db.connect();
+  const db = await createTestDb();
 
   try {
     const runRepository = new RunRepository(db);
@@ -524,10 +544,7 @@ test("RunWatchdogService refuses blind retry after visible ack", async () => {
 });
 
 test("RunWatchdogService closes queued cancel before worker pickup", async () => {
-  const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
-  });
-  await db.connect();
+  const db = await createTestDb();
 
   try {
     const runRepository = new RunRepository(db);
@@ -569,10 +586,7 @@ test("RunWatchdogService closes queued cancel before worker pickup", async () =>
 });
 
 test("RunWatchdogService terminally closes queued cancel even when remove misses after proofless failure", async () => {
-  const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
-  });
-  await db.connect();
+  const db = await createTestDb();
 
   try {
     const runRepository = new RunRepository(db);
@@ -619,10 +633,7 @@ test("RunWatchdogService terminally closes queued cancel even when remove misses
 });
 
 test("RunWatchdogService closes retry enqueue timeout as terminal failure", async () => {
-  const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
-  });
-  await db.connect();
+  const db = await createTestDb();
 
   try {
     const runRepository = new RunRepository(db);
@@ -675,10 +686,7 @@ test("RunWatchdogService closes retry enqueue timeout as terminal failure", asyn
 });
 
 test("RunWatchdogService synthesizes terminal recovery when finalize callback is missing after completed signal", async () => {
-  const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
-  });
-  await db.connect();
+  const db = await createTestDb();
 
   try {
     const runRepository = new RunRepository(db);
@@ -732,10 +740,7 @@ test("RunWatchdogService synthesizes terminal recovery when finalize callback is
 });
 
 test("RunWatchdogService는 인터뷰 대기 run의 completed transport를 finalize 누락으로 닫지 않는다", async () => {
-  const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
-  });
-  await db.connect();
+  const db = await createTestDb();
 
   try {
     const runRepository = new RunRepository(db);

@@ -1,12 +1,16 @@
 import assert from "node:assert/strict";
-import test, { mock } from "node:test";
+import test, { after, before, beforeEach, mock } from "node:test";
 
 import type {
   InterviewAnswer,
   InterviewQuestion,
 } from "@tooldi/agent-contracts";
 import type { Logger } from "@tooldi/agent-observability";
-import type { PgClient } from "@tooldi/agent-persistence";
+import {
+  createPgClient,
+  resetAgentRuntimeData,
+  type PgClient,
+} from "@tooldi/agent-persistence";
 
 import { ConflictError } from "../lib/errors.js";
 import { MutationLedgerRepository } from "../repositories/mutationLedgerRepository.js";
@@ -26,6 +30,26 @@ const RUN_ID = "run-interview-1";
 const TRACE_ID = "trace-interview-1";
 const QUEUE_JOB_ID = "queue-job-interview-1";
 const ATTEMPT_SEQ = 1;
+const DEFAULT_TEST_POSTGRES_URL =
+  process.env.POSTGRES_URL ??
+  "postgres://postgres:postgres@127.0.0.1:55432/tooldi_agent_runtime_test";
+
+let db: PgClient;
+
+before(async () => {
+  db = createPgClient({
+    connectionString: DEFAULT_TEST_POSTGRES_URL,
+  });
+  await db.connect();
+});
+
+beforeEach(async () => {
+  await resetAgentRuntimeData(db);
+});
+
+after(async () => {
+  await db.end();
+});
 
 const QUESTION: InterviewQuestion = {
   id: "tone",
@@ -197,7 +221,6 @@ async function createHarness(options: {
   runRepository: RunRepository;
   runAttemptRepository: RunAttemptRepository;
 }> {
-  const db = {} as PgClient;
   const runRepository = new RunRepository(db);
   const runAttemptRepository = new RunAttemptRepository(db);
   const mutationLedgerRepository = new MutationLedgerRepository(db);

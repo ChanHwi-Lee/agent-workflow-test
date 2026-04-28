@@ -1,5 +1,14 @@
+import { eq } from "drizzle-orm";
+
 import type { RunStatus } from "@tooldi/agent-domain";
-import type { PgClient } from "@tooldi/agent-persistence";
+import { runs, type PgClient } from "@tooldi/agent-persistence";
+
+import {
+  toDate,
+  toIso,
+  toNullableDate,
+  toNullableIso,
+} from "./pgRecordMapping.js";
 
 export interface RunRecord {
   runId: string;
@@ -28,19 +37,23 @@ export interface RunRecord {
 }
 
 export class RunRepository {
-  private readonly records = new Map<string, RunRecord>();
-
-  constructor(private readonly db: PgClient) {
-    void this.db;
-  }
+  constructor(private readonly db: PgClient) {}
 
   async create(record: RunRecord): Promise<RunRecord> {
-    this.records.set(record.runId, record);
-    return record;
+    const [created] = await this.db.db
+      .insert(runs)
+      .values(this.toInsert(record))
+      .returning();
+    return this.toRecord(created!);
   }
 
   async findById(runId: string): Promise<RunRecord | null> {
-    return this.records.get(runId) ?? null;
+    const [record] = await this.db.db
+      .select()
+      .from(runs)
+      .where(eq(runs.runId, runId))
+      .limit(1);
+    return record ? this.toRecord(record) : null;
   }
 
   async updateStatus(
@@ -48,20 +61,22 @@ export class RunRepository {
     status: RunStatus,
     statusReasonCode?: string | null,
   ): Promise<RunRecord | null> {
-    const current = this.records.get(runId);
+    const current = await this.findById(runId);
     if (!current) {
       return null;
     }
 
-    const updated: RunRecord = {
-      ...current,
-      status,
-      statusReasonCode:
-        statusReasonCode === undefined ? current.statusReasonCode : statusReasonCode,
-      updatedAt: new Date().toISOString(),
-    };
-    this.records.set(runId, updated);
-    return updated;
+    const [updated] = await this.db.db
+      .update(runs)
+      .set({
+        status,
+        statusReasonCode:
+          statusReasonCode === undefined ? current.statusReasonCode : statusReasonCode,
+        updatedAt: new Date(),
+      })
+      .where(eq(runs.runId, runId))
+      .returning();
+    return updated ? this.toRecord(updated) : null;
   }
 
   async activateAttempt(
@@ -71,56 +86,62 @@ export class RunRepository {
     status: RunStatus,
     statusReasonCode: string | null = null,
   ): Promise<RunRecord | null> {
-    const current = this.records.get(runId);
+    const current = await this.findById(runId);
     if (!current) {
       return null;
     }
 
-    const updated: RunRecord = {
-      ...current,
-      attemptSeq,
-      queueJobId,
-      status,
-      statusReasonCode,
-      updatedAt: new Date().toISOString(),
-    };
-    this.records.set(runId, updated);
-    return updated;
+    const [updated] = await this.db.db
+      .update(runs)
+      .set({
+        attemptSeq,
+        queueJobId,
+        status,
+        statusReasonCode,
+        updatedAt: new Date(),
+      })
+      .where(eq(runs.runId, runId))
+      .returning();
+    return updated ? this.toRecord(updated) : null;
   }
 
   async markCancelRequested(
     runId: string,
     requestedAt: string,
   ): Promise<RunRecord | null> {
-    const current = this.records.get(runId);
+    const current = await this.findById(runId);
     if (!current) {
       return null;
     }
 
-    const updated: RunRecord = {
-      ...current,
-      status: "cancel_requested",
-      statusReasonCode: "cancel_requested_by_client",
-      cancelRequestedAt: requestedAt,
-      updatedAt: new Date().toISOString(),
-    };
-    this.records.set(runId, updated);
-    return updated;
+    const [updated] = await this.db.db
+      .update(runs)
+      .set({
+        status: "cancel_requested",
+        statusReasonCode: "cancel_requested_by_client",
+        cancelRequestedAt: toDate(requestedAt),
+        updatedAt: new Date(),
+      })
+      .where(eq(runs.runId, runId))
+      .returning();
+    return updated ? this.toRecord(updated) : null;
   }
 
   async setLastAckedSeq(runId: string, seq: number): Promise<RunRecord | null> {
-    const current = this.records.get(runId);
+    const current = await this.findById(runId);
     if (!current) {
       return null;
     }
 
-    const updated: RunRecord = {
-      ...current,
-      lastAckedSeq: Math.max(current.lastAckedSeq, seq),
-      updatedAt: new Date().toISOString(),
-    };
-    this.records.set(runId, updated);
-    return updated;
+    const [updated] = await this.db.db
+      .update(runs)
+      .set({
+        lastAckedSeq: Math.max(current.lastAckedSeq, seq),
+        updatedAt: new Date(),
+      })
+      .where(eq(runs.runId, runId))
+      .returning();
+    return updated ? this.toRecord(updated) : null;
   }
 
   async bindFinalization(
@@ -136,27 +157,85 @@ export class RunRepository {
       finalRevision: number | null;
     },
   ): Promise<RunRecord | null> {
-    const current = this.records.get(runId);
+    const current = await this.findById(runId);
     if (!current) {
       return null;
     }
 
-    const updated: RunRecord = {
-      ...current,
-      status: input.status,
-      statusReasonCode:
-        input.statusReasonCode === undefined
-          ? current.statusReasonCode
-          : input.statusReasonCode,
-      draftId: input.draftId,
-      finalArtifactRef: input.finalArtifactRef,
-      completionRecordRef: input.completionRecordRef,
-      latestSaveReceiptId: input.latestSaveReceiptId,
-      latestSavedRevision: input.latestSavedRevision,
-      finalRevision: input.finalRevision,
-      updatedAt: new Date().toISOString(),
+    const [updated] = await this.db.db
+      .update(runs)
+      .set({
+        status: input.status,
+        statusReasonCode:
+          input.statusReasonCode === undefined
+            ? current.statusReasonCode
+            : input.statusReasonCode,
+        draftId: input.draftId,
+        finalArtifactRef: input.finalArtifactRef,
+        completionRecordRef: input.completionRecordRef,
+        latestSaveReceiptId: input.latestSaveReceiptId,
+        latestSavedRevision: input.latestSavedRevision,
+        finalRevision: input.finalRevision,
+        updatedAt: new Date(),
+      })
+      .where(eq(runs.runId, runId))
+      .returning();
+    return updated ? this.toRecord(updated) : null;
+  }
+
+  private toInsert(record: RunRecord): typeof runs.$inferInsert {
+    return {
+      runId: record.runId,
+      traceId: record.traceId,
+      requestId: record.requestId,
+      documentId: record.documentId,
+      pageId: record.pageId,
+      status: record.status,
+      statusReasonCode: record.statusReasonCode,
+      attemptSeq: record.attemptSeq,
+      queueJobId: record.queueJobId,
+      requestRef: record.requestRef,
+      snapshotRef: record.snapshotRef,
+      draftId: record.draftId ?? null,
+      finalArtifactRef: record.finalArtifactRef ?? null,
+      completionRecordRef: record.completionRecordRef ?? null,
+      latestSaveReceiptId: record.latestSaveReceiptId ?? null,
+      latestSavedRevision: record.latestSavedRevision ?? null,
+      finalRevision: record.finalRevision ?? null,
+      deadlineAt: toDate(record.deadlineAt),
+      lastAckedSeq: record.lastAckedSeq,
+      pageLockToken: record.pageLockToken,
+      cancelRequestedAt: toNullableDate(record.cancelRequestedAt),
+      createdAt: toDate(record.createdAt),
+      updatedAt: toDate(record.updatedAt),
     };
-    this.records.set(runId, updated);
-    return updated;
+  }
+
+  private toRecord(row: typeof runs.$inferSelect): RunRecord {
+    return {
+      runId: row.runId,
+      traceId: row.traceId,
+      requestId: row.requestId,
+      documentId: row.documentId,
+      pageId: row.pageId,
+      status: row.status as RunStatus,
+      statusReasonCode: row.statusReasonCode,
+      attemptSeq: row.attemptSeq,
+      queueJobId: row.queueJobId,
+      requestRef: row.requestRef,
+      snapshotRef: row.snapshotRef,
+      draftId: row.draftId,
+      finalArtifactRef: row.finalArtifactRef,
+      completionRecordRef: row.completionRecordRef,
+      latestSaveReceiptId: row.latestSaveReceiptId,
+      latestSavedRevision: row.latestSavedRevision,
+      finalRevision: row.finalRevision,
+      deadlineAt: toIso(row.deadlineAt),
+      lastAckedSeq: row.lastAckedSeq,
+      pageLockToken: row.pageLockToken,
+      cancelRequestedAt: toNullableIso(row.cancelRequestedAt),
+      createdAt: toIso(row.createdAt),
+      updatedAt: toIso(row.updatedAt),
+    };
   }
 }

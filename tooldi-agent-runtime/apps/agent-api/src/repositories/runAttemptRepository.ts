@@ -1,5 +1,14 @@
+import { and, asc, eq } from "drizzle-orm";
+
 import type { AttemptState } from "@tooldi/agent-domain";
-import type { PgClient } from "@tooldi/agent-persistence";
+import { runAttempts, type PgClient } from "@tooldi/agent-persistence";
+
+import {
+  toDate,
+  toIso,
+  toNullableDate,
+  toNullableIso,
+} from "./pgRecordMapping.js";
 
 export interface RunAttemptRecord {
   attemptId: string;
@@ -19,37 +28,49 @@ export interface RunAttemptRecord {
 }
 
 export class RunAttemptRepository {
-  private readonly records = new Map<string, RunAttemptRecord>();
-
-  constructor(private readonly db: PgClient) {
-    void this.db;
-  }
+  constructor(private readonly db: PgClient) {}
 
   async create(record: RunAttemptRecord): Promise<RunAttemptRecord> {
-    this.records.set(record.attemptId, record);
-    return record;
+    const [created] = await this.db.db
+      .insert(runAttempts)
+      .values(this.toInsert(record))
+      .returning();
+    return this.toRecord(created!);
   }
 
   async findByRunIdAndAttemptSeq(
     runId: string,
     attemptSeq: number,
   ): Promise<RunAttemptRecord | null> {
-    return (
-      [...this.records.values()].find(
-        (record) => record.runId === runId && record.attemptSeq === attemptSeq,
-      ) ?? null
-    );
+    const [record] = await this.db.db
+      .select()
+      .from(runAttempts)
+      .where(
+        and(
+          eq(runAttempts.runId, runId),
+          eq(runAttempts.attemptSeq, attemptSeq),
+        ),
+      )
+      .limit(1);
+    return record ? this.toRecord(record) : null;
   }
 
   async findByRunId(runId: string): Promise<RunAttemptRecord[]> {
-    return [...this.records.values()].filter((record) => record.runId === runId);
+    const records = await this.db.db
+      .select()
+      .from(runAttempts)
+      .where(eq(runAttempts.runId, runId))
+      .orderBy(asc(runAttempts.attemptSeq));
+    return records.map((record) => this.toRecord(record));
   }
 
   async findByQueueJobId(queueJobId: string): Promise<RunAttemptRecord | null> {
-    return (
-      [...this.records.values()].find((record) => record.queueJobId === queueJobId) ??
-      null
-    );
+    const [record] = await this.db.db
+      .select()
+      .from(runAttempts)
+      .where(eq(runAttempts.queueJobId, queueJobId))
+      .limit(1);
+    return record ? this.toRecord(record) : null;
   }
 
   async touchHeartbeat(
@@ -64,16 +85,18 @@ export class RunAttemptRepository {
       return null;
     }
 
-    const updated: RunAttemptRecord = {
-      ...current,
-      attemptState,
-      workerId: workerId ?? current.workerId,
-      startedAt: current.startedAt ?? heartbeatAt,
-      leaseRecognizedAt: current.leaseRecognizedAt ?? heartbeatAt,
-      lastHeartbeatAt: heartbeatAt,
-    };
-    this.records.set(updated.attemptId, updated);
-    return updated;
+    const [updated] = await this.db.db
+      .update(runAttempts)
+      .set({
+        attemptState,
+        workerId: workerId ?? current.workerId,
+        startedAt: toDate(current.startedAt ?? heartbeatAt),
+        leaseRecognizedAt: toDate(current.leaseRecognizedAt ?? heartbeatAt),
+        lastHeartbeatAt: toDate(heartbeatAt),
+      })
+      .where(eq(runAttempts.attemptId, current.attemptId))
+      .returning();
+    return updated ? this.toRecord(updated) : null;
   }
 
   async updateAttemptState(
@@ -89,16 +112,20 @@ export class RunAttemptRepository {
       return null;
     }
 
-    const updated: RunAttemptRecord = {
-      ...current,
-      attemptState,
-      workerId: workerId ?? current.workerId,
-      lastHeartbeatAt: heartbeatAt ?? current.lastHeartbeatAt,
-      statusReasonCode:
-        statusReasonCode === undefined ? current.statusReasonCode : statusReasonCode,
-    };
-    this.records.set(updated.attemptId, updated);
-    return updated;
+    const [updated] = await this.db.db
+      .update(runAttempts)
+      .set({
+        attemptState,
+        workerId: workerId ?? current.workerId,
+        lastHeartbeatAt: toNullableDate(heartbeatAt ?? current.lastHeartbeatAt),
+        statusReasonCode:
+          statusReasonCode === undefined
+            ? current.statusReasonCode
+            : statusReasonCode,
+      })
+      .where(eq(runAttempts.attemptId, current.attemptId))
+      .returning();
+    return updated ? this.toRecord(updated) : null;
   }
 
   async recognizeLease(
@@ -112,14 +139,54 @@ export class RunAttemptRepository {
       return null;
     }
 
-    const updated: RunAttemptRecord = {
-      ...current,
-      workerId: workerId ?? current.workerId,
-      startedAt: current.startedAt ?? recognizedAt,
-      leaseRecognizedAt: current.leaseRecognizedAt ?? recognizedAt,
-      lastHeartbeatAt: current.lastHeartbeatAt,
+    const [updated] = await this.db.db
+      .update(runAttempts)
+      .set({
+        workerId: workerId ?? current.workerId,
+        startedAt: toDate(current.startedAt ?? recognizedAt),
+        leaseRecognizedAt: toDate(current.leaseRecognizedAt ?? recognizedAt),
+        lastHeartbeatAt: toNullableDate(current.lastHeartbeatAt),
+      })
+      .where(eq(runAttempts.attemptId, current.attemptId))
+      .returning();
+    return updated ? this.toRecord(updated) : null;
+  }
+
+  private toInsert(record: RunAttemptRecord): typeof runAttempts.$inferInsert {
+    return {
+      attemptId: record.attemptId,
+      runId: record.runId,
+      traceId: record.traceId,
+      attemptSeq: record.attemptSeq,
+      retryOfAttemptSeq: record.retryOfAttemptSeq,
+      queueJobId: record.queueJobId,
+      acceptedHttpRequestId: record.acceptedHttpRequestId,
+      attemptState: record.attemptState,
+      statusReasonCode: record.statusReasonCode,
+      workerId: record.workerId,
+      startedAt: toNullableDate(record.startedAt),
+      leaseRecognizedAt: toNullableDate(record.leaseRecognizedAt),
+      lastHeartbeatAt: toNullableDate(record.lastHeartbeatAt),
+      createdAt: toDate(record.createdAt),
     };
-    this.records.set(updated.attemptId, updated);
-    return updated;
+  }
+
+  private toRecord(row: typeof runAttempts.$inferSelect): RunAttemptRecord {
+    return {
+      attemptId: row.attemptId,
+      runId: row.runId,
+      traceId: row.traceId,
+      attemptSeq: row.attemptSeq,
+      retryOfAttemptSeq: row.retryOfAttemptSeq,
+      queueJobId: row.queueJobId,
+      acceptedHttpRequestId: row.acceptedHttpRequestId,
+      attemptState: row.attemptState as AttemptState,
+      statusReasonCode: row.statusReasonCode,
+      workerId: row.workerId,
+      startedAt: toNullableIso(row.startedAt),
+      leaseRecognizedAt: toNullableIso(row.leaseRecognizedAt),
+      lastHeartbeatAt: toNullableIso(row.lastHeartbeatAt),
+      createdAt: toIso(row.createdAt),
+    };
   }
 }

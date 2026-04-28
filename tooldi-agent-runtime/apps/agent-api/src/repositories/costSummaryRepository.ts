@@ -1,5 +1,7 @@
 import type { AgentRunResultSummary } from "@tooldi/agent-contracts";
-import type { PgClient } from "@tooldi/agent-persistence";
+import { costSummaries, type PgClient } from "@tooldi/agent-persistence";
+
+import { toIso } from "./pgRecordMapping.js";
 
 export interface CostSummaryPlaceholderRecord {
   runId: string;
@@ -9,24 +11,36 @@ export interface CostSummaryPlaceholderRecord {
 }
 
 export class CostSummaryRepository {
-  private readonly records = new Map<string, CostSummaryPlaceholderRecord>();
-
-  constructor(private readonly db: PgClient) {
-    void this.db;
-  }
+  constructor(private readonly db: PgClient) {}
 
   async upsertPlaceholder(
     runId: string,
     traceId: string,
     result: AgentRunResultSummary,
   ): Promise<CostSummaryPlaceholderRecord> {
-    const record: CostSummaryPlaceholderRecord = {
+    const recordedAt = new Date();
+    const [record] = await this.db.db
+      .insert(costSummaries)
+      .values({
+        runId,
+        traceId,
+        finalStatus: result.finalStatus,
+        recordedAt,
+      })
+      .onConflictDoUpdate({
+        target: costSummaries.runId,
+        set: {
+          traceId,
+          finalStatus: result.finalStatus,
+          recordedAt,
+        },
+      })
+      .returning();
+    return {
       runId,
       traceId,
-      finalStatus: result.finalStatus,
-      recordedAt: new Date().toISOString(),
+      finalStatus: record!.finalStatus as AgentRunResultSummary["finalStatus"],
+      recordedAt: toIso(record!.recordedAt),
     };
-    this.records.set(runId, record);
-    return record;
   }
 }

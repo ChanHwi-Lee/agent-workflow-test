@@ -4,6 +4,7 @@ import test from "node:test";
 import type {
   AgentApiEnv,
 } from "@tooldi/agent-config";
+import { resetAgentRuntimeData } from "@tooldi/agent-persistence";
 import type {
   CanvasMutationEnvelope,
   MutationApplyAckRequest,
@@ -15,11 +16,15 @@ import type {
 
 import { buildApp } from "./app.js";
 
+const DEFAULT_TEST_POSTGRES_URL =
+  process.env.POSTGRES_URL ??
+  "postgres://postgres:postgres@127.0.0.1:55432/tooldi_agent_runtime_test";
+
 function createEnv(): AgentApiEnv {
   return {
     nodeEnv: "test",
     logLevel: "debug",
-    postgresUrl: "postgres://localhost:5432/tooldi_agent_runtime_test",
+    postgresUrl: DEFAULT_TEST_POSTGRES_URL,
     redisUrl: "redis://localhost:6379/9",
     bullmqQueueName: "agent-workflow-interactive-test",
     objectStoreMode: "memory",
@@ -33,6 +38,19 @@ function createEnv(): AgentApiEnv {
     sseHeartbeatIntervalMs: 50,
     queueTransportMode: "memory",
   };
+}
+
+async function buildIsolatedApp(
+  envOverrides: Partial<AgentApiEnv> = {},
+): Promise<Awaited<ReturnType<typeof buildApp>>> {
+  const app = await buildApp({
+    env: {
+      ...createEnv(),
+      ...envOverrides,
+    },
+  });
+  await resetAgentRuntimeData(app.db);
+  return app;
 }
 
 function createStartRunRequest(
@@ -212,7 +230,7 @@ function isListenPermissionError(error: unknown): error is NodeJS.ErrnoException
 }
 
 test("POST /runs returns accepted response with required headers", async (t) => {
-  const app = await buildApp({ env: createEnv() });
+  const app = await buildIsolatedApp();
   t.after(async () => {
     await app.close();
   });
@@ -238,7 +256,7 @@ test("POST /runs returns accepted response with required headers", async (t) => 
 });
 
 test("canonical internal routes are registered and legacy worker routes are gone", async (t) => {
-  const app = await buildApp({ env: createEnv() });
+  const app = await buildIsolatedApp();
   t.after(async () => {
     await app.close();
   });
@@ -259,7 +277,7 @@ test("canonical internal routes are registered and legacy worker routes are gone
 });
 
 test("shared contract validation rejects invalid worker events and invalid ack wait query", async (t) => {
-  const app = await buildApp({ env: createEnv() });
+  const app = await buildIsolatedApp();
   t.after(async () => {
     await app.close();
   });
@@ -285,7 +303,7 @@ test("shared contract validation rejects invalid worker events and invalid ack w
 });
 
 test("backend authors mutation seq and ack wait route reflects dispatched then acked", async (t) => {
-  const app = await buildApp({ env: createEnv() });
+  const app = await buildIsolatedApp();
   t.after(async () => {
     await app.close();
   });
@@ -386,7 +404,7 @@ test("backend authors mutation seq and ack wait route reflects dispatched then a
 });
 
 test("stale attempt is rejected and finalize is idempotent", async (t) => {
-  const app = await buildApp({ env: createEnv() });
+  const app = await buildIsolatedApp();
   t.after(async () => {
     await app.close();
   });
@@ -458,12 +476,60 @@ test("stale attempt is rejected and finalize is idempotent", async (t) => {
   );
 });
 
+test("runtime state persists across app reconstruction", async () => {
+  const firstApp = await buildIsolatedApp();
+  const { accepted, queueJobId } = await startRun(firstApp);
+  await firstApp.close();
+
+  const restartedApp = await buildApp({ env: createEnv() });
+  try {
+    const appendPayload: WorkerAppendEventRequest = {
+      traceId: accepted.traceId,
+      attempt: 1,
+      queueJobId,
+      event: {
+        type: "mutation.proposed",
+        mutationId: "mutation-after-restart",
+        rollbackGroupId: "rollback-group-1",
+        mutation: createMutationEnvelope({
+          runId: accepted.runId,
+          traceId: accepted.traceId,
+          mutationId: "mutation-after-restart",
+          seq: 999,
+        }),
+      },
+    };
+
+    const appendResponse = await restartedApp.inject({
+      method: "POST",
+      url: `/internal/agent-workflow/runs/${accepted.runId}/events`,
+      payload: appendPayload,
+    });
+    assert.equal(appendResponse.statusCode, 200);
+    assert.deepEqual(appendResponse.json(), {
+      accepted: true,
+      cancelRequested: false,
+      assignedSeq: 1,
+    });
+
+    const waitResponse = await restartedApp.inject({
+      method: "GET",
+      url: `/internal/agent-workflow/runs/${accepted.runId}/mutations/mutation-after-restart/acks?waitMs=0`,
+    });
+    assert.equal(waitResponse.statusCode, 200);
+    assert.deepEqual(waitResponse.json(), {
+      found: true,
+      status: "dispatched",
+      seq: 1,
+    });
+  } finally {
+    await restartedApp.close();
+  }
+});
+
 test("SSE backlog replay uses event repository offsets with Last-Event-ID", async (t) => {
-  const app = await buildApp({
-    env: {
-      ...createEnv(),
-      publicBaseUrl: "http://127.0.0.1:0",
-    },
+  const app = await buildIsolatedApp({
+    publicBaseUrl: "http://127.0.0.1:0",
   });
   let address: string;
   try {

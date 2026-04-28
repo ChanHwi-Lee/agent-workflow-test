@@ -1,5 +1,9 @@
+import { desc, eq } from "drizzle-orm";
+
 import type { RunRepairContext, RunRecoveryProjection } from "@tooldi/agent-contracts";
-import type { PgClient } from "@tooldi/agent-persistence";
+import { runRecoveries, type PgClient } from "@tooldi/agent-persistence";
+
+import { toDate, toIso } from "./pgRecordMapping.js";
 
 export interface RunRecoveryRecord {
   recoveryId: string;
@@ -14,34 +18,55 @@ export interface RunRecoveryRecord {
 }
 
 export class RunRecoveryRepository {
-  private readonly recordsByRunId = new Map<string, RunRecoveryRecord[]>();
-
-  constructor(private readonly db: PgClient) {
-    void this.db;
-  }
+  constructor(private readonly db: PgClient) {}
 
   async create(
     record: Omit<RunRecoveryRecord, "recoveryId">,
   ): Promise<RunRecoveryRecord> {
     const created: RunRecoveryRecord = {
-      recoveryId: `recovery_${record.runId}_${record.attemptSeq}_${Date.now()}`,
+      recoveryId: `recovery_${record.runId}_${record.attemptSeq}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       ...record,
     };
-    const existing = this.recordsByRunId.get(record.runId) ?? [];
-    existing.push(created);
-    this.recordsByRunId.set(record.runId, existing);
-    return created;
+    const [stored] = await this.db.db
+      .insert(runRecoveries)
+      .values({
+        ...created,
+        createdAt: toDate(created.createdAt),
+      })
+      .returning();
+    return this.toRecord(stored!);
   }
 
   async listByRunId(runId: string): Promise<RunRecoveryRecord[]> {
-    return [...(this.recordsByRunId.get(runId) ?? [])];
+    const records = await this.db.db
+      .select()
+      .from(runRecoveries)
+      .where(eq(runRecoveries.runId, runId))
+      .orderBy(runRecoveries.createdAt);
+    return records.map((record) => this.toRecord(record));
   }
 
   async findLatestByRunId(runId: string): Promise<RunRecoveryRecord | null> {
-    const records = this.recordsByRunId.get(runId);
-    if (!records || records.length === 0) {
-      return null;
-    }
-    return records[records.length - 1] ?? null;
+    const [record] = await this.db.db
+      .select()
+      .from(runRecoveries)
+      .where(eq(runRecoveries.runId, runId))
+      .orderBy(desc(runRecoveries.createdAt))
+      .limit(1);
+    return record ? this.toRecord(record) : null;
+  }
+
+  private toRecord(row: typeof runRecoveries.$inferSelect): RunRecoveryRecord {
+    return {
+      recoveryId: row.recoveryId,
+      runId: row.runId,
+      traceId: row.traceId,
+      attemptSeq: row.attemptSeq,
+      queueJobId: row.queueJobId,
+      reasonCode: row.reasonCode,
+      source: row.source as RunRepairContext["source"],
+      recovery: row.recovery,
+      createdAt: toIso(row.createdAt),
+    };
   }
 }

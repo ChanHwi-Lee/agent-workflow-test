@@ -1,4 +1,8 @@
-import type { PgClient } from "@tooldi/agent-persistence";
+import { asc, eq } from "drizzle-orm";
+
+import { runRequests, type PgClient } from "@tooldi/agent-persistence";
+
+import { toDate, toIso } from "./pgRecordMapping.js";
 
 export interface RunRequestRecord {
   requestId: string;
@@ -18,27 +22,44 @@ export interface RunRequestRecord {
 }
 
 export class RunRequestRepository {
-  private readonly records = new Map<string, RunRequestRecord>();
-
-  constructor(private readonly db: PgClient) {
-    void this.db;
-  }
+  constructor(private readonly db: PgClient) {}
 
   async create(record: RunRequestRecord): Promise<RunRequestRecord> {
-    this.records.set(record.requestId, record);
-    return record;
+    const [created] = await this.db.db
+      .insert(runRequests)
+      .values({
+        ...record,
+        createdAt: toDate(record.createdAt),
+      })
+      .returning();
+    return this.toRecord(created!);
   }
 
   async findByDedupeKey(dedupeKey: string): Promise<RunRequestRecord | null> {
-    for (const record of this.records.values()) {
-      if (record.dedupeKey === dedupeKey) {
-        return record;
-      }
-    }
-    return null;
+    const [record] = await this.db.db
+      .select()
+      .from(runRequests)
+      .where(eq(runRequests.dedupeKey, dedupeKey))
+      .orderBy(asc(runRequests.createdAt))
+      .limit(1);
+    return record ? this.toRecord(record) : null;
   }
 
   async findByRequestId(requestId: string): Promise<RunRequestRecord | null> {
-    return this.records.get(requestId) ?? null;
+    const [record] = await this.db.db
+      .select()
+      .from(runRequests)
+      .where(eq(runRequests.requestId, requestId))
+      .limit(1);
+    return record ? this.toRecord(record) : null;
+  }
+
+  private toRecord(
+    row: typeof runRequests.$inferSelect,
+  ): RunRequestRecord {
+    return {
+      ...row,
+      createdAt: toIso(row.createdAt),
+    };
   }
 }

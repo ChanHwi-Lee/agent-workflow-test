@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createObjectStoreClient, createPgClient } from "@tooldi/agent-persistence";
+import {
+  createObjectStoreClient,
+  createPgClient,
+  resetAgentRuntimeData,
+} from "@tooldi/agent-persistence";
 import type { Logger } from "@tooldi/agent-observability";
 import type { StartAgentWorkflowRunRequest } from "@tooldi/agent-contracts";
 
@@ -14,6 +18,10 @@ import { RunRequestRepository } from "../repositories/runRequestRepository.js";
 import { RunBootstrapService } from "./runBootstrapService.js";
 import { RunEventService } from "./runEventService.js";
 import { RunWatchdogService } from "./runWatchdogService.js";
+
+const DEFAULT_TEST_POSTGRES_URL =
+  process.env.POSTGRES_URL ??
+  "postgres://postgres:postgres@127.0.0.1:55432/tooldi_agent_runtime_test";
 
 class RecordingLogger implements Logger {
   readonly level = "debug" as const;
@@ -133,9 +141,10 @@ function createRequest(): StartAgentWorkflowRunRequest {
 
 test("RunBootstrapService closes initial queue publish failure without creating an attempt", async () => {
   const db = createPgClient({
-    connectionString: "postgres://localhost:5432/tooldi_agent_runtime_test",
+    connectionString: DEFAULT_TEST_POSTGRES_URL,
   });
   await db.connect();
+  await resetAgentRuntimeData(db);
 
   try {
     const runRequestRepository = new RunRequestRepository(db);
