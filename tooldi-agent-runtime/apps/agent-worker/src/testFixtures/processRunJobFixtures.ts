@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 
+import type { BaseCheckpointSaver } from "@langchain/langgraph";
+import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
 import type {
   RunFinalizeRequest,
@@ -26,11 +28,38 @@ import type { processRunJob } from "../jobs/processRunJob.js";
 
 export type ProcessRunJobTestResult = Awaited<ReturnType<typeof processRunJob>>;
 
+export interface TestLangGraphCheckpointerHandle {
+  checkpointer: BaseCheckpointSaver;
+  close(): Promise<void>;
+}
+
+export function composeDefaultTestPostgresUrl(): string {
+  const host = process.env.AGENT_RUNTIME_POSTGRES_HOST ?? "127.0.0.1";
+  const port = process.env.AGENT_RUNTIME_POSTGRES_PORT ?? "55432";
+  const db = process.env.AGENT_RUNTIME_POSTGRES_DB ?? "tooldi_agent_runtime_test";
+  const user = process.env.AGENT_RUNTIME_POSTGRES_USER ?? "postgres";
+  const password = process.env.AGENT_RUNTIME_POSTGRES_PASSWORD ?? "postgres";
+  return `postgres://${encodeURIComponent(user)}:${encodeURIComponent(
+    password,
+  )}@${host}:${port}/${db}`;
+}
+
+export async function createTestLangGraphCheckpointer(): Promise<TestLangGraphCheckpointerHandle> {
+  const checkpointer = PostgresSaver.fromConnString(composeDefaultTestPostgresUrl(), {
+    schema: "agent_langgraph_test",
+  });
+  await checkpointer.setup();
+  return {
+    checkpointer,
+    close: () => checkpointer.end(),
+  };
+}
+
 export function createProcessRunJobTestEnv(): AgentWorkerEnv {
   return {
     nodeEnv: "test",
     logLevel: "debug",
-    postgresUrl: "postgres://localhost:5432/tooldi_agent_runtime_test",
+    postgresUrl: composeDefaultTestPostgresUrl(),
     redisUrl: "redis://localhost:6379/9",
     bullmqQueueName: "agent-workflow-interactive-test",
     objectStoreMode: "memory",
@@ -43,7 +72,7 @@ export function createProcessRunJobTestEnv(): AgentWorkerEnv {
     leaseTtlMs: 30000,
     queueTransportMode: "disabled",
     agentInternalBaseUrl: "http://127.0.0.1:3000",
-    langGraphCheckpointerMode: "memory",
+    langGraphCheckpointerMode: "postgres",
     langGraphCheckpointerPostgresUrl: null,
     langGraphCheckpointerSchema: "agent_langgraph_test",
     postgresPoolMax: 10,

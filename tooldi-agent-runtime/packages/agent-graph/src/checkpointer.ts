@@ -1,4 +1,4 @@
-import { MemorySaver, type BaseCheckpointSaver } from "@langchain/langgraph";
+import type { BaseCheckpointSaver } from "@langchain/langgraph";
 import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import type pg from "pg";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
@@ -16,19 +16,9 @@ export async function createWorkerGraphCheckpointer(
   logger: Logger,
   pool: pg.Pool | null,
 ): Promise<WorkerGraphCheckpointerHandle> {
-  if (env.langGraphCheckpointerMode === "memory") {
-    logger.info("LangGraph worker checkpointer configured", {
-      mode: "memory",
-    });
-    return {
-      checkpointer: new MemorySaver(),
-      async close() {},
-    };
-  }
-
   if (!pool) {
     throw new Error(
-      "createWorkerGraphCheckpointer: pg.Pool is required in postgres mode",
+      "createWorkerGraphCheckpointer: pg.Pool is required",
     );
   }
 

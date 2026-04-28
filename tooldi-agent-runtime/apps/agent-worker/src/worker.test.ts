@@ -27,7 +27,7 @@ function createEnv(): AgentWorkerEnv {
     leaseTtlMs: 30000,
     queueTransportMode: "disabled",
     agentInternalBaseUrl: "http://127.0.0.1:3000",
-    langGraphCheckpointerMode: "memory",
+    langGraphCheckpointerMode: "postgres",
     langGraphCheckpointerPostgresUrl: null,
     langGraphCheckpointerSchema: "agent_langgraph_test",
     postgresPoolMax: 10,
@@ -187,4 +187,3 @@ test("loadAgentWorkerEnv requires Tooldi content API base URL in real Tooldi API
     /TOOLDI_CONTENT_API_BASE_URL/,
   );
 });
-

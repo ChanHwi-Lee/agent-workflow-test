@@ -1,6 +1,5 @@
 import {
   END,
-  MemorySaver,
   START,
   StateGraph,
 } from "@langchain/langgraph";
@@ -26,6 +25,6 @@ export function buildRunJobGraph(dependencies: RunJobGraphDependencies) {
   (graph as any).addEdge(START, "hydrate_input").addEdge("send_finalize", END);
 
   return graph.compile({
-    checkpointer: dependencies.langGraphCheckpointer ?? new MemorySaver(),
+    checkpointer: dependencies.langGraphCheckpointer,
   });
 }

@@ -145,7 +145,7 @@ function createWorkerEnv(queueName) {
     templatePlannerProvider: null,
     templatePlannerModel: null,
     templatePlannerTemperature: 0,
-    langGraphCheckpointerMode: "memory",
+    langGraphCheckpointerMode: "postgres",
     langGraphCheckpointerPostgresUrl: null,
     langGraphCheckpointerSchema: "agent_langgraph_test",
     tooldiCatalogSourceMode: "placeholder",
@@ -775,4 +775,3 @@ function assertObjectNativeLogs(runLogs) {
     "expected at least one v6 pipeline log entry",
   );
 }
-

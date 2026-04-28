@@ -71,27 +71,23 @@ export async function buildWorkerRuntime(
 
   // Runtime 이 pg.Pool 의 owner. PostgresSaver 와 Drizzle 둘 다 이 pool 의 consumer.
   // node-postgres 공식 권장 (application 당 single pool, 모든 ORM/library 공유) 패턴.
-  // memory mode 면 pool=null → migrate skip + sidecar db=undefined.
-  let pool: pg.Pool | null = null;
-  if (options.env.langGraphCheckpointerMode === "postgres") {
-    const connectionString =
-      options.env.langGraphCheckpointerPostgresUrl ?? options.env.postgresUrl;
-    pool = createAgentRuntimePgPool({
-      connectionString,
-      max: options.env.postgresPoolMax,
-      connectionTimeoutMillis: options.env.postgresPoolConnectionTimeoutMs,
-      idleTimeoutMillis: options.env.postgresPoolIdleTimeoutMs,
-      applicationName: options.env.postgresApplicationName,
+  const connectionString =
+    options.env.langGraphCheckpointerPostgresUrl ?? options.env.postgresUrl;
+  const pool = createAgentRuntimePgPool({
+    connectionString,
+    max: options.env.postgresPoolMax,
+    connectionTimeoutMillis: options.env.postgresPoolConnectionTimeoutMs,
+    idleTimeoutMillis: options.env.postgresPoolIdleTimeoutMs,
+    applicationName: options.env.postgresApplicationName,
+  });
+  // node-postgres 의 pool 은 idle client backend/network error 를 emit 하는데
+  // listener 가 없으면 unhandled error → process crash. 단순 로깅만으로도
+  // crash 방어선 역할 (pool 이 자동으로 해당 client 를 종료/제거하므로 추가 정리 X).
+  pool.on("error", (error) => {
+    logger.error("pg pool client error", {
+      error: error instanceof Error ? error.message : String(error),
     });
-    // node-postgres 의 pool 은 idle client backend/network error 를 emit 하는데
-    // listener 가 없으면 unhandled error → process crash. 단순 로깅만으로도
-    // crash 방어선 역할 (pool 이 자동으로 해당 client 를 종료/제거하므로 추가 정리 X).
-    pool.on("error", (error) => {
-      logger.error("pg pool client error", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    });
-  }
+  });
 
   let queueConsumer: RunQueueConsumer | null = null;
   let graphCheckpointerHandle: WorkerGraphCheckpointerHandle | null = null;
@@ -104,30 +100,26 @@ export async function buildWorkerRuntime(
       pool,
     );
 
-    if (pool) {
-      interviewRecordsDb = drizzle({ client: pool });
-      const migrationsFolder = path.resolve(
-        path.dirname(fileURLToPath(import.meta.url)),
-        "../../../packages/persistence/drizzle",
-      );
-      // multi-replica 동시 boot 시 race 방지 (drizzle-orm issue #874).
-      await runWithAdvisoryLock(
-        pool,
-        INTERVIEW_RECORDS_MIGRATE_LOCK_KEY,
-        async () => {
-          await migrate(interviewRecordsDb!, { migrationsFolder });
-        },
-      );
-      logger.info("Interview records migrations applied", { migrationsFolder });
-    }
+    interviewRecordsDb = drizzle({ client: pool });
+    const migrationsFolder = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/persistence/drizzle",
+    );
+    // multi-replica 동시 boot 시 race 방지 (drizzle-orm issue #874).
+    await runWithAdvisoryLock(
+      pool,
+      INTERVIEW_RECORDS_MIGRATE_LOCK_KEY,
+      async () => {
+        await migrate(interviewRecordsDb!, { migrationsFolder });
+      },
+    );
+    logger.info("Interview records migrations applied", { migrationsFolder });
   } catch (error) {
     // R-2 정책: setup / migrate 실패 시 boot 차단 (LangGraph setup 과 동일).
     if (graphCheckpointerHandle) {
       await graphCheckpointerHandle.close();
     }
-    if (pool) {
-      await pool.end();
-    }
+    await pool.end();
     await pgClient.end();
     throw error;
   }
@@ -171,9 +163,7 @@ export async function buildWorkerRuntime(
         await graphCheckpointerHandle.close();
       }
       // pool 의 owner 는 runtime. 여기서 닫는다.
-      if (pool) {
-        await pool.end();
-      }
+      await pool.end();
       await pgClient.end();
     },
   };
@@ -195,9 +185,7 @@ export async function buildWorkerRuntime(
     if (graphCheckpointerHandle) {
       await graphCheckpointerHandle.close();
     }
-    if (pool) {
-      await pool.end();
-    }
+    await pool.end();
     await pgClient.end();
     throw error;
   }

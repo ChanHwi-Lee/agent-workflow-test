@@ -46,7 +46,7 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
   leaseTtlMs: number;
   queueTransportMode: WorkerQueueTransportMode;
   agentInternalBaseUrl: string;
-  langGraphCheckpointerMode: "memory" | "postgres";
+  langGraphCheckpointerMode: "postgres";
   langGraphCheckpointerPostgresUrl: string | null;
   langGraphCheckpointerSchema: string;
   postgresPoolMax: number;
@@ -292,7 +292,7 @@ export function loadAgentWorkerEnv(
     langGraphCheckpointerMode: readEnumValue(
       source,
       "LANGGRAPH_CHECKPOINTER_MODE",
-      ["memory", "postgres"] as const,
+      ["postgres"] as const,
       "postgres",
     ),
     langGraphCheckpointerPostgresUrl: readOptionalString(

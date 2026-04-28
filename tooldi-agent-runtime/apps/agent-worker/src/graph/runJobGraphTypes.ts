@@ -13,7 +13,7 @@ export interface RunJobGraphDependencies {
   logger: Logger;
   objectStore: ObjectStoreClient;
   callbackClient: BackendCallbackClient;
-  langGraphCheckpointer?: BaseCheckpointSaver;
+  langGraphCheckpointer: BaseCheckpointSaver;
   interviewRecordsDb?: NodePgDatabase;
   v6Overrides?: V6NodeOverrides;
   v6TrendResearcher?: V6TrendResearcher;

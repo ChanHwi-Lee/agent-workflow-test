@@ -5,7 +5,6 @@ import {
   Annotation,
   Command,
   END,
-  MemorySaver,
   START,
   StateGraph,
   interrupt,
@@ -83,19 +82,12 @@ async function exerciseInterruptCycle(
   await resumeAndAssertFinal(graph, threadId, "answered-ok");
 }
 
-test("interrupt + resume cycle은 MemorySaver 에서 동작한다", async () => {
-  const checkpointer = new MemorySaver();
-  const graph = buildSpikeGraph(checkpointer);
-  await exerciseInterruptCycle(graph, "spike-mem:0");
-});
-
-function composePostgresUrl(): string | null {
+function composePostgresUrl(): string {
   const host = process.env.AGENT_RUNTIME_POSTGRES_HOST ?? "127.0.0.1";
-  const port = process.env.AGENT_RUNTIME_POSTGRES_PORT;
-  const db = process.env.AGENT_RUNTIME_POSTGRES_DB;
-  const user = process.env.AGENT_RUNTIME_POSTGRES_USER;
-  const password = process.env.AGENT_RUNTIME_POSTGRES_PASSWORD;
-  if (!port || !db || !user || !password) return null;
+  const port = process.env.AGENT_RUNTIME_POSTGRES_PORT ?? "55432";
+  const db = process.env.AGENT_RUNTIME_POSTGRES_DB ?? "tooldi_agent_runtime_test";
+  const user = process.env.AGENT_RUNTIME_POSTGRES_USER ?? "postgres";
+  const password = process.env.AGENT_RUNTIME_POSTGRES_PASSWORD ?? "postgres";
   return `postgres://${encodeURIComponent(user)}:${encodeURIComponent(
     password,
   )}@${host}:${port}/${db}`;
@@ -105,15 +97,10 @@ const postgresUrl = composePostgresUrl();
 
 test(
   "interrupt + resume cycle은 PostgresSaver 에서 동작한다",
-  {
-    skip:
-      postgresUrl === null
-        ? "AGENT_RUNTIME_POSTGRES_* env vars 가 없어 스킵 — `set -a; source .env.local; set +a` 후 재실행"
-        : false,
-  },
   async () => {
-    if (!postgresUrl) return;
-    const checkpointer = PostgresSaver.fromConnString(postgresUrl);
+    const checkpointer = PostgresSaver.fromConnString(postgresUrl, {
+      schema: "agent_langgraph_test",
+    });
     await checkpointer.setup();
     try {
       const graph = buildSpikeGraph(checkpointer);

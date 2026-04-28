@@ -11,6 +11,7 @@ import {
   assertLegacyBuildAndRefinementNodesWereBypassed,
   createDeterministicV6Overrides,
   createProcessRunJobTestEnv,
+  createTestLangGraphCheckpointer,
   seedRunInputArtifacts,
 } from "../testFixtures/processRunJobFixtures.js";
 import { processRunJob } from "./processRunJob.js";
@@ -33,13 +34,20 @@ test("object_native_v1 routes through v6 createLayer + save/finalize and bypasse
 
   await seedRunInputArtifacts(objectStore, testRun);
 
-  const result = await processRunJob(testRun.job, {
-    env,
-    logger,
-    objectStore,
-    callbackClient,
-    v6Overrides: createDeterministicV6Overrides(),
-  });
+  const checkpointer = await createTestLangGraphCheckpointer();
+  let result: Awaited<ReturnType<typeof processRunJob>>;
+  try {
+    result = await processRunJob(testRun.job, {
+      env,
+      logger,
+      objectStore,
+      callbackClient,
+      langGraphCheckpointer: checkpointer.checkpointer,
+      v6Overrides: createDeterministicV6Overrides(),
+    });
+  } finally {
+    await checkpointer.close();
+  }
 
   assert.equal(testRun.request.workflowVariant, "object_native_v1");
   assert.equal(result.plan?.planSchemaVersion, "v6-freeform-layout");
@@ -189,12 +197,14 @@ test("trend research and debug HTML preview persist v6 artifacts and bypass lega
 
   await seedRunInputArtifacts(objectStore, testRun);
 
+  const checkpointer = await createTestLangGraphCheckpointer();
   try {
     const result = await processRunJob(testRun.job, {
       env,
       logger,
       objectStore,
       callbackClient,
+      langGraphCheckpointer: checkpointer.checkpointer,
       v6Overrides: createDeterministicV6Overrides(),
       v6TrendResearcher: {
         async research() {
@@ -272,6 +282,7 @@ test("trend research and debug HTML preview persist v6 artifacts and bypass lega
     assert.match(unrestrictedDebugArtifact.html, /debug preview/);
     assert.equal(unrestrictedDebugArtifact.trendContext, "TREND_CONTEXT_FOR_TEST");
   } finally {
+    await checkpointer.close();
     globalThis.fetch = originalFetch;
   }
 });
@@ -293,13 +304,20 @@ test("non-empty canvas is rejected before the v6 pipeline runs", async () => {
 
   await seedRunInputArtifacts(objectStore, testRun);
 
-  const result = await processRunJob(testRun.job, {
-    env,
-    logger,
-    objectStore,
-    callbackClient,
-    v6Overrides: createDeterministicV6Overrides(),
-  });
+  const checkpointer = await createTestLangGraphCheckpointer();
+  let result: Awaited<ReturnType<typeof processRunJob>>;
+  try {
+    result = await processRunJob(testRun.job, {
+      env,
+      logger,
+      objectStore,
+      callbackClient,
+      langGraphCheckpointer: checkpointer.checkpointer,
+      v6Overrides: createDeterministicV6Overrides(),
+    });
+  } finally {
+    await checkpointer.close();
+  }
 
   assert.equal(result.intent.operationFamily, "update_layer");
   assert.equal(result.finalizeDraft.request.finalStatus, "failed");
