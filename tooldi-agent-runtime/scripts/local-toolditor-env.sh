@@ -45,3 +45,8 @@ export WORKER_HEARTBEAT_INTERVAL_MS="${WORKER_HEARTBEAT_INTERVAL_MS:-5000}"
 export WORKER_LEASE_TTL_MS="${WORKER_LEASE_TTL_MS:-30000}"
 export LANGGRAPH_CHECKPOINTER_MODE="${LANGGRAPH_CHECKPOINTER_MODE:-postgres}"
 export LANGGRAPH_CHECKPOINTER_SCHEMA="${LANGGRAPH_CHECKPOINTER_SCHEMA:-agent_langgraph}"
+
+# pg_stat_activity 에서 dev/prod 구분용 식별자. POSTGRES_POOL_* 옵션은
+# 미설정 시 loadAgentWorkerEnv 의 production-grade default 가 그대로 적용됨
+# (max=10 / connectionTimeoutMillis=5000 / idleTimeoutMillis=30000).
+export POSTGRES_APPLICATION_NAME="${POSTGRES_APPLICATION_NAME:-agent-worker-toolditor-local}"
