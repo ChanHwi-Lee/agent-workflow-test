@@ -239,9 +239,6 @@ export function registerFinalizeNodes(
           ...(state.intentNormalizationReport
             ? { intentNormalizationReport: state.intentNormalizationReport }
             : {}),
-          ...(state.templatePriorBundle
-            ? { templatePriorBundle: state.templatePriorBundle }
-            : {}),
           ...(state.sceneRolePlan
             ? { sceneRolePlan: state.sceneRolePlan }
             : {}),
@@ -282,18 +279,6 @@ export function registerFinalizeNodes(
             : {}),
           ...(state.templatePriorSummary
             ? { templatePriorSummary: state.templatePriorSummary }
-            : {}),
-          ...(state.searchProfile ? { searchProfile: state.searchProfile } : {}),
-          ...(state.candidateSets ? { candidateSets: state.candidateSets } : {}),
-          ...(state.sourceSearchSummary
-            ? { sourceSearchSummary: state.sourceSearchSummary }
-            : {}),
-          ...(state.retrievalStage ? { retrievalStage: state.retrievalStage } : {}),
-          ...(state.selectionDecision
-            ? { selectionDecision: state.selectionDecision }
-            : {}),
-          ...(state.typographyDecision
-            ? { typographyDecision: state.typographyDecision }
             : {}),
           ...(state.ruleJudgeVerdict
             ? { ruleJudgeVerdict: state.ruleJudgeVerdict }

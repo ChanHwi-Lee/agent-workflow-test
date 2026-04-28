@@ -30,17 +30,10 @@ import type {
   ProcessRunJobResult,
   RefineDecision,
   ReferenceBlockGraph,
-  RetrievalStageResult,
   RuleJudgeVerdict,
-  SearchProfileArtifact,
-  SelectionDecision,
   SkeletonMutationBatch,
-  SourceSearchSummary,
   StageAckRecord,
   StyleDowngradeVerdict,
-  TemplateCandidateBundle,
-  TemplatePriorBundle,
-  TemplateSelectionPolicy,
   EditableBlockPlan,
   MessageAtomPlan,
   ObjectNativeCandidateSelection,
@@ -48,18 +41,12 @@ import type {
   ObjectNativeRenderabilityReport,
   ProjectedObjectGraph,
   QualityEvalSummary,
-  TypographyDecision,
 } from "../types.js";
 import type {
   TemplatePriorSummary,
 } from "@tooldi/agent-contracts";
 import type { V6PipelineResult } from "../phases/v6Pipeline.js";
 import type { V6TrendBrief } from "../phases/v6TrendResearch.js";
-
-type SourceSearchBackground = SourceSearchSummary["background"];
-type SourceSearchGraphic = SourceSearchSummary["graphic"];
-type SourceSearchPhoto = SourceSearchSummary["photo"];
-type SourceSearchFont = SourceSearchSummary["font"];
 
 const replaceValue = <T>(defaultFactory: () => T) =>
   Annotation<T>({
@@ -76,7 +63,6 @@ export const RunJobGraphState = Annotation.Root({
   briefCompilationReportRef: replaceValue<string | null>(() => null),
   intent: replaceValue<CanonicalDesignBrief | null>(() => null),
   canonicalDesignBriefRef: replaceValue<string | null>(() => null),
-  templatePriorBundle: replaceValue<TemplatePriorBundle | null>(() => null),
   templatePriorBundleRef: replaceValue<string | null>(() => null),
   sceneRolePlan: replaceValue<SceneRolePlan | null>(() => null),
   sceneRolePlanRef: replaceValue<string | null>(() => null),
@@ -125,24 +111,13 @@ export const RunJobGraphState = Annotation.Root({
   assetPlanRef: replaceValue<string | null>(() => null),
   templatePriorSummary: replaceValue<TemplatePriorSummary | null>(() => null),
   templatePriorSummaryRef: replaceValue<string | null>(() => null),
-  searchProfile: replaceValue<SearchProfileArtifact | null>(() => null),
   searchProfileRef: replaceValue<string | null>(() => null),
-  retrievalStage: replaceValue<RetrievalStageResult | null>(() => null),
   retrievalStageRef: replaceValue<string | null>(() => null),
-  selectionPolicy: replaceValue<TemplateSelectionPolicy | null>(() => null),
-  candidateSets: replaceValue<TemplateCandidateBundle | null>(() => null),
   candidateSetRef: replaceValue<string | null>(() => null),
-  sourceSearchBackground: replaceValue<SourceSearchBackground | null>(() => null),
-  sourceSearchGraphic: replaceValue<SourceSearchGraphic | null>(() => null),
-  sourceSearchPhoto: replaceValue<SourceSearchPhoto | null>(() => null),
-  selectionDecision: replaceValue<SelectionDecision | null>(() => null),
   selectionDecisionRef: replaceValue<string | null>(() => null),
   concreteLayoutPlan: replaceValue<ConcreteLayoutPlan | null>(() => null),
   concreteLayoutPlanRef: replaceValue<string | null>(() => null),
-  typographyDecision: replaceValue<TypographyDecision | null>(() => null),
   typographyDecisionRef: replaceValue<string | null>(() => null),
-  typographySearchSummary: replaceValue<SourceSearchFont | null>(() => null),
-  sourceSearchSummary: replaceValue<SourceSearchSummary | null>(() => null),
   sourceSearchSummaryRef: replaceValue<string | null>(() => null),
   plan: replaceValue<ProcessRunJobResult["plan"] | null>(() => null),
   executablePlanRef: replaceValue<string | null>(() => null),

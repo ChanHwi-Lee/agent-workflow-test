@@ -2,28 +2,16 @@ import type {
   RunJobEnvelope,
   WaitMutationAckResponse,
 } from "@tooldi/agent-contracts";
-import type { AgentWorkerEnv } from "@tooldi/agent-config";
 
 import type {
   FinalizeRunDraft,
   JudgePlan,
   ProcessRunJobResult,
   RuleJudgeVerdict,
-  SelectionDecision,
-  SourceSearchSummary,
   StageAckRecord,
   MutationProposalDraft as WorkerMutationProposalDraft,
-  TypographyDecision,
   WorkflowVariant,
 } from "../types.js";
-import {
-  buildRepresentativeReadiness,
-} from "./representativeReadiness.js";
-
-type SourceSearchBackground = SourceSearchSummary["background"];
-type SourceSearchGraphic = SourceSearchSummary["graphic"];
-type SourceSearchPhoto = SourceSearchSummary["photo"];
-type SourceSearchFont = SourceSearchSummary["font"];
 
 const FINALIZE_ARTIFACT_REF_KEYS = [
   "briefCompilationReportRef",
@@ -70,7 +58,6 @@ type ArtifactRefState = {
   workflowVariant?: WorkflowVariant | null;
   ruleJudgeVerdict: RuleJudgeVerdict | null;
   judgePlan: JudgePlan | null;
-  sourceSearchSummary: SourceSearchSummary | null;
 } & Record<ResultArtifactRefKey, string | null>;
 
 export function buildHeartbeatBase(job: RunJobEnvelope) {
@@ -80,134 +67,6 @@ export function buildHeartbeatBase(job: RunJobEnvelope) {
     queueJobId: job.queueJobId,
     workerId: "agent-worker-langgraph",
   } as const;
-}
-
-export function buildSourceSearchSummary(
-  runId: string,
-  traceId: string,
-  sourceMode: AgentWorkerEnv["tooldiCatalogSourceMode"],
-  background: SourceSearchBackground,
-  graphic: SourceSearchGraphic,
-  photo: SourceSearchPhoto,
-  font: SourceSearchFont | undefined,
-  typographyDecision: TypographyDecision,
-  selectionDecision: SelectionDecision,
-  representativePathEnabled: boolean,
-): SourceSearchSummary {
-  return {
-    summaryId: `source_search_${runId}`,
-    runId,
-    traceId,
-    sourceMode,
-    background: {
-      ...background,
-      selectedAssetId: selectionDecision.selectedBackgroundAssetId,
-      selectedSerial: selectionDecision.selectedBackgroundSerial,
-      selectedCategory: selectionDecision.selectedBackgroundCategory,
-    },
-    graphic: {
-      ...graphic,
-      selectedAssetId: selectionDecision.selectedDecorationAssetId,
-      selectedSerial: selectionDecision.selectedDecorationSerial,
-      selectedCategory: selectionDecision.selectedDecorationCategory,
-    },
-    photo: {
-      ...photo,
-      selectedAssetId: selectionDecision.topPhotoAssetId,
-      selectedSerial: selectionDecision.topPhotoSerial,
-      selectedCategory: selectionDecision.topPhotoCategory,
-    },
-    font: font ?? {
-      family: "font",
-      queryAttempts: [],
-      returnedCount: 0,
-      filteredCount: 0,
-      fallbackUsed: true,
-      selectedAssetId: null,
-      selectedSerial: null,
-      selectedCategory: null,
-    },
-    representativeReadiness: buildRepresentativeReadiness(
-      selectionDecision,
-      typographyDecision,
-      representativePathEnabled,
-    ),
-  };
-}
-
-export function buildSelectionLogMessages(
-  sourceSearchSummary: SourceSearchSummary,
-  typographyDecision: TypographyDecision,
-  selectionDecision: SelectionDecision,
-): Array<{ level: "info" | "warn"; message: string }> {
-  if (sourceSearchSummary.sourceMode === "placeholder") {
-    return [];
-  }
-
-  const representativeReadiness = sourceSearchSummary.representativeReadiness;
-
-  return [
-    {
-      level: "info",
-      message:
-        sourceSearchSummary.background.selectedCategory === "generated_solid"
-          ? `[source/background] mode=generated_solid color=${selectionDecision.selectedBackgroundColorHex}`
-          : `[source/background] returned=${sourceSearchSummary.background.returnedCount} ` +
-            `selectedSerial=${sourceSearchSummary.background.selectedSerial ?? "n/a"} ` +
-            `kind=${sourceSearchSummary.background.selectedCategory ?? "n/a"}`,
-    },
-    {
-      level: "info",
-      message:
-        `[source/graphic] returned=${sourceSearchSummary.graphic.returnedCount} ` +
-        `selectedSerial=${sourceSearchSummary.graphic.selectedSerial ?? "n/a"} ` +
-        `category=${sourceSearchSummary.graphic.selectedCategory ?? "n/a"}`,
-    },
-    {
-      level:
-        sourceSearchSummary.photo.selectedSerial && sourceSearchSummary.photo.selectedCategory
-          ? "info"
-          : "warn",
-      message:
-        `[source/photo] returned=${sourceSearchSummary.photo.returnedCount} ` +
-        `selectedSerial=${sourceSearchSummary.photo.selectedSerial ?? "n/a"} ` +
-        `orientation=${sourceSearchSummary.photo.selectedCategory ?? "n/a"}`,
-    },
-    {
-      level: typographyDecision.fallbackUsed ? "warn" : "info",
-      message:
-        `[source/font] inventory=${typographyDecision.inventoryCount} ` +
-        `display=${typographyDecision.display?.fontToken ?? "fallback"} ` +
-        `body=${typographyDecision.body?.fontToken ?? "fallback"}`,
-    },
-    {
-      level:
-        representativeReadiness.overallStatus === "target_met"
-          ? "info"
-          : "warn",
-      message:
-        `[source/readiness] overall=${representativeReadiness.overallStatus} ` +
-        `graphic=${representativeReadiness.graphic.status} ` +
-        `font=${representativeReadiness.font.status}`,
-    },
-    {
-      level:
-        selectionDecision.photoBranchMode === "photo_selected" ? "info" : "warn",
-      message:
-        `[source/photo-branch] mode=${selectionDecision.photoBranchMode} ` +
-        `reason=${selectionDecision.photoBranchReason}`,
-    },
-    ...(selectionDecision.photoBranchMode === "photo_selected"
-      ? [
-          {
-            level: "info" as const,
-            message:
-              `[source/photo-execution] serial=${selectionDecision.topPhotoSerial ?? "n/a"} ` +
-              `url=${selectionDecision.topPhotoUrl ?? "n/a"} fit=cover crop=centered_cover`,
-          },
-        ]
-      : []),
-  ];
 }
 
 export function buildFinalizeOptions(

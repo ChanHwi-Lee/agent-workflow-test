@@ -18,12 +18,6 @@ import type {
   TemplateSemanticBriefContext,
   TemplateSemanticBriefDraft,
 } from "@tooldi/agent-llm";
-import type {
-  TemplateCandidateSet,
-  TooldiCatalogSourceErrorCode,
-  TooldiTemplateDocument,
-  TooldiCatalogSourceMode,
-} from "@tooldi/tool-adapters";
 
 export interface StoredRunSnapshot {
   editorContext: StartAgentWorkflowRunRequest["editorContext"];
@@ -66,7 +60,7 @@ export interface HydratedPlanningInput {
 
 export type WorkflowVariant = "object_native_v1";
 
-export type TemplateScaffoldLayoutMode =
+export type LayoutMode =
   | "copy_left_with_right_decoration"
   | "copy_left_with_right_photo"
   | "center_stack"
@@ -76,126 +70,32 @@ export type TemplateScaffoldLayoutMode =
   | "badge_promo_stack"
   | "framed_promo";
 
-export interface TemplatePriorScaffold {
-  scaffoldId: string;
-  sourceTemplateCode: string;
-  sourceTemplateSerial: string;
-  title: string;
-  canvasWidth: number | null;
-  canvasHeight: number | null;
-  backgroundMode: "image" | "color" | "pattern" | "gradient" | "unknown";
-  textObjectCount: number;
-  visualObjectCount: number;
-  groupObjectCount: number;
-  dominantObjectTypes: string[];
-  copyAnchor: "left" | "center";
-  visualAnchor: "right" | "center" | "background";
-  layoutFamilyHint:
-    | "promo_split"
-    | "promo_center"
-    | "promo_badge"
-    | "promo_frame"
-    | "subject_hero";
-  layoutModeHint: TemplateScaffoldLayoutMode;
-  primaryVisualFamilyHint: "graphic" | "photo";
-  summary: string;
-}
+export type TemplateBackgroundMode = "image" | "color" | "pattern" | "gradient" | "unknown";
 
-export interface TemplatePriorCandidate {
-  rank: number;
-  score: number;
-  deterministicScore: number;
-  geminiScore: number | null;
-  keep: boolean;
-  keepReason: string;
-  rejectReason: string | null;
-  matchedQueryLabels: string[];
-  templateAssetId: string;
-  templateSerial: string;
-  templateCode: string;
-  title: string;
-  categoryName: string | null;
-  width: number | null;
-  height: number | null;
-  pages: number;
-  keywordTokens: string[];
-  thumbnailUrl: string | null;
-  traceId: string | null;
-  fetchedDocument: TooldiTemplateDocument | null;
-  scaffold: TemplatePriorScaffold | null;
-}
+export type SourceBackgroundMode =
+  | "spring_pattern"
+  | "pastel_gradient"
+  | "spring_photo"
+  | "generated_solid";
 
-export interface TemplatePriorBundle {
-  bundleId: string;
-  runId: string;
-  traceId: string;
-  workflowVariant: "object_native_v1";
-  query: {
-    keyword: string;
-    canvas: "horizontal" | "vertical" | "square" | "";
-    requestedTopK: number;
-  };
-  queryPlan: Array<{
-    label: string;
-    keyword: string;
-  }>;
-  usedFallbackToLegacy: boolean;
-  fallbackReason: string | null;
-  selectedTemplateCode: string | null;
-  selectedTemplateTitle: string | null;
-  selectedScaffold: TemplatePriorScaffold | null;
-  candidates: TemplatePriorCandidate[];
-  diagnostics?: TemplatePriorDiagnostics;
-  summary: string;
-}
+export type GraphicDecorationMode =
+  | "graphic_cluster"
+  | "ribbon_badge"
+  | "photo_support"
+  | "promo_multi_graphic";
 
-export interface TemplatePriorQueryDiagnostic {
-  label: string;
-  keyword: string;
-  page: number;
-  status: "ok" | "error";
-  retrievedAssetCount: number;
-  traceId: string | null;
-  errorCode: TooldiCatalogSourceErrorCode | null;
-  errorMessage: string | null;
-  errorUrl: string | null;
-  errorStatus: number | null;
-  responsePreview: string | null;
-}
+export type PhotoOrientation = "portrait" | "landscape" | "square" | null;
 
-export interface TemplatePriorDiagnostics {
-  totalQueryCount: number;
-  successfulQueryCount: number;
-  failedQueryCount: number;
-  mergedCandidateCount: number;
-  keptCandidateCount: number;
-  rerankedCandidateCount: number;
-  queryDiagnostics: TemplatePriorQueryDiagnostic[];
-  vectorRecallDiagnostics?: VectorRecallDiagnostics;
-}
+export type PhotoBranchMode =
+  | "not_considered"
+  | "graphic_preferred"
+  | "photo_selected";
 
-export type VectorRecallDiagnostics =
-  | {
-      status: "executed";
-      topK: number;
-      candidateCount: number;
-      latencyMs: number;
-      error: null;
-    }
-  | {
-      status: "error";
-      topK: number;
-      candidateCount: 0;
-      latencyMs: number;
-      error: {
-        code: "timeout" | "transport" | "invalid_response";
-        message: string;
-      };
-    }
-  | {
-      status: "skipped";
-      reason: "canvas_out_of_r1_scope";
-    };
+export type ExecutionStrategy =
+  | "graphic_first_shape_text_group"
+  | "photo_hero_shape_text_group";
+
+export type GraphicDensity = "minimal" | "medium";
 
 export interface IntentConsistencyFlag {
   code: string;
@@ -389,7 +289,7 @@ export interface SceneLayoutPlan {
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
   layoutFamily: AbstractLayoutFamily;
-  layoutMode: SelectionDecision["layoutMode"];
+  layoutMode: LayoutMode;
   copyAnchor: AbstractLayoutCopyAnchor;
   visualAnchor: AbstractLayoutVisualAnchor;
   ctaAnchor: AbstractLayoutCtaAnchor;
@@ -442,7 +342,7 @@ export interface SceneStylePlan {
   workflowVariant: "object_native_v1";
   selectedTemplateCode: string;
   selectedTemplateTitle: string;
-  backgroundKind: TemplatePriorScaffold["backgroundMode"];
+  backgroundKind: TemplateBackgroundMode;
   palettePolicy: ScenePalettePolicy;
   typographyPolicy: SceneTypographyPolicy;
   motifTags: SceneMotifTag[];
@@ -523,7 +423,7 @@ export interface ConcreteLayoutPlan {
   abstractLayoutFamily: AbstractLayoutFamily;
   resolvedSlotTopology: AbstractLayoutSlotTopology;
   primaryVisualFamily: "graphic" | "photo";
-  resolvedLayoutMode: SelectionDecision["layoutMode"];
+  resolvedLayoutMode: LayoutMode;
   slotAnchors: Partial<Record<CopyPlanSlotKey, ConcreteLayoutAnchorZone>>;
   resolvedSlotBounds: Partial<Record<ExecutionSlotKey, LayoutBounds>>;
   headlineEstimatedHeight: number;
@@ -883,40 +783,7 @@ export interface AssetBackgroundBinding {
   sourceSerial: string | null;
   sourceCategory: string | null;
   colorHex: string;
-  backgroundMode: SelectionDecision["backgroundMode"];
-}
-
-export type RepresentativeReadinessStatus =
-  | "target_met"
-  | "degraded"
-  | "failed"
-  | "not_applicable";
-
-export interface RepresentativeReadinessSummary {
-  path: "generic_promo_phase6";
-  overallStatus: RepresentativeReadinessStatus;
-  background: {
-    status: "not_applicable";
-    mode: "generated_solid";
-    colorHex: string;
-    reasonCodes: string[];
-  };
-  graphic: {
-    status: "target_met" | "degraded" | "failed";
-    targetRequired: 2;
-    minimumRequired: 1;
-    materializedRealCount: number;
-    reasonCodes: string[];
-  };
-  font: {
-    status: "target_met" | "degraded" | "failed";
-    targetRequired: "display_and_body";
-    minimumRequired: 1;
-    displayRealSelected: boolean;
-    bodyRealSelected: boolean;
-    realSelectionCount: number;
-    reasonCodes: string[];
-  };
+  backgroundMode: SourceBackgroundMode;
 }
 
 export interface GraphicRoleBinding {
@@ -926,7 +793,7 @@ export interface GraphicRoleBinding {
   sourceSerial: string | null;
   sourceCategory: string | null;
   variantKey: string;
-  decorationMode: GraphicCompositionEntry["decorationMode"];
+  decorationMode: GraphicDecorationMode;
   required: boolean;
   zonePreference: ConcreteLayoutClusterZone;
 }
@@ -940,7 +807,7 @@ export interface PhotoBinding {
   sourceOriginUrl: string | null;
   sourceWidth: number | null;
   sourceHeight: number | null;
-  orientation: SelectionDecision["topPhotoOrientation"];
+  orientation: PhotoOrientation;
   fitMode: "cover";
   cropMode: "centered_cover";
   required: boolean;
@@ -963,83 +830,6 @@ export interface AssetPlan {
   summary: string;
 }
 
-export interface TemplateCandidateBundle {
-  background: TemplateCandidateSet;
-  layout: TemplateCandidateSet;
-  decoration: TemplateCandidateSet;
-  photo: TemplateCandidateSet;
-}
-
-export interface SourceSearchQueryAttempt {
-  label: string;
-  query: Record<string, string | number | boolean | null>;
-  returnedCount: number;
-}
-
-export interface SourceSearchFamilySummary {
-  family: "background" | "graphic" | "photo" | "font";
-  queryAttempts: SourceSearchQueryAttempt[];
-  returnedCount: number;
-  filteredCount: number;
-  fallbackUsed: boolean;
-  selectedAssetId: string | null;
-  selectedSerial: string | null;
-  selectedCategory: string | null;
-}
-
-export interface SourceSearchSummary {
-  summaryId: string;
-  runId: string;
-  traceId: string;
-  sourceMode: TooldiCatalogSourceMode;
-  background: SourceSearchFamilySummary;
-  graphic: SourceSearchFamilySummary;
-  photo: SourceSearchFamilySummary;
-  font: SourceSearchFamilySummary;
-  representativeReadiness: RepresentativeReadinessSummary;
-}
-
-export interface TypographyChoice {
-  fontAssetId: string;
-  fontSerial: string;
-  fontName: string;
-  fontCategory: string;
-  fontFace: string;
-  fontToken: string;
-  fontWeight: number;
-}
-
-export interface TypographyDecision {
-  decisionId: string;
-  runId: string;
-  traceId: string;
-  sourceMode: TooldiCatalogSourceMode;
-  inventoryCount: number;
-  fallbackUsed: boolean;
-  display: TypographyChoice | null;
-  body: TypographyChoice | null;
-  matchedTemplateFontFamily: string | null;
-  appliedTone: SceneTypographyTone | null;
-  summary: string;
-}
-
-export interface RetrievalStageResult {
-  retrievalMode: "none";
-  status: "disabled";
-  allowedSourceFamilies: Array<
-    "background_source" | "graphic_source" | "photo_source" | "template_source"
-  >;
-  augmentationCount: number;
-  reason: string;
-}
-
-export interface TemplateSelectionPolicy {
-  allowedToolNames: string[];
-  allowPhotoCandidates: boolean;
-  allowTemplateSource: boolean;
-  retrievalMode: RetrievalStageResult["retrievalMode"];
-}
-
 export interface CompositionBrief {
   briefId: string;
   runId: string;
@@ -1052,7 +842,7 @@ export interface CompositionBrief {
   offerIntent: NormalizedIntent["offerIntent"];
   layoutIntent: NormalizedIntent["layoutIntent"];
   primaryVisualPolicy: NormalizedIntent["primaryVisualPolicy"];
-  preferredLayoutModes: SelectionDecision["layoutMode"][];
+  preferredLayoutModes: LayoutMode[];
   summary: string;
 }
 
@@ -1078,8 +868,8 @@ export type CompositionVariantCopyExpressionProfile =
 
 export interface CompositionVariant {
   variantId: string;
-  familyKey: SelectionDecision["layoutMode"];
-  layoutMode: SelectionDecision["layoutMode"];
+  familyKey: LayoutMode;
+  layoutMode: LayoutMode;
   variantSignature: string;
   layoutCandidateId: string;
   backgroundCandidateId: string;
@@ -1089,7 +879,7 @@ export interface CompositionVariant {
   familyVariantRank: number;
   layoutFitScore: number;
   spacingIntent: AbstractLayoutDensity;
-  accentDensity: GraphicCompositionSet["density"];
+  accentDensity: GraphicDensity;
   ctaTreatment: "standard" | "badge_forward" | "photo_support" | "framed";
   copyDensity: CompositionVariantCopyDensity;
   headlineEmphasis: CompositionVariantHeadlineEmphasis;
@@ -1098,8 +888,8 @@ export interface CompositionVariant {
   negativeSpaceBias: CompositionVariantNegativeSpaceBias;
   badgeProminence: CompositionVariantBadgeProminence;
   copyExpressionProfile: CompositionVariantCopyExpressionProfile;
-  photoMode: SelectionDecision["photoBranchMode"];
-  executionStrategy: SelectionDecision["executionStrategy"];
+  photoMode: PhotoBranchMode;
+  executionStrategy: ExecutionStrategy;
   validation: {
     status: "valid" | "invalid";
     reasons: string[];
@@ -1118,7 +908,7 @@ export interface CompositionVariantSet {
 
 export interface CompositionVariantScore {
   variantId: string;
-  familyKey: SelectionDecision["layoutMode"];
+  familyKey: LayoutMode;
   variantSignature: string;
   totalScore: number;
   briefAlignmentScore: number;
@@ -1135,7 +925,7 @@ export interface CompositionRanking {
   runId: string;
   traceId: string;
   winnerVariantId: string;
-  winnerFamilyKey: SelectionDecision["layoutMode"];
+  winnerFamilyKey: LayoutMode;
   scores: CompositionVariantScore[];
   rankingCriteria: Array<
     | "brief_alignment"
@@ -1148,102 +938,6 @@ export interface CompositionRanking {
   summary: string;
 }
 
-export interface SearchProfileArtifact {
-  profileId: string;
-  runId: string;
-  traceId: string;
-  templateKind: NormalizedIntent["templateKind"];
-  domain: NormalizedIntent["domain"];
-  audience: NormalizedIntent["audience"];
-  campaignGoal: NormalizedIntent["campaignGoal"];
-  canvasPreset: NormalizedIntent["canvasPreset"];
-  layoutIntent: NormalizedIntent["layoutIntent"];
-  tone: NormalizedIntent["tone"];
-  assetPolicy: NormalizedIntent["assetPolicy"];
-  searchKeywords: string[];
-  facets: NormalizedIntent["facets"];
-  summary: string;
-  background: {
-    objective: string;
-    rationale: string;
-    sourceMode: "generated_solid";
-    colorHex: string;
-    queries: Array<{
-      label: string;
-      type: "pattern" | "image";
-      keyword: string | null;
-      source: "initial_load" | "search";
-    }>;
-  };
-  graphic: {
-    objective: string;
-    rationale: string;
-    queries: Array<{
-      label: string;
-      keyword: string | null;
-      theme: string | null;
-      type: "vector" | "bitmap" | null;
-      method: "ai" | "creator" | null;
-      price: "free" | "paid" | null;
-      ownerBias: "follow" | null;
-      categoryName: string | null;
-      transportApplied: {
-        keyword: boolean;
-        theme: boolean;
-        type: boolean;
-        method: boolean;
-        price: boolean;
-        owner: boolean;
-        categoryName: boolean;
-      };
-    }>;
-  };
-  photo: {
-    enabled: boolean;
-    objective: string;
-    rationale: string;
-    orientationHint: "portrait" | "landscape" | "square" | null;
-    queries: Array<{
-      label: string;
-      keyword: string | null;
-      theme: string | null;
-      type: "pic" | "rmbg" | null;
-      format: "square" | "horizontal" | "vertical" | null;
-      price: "free" | "paid" | null;
-      ownerBias: "follow" | null;
-      source: "initial_load" | "search";
-      transportApplied: {
-        keyword: boolean;
-        theme: boolean;
-        type: boolean;
-        format: boolean;
-        price: boolean;
-        owner: boolean;
-        source: boolean;
-      };
-    }>;
-  };
-  font: {
-    objective: string;
-    rationale: string;
-    sourceSurface: "Editor::loadFont";
-    typographyHint: string | null;
-    language: {
-      value: "KOR";
-      rationale: string;
-    };
-    category: {
-      attempts: Array<"고딕" | "명조" | "손글씨">;
-      rationale: string;
-    };
-    weight: {
-      displayTarget: number;
-      bodyTarget: number | null;
-      rationale: string;
-    };
-  };
-}
-
 export type GraphicCompositionRole =
   | "primary_accent"
   | "cta_container"
@@ -1251,93 +945,6 @@ export type GraphicCompositionRole =
   | "corner_accent"
   | "badge_or_ribbon"
   | "frame";
-
-export interface GraphicCompositionEntry {
-  role: GraphicCompositionRole;
-  candidateId: string;
-  sourceAssetId: string | null;
-  sourceSerial: string | null;
-  sourceCategory: string | null;
-  variantKey: string;
-  decorationMode:
-    | "graphic_cluster"
-    | "ribbon_badge"
-    | "photo_support"
-    | "promo_multi_graphic";
-}
-
-export interface GraphicCompositionSet {
-  density: "minimal" | "medium";
-  roles: GraphicCompositionEntry[];
-  summary: string;
-}
-
-export interface SelectionDecision {
-  decisionId: string;
-  runId: string;
-  traceId: string;
-  retrievalMode: "none";
-  compareCriteria: Array<
-    | "seasonalFit"
-    | "readabilitySupport"
-    | "ctaVisibilitySupport"
-    | "layoutCompatibility"
-    | "executionSimplicity"
-    | "fallbackSafety"
-    | "focalSafety"
-    | "cropSafety"
-    | "copySeparationSupport"
-  >;
-  selectedBackgroundCandidateId: string;
-  selectedLayoutCandidateId: string;
-  selectedDecorationCandidateId: string;
-  topPhotoCandidateId: string | null;
-  selectedBackgroundAssetId: string | null;
-  selectedBackgroundSerial: string | null;
-  selectedBackgroundCategory: string | null;
-  selectedBackgroundColorHex: string;
-  selectedDecorationAssetId: string | null;
-  selectedDecorationSerial: string | null;
-  selectedDecorationCategory: string | null;
-  topPhotoAssetId: string | null;
-  topPhotoSerial: string | null;
-  topPhotoCategory: string | null;
-  topPhotoUid: string | null;
-  topPhotoUrl: string | null;
-  topPhotoWidth: number | null;
-  topPhotoHeight: number | null;
-  topPhotoOrientation: "portrait" | "landscape" | "square" | null;
-  backgroundMode:
-    | "spring_pattern"
-    | "pastel_gradient"
-    | "spring_photo"
-    | "generated_solid";
-  layoutMode:
-    | "copy_left_with_right_decoration"
-    | "copy_left_with_right_photo"
-    | "center_stack"
-    | "badge_led"
-    | "left_copy_right_graphic"
-    | "center_stack_promo"
-    | "badge_promo_stack"
-    | "framed_promo";
-  decorationMode:
-    | "graphic_cluster"
-    | "ribbon_badge"
-    | "photo_support"
-    | "promo_multi_graphic";
-  photoBranchMode:
-    | "not_considered"
-    | "graphic_preferred"
-    | "photo_selected";
-  photoBranchReason: string;
-  executionStrategy:
-    | "graphic_first_shape_text_group"
-    | "photo_hero_shape_text_group";
-  graphicCompositionSet: GraphicCompositionSet | null;
-  summary: string;
-  fallbackSummary: string;
-}
 
 export type RuleJudgeIssueCode =
   | "typography_fallback"
@@ -1622,7 +1229,6 @@ export interface ProcessRunJobResult {
   intent: CanonicalDesignBrief;
   semanticBriefDraft?: SemanticBriefDraftArtifact;
   intentNormalizationReport?: IntentNormalizationReport;
-  templatePriorBundle?: TemplatePriorBundle;
   sceneRolePlan?: SceneRolePlan;
   sceneLayoutPlan?: SceneLayoutPlan;
   sceneStylePlan?: SceneStylePlan;
@@ -1637,12 +1243,6 @@ export interface ProcessRunJobResult {
   assetPlan?: AssetPlan;
   concreteLayoutPlan?: ConcreteLayoutPlan;
   templatePriorSummary?: TemplatePriorSummary;
-  searchProfile?: SearchProfileArtifact;
-  candidateSets?: TemplateCandidateBundle;
-  sourceSearchSummary?: SourceSearchSummary;
-  retrievalStage?: RetrievalStageResult;
-  selectionDecision?: SelectionDecision;
-  typographyDecision?: TypographyDecision;
   ruleJudgeVerdict?: RuleJudgeVerdict;
   executionSceneSummary?: ExecutionSceneSummary;
   judgePlan?: JudgePlan;

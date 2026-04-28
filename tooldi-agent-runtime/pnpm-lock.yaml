@@ -75,6 +75,9 @@ importers:
 
   apps/agent-worker:
     dependencies:
+      '@langchain/google-genai':
+        specifier: ^2.1.26
+        version: 2.1.26(@langchain/core@1.1.39(openai@6.33.0(zod@4.3.6)))
       '@tooldi/agent-config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -99,9 +102,6 @@ importers:
       '@tooldi/agent-testkit':
         specifier: workspace:*
         version: link:../../packages/testkit
-      '@tooldi/tool-adapters':
-        specifier: workspace:*
-        version: link:../../packages/tool-adapters
       bullmq:
         specifier: ^5.73.0
         version: 5.73.0
@@ -123,6 +123,9 @@ importers:
       playwright:
         specifier: ^1.59.0
         version: 1.59.1
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@types/pg':
         specifier: 8.20.0
@@ -216,8 +219,6 @@ importers:
       '@tooldi/agent-persistence':
         specifier: workspace:*
         version: link:../persistence
-
-  packages/tool-adapters: {}
 
 packages:
 

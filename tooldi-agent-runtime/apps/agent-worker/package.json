@@ -13,6 +13,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@langchain/google-genai": "^2.1.26",
     "@tooldi/agent-llm": "workspace:*",
     "@tooldi/agent-graph": "workspace:*",
     "@tooldi/agent-config": "workspace:*",
@@ -21,14 +22,14 @@
     "@tooldi/agent-observability": "workspace:*",
     "@tooldi/agent-persistence": "workspace:*",
     "@tooldi/agent-testkit": "workspace:*",
-    "@tooldi/tool-adapters": "workspace:*",
     "bullmq": "^5.73.0",
     "domhandler": "^5.0.3",
     "drizzle-orm": "0.45.2",
     "htmlparser2": "^10.1.0",
     "ioredis": "^5.10.1",
     "pg": "8.20.0",
-    "playwright": "^1.59.0"
+    "playwright": "^1.59.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/pg": "8.20.0"

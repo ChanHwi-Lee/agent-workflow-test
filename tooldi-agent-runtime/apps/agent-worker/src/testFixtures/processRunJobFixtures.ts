@@ -354,7 +354,6 @@ export class TrackingObjectStoreClient implements ObjectStoreClient {
 }
 
 const LEGACY_BUILD_OR_REFINEMENT_RESULT_KEYS = [
-  "templatePriorBundle",
   "sceneRolePlan",
   "sceneLayoutPlan",
   "sceneStylePlan",
@@ -369,12 +368,6 @@ const LEGACY_BUILD_OR_REFINEMENT_RESULT_KEYS = [
   "assetPlan",
   "concreteLayoutPlan",
   "templatePriorSummary",
-  "searchProfile",
-  "candidateSets",
-  "sourceSearchSummary",
-  "retrievalStage",
-  "selectionDecision",
-  "typographyDecision",
   "ruleJudgeVerdict",
   "executionSceneSummary",
   "judgePlan",
