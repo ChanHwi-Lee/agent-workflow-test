@@ -14,7 +14,6 @@ import type {
 } from "@tooldi/agent-contracts";
 import type {
   TemplateAbstractLayoutDraft,
-  TemplateAssetPolicy,
   TemplateCopyPlanDraft,
   TemplateSemanticBriefContext,
   TemplateSemanticBriefDraft,
@@ -102,8 +101,6 @@ export interface TemplatePriorScaffold {
   summary: string;
 }
 
-export type TemplateRecallSource = "legacy_keyword" | "vector_image";
-
 export interface TemplatePriorCandidate {
   rank: number;
   score: number;
@@ -126,13 +123,6 @@ export interface TemplatePriorCandidate {
   traceId: string | null;
   fetchedDocument: TooldiTemplateDocument | null;
   scaffold: TemplatePriorScaffold | null;
-  /**
-   * R1 addition. Marks which recall source surfaced this candidate.
-   * Absent on pre-R1 fixtures; runtime callers should treat `undefined`
-   * as `["legacy_keyword"]` (the pre-R1 default behavior). Populated
-   * consistently by `buildTemplatePriorBundle`.
-   */
-  recallSources?: TemplateRecallSource[];
 }
 
 export interface TemplatePriorBundle {
@@ -1466,7 +1456,6 @@ export interface RuleJudgeIssueMetadata {
   repairOutcome?: "not_attempted" | "repaired" | "warning_only" | "irrecoverable";
   evidenceRefs?: string[];
   contextRefs?: string[];
-  legacyAliases?: string[];
 }
 
 export interface RuleJudgeIssue {
