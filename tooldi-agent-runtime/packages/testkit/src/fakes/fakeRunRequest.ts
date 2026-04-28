@@ -7,6 +7,7 @@ export function createFakeRunRequest(
     clientRequestId: "client-request-1",
     editorSessionId: "editor-session-1",
     surface: "toolditor",
+    workflowVariant: "object_native_v1",
     userInput: {
       prompt: "봄 세일 프로모션 템플릿을 만들어줘",
       locale: "ko-KR",

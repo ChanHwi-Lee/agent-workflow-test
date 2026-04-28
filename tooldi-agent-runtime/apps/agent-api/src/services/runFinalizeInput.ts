@@ -123,7 +123,7 @@ export function normalizeFinalizeInput(
       refineDecisionRef: request.refineDecisionRef ?? null,
       sourceMutationRange: request.sourceMutationRange,
       latestSaveEvidence: request.latestSaveEvidence ?? null,
-      latestSaveReceipt: request.latestSaveReceipt ?? null,
+      latestSaveReceipt: request.latestSaveReceipt,
     },
   };
 }
@@ -134,8 +134,7 @@ function hasCompleteSaveEvidence(
 ): boolean {
   return (
     (request.latestSaveEvidence ?? null) !== null &&
-    ((request.latestSaveReceipt ?? null) !== null ||
-      result.latestSaveReceiptId !== null) &&
+    request.latestSaveReceipt !== null &&
     result.finalRevision !== null
   );
 }

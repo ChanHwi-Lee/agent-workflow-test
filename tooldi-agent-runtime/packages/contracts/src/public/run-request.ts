@@ -45,9 +45,7 @@ export const StartAgentWorkflowRunRequestSchema = Type.Object(
     clientRequestId: IdentifierSchema,
     editorSessionId: IdentifierSchema,
     surface: Type.String({ minLength: 1 }),
-    workflowVariant: Type.Optional(
-      Type.Literal("object_native_v1"),
-    ),
+    workflowVariant: Type.Literal("object_native_v1"),
     userInput: Type.Object(
       {
         prompt: Type.String({ minLength: 1 }),

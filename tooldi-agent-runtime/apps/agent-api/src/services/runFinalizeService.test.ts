@@ -92,7 +92,6 @@ function createFinalizeRequest(overrides: Partial<RunFinalizeRequest> = {}): Run
       savedAt: "2026-04-10T02:42:19.000Z",
       reason: "run_completed",
     },
-    latestSaveReceiptId: "save-receipt-1",
     outputTemplateCode: "template_draft_run-1",
     canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
     templatePriorSummaryRef: "runs/run-1/attempts/1/template-prior-summary.json",
@@ -447,7 +446,7 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
           modified: "2026-04-10T02:42:19.000Z",
           version: "2",
         },
-        latestSaveReceiptId: "save-receipt-1",
+        latestSaveReceiptId: null,
         warningCount: 0,
         fallbackCount: 0,
         warnings: [],
@@ -579,7 +578,6 @@ test("normalizeFinalizeInput downgrades completed runs when save receipt is miss
   const normalized = normalizeFinalizeInput({
     request: createFinalizeRequest({
       latestSaveReceipt: null,
-      latestSaveReceiptId: null,
     }),
     result: {
       finalStatus: "completed",
@@ -849,7 +847,7 @@ test("RunFinalizeService accepts object-native completed runs without slotBindin
           modified: "2026-04-15T07:35:58.000Z",
           version: "2",
         },
-        latestSaveReceiptId: "save-receipt-object-native-1",
+        latestSaveReceiptId: null,
         warningCount: 0,
         fallbackCount: 0,
         warnings: [],
@@ -870,7 +868,6 @@ test("RunFinalizeService accepts object-native completed runs without slotBindin
           savedAt: "2026-04-15T07:35:58.000Z",
           reason: "run_completed",
         },
-        latestSaveReceiptId: "save-receipt-object-native-1",
         outputTemplateCode: "template_draft_run-object-native",
       },
       at: now,
@@ -1067,7 +1064,7 @@ test("RunFinalizeService rejects completed runs with no live draft layers", asyn
           modified: "2026-04-15T08:00:00.000Z",
           version: "2",
         },
-        latestSaveReceiptId: "save-receipt-no-draft-1",
+        latestSaveReceiptId: null,
         warningCount: 0,
         fallbackCount: 0,
         warnings: [],
@@ -1090,7 +1087,6 @@ test("RunFinalizeService rejects completed runs with no live draft layers", asyn
           savedAt: "2026-04-15T08:00:00.000Z",
           reason: "run_completed",
         },
-        latestSaveReceiptId: "save-receipt-no-draft-1",
         outputTemplateCode: "template_draft_run-no-draft",
         canonicalDesignBriefRef:
           "runs/run-no-draft/attempts/1/canonical-design-brief.json",

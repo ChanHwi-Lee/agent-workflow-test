@@ -60,7 +60,7 @@ export class RunBootstrapService {
   private static readonly ENQUEUE_TIMEOUT_MS = 2000;
 
   async startRun(command: StartRunCommand): Promise<RunAccepted> {
-    const request = this.normalizeRequest(command.request);
+    const request = command.request;
     this.assertCreateFromEmptyCanvasPolicy(request);
 
     const startedAt = now();
@@ -249,22 +249,11 @@ export class RunBootstrapService {
     }
   }
 
-  private normalizeRequest(
-    request: StartAgentWorkflowRunRequest,
-  ): StartAgentWorkflowRunRequest {
-    return request.workflowVariant === "object_native_v1"
-      ? request
-      : {
-          ...request,
-          workflowVariant: "object_native_v1",
-        };
-  }
-
   private buildDedupeKey(request: StartAgentWorkflowRunRequest): string {
     return [
       request.editorSessionId,
       "create_from_empty_canvas",
-      request.workflowVariant ?? "object_native_v1",
+      request.workflowVariant,
       request.editorContext.documentId,
       request.editorContext.pageId,
       request.clientRequestId,

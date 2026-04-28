@@ -129,7 +129,7 @@ test("object_native_v1 routes through v6 createLayer + save/finalize and bypasse
   assert.equal(callbackClient.finalizations.length, 1);
   assert.equal(callbackClient.finalizations[0]?.finalStatus, "completed");
   assert.match(
-    callbackClient.finalizations[0]?.latestSaveReceiptId ?? "",
+    callbackClient.finalizations[0]?.latestSaveReceipt?.saveReceiptId ?? "",
     new RegExp(`^save_receipt_${testRun.runId}_`),
   );
 

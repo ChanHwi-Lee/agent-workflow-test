@@ -60,6 +60,7 @@ function createStartRunRequest(
     clientRequestId: "client-request-1",
     editorSessionId: "editor-session-1",
     surface: "toolditor",
+    workflowVariant: "object_native_v1",
     userInput: {
       prompt: "봄 세일 이벤트 배너 만들어줘",
       locale: "ko-KR",
@@ -477,7 +478,13 @@ test("stale attempt is rejected and finalize is idempotent", async (t) => {
       modified: "2026-04-10T02:42:19.000Z",
       version: "2",
     },
-    latestSaveReceiptId: `save_receipt_${accepted.runId}`,
+    latestSaveReceipt: {
+      saveReceiptId: `save_receipt_${accepted.runId}`,
+      outputTemplateCode: `template_draft_${accepted.runId}`,
+      savedRevision: 1,
+      savedAt: "2026-04-10T02:42:19.000Z",
+      reason: "run_completed",
+    },
     outputTemplateCode: `template_draft_${accepted.runId}`,
     createdLayerIds: [],
     updatedLayerIds: [],

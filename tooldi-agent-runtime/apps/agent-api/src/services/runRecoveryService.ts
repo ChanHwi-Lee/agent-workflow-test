@@ -303,19 +303,6 @@ export class RunRecoveryService {
           receivedAt,
         );
         break;
-      case "tool.result":
-        await this.runEventService.appendLog(
-          command.runId,
-          command.traceId,
-          command.event.status === "failed"
-            ? command.event.retryable
-              ? "warn"
-              : "error"
-            : "info",
-          `Tool ${command.event.toolName} ${command.event.status} (${command.event.durationMs}ms)`,
-          receivedAt,
-        );
-        break;
       case "mutation.proposed": {
         this.assertMutationProposalConsistency(
           command.runId,

@@ -92,47 +92,6 @@ const WorkerAppendEventSchema = Type.Union([
   ),
   Type.Object(
     {
-      type: Type.Literal("tool.result"),
-      toolName: Type.String({ minLength: 1 }),
-      durationMs: Type.Integer({ minimum: 0 }),
-      status: Type.Union(["succeeded", "failed"].map((value) => Type.Literal(value))),
-      retryable: Type.Boolean(),
-      usage: Type.Optional(
-        Type.Object(
-          {
-            meteringClass: Type.Union(
-              [
-                "provider_actual",
-                "provider_units_estimated",
-                "internal_metered_unpriced",
-                "nonbillable",
-              ].map((value) => Type.Literal(value)),
-            ),
-            costState: Type.Union(
-              ["estimated", "final", "unpriced", "unknown"].map((value) =>
-                Type.Literal(value),
-              ),
-            ),
-            pricingVersion: Type.Optional(Type.String({ minLength: 1 })),
-            invocationCount: Type.Integer({ minimum: 1 }),
-            inputTokens: Type.Optional(Type.Integer({ minimum: 0 })),
-            outputTokens: Type.Optional(Type.Integer({ minimum: 0 })),
-            cachedInputTokens: Type.Optional(Type.Integer({ minimum: 0 })),
-            reasoningTokens: Type.Optional(Type.Integer({ minimum: 0 })),
-            generatedImageCount: Type.Optional(Type.Integer({ minimum: 0 })),
-            generatedImagePixels: Type.Optional(Type.Integer({ minimum: 0 })),
-            inputBytes: Type.Optional(Type.Integer({ minimum: 0 })),
-            outputBytes: Type.Optional(Type.Integer({ minimum: 0 })),
-            usd: Type.Optional(Type.Union([Type.Number({ minimum: 0 }), Type.Null()])),
-          },
-          { additionalProperties: false },
-        ),
-      ),
-    },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    {
       type: Type.Literal("mutation.proposed"),
       mutationId: IdentifierSchema,
       dependsOnSeq: Type.Optional(Type.Integer({ minimum: 1 })),
@@ -223,11 +182,8 @@ export const RunFinalizeRequestSchema = Type.Object(
     latestSaveEvidence: Type.Optional(
       Type.Union([TemplateSaveEvidenceSchema, Type.Null()]),
     ),
-    latestSaveReceipt: Type.Optional(
-      Type.Union([TemplateSaveReceiptSchema, Type.Null()]),
-    ),
+    latestSaveReceipt: Type.Union([TemplateSaveReceiptSchema, Type.Null()]),
     lastAckedSeq: Type.Integer({ minimum: 0 }),
-    latestSaveReceiptId: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
     outputTemplateCode: Type.Optional(
       Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
     ),

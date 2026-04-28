@@ -90,6 +90,7 @@ function createRequest(): StartAgentWorkflowRunRequest {
     clientRequestId: "client-request-1",
     editorSessionId: "editor-session-1",
     surface: "toolditor",
+    workflowVariant: "object_native_v1",
     userInput: {
       prompt: "봄 세일 배너를 만들어줘",
       locale: "ko-KR",
@@ -191,7 +192,7 @@ test("RunBootstrapService closes initial queue publish failure without creating 
     const dedupeKey = [
       request.editorSessionId,
       "create_from_empty_canvas",
-      request.workflowVariant ?? "object_native_v1",
+      request.workflowVariant,
       request.editorContext.documentId,
       request.editorContext.pageId,
       request.clientRequestId,

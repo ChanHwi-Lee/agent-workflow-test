@@ -65,8 +65,7 @@ function toAgentRunResultSummary(request: RunFinalizeRequest): AgentRunResultSum
         ]
       : []);
 
-  const latestSaveReceiptId =
-    request.latestSaveReceiptId ?? request.latestSaveReceipt?.saveReceiptId ?? null;
+  const latestSaveReceiptId = request.latestSaveReceipt?.saveReceiptId ?? null;
 
   return {
     finalStatus: request.finalStatus,

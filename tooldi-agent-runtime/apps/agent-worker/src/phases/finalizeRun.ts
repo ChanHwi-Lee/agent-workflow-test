@@ -146,7 +146,6 @@ export async function finalizeRun(
       latestSaveEvidence,
       latestSaveReceipt,
       lastAckedSeq,
-      latestSaveReceiptId: latestSaveReceipt?.saveReceiptId ?? null,
       outputTemplateCode: latestSaveReceipt?.outputTemplateCode ?? null,
       ...(options.canonicalDesignBriefRef
         ? { canonicalDesignBriefRef: options.canonicalDesignBriefRef }
