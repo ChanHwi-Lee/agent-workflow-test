@@ -403,6 +403,44 @@ test("backend authors mutation seq and ack wait route reflects dispatched then a
   });
 });
 
+test("public cancel route는 active run에 cancel_requested event를 남긴다", async (t) => {
+  const app = await buildIsolatedApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const { accepted } = await startRun(app);
+
+  const response = await app.inject({
+    method: "POST",
+    url: `/api/agent-workflow/runs/${accepted.runId}/cancel`,
+    payload: {
+      traceId: accepted.traceId,
+      reason: "user_stop",
+    },
+  });
+
+  assert.equal(response.statusCode, 202);
+  const body = response.json() as {
+    runId: string;
+    status: "cancel_requested";
+    requestedAt: string;
+  };
+  assert.equal(body.runId, accepted.runId);
+  assert.equal(body.status, "cancel_requested");
+  assert.match(body.requestedAt, /^\d{4}-\d{2}-\d{2}T/);
+
+  const events = await app.services.runEventService.listAfter(accepted.runId);
+  assert.equal(
+    events.some(
+      (event) =>
+        event.event.type === "run.cancel_requested" &&
+        event.event.reason === "user_stop",
+    ),
+    true,
+  );
+});
+
 test("stale attempt is rejected and finalize is idempotent", async (t) => {
   const app = await buildIsolatedApp();
   t.after(async () => {
