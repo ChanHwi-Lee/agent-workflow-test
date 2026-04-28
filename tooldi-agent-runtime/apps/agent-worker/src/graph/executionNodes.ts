@@ -33,7 +33,6 @@ type PrepareExecutionTasks = Pick<
 
 export async function prepareExecutionNode(
   state: RunJobGraphStateType,
-  dependencies: Pick<RunJobGraphDependencies, "textLayoutHelper">,
   tasks: PrepareExecutionTasks,
 ) {
   const {
@@ -156,9 +155,7 @@ export async function prepareExecutionNode(
       }
     : state.adaptiveSkeletonBatch
       ? state.adaptiveSkeletonBatch
-      : await emitSkeletonMutations(state.hydrated, state.intent, state.plan, {
-          textLayoutHelper: dependencies.textLayoutHelper,
-        });
+      : await emitSkeletonMutations(state.hydrated, state.intent, state.plan);
 
   return {
     cooperativeStopRequested,
@@ -187,7 +184,7 @@ export async function prepareExecutionNode(
 
 export function registerExecutionNodes(
   graph: StateGraph<typeof RunJobGraphState>,
-  dependencies: RunJobGraphDependencies,
+  _dependencies: RunJobGraphDependencies,
   tasks: ReturnType<typeof createRunJobGraphTasks>,
 ) {
   const {
@@ -198,7 +195,7 @@ export function registerExecutionNodes(
 
   return graph
     .addNode("prepare_execution", async (state) =>
-      prepareExecutionNode(state, dependencies, {
+      prepareExecutionNode(state, {
         heartbeatTask,
         appendEventTask,
       }),

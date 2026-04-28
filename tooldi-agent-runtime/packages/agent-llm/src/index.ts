@@ -52,11 +52,3 @@ export {
   templateAssetPolicyPrefersPhoto,
   templateAssetPolicyPenaltyForFamily,
 } from "./templatePlannerAssetPolicy.js";
-export {
-  structuredOutputProviders,
-  createStructuredOutputModel,
-} from "./structuredOutputModel.js";
-export type {
-  StructuredOutputProvider,
-  StructuredOutputModel,
-} from "./structuredOutputModel.js";

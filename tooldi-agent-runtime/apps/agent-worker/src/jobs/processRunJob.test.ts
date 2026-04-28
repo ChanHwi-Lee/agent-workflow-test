@@ -13,11 +13,6 @@ import {
   createProcessRunJobTestEnv,
   seedRunInputArtifacts,
 } from "../testFixtures/processRunJobFixtures.js";
-import { createAssetStorageClient } from "../tools/adapters/assetStorageAdapter.js";
-import { createImagePrimitiveClient } from "../tools/adapters/imagePrimitiveAdapter.js";
-import { createTemplateCatalogClient } from "../tools/adapters/templateCatalogAdapter.js";
-import { createTextLayoutHelper } from "../tools/adapters/textLayoutHelperAdapter.js";
-import { createWorkerToolRegistry } from "../tools/registry.js";
 import { processRunJob } from "./processRunJob.js";
 
 // The full v6 happy path: object_native_v1 routes through createLayer envelope
@@ -43,11 +38,6 @@ test("object_native_v1 routes through v6 createLayer + save/finalize and bypasse
     logger,
     objectStore,
     callbackClient,
-    toolRegistry: createWorkerToolRegistry(),
-    imagePrimitiveClient: createImagePrimitiveClient(),
-    assetStorageClient: createAssetStorageClient(),
-    textLayoutHelper: createTextLayoutHelper(),
-    templateCatalogClient: createTemplateCatalogClient(),
     v6Overrides: createDeterministicV6Overrides(),
   });
 
@@ -205,11 +195,6 @@ test("trend research and debug HTML preview persist v6 artifacts and bypass lega
       logger,
       objectStore,
       callbackClient,
-      toolRegistry: createWorkerToolRegistry(),
-      imagePrimitiveClient: createImagePrimitiveClient(),
-      assetStorageClient: createAssetStorageClient(),
-      textLayoutHelper: createTextLayoutHelper(),
-      templateCatalogClient: createTemplateCatalogClient(),
       v6Overrides: createDeterministicV6Overrides(),
       v6TrendResearcher: {
         async research() {
@@ -313,11 +298,6 @@ test("non-empty canvas is rejected before the v6 pipeline runs", async () => {
     logger,
     objectStore,
     callbackClient,
-    toolRegistry: createWorkerToolRegistry(),
-    imagePrimitiveClient: createImagePrimitiveClient(),
-    assetStorageClient: createAssetStorageClient(),
-    textLayoutHelper: createTextLayoutHelper(),
-    templateCatalogClient: createTemplateCatalogClient(),
     v6Overrides: createDeterministicV6Overrides(),
   });
 

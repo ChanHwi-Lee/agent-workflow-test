@@ -4,7 +4,6 @@ import type {
   WaitMutationAckResponse,
 } from "@tooldi/agent-contracts";
 import type {
-  AdaptiveCompositionDecision,
   FinalizeRunDraft,
   AbstractLayoutPlan,
   AbstractLayoutPlanNormalizationReport,
@@ -107,8 +106,6 @@ export const RunJobGraphState = Annotation.Root({
   objectNativeRenderabilityReportRef: replaceValue<string | null>(() => null),
   projectedTemplateGraph: replaceValue<ProjectedObjectGraph | null>(() => null),
   projectedTemplateGraphRef: replaceValue<string | null>(() => null),
-  adaptiveCompositionDecision: replaceValue<AdaptiveCompositionDecision | null>(() => null),
-  adaptiveCompositionDecisionRef: replaceValue<string | null>(() => null),
   adaptiveSkeletonBatch: replaceValue<import("../types.js").SkeletonMutationBatch | null>(() => null),
   compositionBrief: replaceValue<CompositionBrief | null>(() => null),
   compositionBriefRef: replaceValue<string | null>(() => null),

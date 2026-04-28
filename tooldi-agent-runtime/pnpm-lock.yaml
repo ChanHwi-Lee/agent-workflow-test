@@ -102,9 +102,6 @@ importers:
       '@tooldi/tool-adapters':
         specifier: workspace:*
         version: link:../../packages/tool-adapters
-      '@tooldi/tool-registry':
-        specifier: workspace:*
-        version: link:../../packages/tool-registry
       bullmq:
         specifier: ^5.73.0
         version: 5.73.0
@@ -221,12 +218,6 @@ importers:
         version: link:../persistence
 
   packages/tool-adapters: {}
-
-  packages/tool-registry:
-    dependencies:
-      '@tooldi/agent-contracts':
-        specifier: workspace:*
-        version: link:../contracts
 
 packages:
 

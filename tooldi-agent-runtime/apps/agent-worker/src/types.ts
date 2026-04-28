@@ -698,39 +698,6 @@ export interface ProjectedObjectGraph {
   summary: string;
 }
 
-// ---------------------------------------------------------------------------
-// Adaptive Composition Decision (SSOT: Layer 3 — LLM Decision)
-// ---------------------------------------------------------------------------
-
-export interface ElementDecision {
-  objectId: string;
-  operation: "retain" | "modify" | "remove";
-  newText: string | null;
-  carriesAtomIds: string[];
-  reason: string;
-}
-
-export interface AddDecision {
-  vocabularyId: string;
-  text: string | null;
-  placementZone: SpatialZone;
-  carriesAtomIds: string[];
-  reason: string;
-}
-
-export interface AdaptiveCompositionDecision {
-  decisionId: string;
-  runId: string;
-  traceId: string;
-  templateCode: string;
-  projectedGraphId: string;
-  elementDecisions: ElementDecision[];
-  addDecisions: AddDecision[];
-  compositionSummary: string;
-}
-
-// ---------------------------------------------------------------------------
-
 export type MessageAtomKind =
   | "primary"
   | "support"

@@ -8,14 +8,6 @@ import { buildLangGraphThreadId } from "@tooldi/agent-graph";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
 import type { Logger } from "@tooldi/agent-observability";
 import type { ObjectStoreClient } from "@tooldi/agent-persistence";
-import type {
-  AssetStorageClient,
-  ImagePrimitiveClient,
-  TemplateCatalogClient,
-  TextLayoutHelper,
-  TooldiCatalogSourceClient,
-} from "@tooldi/tool-adapters";
-import type { ToolRegistry } from "@tooldi/tool-registry";
 
 import type { BackendCallbackClient } from "../clients/backendCallbackClient.js";
 import { buildRunJobGraph, type RunJobGraphDependencies } from "../graph/runJobGraph.js";
@@ -26,12 +18,6 @@ export interface ProcessRunJobDependencies extends RunJobGraphDependencies {
   logger: Logger;
   objectStore: ObjectStoreClient;
   callbackClient: BackendCallbackClient;
-  toolRegistry: ToolRegistry;
-  imagePrimitiveClient: ImagePrimitiveClient;
-  assetStorageClient: AssetStorageClient;
-  textLayoutHelper: TextLayoutHelper;
-  templateCatalogClient: TemplateCatalogClient;
-  tooldiCatalogSourceClient?: TooldiCatalogSourceClient;
 }
 
 export interface InterviewAwaitingPayload {

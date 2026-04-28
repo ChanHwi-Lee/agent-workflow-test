@@ -1,5 +1,12 @@
-export * from "./catalog/templateCatalogClient.js";
-export * from "./catalog/tooldiCatalogSourceClient.js";
-export * from "./helpers/textLayoutHelper.js";
-export * from "./primitives/imagePrimitiveClient.js";
-export * from "./storage/assetStorageClient.js";
+export type {
+  TemplateCandidate,
+  TemplateCandidateFamily,
+  TemplateCandidateSet,
+  TemplateSourceFamily,
+} from "./catalog/templateCatalogClient.js";
+export type {
+  TooldiCatalogSourceErrorCode,
+  TooldiCatalogSourceMode,
+  TooldiTemplateDocument,
+  TooldiTemplateDocumentPage,
+} from "./catalog/tooldiCatalogSourceTypes.js";

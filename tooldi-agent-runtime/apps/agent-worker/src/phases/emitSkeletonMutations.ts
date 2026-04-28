@@ -1,5 +1,4 @@
 import type { ExecutablePlan } from "@tooldi/agent-contracts";
-import type { TextLayoutHelper } from "@tooldi/tool-adapters";
 
 import type {
   HydratedPlanningInput,
@@ -8,15 +7,10 @@ import type {
 } from "../types.js";
 import { buildV6SkeletonBatch, isV6PlanAction } from "./emitV6Mutations.js";
 
-export interface EmitSkeletonMutationsDependencies {
-  textLayoutHelper: TextLayoutHelper;
-}
-
 export async function emitSkeletonMutations(
   input: HydratedPlanningInput,
   _normalizedIntent: NormalizedIntent,
   plan: ExecutablePlan,
-  _dependencies: EmitSkeletonMutationsDependencies,
 ): Promise<SkeletonMutationBatch> {
   if (!plan.actions.some(isV6PlanAction)) {
     throw new Error(

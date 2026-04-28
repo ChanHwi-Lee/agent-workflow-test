@@ -1,5 +1,4 @@
 import type { StateGraph } from "@langchain/langgraph";
-import type { TooldiCatalogSourceClient } from "@tooldi/tool-adapters";
 
 import { registerExecutionNodes } from "./executionNodes.js";
 import { registerFinalizeNodes } from "./finalizeNodes.js";
@@ -15,9 +14,7 @@ export function registerRunJobGraphNodes(
   graph: StateGraph<typeof RunJobGraphState>,
   dependencies: RunJobGraphDependencies,
   tasks: ReturnType<typeof createRunJobGraphTasks>,
-  tooldiCatalogSourceClient: TooldiCatalogSourceClient,
 ) {
-  void tooldiCatalogSourceClient;
   registerPlanningNodes(graph, dependencies, tasks);
   registerInterviewUserNode(graph, dependencies, tasks);
   registerV6TrendResearchNode(graph, dependencies, tasks);

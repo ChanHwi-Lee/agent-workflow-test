@@ -4,7 +4,6 @@ import test from "node:test";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
 
 import { loadAgentWorkerEnv } from "./lib/config.js";
-import { createTooldiCatalogSourceClientForMode } from "./tools/adapters/tooldiCatalogSourceAdapter.js";
 import { buildWorkerRuntime } from "./worker.js";
 
 const DEFAULT_TEST_POSTGRES_URL =
@@ -69,8 +68,6 @@ test("buildWorkerRuntime boots a separate execution-plane runtime", async () => 
   });
 
   assert.equal(runtime.env.workerConcurrency, 2);
-  assert.equal(runtime.toolRegistry.listEnabledTools().length > 0, true);
-  assert.equal(runtime.tooldiCatalogSourceClient !== undefined, true);
   await runtime.close();
 });
 
@@ -191,27 +188,3 @@ test("loadAgentWorkerEnv requires Tooldi content API base URL in real Tooldi API
   );
 });
 
-test("tooldi_api_direct catalog source mode creates an HTTP-backed source client", async () => {
-  const client = createTooldiCatalogSourceClientForMode("tooldi_api_direct", {
-    tooldiContentApiBaseUrl: "http://localhost:8080",
-    tooldiContentApiTimeoutMs: null,
-    tooldiContentApiCookie: null,
-  });
-
-  assert.equal(typeof client.searchBackgroundAssets, "function");
-  assert.equal(typeof client.searchGraphicAssets, "function");
-  assert.equal(typeof client.searchPhotoAssets, "function");
-  assert.equal(typeof client.listFontAssets, "function");
-});
-
-test("real Tooldi API catalog source mode rejects non-localhost base URLs", () => {
-  assert.throws(
-    () =>
-      createTooldiCatalogSourceClientForMode("tooldi_api_direct", {
-        tooldiContentApiBaseUrl: "http://127.0.0.1:8080",
-        tooldiContentApiTimeoutMs: 5000,
-        tooldiContentApiCookie: null,
-      }),
-    /localhost/,
-  );
-});

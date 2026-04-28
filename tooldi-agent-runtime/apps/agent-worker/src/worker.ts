@@ -18,15 +18,6 @@ import {
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import type pg from "pg";
-import type {
-  AssetStorageClient,
-  ImagePrimitiveClient,
-  TemplateCatalogClient,
-  TextLayoutHelper,
-  TooldiCatalogSourceClient,
-} from "@tooldi/tool-adapters";
-import type { ToolRegistry } from "@tooldi/tool-registry";
-
 import { createBackendCallbackClient, type BackendCallbackClient } from "./clients/backendCallbackClient.js";
 import { createWorkerLogger } from "./lib/logger.js";
 import { createRunQueueConsumer, type RunQueueConsumer } from "./lib/runQueueConsumer.js";
@@ -36,15 +27,7 @@ import {
   type ProcessRunJobDependencies,
 } from "./jobs/processRunJob.js";
 import { runWithAdvisoryLock } from "./persistence/advisoryLock.js";
-import { createAssetStorageClient } from "./tools/adapters/assetStorageAdapter.js";
-import { createImagePrimitiveClient } from "./tools/adapters/imagePrimitiveAdapter.js";
-import { createTemplateCatalogClient } from "./tools/adapters/templateCatalogAdapter.js";
-import { createTextLayoutHelper } from "./tools/adapters/textLayoutHelperAdapter.js";
-import { createWorkerToolRegistry } from "./tools/registry.js";
-import { createTooldiCatalogSourceClient } from "./tools/adapters/tooldiCatalogSourceAdapter.js";
 import type { ProcessRunJobResult } from "./types.js";
-import { buildAdaptiveCompositionDecision } from "./phases/buildAdaptiveCompositionDecision.js";
-import type { AdaptiveCompositionDecisionBuilder } from "./graph/runJobGraphTypes.js";
 import type { V6NodeOverrides } from "./graph/v6PipelineNode.js";
 
 // drizzle-orm migrate() 가 multi-instance 동시 실행을 보호하지 않으므로
@@ -59,20 +42,12 @@ export interface BuildWorkerRuntimeOptions {
   pgClient?: PgClient;
   callbackClient?: BackendCallbackClient;
   queueConsumer?: RunQueueConsumer;
-  toolRegistry?: ToolRegistry;
-  imagePrimitiveClient?: ImagePrimitiveClient;
-  assetStorageClient?: AssetStorageClient;
-  textLayoutHelper?: TextLayoutHelper;
-  templateCatalogClient?: TemplateCatalogClient;
-  tooldiCatalogSourceClient?: TooldiCatalogSourceClient;
-  adaptiveCompositionDecisionBuilder?: AdaptiveCompositionDecisionBuilder;
   v6Overrides?: V6NodeOverrides;
   v6TrendResearcher?: ProcessRunJobDependencies["v6TrendResearcher"];
 }
 
 export interface AgentWorkerRuntime extends ProcessRunJobDependencies {
   env: AgentWorkerEnv;
-  tooldiCatalogSourceClient: TooldiCatalogSourceClient;
   processRunJob(job: RunJobEnvelope): Promise<ProcessRunJobResult>;
   resumeRunJob(
     runId: string,
@@ -174,35 +149,8 @@ export async function buildWorkerRuntime(
         logger,
         baseUrl: options.env.agentInternalBaseUrl,
       }),
-    toolRegistry: options.toolRegistry ?? createWorkerToolRegistry(),
-    imagePrimitiveClient: options.imagePrimitiveClient ?? createImagePrimitiveClient(),
-    assetStorageClient: options.assetStorageClient ?? createAssetStorageClient(),
-    textLayoutHelper: options.textLayoutHelper ?? createTextLayoutHelper(),
-    templateCatalogClient:
-      options.templateCatalogClient ?? createTemplateCatalogClient(),
     langGraphCheckpointer: graphCheckpointerHandle.checkpointer,
     ...(interviewRecordsDb ? { interviewRecordsDb } : {}),
-    adaptiveCompositionDecisionBuilder:
-      options.adaptiveCompositionDecisionBuilder ??
-      (async (input) => {
-        if (!input.provider || !input.modelName) {
-          return null;
-        }
-        return buildAdaptiveCompositionDecision({
-          runId: input.runId,
-          traceId: input.traceId,
-          projectedGraph: input.projectedGraph,
-          messageAtomPlan: input.messageAtomPlan,
-          sceneStylePlan: input.sceneStylePlan ?? null,
-          palette: input.palette,
-          provider: input.provider,
-          modelName: input.modelName,
-          temperature: input.temperature,
-        });
-      }),
-    tooldiCatalogSourceClient:
-      options.tooldiCatalogSourceClient ??
-      createTooldiCatalogSourceClient(options.env),
     ...(options.v6Overrides
       ? { v6Overrides: options.v6Overrides }
       : {}),

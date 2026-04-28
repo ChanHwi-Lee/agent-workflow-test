@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "start": "node --enable-source-maps dist/main.js",
-    "test": "node --test dist/main.test.js dist/worker.test.js dist/clients/backendCallbackClient.test.js dist/graph/graphHelpers.test.js dist/graph/runJobGraphEdges.test.js dist/graph/interruptSmoke.test.js dist/jobs/processRunJob.test.js dist/lib/runQueueConsumer.test.js dist/persistence/advisoryLock.test.js dist/persistence/interviewRecordsRepository.test.js dist/phases/buildAdaptiveCompositionDecision.test.js dist/phases/v6HtmlValidator.test.js dist/phases/v6PrimitiveMapper.test.js dist/phases/v6CommandAdapter.test.js dist/phases/v6BrowserRender.test.js dist/phases/v6HtmlGen.test.js dist/phases/v6Pipeline.test.js dist/phases/v6RenderQualityReport.test.js dist/phases/v6TrendResearch.test.js dist/phases/v6FontRegistry.test.js",
+    "test": "node --test dist/main.test.js dist/worker.test.js dist/clients/backendCallbackClient.test.js dist/graph/graphHelpers.test.js dist/graph/runJobGraphEdges.test.js dist/graph/interruptSmoke.test.js dist/jobs/processRunJob.test.js dist/lib/runQueueConsumer.test.js dist/persistence/advisoryLock.test.js dist/persistence/interviewRecordsRepository.test.js dist/phases/v6HtmlValidator.test.js dist/phases/v6PrimitiveMapper.test.js dist/phases/v6CommandAdapter.test.js dist/phases/v6BrowserRender.test.js dist/phases/v6HtmlGen.test.js dist/phases/v6Pipeline.test.js dist/phases/v6RenderQualityReport.test.js dist/phases/v6TrendResearch.test.js dist/phases/v6FontRegistry.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -22,7 +22,6 @@
     "@tooldi/agent-persistence": "workspace:*",
     "@tooldi/agent-testkit": "workspace:*",
     "@tooldi/tool-adapters": "workspace:*",
-    "@tooldi/tool-registry": "workspace:*",
     "bullmq": "^5.73.0",
     "domhandler": "^5.0.3",
     "drizzle-orm": "0.45.2",
