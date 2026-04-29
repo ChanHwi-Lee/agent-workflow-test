@@ -1,10 +1,313 @@
 # Phase 6 RAG Asset Embedding / Qdrant Schema
 
-**Status**: Design note only. 구현하지 않는다.  
+**Status**: Design note (sections 1–9) + Finalized schema (section 0, authoritative).  
 **Scope**: `placeholder://<hint>` 를 실제 Tooldi photo/graphic asset URL 로 바꾸기 위한 embedding, indexing, Qdrant collection 설계.  
 **Non-scope**: template 검색 부활, template RAG 재연결, 기존 v1~v5 retrieval chain 재사용.
 
 Phase 6 의 목표는 LLM 이 만든 `placeholder://봄꽃 배경` 같은 힌트를 실제 Tooldi asset 으로 바꾸는 것이다. 여기서 asset 은 template 이 아니라 photo(Picture 계열)와 graphic(Shape 계열)이다.
+
+---
+
+## 0. Finalized Photo Payload Schema (authoritative — 2026-04-29)
+
+이 섹션은 1,024 → 5,000 photos 확장 직전 확정된 authority 문서다.  
+아래 결정들은 SSOT 이며, 구현과 불일치 시 이 섹션이 우선한다.
+
+### 0.1 Confirmed Decisions
+
+| 항목 | 결정 | 근거 |
+| --- | --- | --- |
+| `colorPalette` 필드 | **제거** — payload에 포함하지 않는다 | 코드베이스 전체 검색 결과 consumer 없음 — dead code |
+| `isPremium` 필드 | **추가** — `price_type == 'P'` 이면 `true` | 런타임 policy filter 용 bool, MariaDB 재조회 불필요 |
+| `thumbnailUrl` 필드 | **추가** — full CDN URL 저장 | display-complete: Qdrant hit만으로 썸네일 렌더 가능 |
+| `thumbnailUrl` 포맷 | `{S3_DOCUMENT_ROOT}/picture/{serial%100}/{thumb_file}` | prod: `https://file.tooldi.com`, dev: `https://dev-file.tooldi.com` |
+| `file.tooldi.com` 성격 | CloudFront (S3 CDN wrapper) — 이미 CDN URL | presign 불필요, 만료 없음, payload에 직접 저장 안전 |
+| Model | `jinaai/jina-clip-v2`, `truncate_dim=512`, cosine, L2-normalized | PoC 검증 완료, 모델 변경 시 전체 reindex 필요 |
+| Point ID | `uuid5(NAMESPACE_URL, "photo:{serial}")` | stable, collision-free, serial 로 역산 가능 |
+| `priceType` 값 | `"free"` / `"paid"` / `null` | `price_type_raw` (`F`/`P`) 도 병행 보관 |
+
+### 0.2 Qdrant Collection Configuration
+
+```python
+# photos collection
+client.create_collection(
+    collection_name="tooldi_photos_v1",
+    vectors_config=models.VectorParams(
+        size=512,
+        distance=models.Distance.COSINE,
+    ),
+    on_disk_payload=True,
+)
+```
+
+| 항목 | 값 |
+| --- | --- |
+| collection name | `tooldi_photos_v1` |
+| vector name | unnamed (single vector) — named vector `clip_512` 는 차기 버전에서 |
+| vector size | `512` |
+| distance | `Cosine` |
+| normalization | L2 (encode 후 반드시 적용) |
+| on_disk_payload | `true` |
+| model | `jinaai/jina-clip-v2` |
+
+### 0.3 Qdrant Payload Index Declarations
+
+런타임 filter 성능을 위해 아래 필드에 payload index 를 선언한다.  
+`upsert` 전에 `create_payload_index` 로 생성해야 한다.
+
+```python
+from qdrant_client.http.models import PayloadSchemaType
+
+indexes = [
+    ("isPremium",       PayloadSchemaType.BOOL),
+    ("priceType",       PayloadSchemaType.KEYWORD),
+    ("categorySerial",  PayloadSchemaType.INTEGER),
+    ("isUse",           PayloadSchemaType.KEYWORD),
+    ("screening",       PayloadSchemaType.KEYWORD),
+    ("assetFamily",     PayloadSchemaType.KEYWORD),
+    ("photoType",       PayloadSchemaType.KEYWORD),
+    ("ownerUid",        PayloadSchemaType.INTEGER),
+    ("isAi",            PayloadSchemaType.BOOL),
+]
+for field, schema_type in indexes:
+    client.create_payload_index(
+        collection_name="tooldi_photos_v1",
+        field_name=field,
+        field_schema=schema_type,
+    )
+```
+
+### 0.4 Final JSON Payload Example
+
+아래는 실제 Tooldi photo row 기준 realistic 예시다 (serial=1230581).
+
+```json
+{
+  "assetFamily": "photo",
+  "sourceKind": "picture",
+  "sourceSerial": 1230581,
+  "sourceUid": "photo:1230581",
+  "tooldiAssetId": "photo:1230581",
+  "logicalPointId": "photo:1230581",
+
+  "thumbnailUrl": "https://file.tooldi.com/picture/81/1230581_thumb.jpg",
+  "bucket": "file.tooldi.com",
+  "s3Key": "picture/81/1230581_thumb.jpg",
+  "thumbKey": "picture/81/1230581_thumb.jpg",
+  "originKey": "picture/81/1230581.jpg",
+  "filename": "1230581_thumb.jpg",
+  "path": "s3://file.tooldi.com/picture/81/1230581_thumb.jpg",
+  "originPath": "s3://file.tooldi.com/picture/81/1230581.jpg",
+
+  "etag": "a3f2c1d8e4b7f9012345678abcde9012",
+  "contentType": "image/jpeg",
+  "contentLength": 84320,
+  "lastModified": "2024-11-15T03:22:41+00:00",
+
+  "naturalWidth": 900,
+  "naturalHeight": 600,
+  "width": 900,
+  "height": 600,
+  "aspectRatio": 1.5,
+  "orientation": "landscape",
+
+  "categorySerial": 12,
+  "categoryName": "자연/풍경",
+  "categoryNameEn": "Nature/Landscape",
+
+  "keywords": ["봄", "꽃", "벚꽃", "배경"],
+
+  "screening": "C",
+  "isUse": "Y",
+  "recStatus": null,
+
+  "priceType": "free",
+  "priceTypeRaw": "F",
+  "isPremium": false,
+  "price": 0,
+
+  "ownerUid": 10042,
+  "userSerial": 10042,
+  "userType": "U",
+  "teamSerial": null,
+
+  "isAi": false,
+  "photoType": "pic",
+  "pictureName": "봄 벚꽃 배경",
+  "extension": ".jpg",
+  "fileType": "pic",
+
+  "createdAt": "2024-03-10T09:14:22",
+  "modifiedAt": "2024-11-15T03:22:41",
+  "confirmedAt": "2024-03-10T09:20:00",
+  "dbSavedFilename": "1230581.jpg",
+  "dbOrgFilename": "spring_cherry_blossom.jpg",
+
+  "imageMode": "RGB",
+  "imageWidth": 900,
+  "imageHeight": 600,
+
+  "modelVersion": "jinaai/jina-clip-v2",
+  "truncateDim": 512,
+  "embeddingVersion": "jina-clip-v2:512:l2:v1",
+  "collectionVersion": "tooldi_photos_v1",
+  "indexedBy": "embed_phase6_assets_poc.py"
+}
+```
+
+### 0.5 Field Table
+
+| field | type | source | nullable | Qdrant indexed | notes |
+| --- | --- | --- | --- | --- | --- |
+| `assetFamily` | keyword | constant | no | YES | 항상 `"photo"` (collection 방어 확인용) |
+| `sourceKind` | keyword | constant | no | no | 항상 `"picture"` |
+| `sourceSerial` | integer | `picture.serial` | no | no | DB primary key |
+| `sourceUid` | keyword | derived | no | no | `"photo:{serial}"` |
+| `tooldiAssetId` | keyword | derived | no | no | agent-worker 가 참조하는 stable ID |
+| `logicalPointId` | keyword | derived | no | no | Point ID 계산용 기준 문자열 |
+| `thumbnailUrl` | keyword | derived | no | no | CDN URL — display-complete |
+| `bucket` | keyword | env | no | no | `file.tooldi.com` (prod) / `dev-file.tooldi.com` (dev) |
+| `s3Key` | keyword | derived | no | no | `picture/{serial%100}/{thumb_file}` |
+| `thumbKey` | keyword | derived | no | no | `s3Key` 와 동일 |
+| `originKey` | keyword | derived | YES | no | `saved_filename` 없으면 null |
+| `filename` | keyword | `picture.thumb_file` | no | no | |
+| `path` | keyword | derived | no | no | `s3://{bucket}/{thumbKey}` |
+| `originPath` | keyword | derived | YES | no | |
+| `etag` | keyword | S3 response | YES | no | 이미지 변경 감지 |
+| `contentType` | keyword | S3 response | YES | no | |
+| `contentLength` | integer | S3 response | YES | no | bytes |
+| `lastModified` | keyword | S3 response | YES | no | ISO8601 |
+| `naturalWidth` | integer | `picture.width` | YES | no | DB 값 (DB가 NULL이면 null) |
+| `naturalHeight` | integer | `picture.height` | YES | no | |
+| `width` | integer | `picture.width` | YES | no | `naturalWidth` 와 동일 |
+| `height` | integer | `picture.height` | YES | no | |
+| `aspectRatio` | float | derived | YES | no | `width/height` |
+| `orientation` | keyword | derived | YES | no | `landscape` / `portrait` / `square` |
+| `categorySerial` | integer | `picture.category_serial` | YES | YES | 카테고리 filter |
+| `categoryName` | keyword | `category.category_name` | YES | no | 표시용 |
+| `categoryNameEn` | keyword | `category.category_name_en` | YES | no | 표시용 |
+| `keywords` | keyword[] | `picture.keyword` split | no | no | `\|:\|` 구분자 split |
+| `screening` | keyword | `picture.screening` | YES | YES | 인덱싱 품질 필터. `'C'` 만 색인 |
+| `isUse` | keyword | `picture.is_use` | YES | YES | `'Y'` 만 색인 |
+| `recStatus` | keyword | `picture.rec_status` | YES | no | `NULL` 만 색인 |
+| `priceType` | keyword | derived | YES | YES | `"free"` / `"paid"` / null |
+| `priceTypeRaw` | keyword | `picture.price_type` | YES | no | `"F"` / `"P"` 원본 |
+| `isPremium` | bool | derived | no | YES | `price_type == 'P'` |
+| `price` | float | `picture.price` | YES | no | Decimal→float 변환 |
+| `ownerUid` | integer | `picture.user_serial` | YES | YES | 권한 filter |
+| `userSerial` | integer | `picture.user_serial` | YES | no | `ownerUid` 와 동일 |
+| `userType` | keyword | `picture.user_type` | YES | no | |
+| `teamSerial` | integer | `picture.team_serial` | YES | no | |
+| `isAi` | bool | `picture.is_ai == 'Y'` | no | YES | AI 생성 여부 |
+| `photoType` | keyword | derived | no | YES | `"rmbg"` (배경제거) / `"pic"` |
+| `pictureName` | keyword | `picture.picture_name` | YES | no | |
+| `extension` | keyword | `picture.extension` | YES | no | |
+| `fileType` | keyword | `picture.file_type` | YES | no | |
+| `createdAt` | keyword | `picture.created` | YES | no | ISO8601 |
+| `modifiedAt` | keyword | `picture.modified` | YES | no | ISO8601 |
+| `confirmedAt` | keyword | `picture.confirmed` | YES | no | ISO8601 |
+| `dbSavedFilename` | keyword | `picture.saved_filename` | YES | no | |
+| `dbOrgFilename` | keyword | `picture.org_filename` | YES | no | |
+| `imageMode` | keyword | PIL.Image.mode | no | no | 색인 시 실제 PIL 모드 |
+| `imageWidth` | integer | PIL.Image.width | no | no | thumb 실제 크기 |
+| `imageHeight` | integer | PIL.Image.height | no | no | |
+| `modelVersion` | keyword | constant | no | no | `jinaai/jina-clip-v2` |
+| `truncateDim` | integer | constant | no | no | `512` |
+| `embeddingVersion` | keyword | derived | no | no | `jina-clip-v2:512:l2:v1` |
+| `collectionVersion` | keyword | constant | no | no | `tooldi_photos_v1` |
+| `indexedBy` | keyword | constant | no | no | script 식별용 |
+
+### 0.6 Fields Sufficient for Display + Filter WITHOUT MariaDB Lookup
+
+런타임 agent-worker가 Qdrant hit만으로 처리 가능한 필드 집합.
+
+| 목적 | 사용 필드 |
+| --- | --- |
+| 썸네일 렌더 | `thumbnailUrl` (CDN URL, 만료 없음) |
+| Asset 식별 | `tooldiAssetId`, `sourceSerial` |
+| 정책 필터 (free/paid) | `isPremium`, `priceType` |
+| 카테고리 필터 | `categorySerial`, `categoryName` |
+| 품질 확인 | `screening`, `isUse`, `recStatus` |
+| AI 생성 여부 | `isAi` |
+| 배경제거 여부 | `photoType` == `"rmbg"` |
+| 화면비/방향 | `aspectRatio`, `orientation` |
+| 소유자 권한 | `ownerUid` |
+| 키워드 표시 | `keywords` |
+| 임베딩 메타 검증 | `modelVersion`, `truncateDim`, `embeddingVersion` |
+
+### 0.7 Fields That Still Need MariaDB for Enrichment (Lazy-Load Only)
+
+Qdrant payload에는 없거나 갱신이 필요해 DB 조회가 필요한 정보.
+
+| 정보 | 이유 |
+| --- | --- |
+| 원본 full-size URL (originKey → presign) | S3 presign이 필요하거나 원본 사용 시점에 발급 |
+| 다운로드 카운트, 좋아요 수 | 실시간 집계, payload에 캐시하지 않음 |
+| 상세 가격 정책 (할인, 쿠폰) | 런타임 계산, Qdrant 에 저장 불가 |
+| 사용자 plan 기반 접근 가능 여부 | user plan은 payload에 없음, 런타임 체크 |
+| 라이선스/저작권 상세 | 법적 상세는 DB SSOT |
+| 카테고리 계층 (부모/자식) | category join 필요 |
+
+### 0.8 Delta from PoC `common_payload()` — Required Changes
+
+`embed_phase6_assets_poc.py` 의 `common_payload()` 와 `build_photo_record()` 에 적용해야 하는 변경 사항.
+
+#### 추가할 필드
+
+```python
+# common_payload() 반환값에 추가
+"isPremium": row.get("price_type") == "P",
+"thumbnailUrl": f"{s3_document_root}/picture/{source_serial % 100}/{row['thumb_file']}",
+```
+
+`s3_document_root` 는 환경별로 주입:
+- prod: `https://file.tooldi.com`
+- dev: `https://dev-file.tooldi.com`
+
+`--s3-document-root` CLI 인자 또는 `S3_DOCUMENT_ROOT` 환경변수로 받도록 수정 권장.
+
+#### 제거할 필드 (있으면)
+
+- `colorPalette` — consumer 없는 dead field, 추가하지 않는다.
+
+#### Payload Index 선언 추가
+
+`ensure_collection()` 이후, `index_family()` 시작 전에 아래 호출 추가:
+
+```python
+from qdrant_client.http.models import PayloadSchemaType
+
+def ensure_payload_indexes(client: QdrantClient, collection_name: str) -> None:
+    indexes = [
+        ("isPremium",      PayloadSchemaType.BOOL),
+        ("priceType",      PayloadSchemaType.KEYWORD),
+        ("categorySerial", PayloadSchemaType.INTEGER),
+        ("isUse",          PayloadSchemaType.KEYWORD),
+        ("screening",      PayloadSchemaType.KEYWORD),
+        ("assetFamily",    PayloadSchemaType.KEYWORD),
+        ("photoType",      PayloadSchemaType.KEYWORD),
+        ("ownerUid",       PayloadSchemaType.INTEGER),
+        ("isAi",           PayloadSchemaType.BOOL),
+    ]
+    for field, schema_type in indexes:
+        client.create_payload_index(
+            collection_name=collection_name,
+            field_name=field,
+            field_schema=schema_type,
+        )
+```
+
+#### `common_payload()` 전체 delta 요약
+
+| 변경 | 상세 |
+| --- | --- |
+| 추가 | `isPremium: bool` — `row["price_type"] == "P"` |
+| 추가 | `thumbnailUrl: str` — CDN full URL |
+| 제거 | `colorPalette` — 절대 추가하지 않음 |
+| 추가 | `ensure_payload_indexes()` 함수 및 호출 |
+| 추가 | `--s3-document-root` / `S3_DOCUMENT_ROOT` 주입 경로 |
+
+---
 
 ## 1. 현재 embedding-test의 의미: template 레거시와 재사용 가능한 실행 경험
 
