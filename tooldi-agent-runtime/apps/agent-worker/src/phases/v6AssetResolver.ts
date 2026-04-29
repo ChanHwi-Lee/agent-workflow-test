@@ -82,6 +82,79 @@ const PROMO_WORDS = new Set([
   "만들어줘",
 ]);
 
+// English placeholder slug token → Korean search term expansion
+const EN_KO_MAP: Record<string, string> = {
+  spring: "봄 봄날",
+  summer: "여름",
+  fall: "가을",
+  autumn: "가을",
+  winter: "겨울 눈",
+  food: "음식",
+  bowl: "그릇 음식",
+  coffee: "카페 커피",
+  cafe: "카페",
+  background: "배경",
+  photo: "사진",
+  product: "제품 상품",
+  shot: "사진",
+  toy: "장난감",
+  toys: "장난감",
+  collection: "모음",
+  wireless: "무선",
+  earbuds: "이어폰 이어버드",
+  nature: "자연",
+  flower: "꽃",
+  flowers: "꽃",
+  people: "사람",
+  person: "사람",
+  kids: "어린이 아이",
+  child: "어린이 아이",
+  children: "어린이 아이들",
+  family: "가족",
+  dog: "강아지",
+  cat: "고양이",
+  beach: "해변 바다",
+  city: "도시",
+  night: "밤 야경",
+  wedding: "웨딩 결혼",
+  business: "비즈니스 사무",
+  health: "건강 의료",
+  medical: "의료 건강",
+  fitness: "피트니스 운동",
+  beauty: "뷰티 화장품",
+  fashion: "패션 의류",
+  travel: "여행",
+  interior: "인테리어",
+};
+
+function translateHint(hint: string): string {
+  const tokens = hint.toLowerCase().split(/[\s\-_]+/);
+  const translated = tokens.map((t) => EN_KO_MAP[t] ?? t);
+  const hasKorean = /[가-힣]/.test(hint);
+  if (hasKorean) return hint;
+  const koTokens = translated.filter((t) => EN_KO_MAP[hint.toLowerCase().split(/[\s\-_]+/).find((h) => EN_KO_MAP[h] === t) ?? ""] !== undefined || /[가-힣]/.test(t));
+  return koTokens.length > 0 ? translated.join(" ") : hint;
+}
+
+function classifyRole(
+  command: V6ImageCommand,
+  canvasWidth: number,
+  canvasHeight: number,
+): "background" | "hero" | "thumbnail" {
+  const areaRatio =
+    (command.bounds.width * command.bounds.height) /
+    Math.max(1, canvasWidth * canvasHeight);
+  if (command.objectFit === "cover" && areaRatio >= 0.4) return "background";
+  if (areaRatio >= 0.15) return "hero";
+  return "thumbnail";
+}
+
+const ROLE_SUFFIX: Record<"background" | "hero" | "thumbnail", string> = {
+  background: "배경 전체화면 분위기 배경사진",
+  hero: "선명한 고화질 메인",
+  thumbnail: "",
+};
+
 export async function resolveV6PlaceholderAssets(
   input: V6AssetResolverInput,
 ): Promise<ReadonlyArray<V6PrimitiveCommand>> {
@@ -113,6 +186,7 @@ function buildPlaceholderContexts(
     if (!isPlaceholderBitmap(command)) continue;
     const hint = parsePlaceholderHint(command.src);
     const family = classifyFamily(command, hint, input);
+    const role = classifyRole(command, input.canvasWidth, input.canvasHeight);
     const nearbyText = selectNearbyText(command.bounds, input.commands);
     contexts.push({
       index,
@@ -124,6 +198,7 @@ function buildPlaceholderContexts(
       searchText: buildSearchText({
         hint,
         family,
+        role,
         userPrompt: input.userPrompt,
         nearbyText,
       }),
@@ -197,17 +272,22 @@ function selectNearbyText(
 function buildSearchText(args: {
   hint: string;
   family: AssetFamily;
+  role: "background" | "hero" | "thumbnail";
   userPrompt: string;
   nearbyText: readonly string[];
 }): string {
-  const hint = compactText(args.hint);
+  const rawHint = compactText(args.hint);
+  // Translate English slug tokens to Korean for better recall against Korean corpus
+  const hint = translateHint(rawHint);
   const prompt = compactText(args.userPrompt);
   const familyHint =
     args.family === "photo"
       ? "사진 photo"
       : "그래픽 스티커 아이콘 graphic sticker icon";
+  const roleSuffix = ROLE_SUFFIX[args.role];
   const parts = [hint, hint, familyHint];
-  if (prompt && prompt !== hint) {
+  if (roleSuffix) parts.push(roleSuffix);
+  if (prompt && prompt !== rawHint) {
     parts.push(prompt);
   }
   for (const nearby of usefulNearbyText(args.nearbyText)) {
