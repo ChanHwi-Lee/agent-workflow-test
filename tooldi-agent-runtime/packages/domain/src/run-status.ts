@@ -9,7 +9,6 @@ export const runStatuses = [
   "finalizing",
   "cancel_requested",
   "completed",
-  "completed_with_warning",
   "save_failed_after_apply",
   "failed",
   "cancelled",
@@ -19,7 +18,6 @@ export type RunStatus = (typeof runStatuses)[number];
 
 export const terminalRunStatuses = [
   "completed",
-  "completed_with_warning",
   "save_failed_after_apply",
   "failed",
   "cancelled",

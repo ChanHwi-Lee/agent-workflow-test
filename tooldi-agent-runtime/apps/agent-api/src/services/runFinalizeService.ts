@@ -16,7 +16,10 @@ import type { MutationLedgerRepository } from "../repositories/mutationLedgerRep
 import type { RunAttemptRepository } from "../repositories/runAttemptRepository.js";
 import type { RunRepository } from "../repositories/runRepository.js";
 import { normalizeFinalizeInput } from "./runFinalizeInput.js";
-import { buildRunLedgerProjection, selectMutationRangeRecords } from "./runFinalizeLedger.js";
+import {
+  buildRunLedgerProjection,
+  selectMutationRangeRecords,
+} from "./runFinalizeLedger.js";
 import { materializeRunArtifacts } from "./runFinalizeMaterializer.js";
 import type { RunEventService } from "./runEventService.js";
 
@@ -73,7 +76,9 @@ export class RunFinalizeService {
       return {
         accepted: true,
         runStatus: run.status,
-        ...(run.completionRecordRef ? { completionRecordRef: run.completionRecordRef } : {}),
+        ...(run.completionRecordRef
+          ? { completionRecordRef: run.completionRecordRef }
+          : {}),
       };
     }
 
@@ -102,7 +107,9 @@ export class RunFinalizeService {
     let finalizedResult = normalized.result;
 
     if (normalized.materialization) {
-      const ledgerRecords = await this.mutationLedgerRepository.listByRunId(run.runId);
+      const ledgerRecords = await this.mutationLedgerRepository.listByRunId(
+        run.runId,
+      );
       const rangedRecords = selectMutationRangeRecords(
         ledgerRecords,
         normalized.materialization.sourceMutationRange,
@@ -220,13 +227,14 @@ export class RunFinalizeService {
   ): "succeeded" | "failed" | "cancelled" {
     switch (finalStatus) {
       case "completed":
-      case "completed_with_warning":
         return "succeeded";
       case "cancelled":
         return "cancelled";
       case "save_failed_after_apply":
       case "failed":
         return "failed";
+      default:
+        throw new Error(`Unsupported final status: ${finalStatus}`);
     }
   }
 }

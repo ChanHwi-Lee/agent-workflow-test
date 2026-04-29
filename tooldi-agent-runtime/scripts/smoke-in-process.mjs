@@ -39,7 +39,7 @@ function buildSmokeBaseStyle() {
     paddingBottom: "0px",
     paddingLeft: "0px",
     color: "rgb(0, 0, 0)",
-    fontFamily: "\"701_400\", sans-serif",
+    fontFamily: '"701_400", sans-serif',
     fontSize: "16px",
     fontWeight: "400",
     fontStyle: "normal",
@@ -80,7 +80,12 @@ async function createSmokeV6Overrides() {
               serial: 0,
               path: "0",
               tagName: "div",
-              bounds: { left: 0, top: 0, width: canvas.width, height: canvas.height },
+              bounds: {
+                left: 0,
+                top: 0,
+                width: canvas.width,
+                height: canvas.height,
+              },
               style: { ...base, backgroundColor: "rgb(255, 245, 225)" },
               isTextLeaf: false,
               text: null,
@@ -94,7 +99,12 @@ async function createSmokeV6Overrides() {
               path: "0.0",
               tagName: "h1",
               bounds: { left: 80, top: 140, width: 600, height: 110 },
-              style: { ...base, fontSize: "84px", fontWeight: "700", color: "rgb(34, 34, 34)" },
+              style: {
+                ...base,
+                fontSize: "84px",
+                fontWeight: "700",
+                color: "rgb(34, 34, 34)",
+              },
               isTextLeaf: true,
               text: "스모크 헤드라인",
               img: null,
@@ -141,10 +151,6 @@ function createWorkerEnv(queueName) {
     leaseTtlMs: 30000,
     queueTransportMode: "disabled",
     agentInternalBaseUrl: "http://127.0.0.1:0",
-    templatePlannerMode: "heuristic",
-    templatePlannerProvider: null,
-    templatePlannerModel: null,
-    templatePlannerTemperature: 0,
     langGraphCheckpointerMode: "postgres",
     langGraphCheckpointerPostgresUrl: null,
     langGraphCheckpointerSchema: "agent_langgraph_test",
@@ -157,10 +163,7 @@ function createWorkerEnv(queueName) {
   };
 }
 
-export function createStartRunRequest(
-  prefix,
-  options = {},
-) {
+export function createStartRunRequest(prefix, options = {}) {
   const canvasWidth = options.canvasWidth ?? 1080;
   const canvasHeight = options.canvasHeight ?? 1080;
   const sizeSerial = options.sizeSerial ?? "1080x1080@1";
@@ -273,7 +276,8 @@ export function buildMutationAckRequest(accepted, payload, currentRevision) {
           commandId: command.commandId,
           op: command.op,
           status: "applied",
-          resolvedLayerId: command.targetRef.clientLayerKey ?? "resolved-layer-1",
+          resolvedLayerId:
+            command.targetRef.clientLayerKey ?? "resolved-layer-1",
         };
         if (command.op !== "saveTemplate") {
           return baseResult;
@@ -298,7 +302,12 @@ export function buildMutationAckRequest(accepted, payload, currentRevision) {
 }
 
 export function isListenPermissionError(error) {
-  if (error && typeof error === "object" && "code" in error && error.code === "EPERM") {
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    error.code === "EPERM"
+  ) {
     return true;
   }
   return error instanceof Error && error.message.includes("listen EPERM");
@@ -306,7 +315,10 @@ export function isListenPermissionError(error) {
 
 export async function runTransportSmokeInProcess({ workspaceRoot, queueName }) {
   const sharedEnv = createSharedEnv(queueName);
-  const { app, worker } = await createInProcessRuntime({ workspaceRoot, queueName });
+  const { app, worker } = await createInProcessRuntime({
+    workspaceRoot,
+    queueName,
+  });
   try {
     const accepted = await startRunViaInject(app, "smoke", {
       workflowVariant: "object_native_v1",
@@ -412,7 +424,10 @@ export async function runObjectNativeSmokeInProcess({
 }
 
 export async function runRetrySmokeInProcess({ workspaceRoot, queueName }) {
-  const { app, worker } = await createInProcessRuntime({ workspaceRoot, queueName });
+  const { app, worker } = await createInProcessRuntime({
+    workspaceRoot,
+    queueName,
+  });
   try {
     const accepted = await startRunViaInject(app, "retry-smoke", {
       workflowVariant: "object_native_v1",
@@ -437,7 +452,9 @@ export async function runRetrySmokeInProcess({ workspaceRoot, queueName }) {
 
     await Promise.all([streamPromise, runPromise]);
 
-    console.log("[retry-smoke] pickup-timeout retry pipeline completed successfully");
+    console.log(
+      "[retry-smoke] pickup-timeout retry pipeline completed successfully",
+    );
   } finally {
     await closeRuntime({ app, worker });
   }
@@ -505,7 +522,9 @@ function createInjectedBackendCallbackClient(app) {
     },
     async waitMutationAck(runId, mutationId, query) {
       const queryString =
-        query.waitMs === undefined ? "" : `?waitMs=${encodeURIComponent(String(query.waitMs))}`;
+        query.waitMs === undefined
+          ? ""
+          : `?waitMs=${encodeURIComponent(String(query.waitMs))}`;
       return injectJson(app, {
         method: "GET",
         url: `/internal/agent-workflow/runs/${runId}/mutations/${mutationId}/acks${queryString}`,
@@ -531,7 +550,7 @@ async function injectJson(app, { method, url, payload }) {
   if (response.statusCode >= 400) {
     throw new Error(
       `Injected ${method} ${url} failed with ${response.statusCode}: ${describeErrorPayload(responsePayload)} ` +
-      `payload=${JSON.stringify(payload ?? null)}`,
+        `payload=${JSON.stringify(payload ?? null)}`,
     );
   }
   return responsePayload;
@@ -597,7 +616,9 @@ async function driveRunLifecycle({
   const unsubscribe = app.sseHub.subscribe(accepted.runId, pushEvent);
 
   try {
-    const storedEvents = await app.services.runEventService.listAfter(accepted.runId);
+    const storedEvents = await app.services.runEventService.listAfter(
+      accepted.runId,
+    );
     for (const storedEvent of storedEvents) {
       pushEvent({
         eventId: storedEvent.eventId,
@@ -616,7 +637,9 @@ async function driveRunLifecycle({
       switch (event.type) {
         case "run.log":
           runLogs.push(String(event.message ?? ""));
-          if (String(event.message ?? "").includes("scheduled retry attempt 2")) {
+          if (
+            String(event.message ?? "").includes("scheduled retry attempt 2")
+          ) {
             retryLogObserved = true;
             console.log(`[${logPrefix}] observed retry scheduling log`);
           }
@@ -633,10 +656,14 @@ async function driveRunLifecycle({
           );
           break;
         case "run.failed":
-          throw new Error(`Run failed during ${logPrefix}: ${JSON.stringify(event)}`);
+          throw new Error(
+            `Run failed during ${logPrefix}: ${JSON.stringify(event)}`,
+          );
         case "run.completed":
           if (requireRetryLog && !retryLogObserved) {
-            throw new Error("Retry smoke completed without observing the retry scheduling log");
+            throw new Error(
+              "Retry smoke completed without observing the retry scheduling log",
+            );
           }
           console.log(`[${logPrefix}] observed run.completed SSE`);
           return {
@@ -662,7 +689,9 @@ async function driveRunLifecycle({
       rejectNextEvent = rejectPromise;
       const timer = setTimeout(() => {
         if (rejectNextEvent) {
-          rejectNextEvent(new Error(`Timed out while waiting for ${logPrefix} event`));
+          rejectNextEvent(
+            new Error(`Timed out while waiting for ${logPrefix} event`),
+          );
           resolveNextEvent = null;
           rejectNextEvent = null;
         }
@@ -702,7 +731,8 @@ async function waitForQueuedJob(app, runId, attemptSeq, timeoutMs = 10000) {
   while (Date.now() < deadline) {
     const jobs = await app.runQueue.listJobs();
     const matchingJob = jobs.find(
-      (job) => job.payload.runId === runId && job.payload.attemptSeq === attemptSeq,
+      (job) =>
+        job.payload.runId === runId && job.payload.attemptSeq === attemptSeq,
     );
     if (matchingJob) {
       return matchingJob;

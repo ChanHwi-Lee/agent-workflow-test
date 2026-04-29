@@ -7,7 +7,11 @@ export const legacyTemplateAssetPolicies = [
 export type LegacyTemplateAssetPolicy =
   (typeof legacyTemplateAssetPolicies)[number];
 
-export const templateAssetFamilies = ["background", "graphic", "photo"] as const;
+export const templateAssetFamilies = [
+  "background",
+  "graphic",
+  "photo",
+] as const;
 export type TemplateAssetFamily = (typeof templateAssetFamilies)[number];
 
 export const templatePrimaryVisualPolicies = [
@@ -81,102 +85,10 @@ export type TemplateAssetPolicyInput = z.input<
   typeof TemplateAssetPolicyBoundarySchema
 >;
 
-export const templateCopyPriorities = [
-  "primary",
-  "secondary",
-  "supporting",
-  "utility",
-] as const;
-export type TemplateCopyPriority = (typeof templateCopyPriorities)[number];
-
-export const templateCopyToneHints = [
-  "promotional",
-  "informational",
-  "urgent",
-] as const;
-export type TemplateCopyToneHint = (typeof templateCopyToneHints)[number];
-
-export const templateAbstractLayoutFamilies = [
-  "promo_split",
-  "promo_center",
-  "promo_badge",
-  "promo_frame",
-  "subject_hero",
-] as const;
-export type TemplateAbstractLayoutFamily =
-  (typeof templateAbstractLayoutFamilies)[number];
-
-export const templateCopyAnchors = ["left", "center"] as const;
-export type TemplateCopyAnchor = (typeof templateCopyAnchors)[number];
-
-export const templateVisualAnchors = [
-  "right",
-  "center",
-  "background",
-] as const;
-export type TemplateVisualAnchor = (typeof templateVisualAnchors)[number];
-
-export const templateCtaAnchors = [
-  "below_copy",
-  "inline_offer",
-  "bottom_center",
-] as const;
-export type TemplateCtaAnchor = (typeof templateCtaAnchors)[number];
-
-export const templateLayoutDensities = ["airy", "balanced", "dense"] as const;
-export type TemplateLayoutDensity = (typeof templateLayoutDensities)[number];
-
-export const templateSlotTopologies = [
-  "headline_supporting_offer_cta_footer",
-  "headline_supporting_cta_footer",
-  "badge_headline_offer_cta_footer",
-  "hero_headline_supporting_cta_footer",
-] as const;
-export type TemplateSlotTopology = (typeof templateSlotTopologies)[number];
-
-export const TemplateCopyPlanSlotDraftSchema = z.object({
-  text: z.string().min(1).max(80),
-  priority: z.enum(templateCopyPriorities),
-  required: z.boolean(),
-  maxLength: z.number().int().min(4).max(80),
-  toneHint: z.enum(templateCopyToneHints).nullable(),
-});
-
-export const TemplateCopyPlanDraftSchema = z.object({
-  headline: TemplateCopyPlanSlotDraftSchema,
-  subheadline: TemplateCopyPlanSlotDraftSchema.nullable(),
-  offerLine: TemplateCopyPlanSlotDraftSchema.nullable(),
-  cta: TemplateCopyPlanSlotDraftSchema,
-  footerNote: TemplateCopyPlanSlotDraftSchema.nullable(),
-  badgeText: TemplateCopyPlanSlotDraftSchema.nullable(),
-  summary: z.string().min(1).max(400),
-});
-
-export type TemplateCopyPlanDraft = z.infer<typeof TemplateCopyPlanDraftSchema>;
-
-export const TemplateAbstractLayoutDraftSchema = z.object({
-  layoutFamily: z.enum(templateAbstractLayoutFamilies),
-  copyAnchor: z.enum(templateCopyAnchors),
-  visualAnchor: z.enum(templateVisualAnchors),
-  ctaAnchor: z.enum(templateCtaAnchors),
-  density: z.enum(templateLayoutDensities),
-  slotTopology: z.enum(templateSlotTopologies),
-  summary: z.string().min(1).max(400),
-});
-
-export type TemplateAbstractLayoutDraft = z.infer<
-  typeof TemplateAbstractLayoutDraftSchema
->;
-
 export const TemplateSemanticBriefDraftSchema = z.object({
   goalSummary: z.string().min(1).max(80),
   templateKind: z.enum(["promo_banner", "seasonal_sale_banner"]),
-  domain: z.enum([
-    "restaurant",
-    "cafe",
-    "fashion_retail",
-    "general_marketing",
-  ]),
+  domain: z.enum(["restaurant", "cafe", "fashion_retail", "general_marketing"]),
   audience: z.enum([
     "walk_in_customers",
     "local_visitors",
@@ -211,11 +123,7 @@ export const TemplateSemanticBriefDraftSchema = z.object({
         "general_campaign",
       ])
       .optional(),
-    offerSpecificity: z.enum([
-      "single_product",
-      "multi_item",
-      "broad_offer",
-    ]),
+    offerSpecificity: z.enum(["single_product", "multi_item", "broad_offer"]),
   }),
 });
 

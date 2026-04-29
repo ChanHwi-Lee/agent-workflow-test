@@ -71,10 +71,7 @@ export const VisibleLayerTypeValues = [
   "svg",
 ] as const;
 
-export const LayerTypeValues = [
-  ...VisibleLayerTypeValues,
-  "unknown",
-] as const;
+export const LayerTypeValues = [...VisibleLayerTypeValues, "unknown"] as const;
 
 export const LayerTypeSchema = Type.Union(
   LayerTypeValues.map((value) => Type.Literal(value)),
@@ -106,7 +103,6 @@ export const RunStatusValues = [
   "finalizing",
   "cancel_requested",
   "completed",
-  "completed_with_warning",
   "save_failed_after_apply",
   "failed",
   "cancelled",
@@ -118,7 +114,6 @@ export const RunStatusSchema = Type.Union(
 
 export const TerminalRunStatusValues = [
   "completed",
-  "completed_with_warning",
   "save_failed_after_apply",
   "failed",
   "cancelled",
@@ -141,7 +136,6 @@ export const DurabilityStateSchema = Type.Union(
 
 export const CompletionStateValues = [
   "editable_draft_ready",
-  "editable_draft_ready_with_warning",
   "save_failed_after_apply",
   "failed",
   "cancelled",

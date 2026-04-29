@@ -14,10 +14,7 @@ import {
   TerminalRunStatusSchema,
   WarningItemSchema,
 } from "../common.js";
-import {
-  InterviewAnswerSchema,
-  InterviewQuestionSchema,
-} from "./interview.js";
+import { InterviewAnswerSchema, InterviewQuestionSchema } from "./interview.js";
 import {
   TemplateSaveEvidenceSchema,
   TemplateSaveReceiptSchema,
@@ -30,8 +27,8 @@ const WorkerPhaseSchema = Type.Union(
 );
 
 const AttemptStateSchema = Type.Union(
-  ["dequeued", "hydrating", "running", "awaiting_ack", "finalizing"].map((value) =>
-    Type.Literal(value),
+  ["dequeued", "hydrating", "running", "awaiting_ack", "finalizing"].map(
+    (value) => Type.Literal(value),
   ),
 );
 
@@ -41,7 +38,8 @@ const ISO_DATE_TIME_PATTERN =
 if (!FormatRegistry.Has("date-time")) {
   FormatRegistry.Set(
     "date-time",
-    (value) => ISO_DATE_TIME_PATTERN.test(value) && !Number.isNaN(Date.parse(value)),
+    (value) =>
+      ISO_DATE_TIME_PATTERN.test(value) && !Number.isNaN(Date.parse(value)),
   );
 }
 
@@ -85,7 +83,9 @@ const WorkerAppendEventSchema = Type.Union([
   Type.Object(
     {
       type: Type.Literal("log"),
-      level: Type.Union(["info", "warn", "error"].map((value) => Type.Literal(value))),
+      level: Type.Union(
+        ["info", "warn", "error"].map((value) => Type.Literal(value)),
+      ),
       message: Type.String({ minLength: 1 }),
     },
     { additionalProperties: false },
@@ -104,7 +104,10 @@ const WorkerAppendEventSchema = Type.Union([
   Type.Object(
     {
       type: Type.Literal("interview.awaiting"),
-      questions: Type.Array(InterviewQuestionSchema, { minItems: 1, maxItems: 5 }),
+      questions: Type.Array(InterviewQuestionSchema, {
+        minItems: 1,
+        maxItems: 5,
+      }),
       timeoutMs: Type.Optional(Type.Integer({ minimum: 1 })),
     },
     { additionalProperties: false },
@@ -157,13 +160,15 @@ export const WaitMutationAckResponseSchema = Type.Object(
   {
     found: Type.Boolean(),
     status: Type.Union(
-      ["dispatched", "acked", "rejected", "cancelled", "timed_out"].map((value) =>
-        Type.Literal(value),
+      ["dispatched", "acked", "rejected", "cancelled", "timed_out"].map(
+        (value) => Type.Literal(value),
       ),
     ),
     seq: Type.Optional(Type.Integer({ minimum: 1 })),
     resultingRevision: Type.Optional(Type.Integer({ minimum: 0 })),
-    resolvedLayerIds: Type.Optional(Type.Record(Type.String(), IdentifierSchema)),
+    resolvedLayerIds: Type.Optional(
+      Type.Record(Type.String(), IdentifierSchema),
+    ),
     commandResults: Type.Optional(Type.Array(MutationCommandResultSchema)),
     error: Type.Optional(ErrorSummarySchema),
   },
@@ -178,7 +183,9 @@ export const RunFinalizeRequestSchema = Type.Object(
     finalStatus: TerminalRunStatusSchema,
     completionState: Type.Optional(CompletionStateSchema),
     draftId: Type.Optional(IdentifierSchema),
-    finalRevision: Type.Optional(Type.Union([Type.Integer({ minimum: 0 }), Type.Null()])),
+    finalRevision: Type.Optional(
+      Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
+    ),
     latestSaveEvidence: Type.Optional(
       Type.Union([TemplateSaveEvidenceSchema, Type.Null()]),
     ),
@@ -190,29 +197,7 @@ export const RunFinalizeRequestSchema = Type.Object(
     canonicalDesignBriefRef: Type.Optional(IdentifierSchema),
     semanticBriefDraftRef: Type.Optional(IdentifierSchema),
     briefCompilationReportRef: Type.Optional(IdentifierSchema),
-    copyPlanRef: Type.Optional(IdentifierSchema),
-    copyPlanNormalizationReportRef: Type.Optional(IdentifierSchema),
-    abstractLayoutPlanRef: Type.Optional(IdentifierSchema),
-    abstractLayoutPlanNormalizationReportRef: Type.Optional(IdentifierSchema),
-    assetPlanRef: Type.Optional(IdentifierSchema),
-    concreteLayoutPlanRef: Type.Optional(IdentifierSchema),
-    templatePriorSummaryRef: Type.Optional(IdentifierSchema),
-    templatePriorBundleRef: Type.Optional(IdentifierSchema),
-    sceneRolePlanRef: Type.Optional(IdentifierSchema),
-    sceneLayoutPlanRef: Type.Optional(IdentifierSchema),
-    sceneStylePlanRef: Type.Optional(IdentifierSchema),
-    sceneBindingPlanRef: Type.Optional(IdentifierSchema),
-    searchProfileRef: Type.Optional(IdentifierSchema),
     executablePlanRef: Type.Optional(IdentifierSchema),
-    candidateSetRef: Type.Optional(IdentifierSchema),
-    sourceSearchSummaryRef: Type.Optional(IdentifierSchema),
-    retrievalStageRef: Type.Optional(IdentifierSchema),
-    selectionDecisionRef: Type.Optional(IdentifierSchema),
-    typographyDecisionRef: Type.Optional(IdentifierSchema),
-    ruleJudgeVerdictRef: Type.Optional(IdentifierSchema),
-    executionSceneSummaryRef: Type.Optional(IdentifierSchema),
-    judgePlanRef: Type.Optional(IdentifierSchema),
-    refineDecisionRef: Type.Optional(IdentifierSchema),
     sourceMutationRange: Type.Optional(
       Type.Object(
         {
@@ -277,14 +262,26 @@ export const WorkerFinalizeResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 
-export type WorkerHeartbeatRequest = Static<typeof WorkerHeartbeatRequestSchema>;
-export type WorkerHeartbeatResponse = Static<typeof WorkerHeartbeatResponseSchema>;
-export type WorkerAppendEventRequest = Static<typeof WorkerAppendEventRequestSchema>;
-export type WorkerAppendEventResponse = Static<typeof WorkerAppendEventResponseSchema>;
+export type WorkerHeartbeatRequest = Static<
+  typeof WorkerHeartbeatRequestSchema
+>;
+export type WorkerHeartbeatResponse = Static<
+  typeof WorkerHeartbeatResponseSchema
+>;
+export type WorkerAppendEventRequest = Static<
+  typeof WorkerAppendEventRequestSchema
+>;
+export type WorkerAppendEventResponse = Static<
+  typeof WorkerAppendEventResponseSchema
+>;
 export type WaitMutationAckQuery = Static<typeof WaitMutationAckQuerySchema>;
-export type WaitMutationAckResponse = Static<typeof WaitMutationAckResponseSchema>;
+export type WaitMutationAckResponse = Static<
+  typeof WaitMutationAckResponseSchema
+>;
 export type RunFinalizeRequest = Static<typeof RunFinalizeRequestSchema>;
-export type WorkerFinalizeResponse = Static<typeof WorkerFinalizeResponseSchema>;
+export type WorkerFinalizeResponse = Static<
+  typeof WorkerFinalizeResponseSchema
+>;
 
 export function isWorkerHeartbeatResponse(
   value: unknown,
@@ -292,7 +289,9 @@ export function isWorkerHeartbeatResponse(
   return Value.Check(WorkerHeartbeatResponseSchema, value);
 }
 
-export function firstWorkerHeartbeatResponseError(value: unknown): string | null {
+export function firstWorkerHeartbeatResponseError(
+  value: unknown,
+): string | null {
   const issue = Value.Errors(WorkerHeartbeatResponseSchema, value).First();
   if (!issue) {
     return null;
@@ -344,7 +343,9 @@ export function isWaitMutationAckResponse(
   return Value.Check(WaitMutationAckResponseSchema, value);
 }
 
-export function firstWaitMutationAckResponseError(value: unknown): string | null {
+export function firstWaitMutationAckResponseError(
+  value: unknown,
+): string | null {
   const issue = Value.Errors(WaitMutationAckResponseSchema, value).First();
   if (!issue) {
     return null;
@@ -360,7 +361,9 @@ export function isWorkerFinalizeResponse(
   return Value.Check(WorkerFinalizeResponseSchema, value);
 }
 
-export function firstWorkerFinalizeResponseError(value: unknown): string | null {
+export function firstWorkerFinalizeResponseError(
+  value: unknown,
+): string | null {
   const issue = Value.Errors(WorkerFinalizeResponseSchema, value).First();
   if (!issue) {
     return null;

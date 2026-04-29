@@ -5,7 +5,12 @@ import type { WaitMutationAckResponse } from "@tooldi/agent-contracts";
 import { finalizeRun } from "../phases/finalizeRun.js";
 import { deriveWorkflowVariant } from "../phases/planningContext.js";
 import type { ProcessRunJobResult } from "../types.js";
-import { buildArtifactRefs, buildFinalizeOptions, buildHeartbeatBase, buildStageAckRecord } from "./graphHelpers.js";
+import {
+  buildArtifactRefs,
+  buildFinalizeOptions,
+  buildHeartbeatBase,
+  buildStageAckRecord,
+} from "./graphHelpers.js";
 import { buildSaveTemplateCommand } from "../phases/layerCommandBuilder.js";
 import { shouldStopAfterCurrentAction } from "./nodeUtils.js";
 import { RunJobGraphState } from "./runJobGraphState.js";
@@ -17,12 +22,8 @@ export function registerFinalizeNodes(
   dependencies: RunJobGraphDependencies,
   tasks: ReturnType<typeof createRunJobGraphTasks>,
 ) {
-  const {
-    heartbeatTask,
-    appendEventTask,
-    waitMutationAckTask,
-    finalizeTask,
-  } = tasks;
+  const { heartbeatTask, appendEventTask, waitMutationAckTask, finalizeTask } =
+    tasks;
 
   return graph
     .addNode("emit_save_stage", async (state) => {
@@ -181,7 +182,8 @@ export function registerFinalizeNodes(
         phase: "saving",
         heartbeatAt: new Date().toISOString(),
       });
-      cooperativeStopRequested ||= shouldStopAfterCurrentAction(savingHeartbeat);
+      cooperativeStopRequested ||=
+        shouldStopAfterCurrentAction(savingHeartbeat);
 
       const finalizeDraft = await finalizeRun(
         state.hydrated,
@@ -198,15 +200,6 @@ export function registerFinalizeNodes(
           },
           cooperativeStopRequested,
           state.assignedSeqs,
-          state.ruleJudgeVerdict?.recommendation === "refuse"
-            ? {
-                finalStatus: "failed",
-                errorSummary: {
-                  code: "rule_judge_refused",
-                  message: state.ruleJudgeVerdict.summary,
-                },
-              }
-            : undefined,
         ),
       );
 
@@ -239,55 +232,6 @@ export function registerFinalizeNodes(
           ...(state.intentNormalizationReport
             ? { intentNormalizationReport: state.intentNormalizationReport }
             : {}),
-          ...(state.sceneRolePlan
-            ? { sceneRolePlan: state.sceneRolePlan }
-            : {}),
-          ...(state.sceneLayoutPlan
-            ? { sceneLayoutPlan: state.sceneLayoutPlan }
-            : {}),
-          ...(state.sceneStylePlan
-            ? { sceneStylePlan: state.sceneStylePlan }
-            : {}),
-          ...(state.sceneBindingPlan
-            ? { sceneBindingPlan: state.sceneBindingPlan }
-            : {}),
-          ...(state.compositionBrief
-            ? { compositionBrief: state.compositionBrief }
-            : {}),
-          ...(state.compositionVariantSet
-            ? { compositionVariantSet: state.compositionVariantSet }
-            : {}),
-          ...(state.compositionRanking
-            ? { compositionRanking: state.compositionRanking }
-            : {}),
-          ...(state.copyPlan ? { copyPlan: state.copyPlan } : {}),
-          ...(state.copyPlanNormalizationReport
-            ? { copyPlanNormalizationReport: state.copyPlanNormalizationReport }
-            : {}),
-          ...(state.abstractLayoutPlan
-            ? { abstractLayoutPlan: state.abstractLayoutPlan }
-            : {}),
-          ...(state.abstractLayoutPlanNormalizationReport
-            ? {
-                abstractLayoutPlanNormalizationReport:
-                  state.abstractLayoutPlanNormalizationReport,
-              }
-            : {}),
-          ...(state.assetPlan ? { assetPlan: state.assetPlan } : {}),
-          ...(state.concreteLayoutPlan
-            ? { concreteLayoutPlan: state.concreteLayoutPlan }
-            : {}),
-          ...(state.templatePriorSummary
-            ? { templatePriorSummary: state.templatePriorSummary }
-            : {}),
-          ...(state.ruleJudgeVerdict
-            ? { ruleJudgeVerdict: state.ruleJudgeVerdict }
-            : {}),
-          ...(state.executionSceneSummary
-            ? { executionSceneSummary: state.executionSceneSummary }
-            : {}),
-          ...(state.judgePlan ? { judgePlan: state.judgePlan } : {}),
-          ...(state.refineDecision ? { refineDecision: state.refineDecision } : {}),
           ...(state.plan ? { plan: state.plan } : {}),
           emittedMutationIds: state.emittedMutationIds,
           finalizeDraft: state.finalizeDraft,

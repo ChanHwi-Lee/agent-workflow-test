@@ -1,119 +1,28 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildArtifactRefs, buildFinalizeOptions, buildStageAckRecord } from "./graphHelpers.js";
+import {
+  buildArtifactRefs,
+  buildFinalizeOptions,
+  buildStageAckRecord,
+} from "./graphHelpers.js";
 
 test("graphHelpers는 정의된 artifact ref만 노출한다", () => {
   const refs = buildArtifactRefs({
-    canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
-    briefCompilationReportRef: "runs/run-1/attempts/1/brief-compilation-report.json",
-    compositionBriefRef: "runs/run-1/attempts/1/composition-brief.json",
-    compositionVariantSetRef: null,
-    compositionRankingRef: "runs/run-1/attempts/1/composition-ranking.json",
-    copyPlanRef: null,
-    copyPlanNormalizationReportRef: null,
-    abstractLayoutPlanRef: null,
-    abstractLayoutPlanNormalizationReportRef: null,
-    assetPlanRef: "runs/run-1/attempts/1/asset-plan.json",
-    concreteLayoutPlanRef: null,
-    templatePriorSummaryRef: null,
-    templatePriorBundleRef: null,
-    sceneRolePlanRef: null,
-    sceneLayoutPlanRef: null,
-    sceneStylePlanRef: null,
-    sceneBindingPlanRef: null,
-    searchProfileRef: null,
+    canonicalDesignBriefRef:
+      "runs/run-1/attempts/1/canonical-design-brief.json",
+    briefCompilationReportRef:
+      "runs/run-1/attempts/1/brief-compilation-report.json",
     executablePlanRef: "runs/run-1/attempts/1/executable-plan.json",
-    candidateSetRef: null,
-    sourceSearchSummaryRef: null,
-    retrievalStageRef: null,
-    selectionDecisionRef: null,
-    typographyDecisionRef: null,
-    ruleJudgeVerdictRef: null,
-    executionSceneSummaryRef: "runs/run-1/attempts/1/execution-scene-summary.json",
-    judgePlanRef: null,
-    refineDecisionRef: null,
-    ruleJudgeVerdict: null,
-    judgePlan: null,
   });
 
   assert.deepEqual(refs, {
-    canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
+    canonicalDesignBriefRef:
+      "runs/run-1/attempts/1/canonical-design-brief.json",
     briefCompilationReportRef:
       "runs/run-1/attempts/1/brief-compilation-report.json",
-    compositionBriefRef: "runs/run-1/attempts/1/composition-brief.json",
-    compositionRankingRef: "runs/run-1/attempts/1/composition-ranking.json",
-    assetPlanRef: "runs/run-1/attempts/1/asset-plan.json",
     executablePlanRef: "runs/run-1/attempts/1/executable-plan.json",
-    executionSceneSummaryRef:
-      "runs/run-1/attempts/1/execution-scene-summary.json",
   });
-});
-
-test("graphHelpers는 judge warning을 finalize option에 투영한다", () => {
-  const options = buildFinalizeOptions(
-    {
-      canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
-      briefCompilationReportRef: null,
-      compositionBriefRef: null,
-      compositionVariantSetRef: null,
-      compositionRankingRef: null,
-      copyPlanRef: null,
-      copyPlanNormalizationReportRef: null,
-      abstractLayoutPlanRef: null,
-      abstractLayoutPlanNormalizationReportRef: null,
-      assetPlanRef: null,
-      concreteLayoutPlanRef: null,
-      templatePriorSummaryRef: null,
-      templatePriorBundleRef: null,
-      sceneRolePlanRef: null,
-      sceneLayoutPlanRef: null,
-      sceneStylePlanRef: null,
-      sceneBindingPlanRef: null,
-      searchProfileRef: null,
-      executablePlanRef: null,
-      candidateSetRef: null,
-      sourceSearchSummaryRef: null,
-      retrievalStageRef: null,
-      selectionDecisionRef: null,
-      typographyDecisionRef: null,
-      ruleJudgeVerdictRef: null,
-      executionSceneSummaryRef: null,
-      judgePlanRef: "runs/run-1/attempts/1/judge-plan.json",
-      refineDecisionRef: null,
-      ruleJudgeVerdict: null,
-      judgePlan: {
-        judgePlanId: "judge-1",
-        runId: "run-1",
-        traceId: "trace-1",
-        refineAttempt: 0,
-        recommendation: "warn_only",
-        patchable: false,
-        allowedPatchScopes: [],
-        issues: [
-          {
-            code: "slot_materialization_missing",
-            severity: "warn",
-            message: "footer missing",
-            patchable: false,
-            suggestedPatchScopes: [],
-          },
-        ],
-        summary: "warn",
-      },
-    },
-    false,
-    [1, 2, 3],
-  );
-
-  assert.ok("warningSummary" in options);
-  assert.deepEqual(options.warningSummary, [
-    {
-      code: "slot_materialization_missing",
-      message: "footer missing",
-    },
-  ]);
-  assert.equal(options.judgePlanRef, "runs/run-1/attempts/1/judge-plan.json");
 });
 
 test("graphHelpers는 ack와 proposal을 stage record로 보존한다", () => {

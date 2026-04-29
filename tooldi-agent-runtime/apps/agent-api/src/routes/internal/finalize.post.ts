@@ -52,18 +52,10 @@ export const finalizePostRoute: FastifyPluginAsync = async (app) => {
   );
 };
 
-function toAgentRunResultSummary(request: RunFinalizeRequest): AgentRunResultSummary {
-  const warnings =
-    request.warnings ??
-    (request.finalStatus === "completed_with_warning"
-      ? [
-          {
-            code: "completed_with_warning_placeholder",
-            message:
-              "Worker finalized with warning details that will be expanded in a later step",
-          },
-        ]
-      : []);
+function toAgentRunResultSummary(
+  request: RunFinalizeRequest,
+): AgentRunResultSummary {
+  const warnings = request.warnings ?? [];
 
   const latestSaveReceiptId = request.latestSaveReceipt?.saveReceiptId ?? null;
 
@@ -91,7 +83,7 @@ function deriveDurabilityState(
   latestSaveReceiptId: AgentRunResultSummary["latestSaveReceiptId"],
 ): AgentRunResultSummary["durabilityState"] {
   if (latestSaveEvidence && latestSaveReceiptId) {
-    if (finalStatus === "completed" || finalStatus === "completed_with_warning") {
+    if (finalStatus === "completed") {
       return "final_saved";
     }
     return "milestone_saved";

@@ -1,30 +1,15 @@
 import type { StateGraph } from "@langchain/langgraph";
 import type { WaitMutationAckResponse } from "@tooldi/agent-contracts";
 
-import { finalizeRun } from "../phases/finalizeRun.js";
 import { emitSkeletonMutations } from "../phases/emitSkeletonMutations.js";
 import { buildHeartbeatBase, buildStageAckRecord } from "./graphHelpers.js";
 import { shouldStopAfterCurrentAction } from "./nodeUtils.js";
-import { RunJobGraphState, type RunJobGraphStateType } from "./runJobGraphState.js";
+import {
+  RunJobGraphState,
+  type RunJobGraphStateType,
+} from "./runJobGraphState.js";
 import type { RunJobGraphDependencies } from "./runJobGraphTypes.js";
 import type { createRunJobGraphTasks } from "./graphTasks.js";
-
-function isObjectNativeExecutionState(
-  state: Pick<
-    RunJobGraphStateType,
-    | "freeformLayoutPlan"
-    | "referenceBlockGraph"
-    | "messageAtomPlan"
-    | "editableBlockPlan"
-  >,
-): boolean {
-  return (
-    state.freeformLayoutPlan?.workflowVariant === "object_native_v1" ||
-    state.referenceBlockGraph?.workflowVariant === "object_native_v1" ||
-    state.messageAtomPlan?.workflowVariant === "object_native_v1" ||
-    state.editableBlockPlan?.workflowVariant === "object_native_v1"
-  );
-}
 
 type PrepareExecutionTasks = Pick<
   ReturnType<typeof createRunJobGraphTasks>,
@@ -35,10 +20,7 @@ export async function prepareExecutionNode(
   state: RunJobGraphStateType,
   tasks: PrepareExecutionTasks,
 ) {
-  const {
-    heartbeatTask,
-    appendEventTask,
-  } = tasks;
+  const { heartbeatTask, appendEventTask } = tasks;
 
   if (!state.hydrated || !state.intent || !state.plan) {
     throw new Error("prepare_execution requires resolved plan state");
@@ -67,95 +49,13 @@ export async function prepareExecutionNode(
   });
   cooperativeStopRequested ||= executingEvent.cancelRequested;
 
-  if (
-    !cooperativeStopRequested &&
-    isObjectNativeExecutionState(state) &&
-    state.adaptiveSkeletonBatch === null
-  ) {
-    const missingAdaptiveLog = await appendEventTask(state.job.runId, {
-      traceId: state.job.traceId,
-      attempt: state.job.attemptSeq,
-      queueJobId: state.job.queueJobId,
-      event: {
-        type: "log",
-        level: "error",
-        message:
-          "[ssot/adaptive-composition] object_native_v1 requires an adaptive mutation batch; refusing any slot-era fallback",
-      },
-    });
-    cooperativeStopRequested ||= missingAdaptiveLog.cancelRequested;
-    const finalizeDraft = await finalizeRun(state.hydrated, [], null, {
-      cooperativeStopRequested,
-      ...(state.canonicalDesignBriefRef
-        ? { canonicalDesignBriefRef: state.canonicalDesignBriefRef }
-        : {}),
-      ...(state.semanticBriefDraftRef
-        ? { semanticBriefDraftRef: state.semanticBriefDraftRef }
-        : {}),
-      ...(state.briefCompilationReportRef
-        ? { briefCompilationReportRef: state.briefCompilationReportRef }
-        : {}),
-      ...(state.copyPlanRef ? { copyPlanRef: state.copyPlanRef } : {}),
-      ...(state.abstractLayoutPlanRef
-        ? { abstractLayoutPlanRef: state.abstractLayoutPlanRef }
-        : {}),
-      ...(state.assetPlanRef ? { assetPlanRef: state.assetPlanRef } : {}),
-      ...(state.concreteLayoutPlanRef
-        ? { concreteLayoutPlanRef: state.concreteLayoutPlanRef }
-        : {}),
-      ...(state.templatePriorBundleRef
-        ? { templatePriorBundleRef: state.templatePriorBundleRef }
-        : {}),
-      ...(state.sceneStylePlanRef
-        ? { sceneStylePlanRef: state.sceneStylePlanRef }
-        : {}),
-      ...(state.sceneBindingPlanRef
-        ? { sceneBindingPlanRef: state.sceneBindingPlanRef }
-        : {}),
-      overrideResult: {
-        finalStatus: "failed",
-        errorSummary: {
-          code: "adaptive_batch_missing",
-          message:
-            "object_native_v1 could not build an adaptive mutation batch and refused to fall back to the removed slot engine",
-        },
-      },
-    });
-
-    return {
-      cooperativeStopRequested,
-      skeletonBatch: {
-        commitGroup:
-          state.plan?.actions[0]?.commitGroup ?? "adaptive_batch_missing",
-        proposals: [],
-      },
-      currentStageIndex: 0,
-      currentProposal: null,
-      currentMutationId: null,
-      lastMutationAck: null,
-      emittedMutationIds: [],
-      assignedSeqs: [],
-      stageAckHistory: [],
-      refineAttempt: 0,
-      executionSceneSummary: null,
-      executionSceneSummaryRef: null,
-      judgePlan: null,
-      judgePlanRef: null,
-      refineDecision: null,
-      refineDecisionRef: null,
-      finalizeDraft,
-    };
-  }
-
   const skeletonBatch = cooperativeStopRequested
     ? {
         commitGroup:
           state.plan?.actions[0]?.commitGroup ?? "cancelled_before_mutation",
         proposals: [],
       }
-    : state.adaptiveSkeletonBatch
-      ? state.adaptiveSkeletonBatch
-      : await emitSkeletonMutations(state.hydrated, state.intent, state.plan);
+    : await emitSkeletonMutations(state.hydrated, state.intent, state.plan);
 
   return {
     cooperativeStopRequested,
@@ -172,13 +72,6 @@ export async function prepareExecutionNode(
     emittedMutationIds: [],
     assignedSeqs: [],
     stageAckHistory: [],
-    refineAttempt: 0,
-    executionSceneSummary: null,
-    executionSceneSummaryRef: null,
-    judgePlan: null,
-    judgePlanRef: null,
-    refineDecision: null,
-    refineDecisionRef: null,
   };
 }
 
@@ -187,11 +80,7 @@ export function registerExecutionNodes(
   _dependencies: RunJobGraphDependencies,
   tasks: ReturnType<typeof createRunJobGraphTasks>,
 ) {
-  const {
-    heartbeatTask,
-    appendEventTask,
-    waitMutationAckTask,
-  } = tasks;
+  const { heartbeatTask, appendEventTask, waitMutationAckTask } = tasks;
 
   return graph
     .addNode("prepare_execution", async (state) =>
@@ -230,42 +119,10 @@ export function registerExecutionNodes(
         };
       }
 
-      if (proposal.stageLabel === "photo") {
-        const heroCommand = proposal.mutation.commands.find(
-          (command) =>
-            command.op === "createLayer" &&
-            "executionSlotKey" in command &&
-            command.executionSlotKey === "hero_image",
-        );
-        const bounds =
-          heroCommand && "layerBlueprint" in heroCommand
-            ? heroCommand.layerBlueprint.bounds
-            : null;
-        const photoStageLog = await appendEventTask(state.job.runId, {
-          traceId: state.job.traceId,
-          attempt: state.job.attemptSeq,
-          queueJobId: state.job.queueJobId,
-          event: {
-            type: "log",
-            level: "info",
-            message:
-              `[source/photo-stage] seq=${proposal.mutation.seq} ` +
-              `heroBounds=${bounds ? `${bounds.x},${bounds.y},${bounds.width},${bounds.height}` : "n/a"}`,
-          },
-        });
-        if (photoStageLog.cancelRequested) {
-          return {
-            cooperativeStopRequested: true,
-            currentMutationId: null,
-            lastMutationAck: {
-              found: true,
-              status: "cancelled",
-            } satisfies WaitMutationAckResponse,
-          };
-        }
-      }
-
-      const emittedMutationIds = [...state.emittedMutationIds, proposal.mutationId];
+      const emittedMutationIds = [
+        ...state.emittedMutationIds,
+        proposal.mutationId,
+      ];
       const mutationResponse = await appendEventTask(state.job.runId, {
         traceId: state.job.traceId,
         attempt: state.job.attemptSeq,
@@ -300,7 +157,11 @@ export function registerExecutionNodes(
       };
     })
     .addNode("await_stage_ack", async (state) => {
-      if (!state.currentProposal || !state.currentMutationId || !state.skeletonBatch) {
+      if (
+        !state.currentProposal ||
+        !state.currentMutationId ||
+        !state.skeletonBatch
+      ) {
         throw new Error("await_stage_ack requires an emitted mutation");
       }
 
@@ -346,10 +207,7 @@ export function registerExecutionNodes(
           event: {
             type: "log",
             level: "warn",
-            message:
-              proposal.stageLabel === "photo"
-                ? "Fail-fast policy stopped remaining stages after the photo stage was not acknowledged"
-                : `Stopped remaining stages after ${proposal.stageLabel} stage returned ${lastMutationAck.status}`,
+            message: `Stopped remaining stages after ${proposal.stageLabel} stage returned ${lastMutationAck.status}`,
           },
         });
         cooperativeStopRequested ||= failFastLog.cancelRequested;

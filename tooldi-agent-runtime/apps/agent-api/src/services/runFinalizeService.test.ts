@@ -69,7 +69,9 @@ async function createTestDb() {
   return db;
 }
 
-function createFinalizeRequest(overrides: Partial<RunFinalizeRequest> = {}): RunFinalizeRequest {
+function createFinalizeRequest(
+  overrides: Partial<RunFinalizeRequest> = {},
+): RunFinalizeRequest {
   return {
     traceId: "trace-1",
     attempt: 1,
@@ -93,19 +95,11 @@ function createFinalizeRequest(overrides: Partial<RunFinalizeRequest> = {}): Run
       reason: "run_completed",
     },
     outputTemplateCode: "template_draft_run-1",
-    canonicalDesignBriefRef: "runs/run-1/attempts/1/canonical-design-brief.json",
-    templatePriorSummaryRef: "runs/run-1/attempts/1/template-prior-summary.json",
-    searchProfileRef: "runs/run-1/attempts/1/search-profile.json",
+    canonicalDesignBriefRef:
+      "runs/run-1/attempts/1/canonical-design-brief.json",
+    briefCompilationReportRef:
+      "runs/run-1/attempts/1/brief-compilation-report.json",
     executablePlanRef: "runs/run-1/attempts/1/executable-plan.json",
-    candidateSetRef: "runs/run-1/attempts/1/template-candidate-set.json",
-    sourceSearchSummaryRef: "runs/run-1/attempts/1/source-search-summary.json",
-    retrievalStageRef: "runs/run-1/attempts/1/retrieval-stage.json",
-    selectionDecisionRef: "runs/run-1/attempts/1/selection-decision.json",
-    typographyDecisionRef: "runs/run-1/attempts/1/typography-decision.json",
-    ruleJudgeVerdictRef: "runs/run-1/attempts/1/rule-judge-verdict.json",
-    executionSceneSummaryRef: "runs/run-1/attempts/1/execution-scene-summary.json",
-    judgePlanRef: "runs/run-1/attempts/1/judge-plan.json",
-    refineDecisionRef: "runs/run-1/attempts/1/refine-decision.json",
     sourceMutationRange: {
       firstSeq: 1,
       lastSeq: 1,
@@ -465,8 +459,14 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
 
     const bundle = await draftBundleRepository.findByRunId("run-1");
     assert.ok(bundle);
-    assert.equal(bundle.payload.saveMetadata.latestSaveEvidence?.code, "template_draft_run-1");
-    assert.equal(bundle.payload.saveMetadata.latestSaveEvidence?.serial, 198008);
+    assert.equal(
+      bundle.payload.saveMetadata.latestSaveEvidence?.code,
+      "template_draft_run-1",
+    );
+    assert.equal(
+      bundle.payload.saveMetadata.latestSaveEvidence?.serial,
+      198008,
+    );
     assert.deepEqual(bundle.payload.saveMetadata.latestSaveReceipt, {
       saveReceiptId: "save-receipt-1",
       outputTemplateCode: "template_draft_run-1",
@@ -474,8 +474,14 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
       savedAt: "2026-04-10T02:42:19.000Z",
       reason: "run_completed",
     });
-    assert.equal(bundle.payload.editableCanvasState.commitPayload.firstRenderableSeq, 1);
-    assert.equal(bundle.payload.mutationLedger.lastKnownGoodCheckpointId, "checkpoint_run-1_latest_saved");
+    assert.equal(
+      bundle.payload.editableCanvasState.commitPayload.firstRenderableSeq,
+      1,
+    );
+    assert.equal(
+      bundle.payload.mutationLedger.lastKnownGoodCheckpointId,
+      "checkpoint_run-1_latest_saved",
+    );
     assert.equal(
       bundle.payload.editableCanvasState.draftManifest.slotBindings.some(
         (binding) =>
@@ -501,16 +507,14 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
       true,
     );
     assert.equal(
-      bundle.payload.mutationLedger.checkpoints[0]?.sourceRefs.executionSceneSummaryRef,
-      "runs/run-1/attempts/1/execution-scene-summary.json",
+      bundle.payload.mutationLedger.checkpoints[0]?.sourceRefs
+        .briefCompilationReportRef,
+      "runs/run-1/attempts/1/brief-compilation-report.json",
     );
     assert.equal(
-      bundle.payload.mutationLedger.checkpoints[0]?.sourceRefs.judgePlanRef,
-      "runs/run-1/attempts/1/judge-plan.json",
-    );
-    assert.equal(
-      bundle.payload.mutationLedger.checkpoints[0]?.sourceRefs.refineDecisionRef,
-      "runs/run-1/attempts/1/refine-decision.json",
+      bundle.payload.mutationLedger.checkpoints[0]?.sourceRefs
+        .executablePlanRef,
+      "runs/run-1/attempts/1/executable-plan.json",
     );
 
     const completion = await completionRepository.findByRunId("run-1");
@@ -522,52 +526,12 @@ test("RunFinalizeService materializes bundle and completion chain for completed 
       "runs/run-1/attempts/1/canonical-design-brief.json",
     );
     assert.equal(
-      completion.sourceRefs.templatePriorSummaryRef,
-      "runs/run-1/attempts/1/template-prior-summary.json",
-    );
-    assert.equal(
-      completion.sourceRefs.searchProfileRef,
-      "runs/run-1/attempts/1/search-profile.json",
+      completion.sourceRefs.briefCompilationReportRef,
+      "runs/run-1/attempts/1/brief-compilation-report.json",
     );
     assert.equal(
       completion.sourceRefs.executablePlanRef,
       "runs/run-1/attempts/1/executable-plan.json",
-    );
-    assert.equal(
-      completion.sourceRefs.candidateSetRef,
-      "runs/run-1/attempts/1/template-candidate-set.json",
-    );
-    assert.equal(
-      completion.sourceRefs.sourceSearchSummaryRef,
-      "runs/run-1/attempts/1/source-search-summary.json",
-    );
-    assert.equal(
-      completion.sourceRefs.retrievalStageRef,
-      "runs/run-1/attempts/1/retrieval-stage.json",
-    );
-    assert.equal(
-      completion.sourceRefs.selectionDecisionRef,
-      "runs/run-1/attempts/1/selection-decision.json",
-    );
-    assert.equal(
-      completion.sourceRefs.typographyDecisionRef,
-      "runs/run-1/attempts/1/typography-decision.json",
-    );
-    assert.equal(
-      completion.sourceRefs.ruleJudgeVerdictRef,
-      "runs/run-1/attempts/1/rule-judge-verdict.json",
-    );
-    assert.equal(
-      completion.sourceRefs.executionSceneSummaryRef,
-      "runs/run-1/attempts/1/execution-scene-summary.json",
-    );
-    assert.equal(
-      completion.sourceRefs.judgePlanRef,
-      "runs/run-1/attempts/1/judge-plan.json",
-    );
-    assert.equal(
-      completion.sourceRefs.refineDecisionRef,
-      "runs/run-1/attempts/1/refine-decision.json",
     );
   } finally {
     await db.end();
@@ -829,7 +793,8 @@ test("RunFinalizeService accepts object-native completed runs without slotBindin
       draftId: "draft_run-object-native",
       canonicalDesignBriefRef:
         "runs/run-object-native/attempts/1/canonical-design-brief.json",
-      executablePlanRef: "runs/run-object-native/attempts/1/executable-plan.json",
+      executablePlanRef:
+        "runs/run-object-native/attempts/1/executable-plan.json",
     });
     const result = await service.finalizeRun({
       runId: "run-object-native",
@@ -881,24 +846,26 @@ test("RunFinalizeService accepts object-native completed runs without slotBindin
       bundle.payload.saveMetadata.completionSnapshot.minimumDraftSatisfied,
       true,
     );
-    assert.deepEqual(bundle.payload.editableCanvasState.draftManifest.slotBindings, []);
-    assert.deepEqual(bundle.payload.editableCanvasState.draftManifest.rootLayerIds, [
-      "background-layer",
-      "headline-layer",
-      "offer-layer",
-      "cta-layer",
-    ]);
-    assert.deepEqual(bundle.payload.editableCanvasState.draftManifest.editableLayerIds, [
-      "background-layer",
-      "headline-layer",
-      "offer-layer",
-      "cta-layer",
-    ]);
+    assert.deepEqual(
+      bundle.payload.editableCanvasState.draftManifest.slotBindings,
+      [],
+    );
+    assert.deepEqual(
+      bundle.payload.editableCanvasState.draftManifest.rootLayerIds,
+      ["background-layer", "headline-layer", "offer-layer", "cta-layer"],
+    );
+    assert.deepEqual(
+      bundle.payload.editableCanvasState.draftManifest.editableLayerIds,
+      ["background-layer", "headline-layer", "offer-layer", "cta-layer"],
+    );
     assert.equal(
       bundle.payload.saveMetadata.latestSaveEvidence?.code,
       "template_draft_run-object-native",
     );
-    assert.equal(bundle.payload.editableCanvasState.commitPayload.firstRenderableSeq, 1);
+    assert.equal(
+      bundle.payload.editableCanvasState.commitPayload.firstRenderableSeq,
+      1,
+    );
   } finally {
     await db.end();
   }

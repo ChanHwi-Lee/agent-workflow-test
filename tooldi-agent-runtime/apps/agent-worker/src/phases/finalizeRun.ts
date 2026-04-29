@@ -15,33 +15,7 @@ export async function finalizeRun(
     canonicalDesignBriefRef?: string;
     semanticBriefDraftRef?: string;
     briefCompilationReportRef?: string;
-    copyPlanRef?: string;
-    copyPlanNormalizationReportRef?: string;
-    abstractLayoutPlanRef?: string;
-    abstractLayoutPlanNormalizationReportRef?: string;
-    assetPlanRef?: string;
-    concreteLayoutPlanRef?: string;
-    templatePriorSummaryRef?: string;
-    templatePriorBundleRef?: string;
-    sceneRolePlanRef?: string;
-    sceneLayoutPlanRef?: string;
-    sceneStylePlanRef?: string;
-    sceneBindingPlanRef?: string;
-    searchProfileRef?: string;
     executablePlanRef?: string;
-    candidateSetRef?: string;
-    sourceSearchSummaryRef?: string;
-    retrievalStageRef?: string;
-    selectionDecisionRef?: string;
-    typographyDecisionRef?: string;
-    ruleJudgeVerdictRef?: string;
-    executionSceneSummaryRef?: string;
-    judgePlanRef?: string;
-    refineDecisionRef?: string;
-    warningSummary?: Array<{
-      code: string;
-      message: string;
-    }>;
     assignedSeqs?: number[];
     overrideResult?: {
       finalStatus: FinalizeRunDraft["request"]["finalStatus"];
@@ -53,10 +27,7 @@ export async function finalizeRun(
   let finalStatus: FinalizeRunDraft["request"]["finalStatus"] =
     options.cooperativeStopRequested === true ? "cancelled" : "completed";
   let fallbackCount = 0;
-  let warnings = options.warningSummary ?? [];
-  let errorSummary:
-    | FinalizeRunDraft["request"]["errorSummary"]
-    | undefined;
+  let errorSummary: FinalizeRunDraft["request"]["errorSummary"] | undefined;
 
   if (options.cooperativeStopRequested !== true) {
     switch (lastMutationAck?.status) {
@@ -65,18 +36,19 @@ export async function finalizeRun(
         break;
       case "rejected":
         finalStatus = "failed";
-        errorSummary =
-          lastMutationAck.error ?? {
-            code: "mutation_rejected",
-            message: "Skeleton mutation was rejected by the backend/editor handshake",
-          };
+        errorSummary = lastMutationAck.error ?? {
+          code: "mutation_rejected",
+          message:
+            "Skeleton mutation was rejected by the backend/editor handshake",
+        };
         break;
       case "timed_out":
         finalStatus = "failed";
         fallbackCount = 1;
         errorSummary = {
           code: "mutation_ack_timed_out",
-          message: "Worker could not confirm mutation apply within the long-poll window",
+          message:
+            "Worker could not confirm mutation apply within the long-poll window",
         };
         break;
       case "dispatched":
@@ -99,11 +71,8 @@ export async function finalizeRun(
     fallbackCount = options.overrideResult.fallbackCount ?? fallbackCount;
   }
 
-  if (finalStatus === "completed" && warnings.length > 0) {
-    finalStatus = "completed_with_warning";
-  }
-
-  const lastAckedSeq = lastMutationAck?.status === "acked" ? lastMutationAck.seq ?? 0 : 0;
+  const lastAckedSeq =
+    lastMutationAck?.status === "acked" ? (lastMutationAck.seq ?? 0) : 0;
   const draftId = `draft_${input.job.runId}`;
   const assignedSeqs = options.assignedSeqs ?? [];
   const sourceMutationRange =
@@ -115,15 +84,11 @@ export async function finalizeRun(
         }
       : undefined;
   const latestSaveEvidence =
-    finalStatus === "completed" || finalStatus === "completed_with_warning"
-      ? extractSaveEvidence(lastMutationAck)
-      : null;
+    finalStatus === "completed" ? extractSaveEvidence(lastMutationAck) : null;
   const latestSaveReceipt =
-    finalStatus === "completed" || finalStatus === "completed_with_warning"
-      ? extractSaveReceipt(lastMutationAck)
-      : null;
+    finalStatus === "completed" ? extractSaveReceipt(lastMutationAck) : null;
   if (
-    (finalStatus === "completed" || finalStatus === "completed_with_warning") &&
+    finalStatus === "completed" &&
     (latestSaveEvidence === null || latestSaveReceipt === null)
   ) {
     finalStatus = "save_failed_after_apply";
@@ -156,79 +121,17 @@ export async function finalizeRun(
       ...(options.briefCompilationReportRef
         ? { briefCompilationReportRef: options.briefCompilationReportRef }
         : {}),
-      ...(options.copyPlanRef ? { copyPlanRef: options.copyPlanRef } : {}),
-      ...(options.copyPlanNormalizationReportRef
-        ? { copyPlanNormalizationReportRef: options.copyPlanNormalizationReportRef }
-        : {}),
-      ...(options.abstractLayoutPlanRef
-        ? { abstractLayoutPlanRef: options.abstractLayoutPlanRef }
-        : {}),
-      ...(options.abstractLayoutPlanNormalizationReportRef
-        ? {
-            abstractLayoutPlanNormalizationReportRef:
-              options.abstractLayoutPlanNormalizationReportRef,
-          }
-        : {}),
-      ...(options.assetPlanRef ? { assetPlanRef: options.assetPlanRef } : {}),
-      ...(options.concreteLayoutPlanRef
-        ? { concreteLayoutPlanRef: options.concreteLayoutPlanRef }
-        : {}),
-      ...(options.templatePriorSummaryRef
-        ? { templatePriorSummaryRef: options.templatePriorSummaryRef }
-        : {}),
-      ...(options.templatePriorBundleRef
-        ? { templatePriorBundleRef: options.templatePriorBundleRef }
-        : {}),
-      ...(options.sceneRolePlanRef
-        ? { sceneRolePlanRef: options.sceneRolePlanRef }
-        : {}),
-      ...(options.sceneLayoutPlanRef
-        ? { sceneLayoutPlanRef: options.sceneLayoutPlanRef }
-        : {}),
-      ...(options.sceneStylePlanRef
-        ? { sceneStylePlanRef: options.sceneStylePlanRef }
-        : {}),
-      ...(options.sceneBindingPlanRef
-        ? { sceneBindingPlanRef: options.sceneBindingPlanRef }
-        : {}),
-      ...(options.searchProfileRef
-        ? { searchProfileRef: options.searchProfileRef }
-        : {}),
       ...(options.executablePlanRef
         ? { executablePlanRef: options.executablePlanRef }
         : {}),
-      ...(options.candidateSetRef ? { candidateSetRef: options.candidateSetRef } : {}),
-      ...(options.sourceSearchSummaryRef
-        ? { sourceSearchSummaryRef: options.sourceSearchSummaryRef }
-        : {}),
-      ...(options.retrievalStageRef
-        ? { retrievalStageRef: options.retrievalStageRef }
-        : {}),
-      ...(options.selectionDecisionRef
-        ? { selectionDecisionRef: options.selectionDecisionRef }
-        : {}),
-      ...(options.typographyDecisionRef
-        ? { typographyDecisionRef: options.typographyDecisionRef }
-        : {}),
-      ...(options.ruleJudgeVerdictRef
-        ? { ruleJudgeVerdictRef: options.ruleJudgeVerdictRef }
-        : {}),
-      ...(options.executionSceneSummaryRef
-        ? { executionSceneSummaryRef: options.executionSceneSummaryRef }
-        : {}),
-      ...(options.judgePlanRef ? { judgePlanRef: options.judgePlanRef } : {}),
-      ...(options.refineDecisionRef
-        ? { refineDecisionRef: options.refineDecisionRef }
-        : {}),
       ...(sourceMutationRange ? { sourceMutationRange } : {}),
       createdLayerIds:
-        finalStatus === "completed" || finalStatus === "completed_with_warning"
+        finalStatus === "completed"
           ? proposedMutationIds.map((mutationId) => `layer_${mutationId}`)
           : [],
       updatedLayerIds: [],
       deletedLayerIds: [],
       fallbackCount,
-      ...(warnings.length > 0 ? { warnings } : {}),
       ...(errorSummary ? { errorSummary } : {}),
     },
     summary: {
@@ -296,13 +199,13 @@ function deriveCompletionState(
   switch (finalStatus) {
     case "completed":
       return "editable_draft_ready";
-    case "completed_with_warning":
-      return "editable_draft_ready_with_warning";
     case "save_failed_after_apply":
       return "save_failed_after_apply";
     case "cancelled":
       return "cancelled";
     case "failed":
       return "failed";
+    default:
+      throw new Error(`Unsupported final status: ${finalStatus}`);
   }
 }

@@ -16,7 +16,9 @@ import {
 import { RunCompletionSnapshotSchema } from "./run-result.js";
 
 const SlotBindingStatusSchema = Type.Union(
-  ["ready", "fallback_ready", "placeholder"].map((value) => Type.Literal(value)),
+  ["ready", "fallback_ready", "placeholder"].map((value) =>
+    Type.Literal(value),
+  ),
 );
 
 const StoredAssetDescriptorSchema = Type.Object(
@@ -55,7 +57,9 @@ const DraftManifestSchema = Type.Object(
           primaryLayerId: IdentifierSchema,
           layerIds: Type.Array(IdentifierSchema),
           layerType: Type.Union(
-            ["shape", "text", "group", "image"].map((value) => Type.Literal(value)),
+            ["shape", "text", "group", "image"].map((value) =>
+              Type.Literal(value),
+            ),
           ),
           status: SlotBindingStatusSchema,
           editable: Type.Boolean(),
@@ -91,7 +95,10 @@ const EditableBannerDraftCommitPayloadSchema = Type.Object(
         rootLayerIds: Type.Array(IdentifierSchema),
         editableLayerIds: Type.Array(IdentifierSchema),
         slotBindings: DraftManifestSchema.properties.slotBindings,
-        expectedFinalRevision: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
+        expectedFinalRevision: Type.Union([
+          Type.Integer({ minimum: 0 }),
+          Type.Null(),
+        ]),
       },
       { additionalProperties: false },
     ),
@@ -116,8 +123,8 @@ const MutationLedgerEntrySchema = Type.Object(
     planStepId: IdentifierSchema,
     commandOps: Type.Array(
       Type.Union(
-        ["createLayer", "updateLayer", "deleteLayer", "saveTemplate"].map((value) =>
-          Type.Literal(value),
+        ["createLayer", "updateLayer", "deleteLayer", "saveTemplate"].map(
+          (value) => Type.Literal(value),
         ),
       ),
       { minItems: 1 },
@@ -137,7 +144,9 @@ const MutationLedgerEntrySchema = Type.Object(
         Type.Literal(value),
       ),
     ),
-    compensatesMutationId: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+    compensatesMutationId: Type.Optional(
+      Type.Union([IdentifierSchema, Type.Null()]),
+    ),
     rollbackGroupId: IdentifierSchema,
     emittedAt: IsoDateTimeSchema,
     appliedAt: Type.Optional(Type.Union([IsoDateTimeSchema, Type.Null()])),
@@ -155,7 +164,9 @@ const LastKnownGoodCheckpointSchema = Type.Object(
     draftId: IdentifierSchema,
     attemptSeq: Type.Integer({ minimum: 1 }),
     planStepId: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-    planStepOrder: Type.Optional(Type.Union([Type.Integer({ minimum: 1 }), Type.Null()])),
+    planStepOrder: Type.Optional(
+      Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
+    ),
     stepKey: Type.Union(
       [
         "worker_hydrated",
@@ -170,9 +181,14 @@ const LastKnownGoodCheckpointSchema = Type.Object(
       ].map((value) => Type.Literal(value)),
     ),
     checkpointClass: Type.Union(
-      ["baseline", "decision", "resume_only", "visible_unsaved", "durable_saved", "terminal_ready"].map(
-        (value) => Type.Literal(value),
-      ),
+      [
+        "baseline",
+        "decision",
+        "resume_only",
+        "visible_unsaved",
+        "durable_saved",
+        "terminal_ready",
+      ].map((value) => Type.Literal(value)),
     ),
     createdAt: IsoDateTimeSchema,
     sourceRefs: Type.Object(
@@ -185,51 +201,15 @@ const LastKnownGoodCheckpointSchema = Type.Object(
         briefCompilationReportRef: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),
         ),
-        copyPlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        copyPlanNormalizationReportRef: Type.Optional(
+        canonicalDesignBriefRef: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),
         ),
-        abstractLayoutPlanRef: Type.Optional(
+        executablePlanRef: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),
         ),
-        abstractLayoutPlanNormalizationReportRef: Type.Optional(
+        latestSaveReceiptId: Type.Optional(
           Type.Union([IdentifierSchema, Type.Null()]),
         ),
-        assetPlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        concreteLayoutPlanRef: Type.Optional(
-          Type.Union([IdentifierSchema, Type.Null()]),
-        ),
-        canonicalDesignBriefRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        templatePriorSummaryRef: Type.Optional(
-          Type.Union([IdentifierSchema, Type.Null()]),
-        ),
-        templatePriorBundleRef: Type.Optional(
-          Type.Union([IdentifierSchema, Type.Null()]),
-        ),
-        sceneRolePlanRef: Type.Optional(
-          Type.Union([IdentifierSchema, Type.Null()]),
-        ),
-        sceneLayoutPlanRef: Type.Optional(
-          Type.Union([IdentifierSchema, Type.Null()]),
-        ),
-        sceneStylePlanRef: Type.Optional(
-          Type.Union([IdentifierSchema, Type.Null()]),
-        ),
-        sceneBindingPlanRef: Type.Optional(
-          Type.Union([IdentifierSchema, Type.Null()]),
-        ),
-        searchProfileRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        executablePlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        candidateSetRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        sourceSearchSummaryRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        retrievalStageRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        selectionDecisionRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        typographyDecisionRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        ruleJudgeVerdictRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        executionSceneSummaryRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        judgePlanRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        refineDecisionRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
-        latestSaveReceiptId: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
         bundleRef: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
       },
       { additionalProperties: false },
@@ -248,20 +228,31 @@ const LastKnownGoodCheckpointSchema = Type.Object(
         bundleSnapshotRef: IdentifierSchema,
         snapshotArtifactType: Type.Literal("LiveDraftArtifactBundle"),
         snapshotArtifactVersion: Type.Literal("v1"),
-        checkpointRevision: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
+        checkpointRevision: Type.Union([
+          Type.Integer({ minimum: 0 }),
+          Type.Null(),
+        ]),
         rootLayerIds: Type.Array(IdentifierSchema),
         editableLayerIds: Type.Array(IdentifierSchema),
         referencedAssetIds: Type.Array(IdentifierSchema),
         slotStatuses: Type.Array(
           Type.Object(
             {
-              executionSlotKey: Type.Union([ExecutionSlotKeySchema, Type.Null()]),
+              executionSlotKey: Type.Union([
+                ExecutionSlotKeySchema,
+                Type.Null(),
+              ]),
               status: Type.Union(
-                ["not_started", "visible_placeholder", "ready", "fallback_ready"].map(
-                  (value) => Type.Literal(value),
-                ),
+                [
+                  "not_started",
+                  "visible_placeholder",
+                  "ready",
+                  "fallback_ready",
+                ].map((value) => Type.Literal(value)),
               ),
-              primaryLayerId: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+              primaryLayerId: Type.Optional(
+                Type.Union([IdentifierSchema, Type.Null()]),
+              ),
             },
             { additionalProperties: false },
           ),
@@ -276,8 +267,13 @@ const LastKnownGoodCheckpointSchema = Type.Object(
             Type.Literal(value),
           ),
         ),
-        restoreTargetRevision: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
-        restoreTargetCheckpointId: Type.Optional(Type.Union([IdentifierSchema, Type.Null()])),
+        restoreTargetRevision: Type.Union([
+          Type.Integer({ minimum: 0 }),
+          Type.Null(),
+        ]),
+        restoreTargetCheckpointId: Type.Optional(
+          Type.Union([IdentifierSchema, Type.Null()]),
+        ),
         durabilityState: DurabilityStateSchema,
       },
       { additionalProperties: false },
@@ -295,7 +291,10 @@ const MutationLedgerSchema = Type.Object(
     checkpoints: Type.Array(LastKnownGoodCheckpointSchema),
     lastKnownGoodCheckpointId: Type.Union([IdentifierSchema, Type.Null()]),
     reconciledThroughSeq: Type.Integer({ minimum: 0 }),
-    lastKnownGoodRevision: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
+    lastKnownGoodRevision: Type.Union([
+      Type.Integer({ minimum: 0 }),
+      Type.Null(),
+    ]),
   },
   { additionalProperties: false },
 );
@@ -322,7 +321,10 @@ export const LiveDraftArtifactBundleSchema = Type.Object(
     mutationLedger: MutationLedgerSchema,
     saveMetadata: Type.Object(
       {
-        latestSaveEvidence: Type.Union([TemplateSaveEvidenceSchema, Type.Null()]),
+        latestSaveEvidence: Type.Union([
+          TemplateSaveEvidenceSchema,
+          Type.Null(),
+        ]),
         latestSaveReceipt: Type.Union([TemplateSaveReceiptSchema, Type.Null()]),
         completionSnapshot: RunCompletionSnapshotSchema,
       },
@@ -338,6 +340,10 @@ export type EditableBannerDraftCommitPayload = Static<
   typeof EditableBannerDraftCommitPayloadSchema
 >;
 export type MutationLedgerEntry = Static<typeof MutationLedgerEntrySchema>;
-export type LastKnownGoodCheckpoint = Static<typeof LastKnownGoodCheckpointSchema>;
+export type LastKnownGoodCheckpoint = Static<
+  typeof LastKnownGoodCheckpointSchema
+>;
 export type MutationLedger = Static<typeof MutationLedgerSchema>;
-export type LiveDraftArtifactBundle = Static<typeof LiveDraftArtifactBundleSchema>;
+export type LiveDraftArtifactBundle = Static<
+  typeof LiveDraftArtifactBundleSchema
+>;

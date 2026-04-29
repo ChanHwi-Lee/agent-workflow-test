@@ -36,7 +36,8 @@ export interface TestLangGraphCheckpointerHandle {
 export function composeDefaultTestPostgresUrl(): string {
   const host = process.env.AGENT_RUNTIME_POSTGRES_HOST ?? "127.0.0.1";
   const port = process.env.AGENT_RUNTIME_POSTGRES_PORT ?? "55432";
-  const db = process.env.AGENT_RUNTIME_POSTGRES_DB ?? "tooldi_agent_runtime_test";
+  const db =
+    process.env.AGENT_RUNTIME_POSTGRES_DB ?? "tooldi_agent_runtime_test";
   const user = process.env.AGENT_RUNTIME_POSTGRES_USER ?? "postgres";
   const password = process.env.AGENT_RUNTIME_POSTGRES_PASSWORD ?? "postgres";
   return `postgres://${encodeURIComponent(user)}:${encodeURIComponent(
@@ -45,9 +46,12 @@ export function composeDefaultTestPostgresUrl(): string {
 }
 
 export async function createTestLangGraphCheckpointer(): Promise<TestLangGraphCheckpointerHandle> {
-  const checkpointer = PostgresSaver.fromConnString(composeDefaultTestPostgresUrl(), {
-    schema: "agent_langgraph_test",
-  });
+  const checkpointer = PostgresSaver.fromConnString(
+    composeDefaultTestPostgresUrl(),
+    {
+      schema: "agent_langgraph_test",
+    },
+  );
   await checkpointer.setup();
   return {
     checkpointer,
@@ -152,7 +156,7 @@ export function createDeterministicV6Overrides(): V6NodeOverrides {
       paddingBottom: "0px",
       paddingLeft: "0px",
       color: "rgb(0, 0, 0)",
-      fontFamily: "\"701_400\", sans-serif",
+      fontFamily: '"701_400", sans-serif',
       fontSize: "16px",
       fontWeight: "400",
       fontStyle: "normal",
@@ -178,7 +182,12 @@ export function createDeterministicV6Overrides(): V6NodeOverrides {
           serial: 0,
           path: "0",
           tagName: "div",
-          bounds: { left: 0, top: 0, width: canvas.width, height: canvas.height },
+          bounds: {
+            left: 0,
+            top: 0,
+            width: canvas.width,
+            height: canvas.height,
+          },
           style: { ...baseStyle, backgroundColor: "rgb(255, 245, 225)" },
           isTextLeaf: false,
           text: null,
@@ -194,7 +203,7 @@ export function createDeterministicV6Overrides(): V6NodeOverrides {
           bounds: { left: 80, top: 140, width: 600, height: 110 },
           style: {
             ...baseStyle,
-            fontFamily: "\"701_700\", sans-serif",
+            fontFamily: '"701_700", sans-serif',
             fontSize: "84px",
             fontWeight: "700",
             color: "rgb(34, 34, 34)",
@@ -213,7 +222,7 @@ export function createDeterministicV6Overrides(): V6NodeOverrides {
           bounds: { left: 80, top: 270, width: 600, height: 80 },
           style: {
             ...baseStyle,
-            fontFamily: "\"701_400\", sans-serif",
+            fontFamily: '"701_400", sans-serif',
             fontSize: "36px",
           },
           isTextLeaf: true,
@@ -238,7 +247,10 @@ export function createDeterministicV6Overrides(): V6NodeOverrides {
 export class RecordingBackendCallbackClient implements BackendCallbackClient {
   readonly heartbeats: WorkerHeartbeatRequest[] = [];
   readonly appendedEvents: WorkerAppendEventRequest[] = [];
-  readonly ackWaits: Array<{ mutationId: string; query: WaitMutationAckQuery }> = [];
+  readonly ackWaits: Array<{
+    mutationId: string;
+    query: WaitMutationAckQuery;
+  }> = [];
   readonly finalizations: RunFinalizeRequest[] = [];
   heartbeatResponseFactory?: (
     request: WorkerHeartbeatRequest,
@@ -382,55 +394,6 @@ export class TrackingObjectStoreClient implements ObjectStoreClient {
   }
 }
 
-const LEGACY_BUILD_OR_REFINEMENT_RESULT_KEYS = [
-  "sceneRolePlan",
-  "sceneLayoutPlan",
-  "sceneStylePlan",
-  "sceneBindingPlan",
-  "compositionBrief",
-  "compositionVariantSet",
-  "compositionRanking",
-  "copyPlan",
-  "copyPlanNormalizationReport",
-  "abstractLayoutPlan",
-  "abstractLayoutPlanNormalizationReport",
-  "assetPlan",
-  "concreteLayoutPlan",
-  "templatePriorSummary",
-  "ruleJudgeVerdict",
-  "executionSceneSummary",
-  "judgePlan",
-  "refineDecision",
-] as const satisfies readonly (keyof ProcessRunJobTestResult)[];
-
-const LEGACY_BUILD_OR_REFINEMENT_ARTIFACT_REF_KEYS = [
-  "templatePriorBundleRef",
-  "sceneRolePlanRef",
-  "sceneLayoutPlanRef",
-  "sceneStylePlanRef",
-  "sceneBindingPlanRef",
-  "compositionBriefRef",
-  "compositionVariantSetRef",
-  "compositionRankingRef",
-  "copyPlanRef",
-  "copyPlanNormalizationReportRef",
-  "abstractLayoutPlanRef",
-  "abstractLayoutPlanNormalizationReportRef",
-  "assetPlanRef",
-  "concreteLayoutPlanRef",
-  "templatePriorSummaryRef",
-  "searchProfileRef",
-  "candidateSetRef",
-  "sourceSearchSummaryRef",
-  "retrievalStageRef",
-  "selectionDecisionRef",
-  "typographyDecisionRef",
-  "ruleJudgeVerdictRef",
-  "executionSceneSummaryRef",
-  "judgePlanRef",
-  "refineDecisionRef",
-] as const satisfies readonly (keyof ProcessRunJobTestResult["artifactRefs"])[];
-
 const LEGACY_BUILD_OR_REFINEMENT_ARTIFACT_FILENAMES = [
   "template-prior-bundle.json",
   "scene-role-plan.json",
@@ -460,25 +423,9 @@ const LEGACY_BUILD_OR_REFINEMENT_ARTIFACT_FILENAMES = [
 ] as const;
 
 export function assertLegacyBuildAndRefinementNodesWereBypassed(
-  result: ProcessRunJobTestResult,
+  _result: ProcessRunJobTestResult,
   objectStore: TrackingObjectStoreClient,
 ): void {
-  for (const key of LEGACY_BUILD_OR_REFINEMENT_RESULT_KEYS) {
-    assert.equal(
-      result[key],
-      undefined,
-      `${String(key)} must stay absent when object_native_v1 uses the v6 route`,
-    );
-  }
-
-  for (const key of LEGACY_BUILD_OR_REFINEMENT_ARTIFACT_REF_KEYS) {
-    assert.equal(
-      result.artifactRefs[key],
-      undefined,
-      `${String(key)} must stay absent when object_native_v1 uses the v6 route`,
-    );
-  }
-
   const forbiddenPuts = objectStore.putKeys.filter((key) =>
     LEGACY_BUILD_OR_REFINEMENT_ARTIFACT_FILENAMES.some((fileName) =>
       key.endsWith(`/${fileName}`),

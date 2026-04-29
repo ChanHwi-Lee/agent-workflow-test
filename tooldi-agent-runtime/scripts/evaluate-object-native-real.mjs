@@ -22,14 +22,17 @@ const DEFAULT_WORKFLOW_VARIANT = "object_native_v1";
 const options = parseCliArgs(process.argv.slice(2));
 const prompts = options.prompts.length > 0 ? options.prompts : DEFAULT_PROMPTS;
 const limitedPrompts =
-  options.limit === null ? prompts : prompts.slice(0, Math.max(options.limit, 0));
+  options.limit === null
+    ? prompts
+    : prompts.slice(0, Math.max(options.limit, 0));
 const baseUrl =
   options.baseUrl ??
   process.env.AGENT_WORKFLOW_BASE_URL ??
   process.env.PUBLIC_BASE_URL ??
   "http://127.0.0.1:3100";
 const objectStoreRootDir =
-  process.env.OBJECT_STORE_ROOT_DIR ?? "/tmp/tooldi-agent-runtime-toolditor-local";
+  process.env.OBJECT_STORE_ROOT_DIR ??
+  "/tmp/tooldi-agent-runtime-toolditor-local";
 const objectStoreBucket =
   process.env.OBJECT_STORE_BUCKET ?? "tooldi-agent-runtime-toolditor-local";
 const objectStorePrefix =
@@ -111,7 +114,6 @@ console.log(
       erroredRuns: summary.erroredRuns,
       v6CommandCounts: summary.v6CommandCounts,
       renderQualityBlockingRuns: summary.renderQualityBlockingRuns,
-      legacyArtifactPresence: summary.legacyArtifactPresence,
       saveReceiptMissingRuns: summary.saveReceiptMissingRuns,
       saveEvidenceMissingRuns: summary.saveEvidenceMissingRuns,
       saveTruthCounts: summary.saveTruthCounts,
@@ -158,21 +160,10 @@ async function evaluatePrompt({
       objectStorePrefix,
     });
 
-    const auditEntries = artifacts.audit?.entries ?? [];
-    const selectedAuditEntry =
-      auditEntries.find(
-        (entry) =>
-          entry.templateCode === artifacts.selection?.nextSelectedTemplateCode,
-      ) ?? auditEntries[0] ?? null;
-    const clusterKinds = Array.from(
-      new Set(
-        (artifacts.clusterGraph?.blocks ?? [])
-          .map((block) => block.kind)
-          .filter(Boolean),
-      ),
-    );
-    const latestSaveReceipt = artifacts.bundle?.saveMetadata?.latestSaveReceipt ?? null;
-    const latestSaveEvidence = artifacts.bundle?.saveMetadata?.latestSaveEvidence ?? null;
+    const latestSaveReceipt =
+      artifacts.bundle?.saveMetadata?.latestSaveReceipt ?? null;
+    const latestSaveEvidence =
+      artifacts.bundle?.saveMetadata?.latestSaveEvidence ?? null;
     const checkpoints = artifacts.bundle?.mutationLedger?.checkpoints ?? [];
     const v6Commands =
       artifacts.executablePlan?.actions?.[0]?.inputs?.v6Commands ?? [];
@@ -180,11 +171,6 @@ async function evaluatePrompt({
     const v6RenderBlockingIssues =
       artifacts.v6RenderQualityReport?.blockingIssues ??
       v6RenderIssues.filter((issue) => issue?.blocking === true);
-    const selectedDiagnostics =
-      artifacts.selection?.selectedDiagnostics ??
-      artifacts.renderability?.selectedDiagnostics ??
-      selectedAuditEntry?.diagnostics ??
-      null;
 
     return {
       prompt,
@@ -192,54 +178,12 @@ async function evaluatePrompt({
       traceId: accepted.traceId,
       requestWorkflowVariant: workflowVariant,
       runLogs: lifecycle.runLogs,
-      candidateCount: artifacts.templatePriorBundle?.candidates?.length ?? 0,
-      templatePriorFailedQueryCount:
-        artifacts.templatePriorBundle?.diagnostics?.failedQueryCount ?? 0,
-      templatePriorSuccessfulQueryCount:
-        artifacts.templatePriorBundle?.diagnostics?.successfulQueryCount ?? 0,
-      templatePriorQueryDiagnostics:
-        artifacts.templatePriorBundle?.diagnostics?.queryDiagnostics ?? [],
-      previousSelectedTemplateCode:
-        artifacts.selection?.previousSelectedTemplateCode ?? null,
-      nextSelectedTemplateCode:
-        artifacts.selection?.nextSelectedTemplateCode ?? null,
-      reselectionApplied: Boolean(artifacts.selection?.reselectionApplied),
-      selectedReadiness: artifacts.selection?.selectedReadiness ?? null,
-      failureStage:
-        artifacts.renderability?.failureStage ??
-        artifacts.selection?.selectedFailureStage ??
-        selectedAuditEntry?.failureStage ??
-        null,
-      compositionStatus:
-        artifacts.renderability?.compositionStatus ??
-        artifacts.freeformLayoutPlan?.compositionStatus ??
-        selectedAuditEntry?.compositionStatus ??
-        null,
-      renderabilityPassed: Boolean(artifacts.renderability?.passed),
-      renderabilityReason: artifacts.renderability?.reason ?? null,
-      selectedWarnings: selectedAuditEntry?.warnings ?? [],
-      selectedDiagnostics,
-      semanticGateReason: selectedDiagnostics?.semanticGateReason ?? null,
-      missingClusterFamilies: selectedDiagnostics?.missingClusterFamilies ?? [],
-      textBearingClusterCount:
-        selectedDiagnostics?.textBearingClusterCount ?? null,
-      contentClusterCount: selectedDiagnostics?.contentClusterCount ?? null,
-      bindingCoverage: selectedDiagnostics?.bindingCoverage ?? null,
-      renderabilityMetrics: selectedDiagnostics?.renderabilityMetrics ?? null,
-      clusterKinds,
       checkpointCount: checkpoints.length,
       hasLatestSaveReceipt: latestSaveReceipt !== null,
       hasLatestSaveEvidence: latestSaveEvidence !== null,
       latestSaveReceipt,
       latestSaveEvidence,
       savedOutputTemplateCode: latestSaveReceipt?.outputTemplateCode ?? null,
-      hasLegacyObjectNativeArtifacts: {
-        audit: artifacts.audit !== null,
-        selection: artifacts.selection !== null,
-        renderability: artifacts.renderability !== null,
-        clusterGraph: artifacts.clusterGraph !== null,
-        templatePriorBundle: artifacts.templatePriorBundle !== null,
-      },
       v6PlanSchemaVersion: artifacts.executablePlan?.planSchemaVersion ?? null,
       v6CommandCount: Array.isArray(v6Commands) ? v6Commands.length : null,
       v6RenderIssueCount: v6RenderIssues.length,
@@ -250,12 +194,6 @@ async function evaluatePrompt({
       hasTrendBrief: artifacts.trendBrief !== null,
       hasDebugV6Html: artifacts.debugV6Html !== null,
       hasDebugUnrestrictedHtml: artifacts.debugUnrestrictedHtml !== null,
-      objectNativeSummary: {
-        auditSummary: artifacts.audit?.summary ?? null,
-        selectionSummary: artifacts.selection?.summary ?? null,
-        renderabilitySummary: artifacts.renderability?.summary ?? null,
-        qualityEvalSummary: artifacts.qualityEvalSummary?.summary ?? null,
-      },
     };
   } catch (error) {
     return {
@@ -447,13 +385,6 @@ async function readRunArtifacts({
   );
 
   const [
-    templatePriorBundle,
-    audit,
-    selection,
-    renderability,
-    clusterGraph,
-    freeformLayoutPlan,
-    qualityEvalSummary,
     canonicalDesignBrief,
     briefCompilationReport,
     trendBrief,
@@ -461,39 +392,25 @@ async function readRunArtifacts({
     debugV6Html,
     debugUnrestrictedHtml,
     executablePlan,
-    topologyMatch,
-    topologySelection,
-    topologyCompletion,
     bundle,
   ] = await Promise.all([
-    readJsonOrNullWithRetry(resolve(attemptRoot, "template-prior-bundle.json")),
-    readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-reference-audit.json")),
-    readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-candidate-selection.json")),
-    readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-renderability-report.json")),
-    readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-cluster-graph.json")),
-    readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-freeform-layout-plan.json")),
-    readJsonOrNullWithRetry(resolve(attemptRoot, "object-native-quality-eval-summary.json")),
-    readJsonOrNullWithRetry(resolve(attemptRoot, "canonical-design-brief.json")),
-    readJsonOrNullWithRetry(resolve(attemptRoot, "brief-compilation-report.json")),
+    readJsonOrNullWithRetry(
+      resolve(attemptRoot, "canonical-design-brief.json"),
+    ),
+    readJsonOrNullWithRetry(
+      resolve(attemptRoot, "brief-compilation-report.json"),
+    ),
     readJsonOrNullWithRetry(resolve(attemptRoot, "v6-trend-brief.json")),
     readJsonWithRetry(resolve(attemptRoot, "v6-render-quality-report.json")),
     readJsonOrNullWithRetry(resolve(attemptRoot, "debug-v6-html.json")),
-    readJsonOrNullWithRetry(resolve(attemptRoot, "debug-unrestricted-html.json")),
+    readJsonOrNullWithRetry(
+      resolve(attemptRoot, "debug-unrestricted-html.json"),
+    ),
     readJsonWithRetry(resolve(attemptRoot, "executable-plan.json")),
-    readJsonOrNullWithRetry(resolve(attemptRoot, "topology-match-report.json")),
-    readJsonOrNullWithRetry(resolve(attemptRoot, "topology-selection.json")),
-    readJsonOrNullWithRetry(resolve(attemptRoot, "topology-completion-report.json")),
     readJsonWithRetry(resolve(artifactsRoot, `bundle_${runId}.json`)),
   ]);
 
   return {
-    templatePriorBundle,
-    audit,
-    selection,
-    renderability,
-    clusterGraph,
-    freeformLayoutPlan,
-    qualityEvalSummary,
     canonicalDesignBrief,
     briefCompilationReport,
     trendBrief,
@@ -501,9 +418,6 @@ async function readRunArtifacts({
     debugV6Html,
     debugUnrestrictedHtml,
     executablePlan,
-    topologyMatch,
-    topologySelection,
-    topologyCompletion,
     bundle,
   };
 }
@@ -550,25 +464,10 @@ function buildAggregateSummary({
     erroredResults.map((result) => normalizeErrorMessage(result.error)),
   );
   const v6CommandCounts = countBy(
-    completedResults.map((result) => String(result.v6CommandCount ?? "unknown")),
+    completedResults.map((result) =>
+      String(result.v6CommandCount ?? "unknown"),
+    ),
   );
-  const legacyArtifactPresence = {
-    templatePriorBundle: completedResults.filter(
-      (result) => result.hasLegacyObjectNativeArtifacts?.templatePriorBundle,
-    ).length,
-    audit: completedResults.filter(
-      (result) => result.hasLegacyObjectNativeArtifacts?.audit,
-    ).length,
-    selection: completedResults.filter(
-      (result) => result.hasLegacyObjectNativeArtifacts?.selection,
-    ).length,
-    renderability: completedResults.filter(
-      (result) => result.hasLegacyObjectNativeArtifacts?.renderability,
-    ).length,
-    clusterGraph: completedResults.filter(
-      (result) => result.hasLegacyObjectNativeArtifacts?.clusterGraph,
-    ).length,
-  };
   const saveTruthCounts = {
     complete: completedResults.filter(
       (result) => result.hasLatestSaveReceipt && result.hasLatestSaveEvidence,
@@ -598,7 +497,6 @@ function buildAggregateSummary({
     renderQualityBlockingRuns: completedResults.filter(
       (result) => (result.v6RenderBlockingIssueCount ?? 0) > 0,
     ).length,
-    legacyArtifactPresence,
     saveReceiptMissingRuns: completedResults.filter(
       (result) => !result.hasLatestSaveReceipt,
     ).length,
@@ -615,10 +513,7 @@ function buildAggregateSummary({
   };
 }
 
-function inferNextStep({
-  completedResults,
-  erroredResults,
-}) {
+function inferNextStep({ completedResults, erroredResults }) {
   if (erroredResults.length > 0) {
     return "Some v6 real eval runs failed. Inspect errorCounts and per-run logs before treating the browser run as acceptance evidence.";
   }
@@ -653,7 +548,9 @@ function inferNextStep({
 
 function normalizeErrorMessage(error) {
   const text = String(error ?? "");
-  if (text.includes("Tooldi template list endpoint returned an invalid payload")) {
+  if (
+    text.includes("Tooldi template list endpoint returned an invalid payload")
+  ) {
     return "template_list_invalid_payload";
   }
   if (text.includes("Timed out while waiting for run completion")) {

@@ -90,31 +90,8 @@ export async function materializeRunArtifacts(
             snapshotRef: input.run.snapshotRef,
             semanticBriefDraftRef: input.input.semanticBriefDraftRef,
             briefCompilationReportRef: input.input.briefCompilationReportRef,
-            copyPlanRef: input.input.copyPlanRef,
-            copyPlanNormalizationReportRef:
-              input.input.copyPlanNormalizationReportRef,
-            abstractLayoutPlanRef: input.input.abstractLayoutPlanRef,
-            abstractLayoutPlanNormalizationReportRef:
-              input.input.abstractLayoutPlanNormalizationReportRef,
-            assetPlanRef: input.input.assetPlanRef,
-            concreteLayoutPlanRef: input.input.concreteLayoutPlanRef,
             canonicalDesignBriefRef: input.input.canonicalDesignBriefRef,
-            templatePriorSummaryRef: input.input.templatePriorSummaryRef,
-            templatePriorBundleRef: input.input.templatePriorBundleRef,
-            sceneRolePlanRef: input.input.sceneRolePlanRef,
-            sceneLayoutPlanRef: input.input.sceneLayoutPlanRef,
-            sceneStylePlanRef: input.input.sceneStylePlanRef,
-            sceneBindingPlanRef: input.input.sceneBindingPlanRef,
             executablePlanRef: input.input.executablePlanRef,
-            candidateSetRef: input.input.candidateSetRef,
-            sourceSearchSummaryRef: input.input.sourceSearchSummaryRef,
-            retrievalStageRef: input.input.retrievalStageRef,
-            selectionDecisionRef: input.input.selectionDecisionRef,
-            typographyDecisionRef: input.input.typographyDecisionRef,
-            ruleJudgeVerdictRef: input.input.ruleJudgeVerdictRef,
-            executionSceneSummaryRef: input.input.executionSceneSummaryRef,
-            judgePlanRef: input.input.judgePlanRef,
-            refineDecisionRef: input.input.refineDecisionRef,
             latestSaveReceiptId: latestSaveReceipt?.saveReceiptId ?? null,
             bundleRef,
           },
@@ -123,9 +100,10 @@ export async function materializeRunArtifacts(
             latestAckedSeq:
               input.result.finalStatus === "cancelled"
                 ? 0
-                : input.result.finalRevision ??
-                  input.input.sourceMutationRange.reconciledThroughSeq,
-            reconciledThroughSeq: input.input.sourceMutationRange.reconciledThroughSeq,
+                : (input.result.finalRevision ??
+                  input.input.sourceMutationRange.reconciledThroughSeq),
+            reconciledThroughSeq:
+              input.input.sourceMutationRange.reconciledThroughSeq,
             openPlanStepIds: [],
           },
           bundleSnapshot: {
@@ -136,11 +114,13 @@ export async function materializeRunArtifacts(
             rootLayerIds: input.ledgerProjection.rootLayerIds,
             editableLayerIds: input.ledgerProjection.editableLayerIds,
             referencedAssetIds: [],
-            slotStatuses: input.ledgerProjection.slotBindings.map((binding) => ({
-              executionSlotKey: binding.executionSlotKey ?? null,
-              status: "ready" as const,
-              primaryLayerId: binding.primaryLayerId,
-            })),
+            slotStatuses: input.ledgerProjection.slotBindings.map(
+              (binding) => ({
+                executionSlotKey: binding.executionSlotKey ?? null,
+                status: "ready" as const,
+                primaryLayerId: binding.primaryLayerId,
+              }),
+            ),
           },
           recoveryBase: {
             restoreTargetKind: "latest_saved_revision" as const,
@@ -184,7 +164,9 @@ export async function materializeRunArtifacts(
     commitMode: "apply_immediately",
     firstRenderableSeq: input.input.sourceMutationRange.firstSeq,
     reconciledThroughSeq: input.input.sourceMutationRange.reconciledThroughSeq,
-    mutations: input.ledgerProjection.rangedRecords.map((record) => record.mutation),
+    mutations: input.ledgerProjection.rangedRecords.map(
+      (record) => record.mutation,
+    ),
     manifest: manifestProjection,
     savePlan: {
       milestoneReason: "milestone_first_editable",
@@ -298,73 +280,7 @@ export async function materializeRunArtifacts(
       ...(input.input.briefCompilationReportRef
         ? { briefCompilationReportRef: input.input.briefCompilationReportRef }
         : {}),
-      ...(input.input.copyPlanRef ? { copyPlanRef: input.input.copyPlanRef } : {}),
-      ...(input.input.copyPlanNormalizationReportRef
-        ? {
-            copyPlanNormalizationReportRef:
-              input.input.copyPlanNormalizationReportRef,
-          }
-        : {}),
-      ...(input.input.abstractLayoutPlanRef
-        ? { abstractLayoutPlanRef: input.input.abstractLayoutPlanRef }
-        : {}),
-      ...(input.input.abstractLayoutPlanNormalizationReportRef
-        ? {
-            abstractLayoutPlanNormalizationReportRef:
-              input.input.abstractLayoutPlanNormalizationReportRef,
-          }
-        : {}),
-      ...(input.input.assetPlanRef ? { assetPlanRef: input.input.assetPlanRef } : {}),
-      ...(input.input.concreteLayoutPlanRef
-        ? { concreteLayoutPlanRef: input.input.concreteLayoutPlanRef }
-        : {}),
-      ...(input.input.templatePriorSummaryRef
-        ? { templatePriorSummaryRef: input.input.templatePriorSummaryRef }
-        : {}),
-      ...(input.input.templatePriorBundleRef
-        ? { templatePriorBundleRef: input.input.templatePriorBundleRef }
-        : {}),
-      ...(input.input.sceneRolePlanRef
-        ? { sceneRolePlanRef: input.input.sceneRolePlanRef }
-        : {}),
-      ...(input.input.sceneLayoutPlanRef
-        ? { sceneLayoutPlanRef: input.input.sceneLayoutPlanRef }
-        : {}),
-      ...(input.input.sceneStylePlanRef
-        ? { sceneStylePlanRef: input.input.sceneStylePlanRef }
-        : {}),
-      ...(input.input.sceneBindingPlanRef
-        ? { sceneBindingPlanRef: input.input.sceneBindingPlanRef }
-        : {}),
-      ...(input.input.searchProfileRef
-        ? { searchProfileRef: input.input.searchProfileRef }
-        : {}),
       executablePlanRef: input.input.executablePlanRef,
-      ...(input.input.candidateSetRef
-        ? { candidateSetRef: input.input.candidateSetRef }
-        : {}),
-      ...(input.input.sourceSearchSummaryRef
-        ? { sourceSearchSummaryRef: input.input.sourceSearchSummaryRef }
-        : {}),
-      ...(input.input.retrievalStageRef
-        ? { retrievalStageRef: input.input.retrievalStageRef }
-        : {}),
-      ...(input.input.selectionDecisionRef
-        ? { selectionDecisionRef: input.input.selectionDecisionRef }
-        : {}),
-      ...(input.input.typographyDecisionRef
-        ? { typographyDecisionRef: input.input.typographyDecisionRef }
-        : {}),
-      ...(input.input.ruleJudgeVerdictRef
-        ? { ruleJudgeVerdictRef: input.input.ruleJudgeVerdictRef }
-        : {}),
-      ...(input.input.executionSceneSummaryRef
-        ? { executionSceneSummaryRef: input.input.executionSceneSummaryRef }
-        : {}),
-      ...(input.input.judgePlanRef ? { judgePlanRef: input.input.judgePlanRef } : {}),
-      ...(input.input.refineDecisionRef
-        ? { refineDecisionRef: input.input.refineDecisionRef }
-        : {}),
       bundleRef,
     },
   };
@@ -403,11 +319,7 @@ function enforceMinimumDraft(
   result: AgentRunResultSummary,
   minimumDraftSatisfied: boolean,
 ): AgentRunResultSummary {
-  if (
-    minimumDraftSatisfied ||
-    (result.finalStatus !== "completed" &&
-      result.finalStatus !== "completed_with_warning")
-  ) {
+  if (minimumDraftSatisfied || result.finalStatus !== "completed") {
     return result;
   }
 
@@ -434,13 +346,13 @@ function toCompletionState(
   switch (finalStatus) {
     case "completed":
       return "editable_draft_ready";
-    case "completed_with_warning":
-      return "editable_draft_ready_with_warning";
     case "save_failed_after_apply":
       return "save_failed_after_apply";
     case "cancelled":
       return "cancelled";
     case "failed":
       return "failed";
+    default:
+      throw new Error(`Unsupported final status: ${finalStatus}`);
   }
 }
