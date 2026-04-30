@@ -589,6 +589,72 @@ test("mapRenderedElements — opacity and transform flow through", () => {
   assert.equal(cmd.transform, "rotate(5deg)");
 });
 
+test("mapRenderedElements — layout-only ancestor transform flows to child primitives", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        serial: 0,
+        path: "0",
+        bounds: { left: 600, top: 40, width: 420, height: 520 },
+        style: {
+          transform: "rotate(5deg)",
+        },
+      }),
+      el({
+        serial: 1,
+        path: "0.0",
+        bounds: { left: 620, top: 60, width: 400, height: 500 },
+        style: {
+          backgroundColor: "rgb(255, 255, 255)",
+          borderTopLeftRadius: "12px",
+          borderTopRightRadius: "12px",
+          borderBottomRightRadius: "12px",
+          borderBottomLeftRadius: "12px",
+        },
+      }),
+      el({
+        serial: 2,
+        path: "0.0.0",
+        tagName: "svg",
+        bounds: { left: 800, top: 90, width: 40, height: 40 },
+        svg: {
+          outerHTML:
+            '<svg viewBox="0 0 24 24"><path d="M14 2H6"/></svg>',
+        },
+      }),
+    ),
+  );
+
+  assert.equal(result.commands.length, 2);
+  assert.equal(result.commands[0]?.transform, "rotate(5deg)");
+  assert.equal(result.commands[1]?.transform, "rotate(5deg)");
+});
+
+test("mapRenderedElements — own transform wins over ancestor transform", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        serial: 0,
+        path: "0",
+        style: {
+          transform: "rotate(5deg)",
+        },
+      }),
+      el({
+        serial: 1,
+        path: "0.0",
+        style: {
+          backgroundColor: "rgb(10, 20, 30)",
+          transform: "rotate(-2deg)",
+        },
+      }),
+    ),
+  );
+
+  assert.equal(result.commands.length, 1);
+  assert.equal(result.commands[0]?.transform, "rotate(-2deg)");
+});
+
 test("mapRenderedElements — stroke captured when border width > 0", () => {
   const result = mapRenderedElements(
     extract(

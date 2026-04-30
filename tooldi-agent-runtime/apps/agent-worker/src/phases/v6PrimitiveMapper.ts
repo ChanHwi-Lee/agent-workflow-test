@@ -50,6 +50,7 @@ export function mapRenderedElements(
 interface MappingContext {
   readonly clipRadiusByPath: ReadonlyMap<string, V6BorderRadius>;
   readonly elementByPath: ReadonlyMap<string, V6RenderedElement>;
+  readonly inheritedTransformByPath: ReadonlyMap<string, string>;
 }
 
 function mapElement(
@@ -58,20 +59,23 @@ function mapElement(
   context: MappingContext,
 ): V6PrimitiveCommand[] {
   if (!el.visible) return [];
-  if (el.tagName === "svg") return [buildSvg(el)];
+  if (el.tagName === "svg") return [buildSvg(el, context)];
   if (el.tagName === "img") return [buildImage(el, context)];
 
   const out: V6PrimitiveCommand[] = [];
-  if (hasVisiblePaint(el)) out.push(buildRect(el));
+  if (hasVisiblePaint(el)) out.push(buildRect(el, context));
   if (el.isTextLeaf && el.text !== null && el.text.length > 0) {
-    out.push(buildText(el, canvas));
+    out.push(buildText(el, canvas, context));
   }
   return out;
 }
 
 // --------- primitive builders ---------
 
-function buildRect(el: V6RenderedElement): V6PrimitiveCommand {
+function buildRect(
+  el: V6RenderedElement,
+  context: MappingContext,
+): V6PrimitiveCommand {
   const paint = pickPaint(el);
   const fill = legacyFillFromPaint(paint);
   const stroke = pickStroke(el);
@@ -81,7 +85,7 @@ function buildRect(el: V6RenderedElement): V6PrimitiveCommand {
       ? el.style.boxShadow
       : null;
   const opacity = parseOpacity(el.style.opacity);
-  const transform = normalizeTransform(el.style.transform);
+  const transform = resolveElementTransform(el, context);
   const filter = normalizeEffect(el.style.filter ?? "none");
 
   const cmd = {
@@ -106,13 +110,14 @@ function buildRect(el: V6RenderedElement): V6PrimitiveCommand {
 function buildText(
   el: V6RenderedElement,
   canvas: V6Canvas,
+  context: MappingContext,
 ): V6PrimitiveCommand {
   const color = parseColor(el.style.color);
   const fontSize = parsePx(el.style.fontSize) ?? 16;
   const lineHeightPx = parsePx(el.style.lineHeight);
   const letterSpacing = parsePx(el.style.letterSpacing) ?? 0;
   const opacity = parseOpacity(el.style.opacity);
-  const transform = normalizeTransform(el.style.transform);
+  const transform = resolveElementTransform(el, context);
   const filter = normalizeEffect(el.style.filter ?? "none");
   const textShadow = normalizeEffect(el.style.textShadow ?? "none");
 
@@ -228,7 +233,7 @@ function buildImage(
     );
   }
   const opacity = parseOpacity(el.style.opacity);
-  const transform = normalizeTransform(el.style.transform);
+  const transform = resolveElementTransform(el, context);
   const filter = normalizeEffect(el.style.filter ?? "none");
   const cmd = {
     type: "create" as const,
@@ -250,7 +255,10 @@ function buildImage(
   };
 }
 
-function buildSvg(el: V6RenderedElement): V6PrimitiveCommand {
+function buildSvg(
+  el: V6RenderedElement,
+  context: MappingContext,
+): V6PrimitiveCommand {
   const svg = el.svg;
   if (!svg) {
     throw new Error(
@@ -258,7 +266,7 @@ function buildSvg(el: V6RenderedElement): V6PrimitiveCommand {
     );
   }
   const opacity = parseOpacity(el.style.opacity);
-  const transform = normalizeTransform(el.style.transform);
+  const transform = resolveElementTransform(el, context);
   const filter = normalizeEffect(el.style.filter ?? "none");
   const cmd = {
     type: "create" as const,
@@ -282,15 +290,52 @@ function buildMappingContext(
 ): MappingContext {
   const clipRadiusByPath = new Map<string, V6BorderRadius>();
   const elementByPath = new Map<string, V6RenderedElement>();
+  const ownTransformByPath = new Map<string, string>();
+  const inheritedTransformByPath = new Map<string, string>();
   for (const el of elements) {
     elementByPath.set(el.path, el);
+    const transform = normalizeTransform(el.style.transform);
+    if (transform) {
+      ownTransformByPath.set(el.path, transform);
+    }
     if (!el.visible || !hasClippingOverflow(el)) continue;
     const radius = pickBorderRadius(el);
     if (!isZeroBorderRadius(radius)) {
       clipRadiusByPath.set(el.path, radius);
     }
   }
-  return { clipRadiusByPath, elementByPath };
+  for (const el of elements) {
+    const inheritedTransform = findNearestAncestorTransform(
+      el.path,
+      ownTransformByPath,
+    );
+    if (inheritedTransform) {
+      inheritedTransformByPath.set(el.path, inheritedTransform);
+    }
+  }
+  return { clipRadiusByPath, elementByPath, inheritedTransformByPath };
+}
+
+function resolveElementTransform(
+  el: V6RenderedElement,
+  context: MappingContext,
+): string | null {
+  return (
+    normalizeTransform(el.style.transform) ??
+    context.inheritedTransformByPath.get(el.path) ??
+    null
+  );
+}
+
+function findNearestAncestorTransform(
+  path: string,
+  transformByPath: ReadonlyMap<string, string>,
+): string | null {
+  for (const ancestorPath of ancestorPaths(path)) {
+    const transform = transformByPath.get(ancestorPath);
+    if (transform) return transform;
+  }
+  return null;
 }
 
 function hasVisiblePaint(el: V6RenderedElement): boolean {
