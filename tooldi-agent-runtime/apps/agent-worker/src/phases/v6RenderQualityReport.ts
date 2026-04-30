@@ -12,7 +12,8 @@ export type V6RenderQualityIssueCode =
   | "off_canvas_element"
   | "zero_area_element"
   | "scroll_overflow"
-  | "high_text_density";
+  | "high_text_density"
+  | "text_overlap";
 
 export interface V6RenderQualityIssue {
   readonly code: V6RenderQualityIssueCode;
@@ -36,6 +37,7 @@ export interface V6RenderQualityMetrics {
   readonly scrollOverflowElementCount: number;
   readonly zeroAreaElementCount: number;
   readonly highTextDensityElementCount: number;
+  readonly textOverlapPairCount: number;
   readonly maxTextDensity: number;
 }
 
@@ -67,7 +69,7 @@ export function formatV6RenderQualityRetryFeedback(
     "Blocking render-quality issues:",
     ...lines,
     "Fix only geometry/layout safety: root border-box must match canvas; visible text and images must stay inside canvas; visible text must not scroll/crop.",
-    "For Korean text, prefer measured 2-3 line blocks, natural phrase breaks, lower font-size, wider boxes, or taller boxes. Do not hide overflow.",
+    "For Korean text, prefer measured 2-3 line blocks, natural phrase breaks, lower font-size, wider boxes, or taller boxes. Keep action blocks, chips, dates, prices, and notes in separate non-overlapping bands. Do not hide overflow.",
   ].join("\n");
 }
 
@@ -76,6 +78,9 @@ const OFF_CANVAS_TOLERANCE_PX = 1;
 const SCROLL_OVERFLOW_X_TOLERANCE_PX = 1;
 const SCROLL_OVERFLOW_Y_TOLERANCE_PX = 4;
 const HIGH_TEXT_DENSITY_THRESHOLD = 0.16;
+const TEXT_OVERLAP_MIN_AREA_PX = 72;
+const TEXT_OVERLAP_MIN_SMALLER_RATIO = 0.08;
+const TEXT_OVERLAP_AXIS_TOLERANCE_PX = 2;
 
 function retryFixHint(issue: V6RenderQualityIssue): string {
   switch (issue.code) {
@@ -92,6 +97,8 @@ function retryFixHint(issue: V6RenderQualityIssue): string {
     case "off_canvas_element":
     case "high_text_density":
       return "adjust bounds or text density without introducing semantic roles or layout slots";
+    case "text_overlap":
+      return "separate the overlapping text boxes into distinct visible bands; move action/detail/chip text or reserve more vertical spacing";
   }
 }
 
@@ -105,6 +112,7 @@ export function buildV6RenderQualityReport(
   let scrollOverflowElementCount = 0;
   let zeroAreaElementCount = 0;
   let highTextDensityElementCount = 0;
+  let textOverlapPairCount = 0;
   let blockingIssueCount = 0;
   let maxTextDensity = 0;
 
@@ -206,6 +214,28 @@ export function buildV6RenderQualityReport(
       }
     }
   }
+
+  for (const overlap of findTextOverlaps(visible)) {
+    textOverlapPairCount += 1;
+    pushIssue(issues, {
+      code: "text_overlap",
+      severity: "warn",
+      blocking: true,
+      path: overlap.a.path,
+      tag: overlap.a.tagName,
+      message: "visible text elements overlap each other",
+      metrics: {
+        otherPath: overlap.b.path,
+        otherTag: overlap.b.tagName,
+        overlapWidth: round(overlap.width),
+        overlapHeight: round(overlap.height),
+        overlapArea: round(overlap.area),
+        smallerAreaRatio: round(overlap.smallerAreaRatio),
+      },
+    });
+    blockingIssueCount += 1;
+  }
+
   const blockingIssues = issues.filter((issue) => issue.blocking);
 
   return {
@@ -226,6 +256,7 @@ export function buildV6RenderQualityReport(
       scrollOverflowElementCount,
       zeroAreaElementCount,
       highTextDensityElementCount,
+      textOverlapPairCount,
       maxTextDensity: round(maxTextDensity),
     },
     issues,
@@ -281,6 +312,76 @@ function isBlockingScrollOverflowElement(el: V6RenderedElement): boolean {
 
 function isBlockingZeroAreaElement(el: V6RenderedElement): boolean {
   return el.tagName === "img";
+}
+
+function findTextOverlaps(
+  elements: ReadonlyArray<V6RenderedElement>,
+): Array<{
+  readonly a: V6RenderedElement;
+  readonly b: V6RenderedElement;
+  readonly width: number;
+  readonly height: number;
+  readonly area: number;
+  readonly smallerAreaRatio: number;
+}> {
+  const textElements = elements
+    .filter((el) => el.isTextLeaf && el.text && !isZeroArea(el.bounds))
+    .sort((a, b) => a.serial - b.serial);
+  const overlaps: Array<{
+    readonly a: V6RenderedElement;
+    readonly b: V6RenderedElement;
+    readonly width: number;
+    readonly height: number;
+    readonly area: number;
+    readonly smallerAreaRatio: number;
+  }> = [];
+
+  for (let i = 0; i < textElements.length; i += 1) {
+    for (let j = i + 1; j < textElements.length; j += 1) {
+      const a = textElements[i];
+      const b = textElements[j];
+      if (!a || !b || isAncestorPath(a.path, b.path)) continue;
+
+      const overlap = textOverlapMetrics(a.bounds, b.bounds);
+      if (!isMeaningfulTextOverlap(overlap)) continue;
+      overlaps.push({ a, b, ...overlap });
+    }
+  }
+
+  return overlaps;
+}
+
+function isAncestorPath(a: string, b: string): boolean {
+  return b.startsWith(`${a}.`) || a.startsWith(`${b}.`);
+}
+
+function textOverlapMetrics(a: V6Bounds, b: V6Bounds) {
+  const width =
+    Math.min(a.left + a.width, b.left + b.width) - Math.max(a.left, b.left);
+  const height =
+    Math.min(a.top + a.height, b.top + b.height) - Math.max(a.top, b.top);
+  const area = Math.max(0, width) * Math.max(0, height);
+  const smallerArea = Math.min(a.width * a.height, b.width * b.height);
+  return {
+    width,
+    height,
+    area,
+    smallerAreaRatio: smallerArea > 0 ? area / smallerArea : 0,
+  };
+}
+
+function isMeaningfulTextOverlap(overlap: {
+  readonly width: number;
+  readonly height: number;
+  readonly area: number;
+  readonly smallerAreaRatio: number;
+}): boolean {
+  return (
+    overlap.width > TEXT_OVERLAP_AXIS_TOLERANCE_PX &&
+    overlap.height > TEXT_OVERLAP_AXIS_TOLERANCE_PX &&
+    overlap.area >= TEXT_OVERLAP_MIN_AREA_PX &&
+    overlap.smallerAreaRatio >= TEXT_OVERLAP_MIN_SMALLER_RATIO
+  );
 }
 
 function pushIssue(

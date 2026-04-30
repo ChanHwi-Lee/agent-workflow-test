@@ -107,6 +107,7 @@ test("렌더 품질 리포트는 정상 루트와 텍스트를 통과 관측 상
   assert.equal(report.metrics.hardGateCandidateCount, 0);
   assert.equal(report.metrics.offCanvasElementCount, 0);
   assert.equal(report.metrics.scrollOverflowElementCount, 0);
+  assert.equal(report.metrics.textOverlapPairCount, 0);
 });
 
 test("렌더 품질 리포트는 캔버스 밖 텍스트와 스크롤 오버플로를 관측 이슈로 남긴다", () => {
@@ -230,6 +231,83 @@ test("렌더 품질 리포트는 실제 텍스트 스크롤 오버플로는 계�
   assert.equal(report.blockingIssues[0]?.code, "scroll_overflow");
 });
 
+test("렌더 품질 리포트는 겹친 텍스트 박스를 blocking으로 표시한다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.0",
+        tagName: "span",
+        bounds: { left: 80, top: 470, width: 230, height: 54 },
+        isTextLeaf: true,
+        text: "5월 8일 오후 2시",
+        layout: {
+          clientWidth: 230,
+          clientHeight: 54,
+          scrollWidth: 230,
+          scrollHeight: 54,
+        },
+      }),
+      element({
+        serial: 2,
+        path: "0.1",
+        tagName: "div",
+        bounds: { left: 80, top: 486, width: 270, height: 72 },
+        isTextLeaf: true,
+        text: "지금 무료 신청하기",
+        layout: {
+          clientWidth: 270,
+          clientHeight: 72,
+          scrollWidth: 270,
+          scrollHeight: 72,
+        },
+      }),
+    ]),
+  );
+
+  assert.equal(report.metrics.textOverlapPairCount, 1);
+  assert.equal(report.hardGateCandidate, true);
+  assert.equal(report.blockingIssues.length, 1);
+  assert.equal(report.blockingIssues[0]?.code, "text_overlap");
+  assert.equal(report.blockingIssues[0]?.metrics.otherPath, "0.1");
+});
+
+test("렌더 품질 리포트는 부모-자식 경로 텍스트 중복을 overlap으로 보지 않는다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.0",
+        tagName: "h1",
+        bounds: { left: 80, top: 80, width: 320, height: 80 },
+        isTextLeaf: true,
+        text: "영업 파이프라인",
+        layout: {
+          clientWidth: 320,
+          clientHeight: 80,
+          scrollWidth: 320,
+          scrollHeight: 80,
+        },
+      }),
+      element({
+        serial: 2,
+        path: "0.0.#text0",
+        tagName: "#text",
+        bounds: { left: 80, top: 80, width: 320, height: 80 },
+        isTextLeaf: true,
+        text: "영업 파이프라인",
+        layout: null,
+      }),
+    ]),
+  );
+
+  assert.equal(report.metrics.textOverlapPairCount, 0);
+  assert.equal(report.hardGateCandidate, false);
+  assert.equal(report.blockingIssues.length, 0);
+});
+
 test("렌더 품질 리포트는 root border-box가 canvas보다 크면 hard gate 후보로 표시한다", () => {
   const report = buildV6RenderQualityReport(
     extraction([
@@ -344,6 +422,7 @@ test("렌더 품질 재시도 피드백은 geometry 정보만 요약한다", () 
   assert.match(feedback, /scroll_overflow/);
   assert.match(feedback, /path=0\.0/);
   assert.match(feedback, /increase text box width\/height/);
+  assert.match(feedback, /action blocks/);
   assert.match(feedback, /natural phrase boundaries/);
   assert.match(feedback, /Do not hide overflow/);
   assert.doesNotMatch(feedback, /이 텍스트 내용/);

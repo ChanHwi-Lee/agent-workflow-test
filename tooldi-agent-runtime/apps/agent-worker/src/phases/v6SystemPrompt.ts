@@ -66,6 +66,7 @@ Layout quality target:
 - Use "1301_400" only for short display words or accents. For long Korean informational headlines, prefer "701_700" so the text remains readable and easier to fit.
 - Placeholder images are replaced later with real photos or graphics. Treat every declared <img> width/height as visually occupied even if the placeholder looks empty or broken in the preview. Keep readable text outside image bounds, or place the text on an explicit solid/semi-opaque backing shape that fully covers the text bounds. Do not rely on blank placeholder space as whitespace.
 - Reserve enough vertical budget for top labels, headline, supporting copy, price/details, and CTA. Do not anchor a CTA or important note so close to the bottom that it can be clipped.
+- Action blocks, date/price rows, benefit chips, deadlines, and small notes must have their own clear geometry. Do not let those text boxes overlap each other or share the same lower band; if space is tight, stack them with explicit gaps or move one group to the opposite side.
 - Top badges or labels must sit fully inside the canvas, not clipped above the top edge.
 - Use line-height and padding that match the font size. For large Korean headlines, line-height usually needs at least 1.05-1.18.
 - Visual decorations may bleed slightly, but readable text and images must stay visible within the canvas.
