@@ -43,6 +43,8 @@ const STYLE: V6ComputedStyle = {
   objectFit: "fill",
   overflow: "visible",
   display: "block",
+  alignItems: "normal",
+  justifyContent: "normal",
   visibility: "visible",
   whiteSpace: "normal",
 };

@@ -142,8 +142,14 @@ function buildText(
       : el.style.textAlign === "end"
         ? "right"
         : el.style.textAlign;
-  const safeBounds = computeSafeTextBounds(
+  const layoutBounds = alignFlexCenteredTextBounds(
+    el,
     insetBounds,
+    fontSize,
+    lineHeightPx,
+  );
+  const safeBounds = computeSafeTextBounds(
+    layoutBounds,
     fontSize,
     textAlign,
     canvas,
@@ -178,6 +184,36 @@ function buildText(
     ...(transform ? { transform } : {}),
     ...(filter !== null ? { filter } : {}),
   };
+}
+
+function alignFlexCenteredTextBounds(
+  el: V6RenderedElement,
+  bounds: { left: number; top: number; width: number; height: number },
+  fontSize: number,
+  lineHeightPx: number | null,
+): { left: number; top: number; width: number; height: number } {
+  if (!isCenterAlignedFlexTextLeaf(el)) return bounds;
+
+  const text = el.text ?? "";
+  const lineCount = Math.max(1, text.split("\n").length);
+  const lineHeight = lineHeightPx ?? fontSize * 1.2;
+  const textHeight = Math.min(bounds.height, lineHeight * lineCount);
+  if (textHeight <= 0 || bounds.height <= textHeight) return bounds;
+
+  return {
+    ...bounds,
+    top: round(bounds.top + (bounds.height - textHeight) / 2),
+    height: round(textHeight),
+  };
+}
+
+function isCenterAlignedFlexTextLeaf(el: V6RenderedElement): boolean {
+  return (
+    el.isTextLeaf &&
+    (el.style.display === "flex" || el.style.display === "inline-flex") &&
+    el.style.alignItems === "center" &&
+    el.style.justifyContent === "center"
+  );
 }
 
 function computeSafeTextBounds(

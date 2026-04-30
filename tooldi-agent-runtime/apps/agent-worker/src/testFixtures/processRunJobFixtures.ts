@@ -171,6 +171,8 @@ export function createDeterministicV6Overrides(): V6NodeOverrides {
       objectFit: "fill",
       overflow: "visible",
       display: "block",
+      alignItems: "normal",
+      justifyContent: "normal",
       visibility: "visible",
       whiteSpace: "normal",
     };

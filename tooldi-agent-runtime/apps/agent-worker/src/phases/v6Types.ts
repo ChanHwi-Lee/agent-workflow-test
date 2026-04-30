@@ -57,6 +57,8 @@ export interface V6ComputedStyle {
   readonly objectFit: string;
   readonly overflow: string;
   readonly display: string;
+  readonly alignItems: string;
+  readonly justifyContent: string;
   readonly visibility: string;
   readonly whiteSpace: string;
 }

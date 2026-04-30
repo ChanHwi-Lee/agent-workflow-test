@@ -121,6 +121,8 @@ export async function extractFromPage(
           objectFit: cs.objectFit,
           overflow: cs.overflow,
           display: cs.display,
+          alignItems: cs.alignItems,
+          justifyContent: cs.justifyContent,
           visibility: cs.visibility,
           whiteSpace: cs.whiteSpace,
         };

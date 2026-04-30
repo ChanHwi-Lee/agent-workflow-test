@@ -53,6 +53,8 @@ const DEFAULT_STYLE: V6ComputedStyle = {
   objectFit: "fill",
   overflow: "visible",
   display: "block",
+  alignItems: "normal",
+  justifyContent: "normal",
   visibility: "visible",
   whiteSpace: "normal",
 };
@@ -242,6 +244,37 @@ test("mapRenderedElements — centered text safety expands around the center", (
     top: 80,
     width: 210,
     height: 64,
+  });
+});
+
+test("mapRenderedElements — flex-centered multiline text keeps vertical center", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        bounds: { left: 1020, top: 475, width: 120, height: 120 },
+        isTextLeaf: true,
+        text: "PDF\n제공",
+        style: {
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          fontSize: "16px",
+          lineHeight: "19.2px",
+        },
+      }),
+    ),
+  );
+
+  const textCmd = result.commands.find(
+    (c): c is V6TextCommand => c.primitive === "text",
+  );
+  assert.ok(textCmd, "expected a text command");
+  assert.deepEqual(textCmd.bounds, {
+    left: 1017,
+    top: 515.8,
+    width: 126,
+    height: 48,
   });
 });
 
