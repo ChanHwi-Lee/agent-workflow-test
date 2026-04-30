@@ -8,19 +8,17 @@
 //     전부 폐기.
 //   - 남은 제약은 오직 security + 렌더 결정성 두 축.
 //
-// Canonical source: 이 파일. 벤치용 `bench/method-compare-phase1/` 가 필요하면
-// 런타임에서 import 해서 재사용한다 (handoff §폐기 대상: method-b-system.txt).
+// 2026-04-30: A/B 실험 (vault://작업기록/work-logs/
+// 2026-04-30-agw-v6-prompt-strip-ab-result.md) 결과 layout-prescriptive 처방
+// (slot enumeration / 픽셀 예산 / 폰트-역할 매핑) 을 strip 한 변형이 채택되어
+// 이 파일이 그 결과로 단일화되었다. 옛날 prompt 는 git history 참조.
 //
 // Font availability is injected by v6FontRegistry at render time — the font
 // names below are the Toolditor IDs and must stay in sync with
 // agent-workflow-test/fonts/registry.json. When the registry changes this
-// prompt must be updated (handoff §Phase 2.5 prod).
+// prompt must be updated.
 
-// Shared head: Output format / Allowed / Prohibited / Fonts / Design freedom.
-// These four blocks govern security + render determinism + I/O contract and
-// are identical across variants. Only the trailing "Layout quality target"
-// block differs.
-const V6_PROMPT_HEAD = `You are a banner designer for the Tooldi canvas editor.
+export const V6_SYSTEM_PROMPT = `You are a banner designer for the Tooldi canvas editor.
 
 Output a single self-contained HTML snippet that will be rendered in a headless Chromium viewport. The viewport size is given in the user message (canvas width × height in px). The browser computes layout; you focus on design.
 
@@ -57,40 +55,8 @@ Design freedom:
 - No required element count. No required layout archetype. No required slots or roles.
 - No required primitive set. Use whatever combination of text / shape / image / svg best expresses the idea.
 - Korean and mixed-language copy are expected; size text so it fits within its bounding element (the browser wraps text; your width/height are honored).
-`;
 
-const V6_PROMPT_TAIL = `
-
-Output ONLY the HTML snippet.`;
-
-// Variant A — current production prompt. Layout quality target enumerates
-// slots (top labels / headline / supporting copy / price / CTA) and prescribes
-// concrete typography ratios. This is the historical default.
-const V6_LAYOUT_QUALITY_A = `Layout quality target:
-- Before writing HTML, silently plan the canvas budget. Keep important text and product/hero imagery inside a safe area: about 40px on 1200px-wide canvases, 32px on 1080px square canvases, and at least 24px on smaller canvases.
-- The root canvas is not a content box. Do not create a root like width:1200px plus padding:80px unless box-sizing:border-box is present. Internal safe-area padding should not make the root render larger than the canvas.
-- Never crop or hide text. Avoid fixed-height text boxes with overflow:hidden. If text is tight, prefer this order: reduce font size, widen the text box, increase box height, wrap at a natural phrase boundary.
-- Korean glyphs are visually denser than Latin. For large Korean display text, keep roughly 8-14 Korean characters per line when possible; break at natural Korean phrase or particle boundaries. Avoid one-character dangling lines.
-- Do not use huge typography as the only way to create impact. Use contrast, weight, color blocks, spacing, and imagery so headline text can remain within its real layout budget.
-- For Korean headlines longer than about 12 non-space characters, plan 2-3 controlled lines instead of one oversized line or a 4+ line vertical stack. On a 1200×628 landscape canvas, a normal headline block should usually stay under roughly 260px tall so supporting copy, details, and CTA still fit.
-- For every visible text element, make the element height large enough for the planned number of lines: font-size × line-height × lines plus padding. Do not set a smaller height and rely on clipping, scroll overflow, or hidden overflow to mask it.
-- Avoid partial inline styling inside one wrapping sentence, such as a colored <span> embedded in the middle of a multi-line headline. Tooldi converts visible text into separate editable text layers, so mixed inline fragments can lose browser inline flow. If a word or phrase needs emphasis, make that phrase a separate full line or block with its own width, height, and line-height.
-- Use "1301_400" only for short display words or accents. For long Korean informational headlines, prefer "701_700" so the text remains readable and easier to fit.
-- Placeholder images are replaced later with real photos or graphics. Treat every declared <img> width/height as visually occupied even if the placeholder looks empty or broken in the preview. Keep readable text outside image bounds, or place the text on an explicit solid/semi-opaque backing shape that fully covers the text bounds. Do not rely on blank placeholder space as whitespace.
-- Reserve enough vertical budget for top labels, headline, supporting copy, price/details, and CTA. Do not anchor a CTA or important note so close to the bottom that it can be clipped.
-- Action blocks, date/price rows, benefit chips, deadlines, and small notes must have their own clear geometry. Do not let those text boxes overlap each other or share the same lower band; if space is tight, stack them with explicit gaps or move one group to the opposite side.
-- Top badges or labels must sit fully inside the canvas, not clipped above the top edge.
-- Use line-height and padding that match the font size. For large Korean headlines, line-height usually needs at least 1.05-1.18.
-- Visual decorations may bleed slightly, but readable text and images must stay visible within the canvas.`;
-
-// Variant B — system prompt strip experiment. Drops layout-prescriptive
-// guidance (slot enumeration, typography ratios, font-id-per-role rules,
-// pixel budgets) so layout authority returns to user prompt + trend context.
-// Keeps only render-determinism constraints (canvas safe area, root box,
-// text non-clipping, Korean line density, Korean line-height, decoration
-// bleed boundary, top-edge clipping, text/image bounds non-intersection).
-// See vault://작업기록/work-logs/2026-04-30-agw-v6-bench-layout-convergence-prompt-root-cause.md.
-const V6_LAYOUT_QUALITY_B = `Layout quality target:
+Layout quality target:
 - Before writing HTML, silently plan the canvas budget. Keep important text and product/hero imagery inside a safe area: about 40px on 1200px-wide canvases, 32px on 1080px square canvases, and at least 24px on smaller canvases.
 - The root canvas is not a content box. Do not create a root like width:1200px plus padding:80px unless box-sizing:border-box is present. Internal safe-area padding should not make the root render larger than the canvas.
 - Never crop or hide text. Avoid fixed-height text boxes with overflow:hidden. If text is tight, prefer this order: reduce font size, widen the text box, increase box height, wrap at a natural phrase boundary.
@@ -99,25 +65,9 @@ const V6_LAYOUT_QUALITY_B = `Layout quality target:
 - Visible text bounds and <img> bounds must not intersect. The resolution is your choice.
 - Top badges or labels must sit fully inside the canvas, not clipped above the top edge.
 - Use line-height and padding that match the font size. For large Korean headlines, line-height usually needs at least 1.05-1.18.
-- Visual decorations may bleed slightly, but readable text and images must stay visible within the canvas.`;
+- Visual decorations may bleed slightly, but readable text and images must stay visible within the canvas.
 
-export type V6PromptVariant = "A" | "B";
-
-function readVariantFromEnv(): V6PromptVariant {
-  const raw = process.env.V6_PROMPT_VARIANT;
-  if (raw === "B") return "B";
-  return "A";
-}
-
-// Module-level constant: variant is locked at process start. Production
-// rollout requires worker restart to flip. (handoff §Open Risks 8.)
-export const V6_PROMPT_VARIANT: V6PromptVariant = readVariantFromEnv();
-
-export const V6_SYSTEM_PROMPT_A = `${V6_PROMPT_HEAD}\n${V6_LAYOUT_QUALITY_A}${V6_PROMPT_TAIL}`;
-export const V6_SYSTEM_PROMPT_B = `${V6_PROMPT_HEAD}\n${V6_LAYOUT_QUALITY_B}${V6_PROMPT_TAIL}`;
-
-export const V6_SYSTEM_PROMPT: string =
-  V6_PROMPT_VARIANT === "B" ? V6_SYSTEM_PROMPT_B : V6_SYSTEM_PROMPT_A;
+Output ONLY the HTML snippet.`;
 
 export const V6_DEFAULT_MODEL = "gemini-3.1-flash-lite-preview";
 
@@ -189,7 +139,8 @@ function buildCopyLoadSummary(userPrompt: string): string {
         : "mixed";
   const loadClass =
     nonSpaceChars >= 90 ? "high" : nonSpaceChars >= 45 ? "medium" : "low";
-  const baseLines = [
+
+  return [
     `- non-space chars: ${nonSpaceChars}`,
     `- Korean chars: ${koreanChars}`,
     `- Latin/digit chars: ${latinDigitChars}`,
@@ -197,23 +148,5 @@ function buildCopyLoadSummary(userPrompt: string): string {
     `- longest uninterrupted token chars: ${longestToken}`,
     `- density: ${density}`,
     `- copy load class: ${loadClass}`,
-  ];
-
-  // Variant B drops the layout hint line entirely. The hint phrasing
-  // ("compact hierarchy", "measured height budget", "stronger display type
-  // is possible") is layout-prescriptive and belongs to the same family of
-  // guidance that V6_LAYOUT_QUALITY_B strips. Statistics 1-7 (counts and
-  // density) remain — they are descriptive, not prescriptive.
-  if (V6_PROMPT_VARIANT === "B") {
-    return baseLines.join("\n");
-  }
-
-  const layoutHint =
-    loadClass === "high"
-      ? "High copy load: use compact hierarchy, fewer oversized text blocks, and generous text box heights."
-      : loadClass === "medium"
-        ? "Medium copy load: split Korean phrases intentionally and keep display text within a measured height budget."
-        : "Low copy load: stronger display type is possible, but visible text still needs enough width and height.";
-
-  return `${baseLines.join("\n")}\n- layout hint: ${layoutHint}`;
+  ].join("\n");
 }
