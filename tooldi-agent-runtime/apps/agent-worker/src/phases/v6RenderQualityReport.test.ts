@@ -39,6 +39,8 @@ const STYLE: V6ComputedStyle = {
   opacity: "1",
   transform: "none",
   transformOrigin: "0px 0px",
+  position: "static",
+  zIndex: "auto",
   boxShadow: "none",
   objectFit: "fill",
   overflow: "visible",
@@ -396,6 +398,147 @@ test("렌더 품질 리포트는 0 크기 이미지를 blocking issue로 표시�
   assert.equal(report.hardGateCandidate, true);
   assert.equal(report.blockingIssues.length, 1);
   assert.equal(report.blockingIssues[0]?.code, "zero_area_element");
+});
+
+test("렌더 품질 리포트는 텍스트가 이미지 영역과 겹치면 hard gate 후보로 표시한다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.1",
+        tagName: "img",
+        bounds: { left: 680, top: 100, width: 440, height: 420 },
+        img: {
+          src: "placeholder://gift-set",
+          naturalWidth: 1,
+          naturalHeight: 1,
+          alt: "",
+        },
+        layout: {
+          clientWidth: 440,
+          clientHeight: 420,
+          scrollWidth: 440,
+          scrollHeight: 420,
+        },
+      }),
+      element({
+        serial: 2,
+        path: "0.2",
+        tagName: "div",
+        bounds: { left: 540, top: 190, width: 260, height: 90 },
+        isTextLeaf: true,
+        text: "프리미엄 선물세트 사전예약",
+        layout: {
+          clientWidth: 260,
+          clientHeight: 90,
+          scrollWidth: 260,
+          scrollHeight: 90,
+        },
+      }),
+    ]),
+  );
+
+  assert.equal(report.hardGateCandidate, true);
+  assert.equal(report.metrics.textImageOverlapPairCount, 1);
+  assert.equal(
+    report.blockingIssues.some(
+      (issue) => issue.code === "text_image_overlap",
+    ),
+    true,
+  );
+});
+
+test("렌더 품질 리포트는 분리된 텍스트와 이미지를 text_image_overlap으로 표시하지 않는다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.1",
+        tagName: "img",
+        bounds: { left: 700, top: 100, width: 360, height: 360 },
+        img: {
+          src: "placeholder://product",
+          naturalWidth: 1,
+          naturalHeight: 1,
+          alt: "",
+        },
+        layout: {
+          clientWidth: 360,
+          clientHeight: 360,
+          scrollWidth: 360,
+          scrollHeight: 360,
+        },
+      }),
+      element({
+        serial: 2,
+        path: "0.2",
+        tagName: "div",
+        bounds: { left: 80, top: 120, width: 420, height: 100 },
+        isTextLeaf: true,
+        text: "분리된 안전한 텍스트",
+        layout: {
+          clientWidth: 420,
+          clientHeight: 100,
+          scrollWidth: 420,
+          scrollHeight: 100,
+        },
+      }),
+    ]),
+  );
+
+  assert.equal(report.metrics.textImageOverlapPairCount, 0);
+  assert.equal(
+    report.issues.some((issue) => issue.code === "text_image_overlap"),
+    false,
+  );
+});
+
+test("렌더 품질 리포트는 배경 이미지 위 텍스트를 text_image_overlap으로 표시하지 않는다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.1",
+        tagName: "img",
+        bounds: { left: 0, top: 0, width: 1200, height: 628 },
+        img: {
+          src: "placeholder://background-photo",
+          naturalWidth: 1,
+          naturalHeight: 1,
+          alt: "",
+        },
+        layout: {
+          clientWidth: 1200,
+          clientHeight: 628,
+          scrollWidth: 1200,
+          scrollHeight: 628,
+        },
+      }),
+      element({
+        serial: 2,
+        path: "0.2",
+        tagName: "div",
+        bounds: { left: 80, top: 120, width: 420, height: 100 },
+        isTextLeaf: true,
+        text: "배경 이미지 위 안전한 제목",
+        layout: {
+          clientWidth: 420,
+          clientHeight: 100,
+          scrollWidth: 420,
+          scrollHeight: 100,
+        },
+      }),
+    ]),
+  );
+
+  assert.equal(report.metrics.textImageOverlapPairCount, 0);
+  assert.equal(
+    report.issues.some((issue) => issue.code === "text_image_overlap"),
+    false,
+  );
 });
 
 test("렌더 품질 재시도 피드백은 geometry 정보만 요약한다", () => {

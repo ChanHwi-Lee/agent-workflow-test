@@ -167,6 +167,8 @@ export function createDeterministicV6Overrides(): V6NodeOverrides {
       opacity: "1",
       transform: "none",
       transformOrigin: "0 0",
+      position: "static",
+      zIndex: "auto",
       boxShadow: "none",
       objectFit: "fill",
       overflow: "visible",

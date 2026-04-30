@@ -10,8 +10,9 @@
 // executionSlotKey 는 **항상 null**. v6 는 semantic slot / role / CTA 개념을
 // 쓰지 않는다. 모든 primitive 는 individual, slot-free.
 //
-// parentRef.position 은 "append" 로 고정. v6 commands 는 DOM traversal 순서를
-// 그대로 유지하므로 append 가 곧 visual z-order.
+// parentRef.position 은 "append" 로 고정. v6 mapper 가 browser computed
+// z-index 기반 stacking order 로 commands 를 정렬하므로 append 가 visual
+// z-order 를 재현한다.
 //
 // clientLayerKey / commandId 는 runId + sequence 로 결정적 생성해 리플레이 가능.
 

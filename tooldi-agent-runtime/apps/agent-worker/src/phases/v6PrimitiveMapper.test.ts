@@ -47,6 +47,8 @@ const DEFAULT_STYLE: V6ComputedStyle = {
   opacity: "1",
   transform: "none",
   transformOrigin: "0px 0px",
+  position: "static",
+  zIndex: "auto",
   boxShadow: "none",
   textShadow: "none",
   filter: "none",
@@ -101,6 +103,58 @@ test("mapRenderedElements — emits rect for solid-color div", () => {
   assert.equal(cmd.primitive, "rect");
   assert.equal(cmd.fill, "#FF6432");
   assert.deepEqual(cmd.bounds, { left: 10, top: 20, width: 200, height: 100 });
+});
+
+test("mapRenderedElements는 가까운 조상 z-index 기준으로 append 순서를 정렬한다", () => {
+  const result = mapRenderedElements(
+    extract(
+      el({
+        serial: 0,
+        path: "0",
+        bounds: { left: 0, top: 0, width: 1200, height: 628 },
+        style: { backgroundColor: "rgb(253, 251, 247)" },
+      }),
+      el({
+        serial: 1,
+        path: "0.0",
+        hasChildren: true,
+        style: { position: "absolute", zIndex: "2" },
+      }),
+      el({
+        serial: 2,
+        path: "0.0.0",
+        isTextLeaf: true,
+        text: "foreground text",
+        style: { color: "rgb(20, 20, 20)" },
+      }),
+      el({
+        serial: 3,
+        path: "0.1",
+        tagName: "img",
+        bounds: { left: 600, top: 0, width: 600, height: 628 },
+        style: { position: "absolute", zIndex: "1", objectFit: "cover" },
+        img: {
+          src: "placeholder://hero",
+          naturalWidth: 1,
+          naturalHeight: 1,
+          alt: "",
+        },
+      }),
+      el({
+        serial: 4,
+        path: "0.2",
+        tagName: "svg",
+        bounds: { left: 0, top: 0, width: 1200, height: 628 },
+        style: { position: "absolute", zIndex: "0" },
+        svg: { outerHTML: "<svg></svg>" },
+      }),
+    ),
+  );
+
+  assert.deepEqual(
+    result.commands.map((command) => command.source.path),
+    ["0", "0.2", "0.1", "0.0.0"],
+  );
 });
 
 test("mapRenderedElements는 rgba 배경 fill과 stroke의 alpha를 보존한다", () => {

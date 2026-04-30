@@ -39,18 +39,25 @@ export function mapRenderedElements(
   extraction: V6ExtractionResult,
 ): V6MappingResult {
   const context = buildMappingContext(extraction.elements);
-  const commands: V6PrimitiveCommand[] = [];
+  const commands: Array<{ command: V6PrimitiveCommand; order: number }> = [];
   for (const el of extraction.elements) {
-    for (const cmd of mapElement(el, extraction.canvas, context))
-      commands.push(cmd);
+    for (const cmd of mapElement(el, extraction.canvas, context)) {
+      commands.push({ command: cmd, order: commands.length });
+    }
   }
-  return { canvas: extraction.canvas, commands };
+  return {
+    canvas: extraction.canvas,
+    commands: sortByStackingOrder(commands, context).map(
+      (entry) => entry.command,
+    ),
+  };
 }
 
 interface MappingContext {
   readonly clipRadiusByPath: ReadonlyMap<string, V6BorderRadius>;
   readonly elementByPath: ReadonlyMap<string, V6RenderedElement>;
   readonly inheritedTransformByPath: ReadonlyMap<string, string>;
+  readonly stackLevelByPath: ReadonlyMap<string, number>;
 }
 
 function mapElement(
@@ -328,11 +335,17 @@ function buildMappingContext(
   const elementByPath = new Map<string, V6RenderedElement>();
   const ownTransformByPath = new Map<string, string>();
   const inheritedTransformByPath = new Map<string, string>();
+  const ownStackLevelByPath = new Map<string, number>();
+  const stackLevelByPath = new Map<string, number>();
   for (const el of elements) {
     elementByPath.set(el.path, el);
     const transform = normalizeTransform(el.style.transform);
     if (transform) {
       ownTransformByPath.set(el.path, transform);
+    }
+    const stackLevel = parseStackLevel(el);
+    if (stackLevel !== null) {
+      ownStackLevelByPath.set(el.path, stackLevel);
     }
     if (!el.visible || !hasClippingOverflow(el)) continue;
     const radius = pickBorderRadius(el);
@@ -348,8 +361,29 @@ function buildMappingContext(
     if (inheritedTransform) {
       inheritedTransformByPath.set(el.path, inheritedTransform);
     }
+    stackLevelByPath.set(
+      el.path,
+      findNearestStackLevel(el.path, ownStackLevelByPath) ?? 0,
+    );
   }
-  return { clipRadiusByPath, elementByPath, inheritedTransformByPath };
+  return {
+    clipRadiusByPath,
+    elementByPath,
+    inheritedTransformByPath,
+    stackLevelByPath,
+  };
+}
+
+function sortByStackingOrder(
+  entries: ReadonlyArray<{ command: V6PrimitiveCommand; order: number }>,
+  context: MappingContext,
+): Array<{ command: V6PrimitiveCommand; order: number }> {
+  return [...entries].sort((a, b) => {
+    const stackA = context.stackLevelByPath.get(a.command.source.path) ?? 0;
+    const stackB = context.stackLevelByPath.get(b.command.source.path) ?? 0;
+    if (stackA !== stackB) return stackA - stackB;
+    return a.order - b.order;
+  });
 }
 
 function resolveElementTransform(
@@ -370,6 +404,27 @@ function findNearestAncestorTransform(
   for (const ancestorPath of ancestorPaths(path)) {
     const transform = transformByPath.get(ancestorPath);
     if (transform) return transform;
+  }
+  return null;
+}
+
+function parseStackLevel(el: V6RenderedElement): number | null {
+  const position = el.style.position.trim().toLowerCase();
+  if (position === "static") return null;
+  const zIndex = el.style.zIndex.trim();
+  if (!/^[-+]?\d+$/.test(zIndex)) return null;
+  return Number.parseInt(zIndex, 10);
+}
+
+function findNearestStackLevel(
+  path: string,
+  stackLevelByPath: ReadonlyMap<string, number>,
+): number | null {
+  const own = stackLevelByPath.get(path);
+  if (own !== undefined) return own;
+  for (const ancestorPath of ancestorPaths(path)) {
+    const stackLevel = stackLevelByPath.get(ancestorPath);
+    if (stackLevel !== undefined) return stackLevel;
   }
   return null;
 }

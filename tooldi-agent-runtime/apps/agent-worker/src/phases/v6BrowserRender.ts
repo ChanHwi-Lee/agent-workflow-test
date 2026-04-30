@@ -115,6 +115,8 @@ export async function extractFromPage(
           opacity: cs.opacity,
           transform: cs.transform,
           transformOrigin: cs.transformOrigin,
+          position: cs.position,
+          zIndex: cs.zIndex,
           boxShadow: cs.boxShadow,
           textShadow: cs.textShadow,
           filter: cs.filter,

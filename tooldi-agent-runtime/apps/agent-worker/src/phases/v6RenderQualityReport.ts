@@ -13,7 +13,8 @@ export type V6RenderQualityIssueCode =
   | "zero_area_element"
   | "scroll_overflow"
   | "high_text_density"
-  | "text_overlap";
+  | "text_overlap"
+  | "text_image_overlap";
 
 export interface V6RenderQualityIssue {
   readonly code: V6RenderQualityIssueCode;
@@ -38,6 +39,7 @@ export interface V6RenderQualityMetrics {
   readonly zeroAreaElementCount: number;
   readonly highTextDensityElementCount: number;
   readonly textOverlapPairCount: number;
+  readonly textImageOverlapPairCount: number;
   readonly maxTextDensity: number;
 }
 
@@ -68,7 +70,7 @@ export function formatV6RenderQualityRetryFeedback(
     `Canvas: ${report.canvas.width}x${report.canvas.height}`,
     "Blocking render-quality issues:",
     ...lines,
-    "Fix only geometry/layout safety: root border-box must match canvas; visible text and images must stay inside canvas; visible text must not scroll/crop.",
+    "Fix only geometry/layout safety: root border-box must match canvas; visible text and images must stay inside canvas; visible text must not scroll/crop or overlap image regions.",
     "For Korean text, prefer measured 2-3 line blocks, natural phrase breaks, lower font-size, wider boxes, or taller boxes. Keep action blocks, chips, dates, prices, and notes in separate non-overlapping bands. Do not hide overflow.",
   ].join("\n");
 }
@@ -99,6 +101,8 @@ function retryFixHint(issue: V6RenderQualityIssue): string {
       return "adjust bounds or text density without introducing semantic roles or layout slots";
     case "text_overlap":
       return "separate the overlapping text boxes into distinct visible bands; move action/detail/chip text or reserve more vertical spacing";
+    case "text_image_overlap":
+      return "move readable text outside the image bounds, resize the image, or add a solid/semi-opaque backing shape behind the full text bounds";
   }
 }
 
@@ -113,6 +117,7 @@ export function buildV6RenderQualityReport(
   let zeroAreaElementCount = 0;
   let highTextDensityElementCount = 0;
   let textOverlapPairCount = 0;
+  let textImageOverlapPairCount = 0;
   let blockingIssueCount = 0;
   let maxTextDensity = 0;
 
@@ -236,6 +241,27 @@ export function buildV6RenderQualityReport(
     blockingIssueCount += 1;
   }
 
+  for (const overlap of findTextImageOverlaps(visible, extraction.canvas)) {
+    textImageOverlapPairCount += 1;
+    pushIssue(issues, {
+      code: "text_image_overlap",
+      severity: "warn",
+      blocking: true,
+      path: overlap.text.path,
+      tag: overlap.text.tagName,
+      message: "visible text overlaps a real image placeholder region",
+      metrics: {
+        imagePath: overlap.image.path,
+        imageTag: overlap.image.tagName,
+        overlapWidth: round(overlap.width),
+        overlapHeight: round(overlap.height),
+        overlapArea: round(overlap.area),
+        textAreaRatio: round(overlap.textAreaRatio),
+      },
+    });
+    blockingIssueCount += 1;
+  }
+
   const blockingIssues = issues.filter((issue) => issue.blocking);
 
   return {
@@ -257,11 +283,93 @@ export function buildV6RenderQualityReport(
       zeroAreaElementCount,
       highTextDensityElementCount,
       textOverlapPairCount,
+      textImageOverlapPairCount,
       maxTextDensity: round(maxTextDensity),
     },
     issues,
     blockingIssues,
   };
+}
+
+function findTextImageOverlaps(
+  elements: ReadonlyArray<V6RenderedElement>,
+  canvas: V6Canvas,
+): Array<{
+  readonly text: V6RenderedElement;
+  readonly image: V6RenderedElement;
+  readonly width: number;
+  readonly height: number;
+  readonly area: number;
+  readonly textAreaRatio: number;
+}> {
+  const textElements = elements.filter(
+    (el) => el.isTextLeaf && el.text && !isZeroArea(el.bounds),
+  );
+  const imageElements = elements.filter(
+    (el) =>
+      el.tagName === "img" &&
+      !isZeroArea(el.bounds) &&
+      parseOpacity(el.style.opacity) > 0.15 &&
+      !isLikelyBackgroundImage(el, canvas),
+  );
+  const overlaps: Array<{
+    readonly text: V6RenderedElement;
+    readonly image: V6RenderedElement;
+    readonly width: number;
+    readonly height: number;
+    readonly area: number;
+    readonly textAreaRatio: number;
+  }> = [];
+
+  for (const text of textElements) {
+    for (const image of imageElements) {
+      if (isAncestorPath(text.path, image.path)) continue;
+      const overlap = textImageOverlapMetrics(text.bounds, image.bounds);
+      if (!isMeaningfulTextImageOverlap(overlap)) continue;
+      overlaps.push({ text, image, ...overlap });
+    }
+  }
+  return overlaps;
+}
+
+function isLikelyBackgroundImage(
+  el: V6RenderedElement,
+  canvas: V6Canvas,
+): boolean {
+  const canvasArea = Math.max(1, canvas.width * canvas.height);
+  const areaRatio = (el.bounds.width * el.bounds.height) / canvasArea;
+  return areaRatio >= 0.55;
+}
+
+function textImageOverlapMetrics(text: V6Bounds, image: V6Bounds) {
+  const width =
+    Math.min(text.left + text.width, image.left + image.width) -
+    Math.max(text.left, image.left);
+  const height =
+    Math.min(text.top + text.height, image.top + image.height) -
+    Math.max(text.top, image.top);
+  const area = Math.max(0, width) * Math.max(0, height);
+  const textArea = text.width * text.height;
+  return {
+    width,
+    height,
+    area,
+    textAreaRatio: textArea > 0 ? area / textArea : 0,
+  };
+}
+
+function isMeaningfulTextImageOverlap(overlap: {
+  readonly width: number;
+  readonly height: number;
+  readonly area: number;
+  readonly textAreaRatio: number;
+}): boolean {
+  return (
+    overlap.width > TEXT_OVERLAP_AXIS_TOLERANCE_PX &&
+    overlap.height > TEXT_OVERLAP_AXIS_TOLERANCE_PX &&
+    overlap.area >= TEXT_OVERLAP_MIN_AREA_PX &&
+    overlap.textAreaRatio >= TEXT_OVERLAP_MIN_SMALLER_RATIO
+  );
 }
 
 // Deliberately static primitive policy. Do not split primitive types into
@@ -382,6 +490,11 @@ function isMeaningfulTextOverlap(overlap: {
     overlap.area >= TEXT_OVERLAP_MIN_AREA_PX &&
     overlap.smallerAreaRatio >= TEXT_OVERLAP_MIN_SMALLER_RATIO
   );
+}
+
+function parseOpacity(s: string): number {
+  const v = Number.parseFloat(s);
+  return Number.isFinite(v) ? v : 1;
 }
 
 function pushIssue(

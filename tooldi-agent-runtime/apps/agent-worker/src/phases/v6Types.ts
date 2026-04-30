@@ -51,6 +51,8 @@ export interface V6ComputedStyle {
   readonly opacity: string;
   readonly transform: string;
   readonly transformOrigin: string;
+  readonly position: string;
+  readonly zIndex: string;
   readonly boxShadow: string;
   readonly textShadow?: string;
   readonly filter?: string;
