@@ -7,6 +7,8 @@ Phase 6의 목표는 템플릿 검색을 되살리는 것이 아니다. 현재 L
 따라서 런타임 교체(runtime placeholder swap)는 딱 한 가지를 한다.
 
 - `bitmap` primitive의 `src`가 `placeholder://...`이면 실제 Tooldi photo/graphic 에셋 URL로 바꾼다.
+- 검색 후보가 없거나 vision selector가 후보를 명시적으로 부적합하다고 판단하고 `V6_ASSET_GENERATION_MODE=enabled`일 때만 native Gemini image generation으로 새 이미지를 만들 수 있다.
+- Gemini provider output은 object store에 저장한 뒤 Tooldi-owned artifact URL로만 `src`에 반영한다. raw inline data, provider URL, SDK handle은 command metadata나 canvas mutation으로 넘기지 않는다.
 - `bounds`, `objectFit`, `borderRadius`, `opacity`, `transform`, DOM 순서, layer 순서는 바꾸지 않는다.
 - 못 찾으면 run 전체를 실패시키지 않고, 사용자가 나중에 바꿀 수 있게 metadata에 unresolved 표시를 남긴다.
 
@@ -34,7 +36,7 @@ v6PipelineNode
 ```text
 v6PipelineNode
   -> runV6Pipeline
-  -> resolve placeholder assets
+  -> resolve placeholder assets (retrieve -> generate fallback -> unresolved)
   -> adaptV6Commands
   -> synthetic plan 저장
 ```
@@ -111,7 +113,7 @@ photo/graphic 분류는 LLM에게 맡기지 않는다. 하지만 `"배경"이면
 
 분류 결과는 검색할 컬렉션을 고르기 위한 내부 판단이다. Toolditor command나 public contract에 "hero image", "cta icon", "background slot" 같은 의미 라벨을 새로 만들지 않는다.
 
-## 6. 검색/필터/선택: embed text -> qdrant top-k -> policy filter -> catalog/API 확인 -> top-1
+## 6. 검색/필터/선택: embed text -> qdrant top-k -> selector -> selected/generate/unresolved
 
 권장 런타임 순서:
 
@@ -122,10 +124,29 @@ photo/graphic 분류는 LLM에게 맡기지 않는다. 하지만 `"배경"이면
 5. policy filter를 적용한다. 예: 무료 사용자에게 유료 에셋을 바로 넣지 않는다.
 6. catalog/API로 후보가 아직 사용 가능한지 다시 확인한다.
 7. 실제 URL, natural size, 가격/소유자 정보를 확인한다.
-8. 남은 후보 중 top-1을 선택한다.
+8. vision selector가 후보 1개를 선택하거나, 후보 전체를 부적합하다고 보고 `generate`를 선택하거나, `unresolved`를 선택한다.
 9. 선택된 asset의 URL과 metadata만 bitmap command에 반영한다.
+10. `generate`일 때는 native Gemini image generation을 호출하고, 반환된 bytes/base64를 object store에 저장한 뒤 Tooldi-owned artifact URL과 generated metadata만 bitmap command에 반영한다.
 
 Qdrant는 빠른 후보 찾기용이다. 최종 권위는 catalog/API가 가져야 한다. Qdrant payload가 오래됐을 수 있고, 에셋이 삭제/비공개/유료 전환됐을 수 있기 때문이다.
+
+Selector output은 아래 union으로 닫는다.
+
+```json
+{
+  "decision": "selected | generate | unresolved",
+  "selectedCandidateId": "C01-C06 or null",
+  "confidence": "high | medium | low",
+  "reason": "short Korean reason",
+  "generationPrompt": "English prompt, required when decision=generate",
+  "generationOptions": {
+    "aspectRatio": "1:1 | 16:9 | 9:16 | match_layout",
+    "outputFormat": "png | jpg"
+  }
+}
+```
+
+Generation은 Qdrant-first 흐름의 fallback이다. 검색 전에 생성으로 건너뛰거나, selector의 부적합 판단 없이 catalog 후보를 무시하는 경로는 허용하지 않는다.
 
 중요한 색인 전제:
 
@@ -165,9 +186,9 @@ requesterEntitlement:
 
 정확한 필드명은 contract owner가 정해야 한다. 핵심은 RAG resolver가 "좋아 보이는 이미지"가 아니라 "이 run에서 넣어도 되는 이미지"를 골라야 한다는 점이다.
 
-## 8. fallback: 못 찾을 때 src/metadata를 어떻게 둘지
+## 8. fallback: 못 찾거나 생성 실패할 때 src/metadata를 어떻게 둘지
 
-fallback은 run 실패가 아니라 bitmap 하나의 미해결 상태로 처리한다.
+fallback은 run 실패가 아니라 bitmap 하나의 미해결 상태로 처리한다. Generation mode가 꺼져 있거나 Gemini 호출/저장에 실패해도 run 전체를 깨지 않고 unresolved bitmap으로 닫는다.
 
 권장 metadata:
 
@@ -181,6 +202,20 @@ fallback은 run 실패가 아니라 bitmap 하나의 미해결 상태로 처리�
   placeholderUri: "placeholder://봄꽃 배경",
   placeholderHint: "봄꽃 배경",
   unresolveReason: "embedding_failed" | "no_match" | "policy_filtered" | "catalog_fetch_failed"
+}
+```
+
+생성에 성공한 경우 command metadata는 unresolved 대신 아래 family를 남긴다.
+
+```ts
+{
+  generatedAssetId: "generated:<runId>:001",
+  generatedAssetProvider: "gemini",
+  generatedAssetModel: "gemini-2.5-flash-image",
+  generatedAssetPrompt: "<selector or default generation prompt>",
+  generatedAssetMethod: "gemini-native-generation",
+  placeholderUri: "placeholder://...",
+  placeholderHint: "..."
 }
 ```
 
@@ -246,7 +281,7 @@ E2E:
 
 - `agent-workflow-test/AGENTS.md`: v6 SSOT가 현재 authority이며 v5 constrained HTML과 template-aware adaptive composition은 historical로 밀려 있다.
 - `agent-workflow-test/tooldi-agent-workflow-v6-layout-freedom-ssot.md`: v6는 free HTML, browser layout, primitive extract 3단계이며 `placeholder://<hint>` 이미지를 허용한다. `sandbox/embedding-test`는 Phase 6 RAG 재사용 후보로만 언급된다.
-- `agent-workflow-test/docs/archive/handoff/2026-04-21-agw-v6-phase6-rag-placeholder-swap-design-handoff.md`: Phase 6는 `placeholder://<hint>`를 실제 Tooldi asset ID/S3 URL로 바꾸는 설계 단계다. bounds/style 변경 금지, synthetic asset 금지, template 컬렉션 제외, 레거시 retrieval 재-wire 금지가 명시되어 있다.
+- `agent-workflow-test/docs/archive/handoff/2026-04-21-agw-v6-phase6-rag-placeholder-swap-design-handoff.md`: Phase 6는 `placeholder://<hint>`를 실제 Tooldi asset ID/S3 URL로 바꾸는 설계 단계였다. 2026-04-30 기준 synthetic asset 금지는 좁은 범위에서 개정되어, 검색 후보가 없거나 selector가 부적합하다고 판단한 경우에만 native Gemini generation fallback을 허용한다. bounds/style 변경 금지, template 컬렉션 제외, 레거시 retrieval 재-wire 금지는 유지된다.
 - `agent-workflow-test/tooldi-agent-runtime/apps/agent-worker/src/graph/v6PipelineNode.ts`: 현재 node는 `runV6Pipeline` 결과를 받은 뒤 바로 `adaptV6Commands`를 호출한다. request, intent, dependencies가 있는 위치라 RAG 호출을 넣기 가장 단순하다.
 - `agent-workflow-test/tooldi-agent-runtime/apps/agent-worker/src/phases/v6Pipeline.ts`: pipeline은 HTML 생성, 검증, 브라우저 렌더, primitive mapping까지만 수행한다. 외부 catalog/Qdrant I/O를 넣지 않는 것이 현재 DI 경계와 맞다.
 - `agent-workflow-test/tooldi-agent-runtime/apps/agent-worker/src/phases/v6PrimitiveMapper.ts`: `placeholder://` 이미지는 `bitmap`으로 분류되고, `src`, `naturalWidth`, `naturalHeight`, `alt`, `bounds`가 primitive command에 보존된다.

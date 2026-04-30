@@ -1,8 +1,8 @@
 # Tooldi 자연어 에이전트/워크플로우 v1 아키텍처 초안
 
-> ⚠️ **철학 SSOT 참조 갱신 (2026-04-20)** — 설계 철학/파이프라인 SSOT는 이제 [`tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md`](./tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md) 가 닫는다.
+> ⚠️ **철학 SSOT 참조 갱신 (2026-04-30)** — 설계 철학/파이프라인 SSOT는 이제 [`tooldi-agent-workflow-v6-layout-freedom-ssot.md`](./tooldi-agent-workflow-v6-layout-freedom-ssot.md) 가 닫는다.
 >
-> 이 문서의 runtime semantic contract(artifact identity, counted completion moment, Canvas Mutation Protocol 구조, lifecycle ownership, ordering, rollback)는 v5와 정합하며 계속 **normative**다. 단, "template-aware adaptive composition" 참조는 historical로 읽는다.
+> 이 문서의 runtime semantic contract(artifact identity, counted completion moment, Canvas Mutation Protocol 구조, lifecycle ownership, ordering, rollback)는 v6와 정합하며 계속 **normative**다. 단, "template-aware adaptive composition" 참조는 historical로 읽는다.
 
 ## 문서 정보
 
@@ -24,9 +24,10 @@
 
 ### Document authority hierarchy
 
-- [tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v5-constrained-html-pipeline-ssot.md) 가 설계 철학(V1~V5 axiom), 6단계 파이프라인(Constrained HTML Pipeline), 재사용·폐기·신설 경계, default model lock의 최상위 SSOT다. completion은 editability + renderability + save truth로만 판정한다.
-- 이전 [`tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md`](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 는 2026-04-20자로 v5 SSOT에 의해 **대체됨**. template object graph / message atoms / retain/modify/remove/add / addable vocabulary 개념은 historical reference로만 유효.
+- [tooldi-agent-workflow-v6-layout-freedom-ssot.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v6-layout-freedom-ssot.md) 가 설계 철학, free HTML + browser render/extract pipeline, 재사용·폐기·신설 경계, default model lock의 최상위 SSOT다. completion은 editability + renderability + save truth로만 판정한다.
+- 이전 [`tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md`](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-ssot-template-aware-adaptive-composition.md) 는 v6 SSOT에 의해 **대체됨**. template object graph / message atoms / retain/modify/remove/add / addable vocabulary 개념은 historical reference로만 유효.
 - 이 문서는 v1 runtime semantic contract의 최상위 authoritative source다. artifact identity, counted completion moment, lifecycle ownership, contract-chain root identity, ordering primitive, checkpoint/rollback semantics, asset normalization boundary, primitive reuse boundary, acceptance-criterion closure는 오직 이 문서가 닫는다.
+- AGW v6 placeholder asset resolution에서 native Gemini image generation을 fallback으로 쓰더라도 이 문서의 asset normalization boundary는 유지된다. Gemini inline data/provider output은 canvas mutation으로 직접 넘어갈 수 없고, runtime-owned persisted asset URL 및 generated metadata로 정규화된 뒤에만 bitmap command에 반영된다.
 - [tooldi-agent-workflow-v1-functional-spec-to-be.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-functional-spec-to-be.md) 는 product/API projection 문서다. northbound request, FR/BR/NFR, payload shape, persistence table을 정의할 수는 있지만, 이 문서가 이미 닫은 artifact identity, completion semantics, authority ownership, AC closure를 재정의하거나 override할 수 없다.
 - [tooldi-agent-workflow-v1-backend-boundary.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-backend-boundary.md) 는 backend/control-plane scope와 sync/async split의 authoritative source다. 다만 lifecycle ownership의 normative 판정, canonical completion moment, canonical draft artifact identity는 이 문서를 재참조만 해야 한다.
 - [tooldi-agent-workflow-v1-scope-operations-decisions.md](/home/ubuntu/github/tooldi/tws-editor-api/agent-workflow-test/tooldi-agent-workflow-v1-scope-operations-decisions.md) 는 v1 scope/non-scope, stack lock, day-one operations decision의 authoritative source다. 이 문서 역시 artifact identity, completion semantics, lifecycle ownership을 별도 source로 만들면 안 된다.

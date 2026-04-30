@@ -20,6 +20,8 @@
 
 2026-04-28 legacy cleanup PR0~PR7 이후 live runtime은 이 SSOT의 projection인 **v6-only `object_native_v1`** 로 잠겼다. PostgreSQL/Drizzle persistence, LangGraph `PostgresSaver`, required `workflowVariant`, full `latestSaveReceipt` finalize input, v6 mutation/save/finalize path가 현재 기준선이다.
 
+2026-04-30 기준 Phase 6 placeholder asset resolution은 Qdrant-first 흐름을 유지하되, 후보가 없거나 selector가 후보를 부적합하다고 판단한 경우에만 native Gemini image generation fallback을 허용한다. 생성 결과는 반드시 runtime object store에 저장한 Tooldi-owned URL로 바뀐 뒤 bitmap primitive에 들어가며, provider inline data나 provider URL은 canvas mutation으로 넘어가지 않는다.
+
 ### 0.1 이 문서가 대체하는 문서
 
 | 문서 | 상태 변경 |
@@ -149,6 +151,7 @@ v6는 2026-04-21 실행된 다음 실증에 근거한다.
 - **출력**: `CreateLayerCommand[]` (contracts 계약) + Canvas Mutation envelope (SSE용).
 - **구현**:
   - `v6PrimitiveMapper.ts`: DOM 순회 → primitive 방출.
+  - `v6AssetResolver.ts`: `placeholder://` bitmap의 `src`만 Qdrant asset URL, native Gemini generated artifact URL, 또는 unresolved fallback으로 교체한다. 이 단계는 bounds/style/z-order를 수정하지 않는다.
   - `v6CommandAdapter.ts`: primitive → `CreateLayerCommand` (Toolditor layerType 매핑).
   - `emitV6Mutations.ts`: `CreateLayerCommand[]` 을 하나의 `MutationProposalDraft` 로 묶어 `CanvasMutationEnvelopeSchema` 에 싣는다.
 - **Primitive 매핑 표 (normative)**:
