@@ -1,3 +1,4 @@
+import { V6_PROMPT_VARIANT } from "./v6SystemPrompt.js";
 import type {
   V6Bounds,
   V6Canvas,
@@ -66,12 +67,26 @@ export function formatV6RenderQualityRetryFeedback(
       .join(", ");
     return `${index + 1}. ${issue.code} at path=${issue.path} tag=${issue.tag}; ${metrics}; fix=${retryFixHint(issue)}`;
   });
+  // Variant B trims slot-enumeration vocabulary ("action blocks, chips,
+  // dates, prices, and notes in separate non-overlapping bands") from the
+  // trailing prescription. Geometry summary stays — it is the constraint
+  // axis that retries are supposed to fix. Korean line-prescription
+  // ("measured 2-3 line blocks") is also dropped for B because it is
+  // layout-prescriptive rather than geometry-descriptive.
+  const tail =
+    V6_PROMPT_VARIANT === "B"
+      ? [
+          "Fix only geometry/layout safety: root border-box must match canvas; visible text and images must stay inside canvas; visible text must not scroll, crop, overlap other text, or intersect image bounds. Do not hide overflow.",
+        ]
+      : [
+          "Fix only geometry/layout safety: root border-box must match canvas; visible text and images must stay inside canvas; visible text must not scroll/crop or overlap image regions.",
+          "For Korean text, prefer measured 2-3 line blocks, natural phrase breaks, lower font-size, wider boxes, or taller boxes. Keep action blocks, chips, dates, prices, and notes in separate non-overlapping bands. Do not hide overflow.",
+        ];
   return [
     `Canvas: ${report.canvas.width}x${report.canvas.height}`,
     "Blocking render-quality issues:",
     ...lines,
-    "Fix only geometry/layout safety: root border-box must match canvas; visible text and images must stay inside canvas; visible text must not scroll/crop or overlap image regions.",
-    "For Korean text, prefer measured 2-3 line blocks, natural phrase breaks, lower font-size, wider boxes, or taller boxes. Keep action blocks, chips, dates, prices, and notes in separate non-overlapping bands. Do not hide overflow.",
+    ...tail,
   ].join("\n");
 }
 
@@ -85,6 +100,11 @@ const TEXT_OVERLAP_MIN_SMALLER_RATIO = 0.08;
 const TEXT_OVERLAP_AXIS_TOLERANCE_PX = 2;
 
 function retryFixHint(issue: V6RenderQualityIssue): string {
+  // Variant B trims slot vocabulary ("action/detail/chip text") and the
+  // specific "backing shape" remediation. The text/image overlap hint is
+  // recast as a constraint with no specified resolution, matching
+  // V6_LAYOUT_QUALITY_B's "resolution is your choice" wording.
+  const isB = V6_PROMPT_VARIANT === "B";
   switch (issue.code) {
     case "root_bounds_mismatch":
       return "make the root div width/height exactly match the canvas and use box-sizing:border-box if padding or border exists";
@@ -100,9 +120,13 @@ function retryFixHint(issue: V6RenderQualityIssue): string {
     case "high_text_density":
       return "adjust bounds or text density without introducing semantic roles or layout slots";
     case "text_overlap":
-      return "separate the overlapping text boxes into distinct visible bands; move action/detail/chip text or reserve more vertical spacing";
+      return isB
+        ? "separate the overlapping text boxes; reserve enough vertical or horizontal spacing so their bounds do not intersect"
+        : "separate the overlapping text boxes into distinct visible bands; move action/detail/chip text or reserve more vertical spacing";
     case "text_image_overlap":
-      return "move readable text outside the image bounds, resize the image, or add a solid/semi-opaque backing shape behind the full text bounds";
+      return isB
+        ? "ensure the text bounds do not intersect the image bounds; the resolution is your choice"
+        : "move readable text outside the image bounds, resize the image, or add a solid/semi-opaque backing shape behind the full text bounds";
   }
 }
 
