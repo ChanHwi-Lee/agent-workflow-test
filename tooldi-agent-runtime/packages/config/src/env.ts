@@ -33,6 +33,11 @@ export interface AgentApiEnv extends SharedRuntimeEnv {
   publicBaseUrl: string;
   sseHeartbeatIntervalMs: number;
   queueTransportMode: ApiQueueTransportMode;
+  runWatchdogPickupTimeoutMs: number;
+  runWatchdogRetryDelayMs: number;
+  runWatchdogMaxQueueAttempts: number;
+  runWatchdogEnqueueTimeoutMs: number;
+  runWatchdogFinalizeGraceMs: number;
 }
 
 export const workerQueueTransportModes = ["bullmq", "disabled"] as const;
@@ -242,6 +247,31 @@ export function loadAgentApiEnv(source: EnvSource = process.env): AgentApiEnv {
       "API_QUEUE_TRANSPORT_MODE",
       apiQueueTransportModes,
       "bullmq",
+    ),
+    runWatchdogPickupTimeoutMs: readNumber(
+      source,
+      "RUN_WATCHDOG_PICKUP_TIMEOUT_MS",
+      120000,
+    ),
+    runWatchdogRetryDelayMs: readNumber(
+      source,
+      "RUN_WATCHDOG_RETRY_DELAY_MS",
+      1500,
+    ),
+    runWatchdogMaxQueueAttempts: readNumber(
+      source,
+      "RUN_WATCHDOG_MAX_QUEUE_ATTEMPTS",
+      2,
+    ),
+    runWatchdogEnqueueTimeoutMs: readNumber(
+      source,
+      "RUN_WATCHDOG_ENQUEUE_TIMEOUT_MS",
+      2000,
+    ),
+    runWatchdogFinalizeGraceMs: readNumber(
+      source,
+      "RUN_WATCHDOG_FINALIZE_GRACE_MS",
+      1500,
     ),
   };
 }

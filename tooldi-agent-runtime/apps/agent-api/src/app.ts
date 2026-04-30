@@ -26,7 +26,10 @@ import { RunEventService } from "./services/runEventService.js";
 import { RunFinalizeService } from "./services/runFinalizeService.js";
 import { QueueInterviewResumeDispatcher } from "./services/queueInterviewResumeDispatcher.js";
 import { RunRecoveryService } from "./services/runRecoveryService.js";
-import { RunWatchdogService } from "./services/runWatchdogService.js";
+import {
+  RunWatchdogService,
+  type RunWatchdogPolicy,
+} from "./services/runWatchdogService.js";
 import { eventsPostRoute } from "./routes/internal/events.post.js";
 import { finalizePostRoute } from "./routes/internal/finalize.post.js";
 import { heartbeatsPostRoute } from "./routes/internal/heartbeats.post.js";
@@ -50,6 +53,16 @@ export interface AgentApiServices {
 
 export interface BuildAppOptions {
   env?: AgentApiEnv;
+}
+
+function createRunWatchdogPolicy(env: AgentApiEnv): RunWatchdogPolicy {
+  return {
+    pickupTimeoutMs: env.runWatchdogPickupTimeoutMs,
+    retryDelayMs: env.runWatchdogRetryDelayMs,
+    maxQueueAttempts: env.runWatchdogMaxQueueAttempts,
+    enqueueTimeoutMs: env.runWatchdogEnqueueTimeoutMs,
+    finalizeGraceMs: env.runWatchdogFinalizeGraceMs,
+  };
 }
 
 export async function buildApp(
@@ -103,6 +116,7 @@ export async function buildApp(
     runFinalizeService,
     app.runQueue,
     app.appLogger.child({ service: "run-watchdog-service" }),
+    createRunWatchdogPolicy(app.config),
   );
 
   const services: AgentApiServices = {

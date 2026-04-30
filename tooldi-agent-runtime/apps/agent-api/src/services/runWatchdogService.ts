@@ -34,7 +34,7 @@ export interface RunWatchdogPolicy {
 }
 
 export const defaultRunWatchdogPolicy: RunWatchdogPolicy = {
-  pickupTimeoutMs: 2000,
+  pickupTimeoutMs: 120000,
   retryDelayMs: 1500,
   maxQueueAttempts: 2,
   enqueueTimeoutMs: 2000,

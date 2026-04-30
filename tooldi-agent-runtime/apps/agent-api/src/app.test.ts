@@ -37,6 +37,11 @@ function createEnv(): AgentApiEnv {
     publicBaseUrl: "http://127.0.0.1:3000",
     sseHeartbeatIntervalMs: 50,
     queueTransportMode: "memory",
+    runWatchdogPickupTimeoutMs: 120000,
+    runWatchdogRetryDelayMs: 1500,
+    runWatchdogMaxQueueAttempts: 2,
+    runWatchdogEnqueueTimeoutMs: 2000,
+    runWatchdogFinalizeGraceMs: 1500,
   };
 }
 
