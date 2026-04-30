@@ -338,6 +338,119 @@ test("렌더 품질 리포트는 root border-box가 canvas보다 크면 hard gat
   );
 });
 
+test("렌더 품질 리포트는 내용 없는 그라디언트 장식 bleed를 off-canvas로 표시하지 않는다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({
+        path: "0",
+        style: { ...STYLE, overflow: "hidden" },
+        layout: {
+          clientWidth: 1200,
+          clientHeight: 628,
+          scrollWidth: 1300,
+          scrollHeight: 628,
+        },
+      }),
+      element({
+        serial: 1,
+        path: "0.0",
+        tagName: "div",
+        bounds: { left: 900, top: -100, width: 400, height: 400 },
+        style: {
+          ...STYLE,
+          backgroundImage:
+            "radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(10, 25, 47, 0) 70%)",
+          borderTopLeftRadius: "50%",
+          borderTopRightRadius: "50%",
+          borderBottomRightRadius: "50%",
+          borderBottomLeftRadius: "50%",
+        },
+        layout: {
+          clientWidth: 400,
+          clientHeight: 400,
+          scrollWidth: 400,
+          scrollHeight: 400,
+        },
+      }),
+    ]),
+  );
+
+  assert.equal(report.metrics.offCanvasElementCount, 0);
+  assert.equal(report.metrics.scrollOverflowElementCount, 0);
+  assert.equal(report.hardGateCandidate, false);
+  assert.equal(
+    report.issues.some(
+      (issue) =>
+        issue.code === "off_canvas_element" ||
+        issue.code === "scroll_overflow",
+    ),
+    false,
+  );
+});
+
+test("렌더 품질 리포트는 일반 non-text off-canvas 요소를 계속 관측한다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.0",
+        tagName: "div",
+        bounds: { left: 1080, top: 40, width: 180, height: 120 },
+        style: {
+          ...STYLE,
+          backgroundColor: "rgb(226, 232, 240)",
+        },
+        layout: {
+          clientWidth: 180,
+          clientHeight: 120,
+          scrollWidth: 180,
+          scrollHeight: 120,
+        },
+      }),
+    ]),
+  );
+
+  assert.equal(report.metrics.offCanvasElementCount, 1);
+  assert.equal(report.hardGateCandidate, false);
+  assert.equal(
+    report.issues.some((issue) => issue.code === "off_canvas_element"),
+    true,
+  );
+});
+
+test("렌더 품질 리포트는 낮은 opacity의 장식 SVG bleed를 off-canvas로 표시하지 않는다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.0",
+        tagName: "svg",
+        bounds: { left: 950, top: -50, width: 300, height: 300 },
+        style: {
+          ...STYLE,
+          opacity: "0.1",
+        },
+        svg: { outerHTML: '<svg viewBox="0 0 200 200"></svg>' },
+        layout: {
+          clientWidth: 300,
+          clientHeight: 300,
+          scrollWidth: 300,
+          scrollHeight: 300,
+        },
+      }),
+    ]),
+  );
+
+  assert.equal(report.metrics.offCanvasElementCount, 0);
+  assert.equal(report.hardGateCandidate, false);
+  assert.equal(
+    report.issues.some((issue) => issue.code === "off_canvas_element"),
+    false,
+  );
+});
+
 test("렌더 품질 리포트는 svg off-canvas를 hard gate 후보로 승격하지 않는다", () => {
   const report = buildV6RenderQualityReport(
     extraction([

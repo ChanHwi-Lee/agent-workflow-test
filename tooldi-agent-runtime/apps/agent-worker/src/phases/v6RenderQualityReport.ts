@@ -165,7 +165,10 @@ export function buildV6RenderQualityReport(
     if (!el.visible) continue;
 
     const outside = offCanvasAmounts(el.bounds, extraction.canvas);
-    if (outside.total > OFF_CANVAS_TOLERANCE_PX) {
+    if (
+      outside.total > OFF_CANVAS_TOLERANCE_PX &&
+      isReportableOffCanvasElement(el)
+    ) {
       offCanvasElementCount += 1;
       const blocking = isBlockingOffCanvasElement(el);
       pushIssue(issues, {
@@ -181,7 +184,10 @@ export function buildV6RenderQualityReport(
     }
 
     const overflow = scrollOverflowAmounts(el);
-    if (isScrollOverflowBeyondTolerance(overflow)) {
+    if (
+      isScrollOverflowBeyondTolerance(overflow) &&
+      isReportableScrollOverflowElement(el)
+    ) {
       scrollOverflowElementCount += 1;
       const blocking = isBlockingScrollOverflowElement(el);
       pushIssue(issues, {
@@ -410,8 +416,16 @@ function offCanvasIssueCode(el: V6RenderedElement): V6RenderQualityIssueCode {
   return "off_canvas_element";
 }
 
+function isReportableOffCanvasElement(el: V6RenderedElement): boolean {
+  return !isContentlessDecorativeBleed(el);
+}
+
 function isBlockingOffCanvasElement(el: V6RenderedElement): boolean {
   return el.isTextLeaf || el.tagName === "img";
+}
+
+function isReportableScrollOverflowElement(el: V6RenderedElement): boolean {
+  return el.isTextLeaf;
 }
 
 function isBlockingScrollOverflowElement(el: V6RenderedElement): boolean {
@@ -420,6 +434,26 @@ function isBlockingScrollOverflowElement(el: V6RenderedElement): boolean {
 
 function isBlockingZeroAreaElement(el: V6RenderedElement): boolean {
   return el.tagName === "img";
+}
+
+function isContentlessDecorativeBleed(el: V6RenderedElement): boolean {
+  if (el.tagName === "svg") {
+    return parseOpacity(el.style.opacity) <= 0.2;
+  }
+
+  if (el.isTextLeaf || el.text || el.img || el.svg || el.hasChildren) {
+    return false;
+  }
+  if (el.tagName !== "div" && el.tagName !== "span") {
+    return false;
+  }
+
+  const backgroundImage = el.style.backgroundImage.trim().toLowerCase();
+  const hasDecorativeGradient =
+    backgroundImage.includes("linear-gradient(") ||
+    backgroundImage.includes("radial-gradient(");
+
+  return hasDecorativeGradient;
 }
 
 function findTextOverlaps(
