@@ -61,6 +61,16 @@ interface AssetCandidate {
   readonly priceType: string | null;
 }
 
+type AssetSelection =
+  | {
+      readonly candidate: AssetCandidate;
+      readonly method: string;
+    }
+  | {
+      readonly candidate: null;
+      readonly rejectReason: string;
+    };
+
 interface QdrantPoint {
   readonly score?: number;
   readonly payload?: Record<string, unknown>;
@@ -101,6 +111,10 @@ const EN_KO_MAP: Record<string, string> = {
   toys: "장난감",
   collection: "모음",
   wireless: "무선",
+  headphone: "헤드폰 헤드셋 이어폰",
+  headphones: "헤드폰 헤드셋 이어폰",
+  headset: "헤드셋 헤드폰",
+  headsets: "헤드셋 헤드폰",
   earbuds: "이어폰 이어버드",
   nature: "자연",
   flower: "꽃",
@@ -126,6 +140,20 @@ const EN_KO_MAP: Record<string, string> = {
   travel: "여행",
   interior: "인테리어",
 };
+
+const REQUIRED_KEYWORD_GROUPS: ReadonlyArray<{
+  readonly triggers: readonly string[];
+  readonly matches: readonly string[];
+}> = [
+  {
+    triggers: ["headphone", "headphones", "headset", "headsets", "헤드폰", "헤드셋"],
+    matches: ["headphone", "headphones", "headset", "headsets", "헤드폰", "헤드셋", "이어폰", "이어버드"],
+  },
+  {
+    triggers: ["earbud", "earbuds", "이어폰", "이어버드"],
+    matches: ["earbud", "earbuds", "earphone", "earphones", "이어폰", "이어버드", "헤드폰", "헤드셋"],
+  },
+];
 
 function translateHint(hint: string): string {
   const tokens = hint.toLowerCase().split(/[\s\-_]+/);
@@ -329,11 +357,11 @@ async function resolveOne(
     if (candidates.length === 0) {
       return unresolved(context, "no_match");
     }
-    const selected = await selectCandidate(input, context, candidates);
-    if (!selected) {
-      return unresolved(context, "vision_rejected");
+    const selection = await selectCandidate(input, context, candidates);
+    if (!selection.candidate) {
+      return unresolved(context, selection.rejectReason);
     }
-    return applyCandidate(context, selected);
+    return applyCandidate(context, selection.candidate, selection.method);
   } catch {
     return unresolved(context, "resolver_failed");
   }
@@ -441,19 +469,61 @@ async function selectCandidate(
   input: V6AssetResolverInput,
   context: PlaceholderContext,
   candidates: readonly AssetCandidate[],
-): Promise<AssetCandidate | null> {
+): Promise<AssetSelection> {
   if (
     input.env.v6AssetVisionRerankMode !== "enabled" ||
     !input.googleApiKey ||
     candidates.length === 1
   ) {
-    return candidates[0] ?? null;
+    const candidate = firstRelevantCandidate(context, candidates);
+    return candidate
+      ? { candidate, method: "qdrant-keyword-relevance" }
+      : { candidate: null, rejectReason: "keyword_rejected" };
   }
   const selectedId = await rerankWithVision(input, context, candidates);
-  return (
+  if (!selectedId) return { candidate: null, rejectReason: "vision_rejected" };
+  const selected =
     candidates.find((candidate) => candidate.candidateId === selectedId) ??
-    candidates[0] ??
-    null
+    null;
+  if (!selected) return { candidate: null, rejectReason: "vision_rejected" };
+  if (!isCandidateRelevantToPlaceholder(context, selected)) {
+    return { candidate: null, rejectReason: "keyword_rejected" };
+  }
+  return { candidate: selected, method: "qdrant-vision-rerank" };
+}
+
+function firstRelevantCandidate(
+  context: PlaceholderContext,
+  candidates: readonly AssetCandidate[],
+): AssetCandidate | null {
+  return (
+    candidates.find((candidate) =>
+      isCandidateRelevantToPlaceholder(context, candidate),
+    ) ?? null
+  );
+}
+
+function isCandidateRelevantToPlaceholder(
+  context: PlaceholderContext,
+  candidate: AssetCandidate,
+): boolean {
+  const requiredGroup = findRequiredKeywordGroup(context);
+  if (!requiredGroup) return true;
+
+  const candidateText = candidate.keywords.join(" ").toLowerCase();
+  return requiredGroup.matches.some((term) =>
+    candidateText.includes(term.toLowerCase()),
+  );
+}
+
+function findRequiredKeywordGroup(
+  context: PlaceholderContext,
+): (typeof REQUIRED_KEYWORD_GROUPS)[number] | null {
+  const text = `${context.hint} ${context.searchText}`.toLowerCase();
+  return (
+    REQUIRED_KEYWORD_GROUPS.find((group) =>
+      group.triggers.some((term) => text.includes(term.toLowerCase())),
+    ) ?? null
   );
 }
 
@@ -549,6 +619,7 @@ function inferMimeType(url: string): string {
 function applyCandidate(
   context: PlaceholderContext,
   candidate: AssetCandidate,
+  method: string,
 ): V6ImageCommand {
   return {
     ...context.command,
@@ -563,7 +634,7 @@ function applyCandidate(
       : {}),
     ...(candidate.originKey ? { resolvedAssetOriginKey: candidate.originKey } : {}),
     ...(candidate.thumbKey ? { resolvedAssetThumbKey: candidate.thumbKey } : {}),
-    resolvedAssetMethod: "qdrant-vision-rerank",
+    resolvedAssetMethod: method,
     placeholderUri: context.placeholderUri,
     placeholderHint: context.hint,
   };
@@ -573,6 +644,7 @@ function unresolved(context: PlaceholderContext, reason: string): V6ImageCommand
   return {
     ...context.command,
     src: TRANSPARENT_PIXEL,
+    opacity: 0,
     naturalWidth: 1,
     naturalHeight: 1,
     unresolvedPlaceholder: true,
