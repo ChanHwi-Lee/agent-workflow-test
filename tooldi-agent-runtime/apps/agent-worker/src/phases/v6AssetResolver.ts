@@ -212,8 +212,10 @@ function buildPlaceholderContexts(
   const contexts: PlaceholderContext[] = [];
   for (const [index, command] of input.commands.entries()) {
     if (!isPlaceholderBitmap(command)) continue;
-    const hint = parsePlaceholderHint(command.src);
-    const family = classifyFamily(command, hint, input);
+    const { hint, explicitFamily } = parsePlaceholderHint(command.src);
+    const family =
+      explicitFamily ??
+      inferFamilyFromStructure(command, input.canvasWidth, input.canvasHeight);
     const role = classifyRole(command, input.canvasWidth, input.canvasHeight);
     const nearbyText = selectNearbyText(command.bounds, input.commands);
     contexts.push({
@@ -239,38 +241,42 @@ function isPlaceholderBitmap(command: V6PrimitiveCommand): command is V6ImageCom
   return command.primitive === "bitmap" && command.src.startsWith("placeholder://");
 }
 
-function parsePlaceholderHint(src: string): string {
-  const raw = src.replace(/^placeholder:\/\//, "").replace(/\.[a-z0-9]+$/i, "");
+function parsePlaceholderHint(src: string): { hint: string; explicitFamily: AssetFamily | null } {
+  // New format: placeholder://photo/<hint> or placeholder://graphic/<hint>
+  const withoutScheme = src.replace(/^placeholder:\/\//, "").replace(/\.[a-z0-9]+$/i, "");
+  const photoMatch = withoutScheme.match(/^photo\/(.+)$/);
+  const graphicMatch = withoutScheme.match(/^graphic\/(.+)$/);
+
+  const raw = photoMatch?.[1] ?? graphicMatch?.[1] ?? withoutScheme;
+  const explicitFamily: AssetFamily | null = photoMatch
+    ? "photo"
+    : graphicMatch
+    ? "graphic"
+    : null;
+
+  let hint: string;
   try {
-    return decodeURIComponent(raw).replace(/[-_]+/g, " ").trim() || raw;
+    hint = decodeURIComponent(raw).replace(/[-_]+/g, " ").trim() || raw;
   } catch {
-    return raw.replace(/[-_]+/g, " ").trim();
+    hint = raw.replace(/[-_]+/g, " ").trim();
   }
+
+  return { hint, explicitFamily };
 }
 
-function classifyFamily(
+// Fallback-only: used when placeholder has no explicit family prefix (legacy/LLM miss).
+// Uses structural signals only — no keyword lists.
+function inferFamilyFromStructure(
   command: V6ImageCommand,
-  hint: string,
-  input: V6AssetResolverInput,
+  canvasWidth: number,
+  canvasHeight: number,
 ): AssetFamily {
-  const text = `${hint} ${input.userPrompt} ${command.alt}`.toLowerCase();
-  let photoScore = 0;
-  let graphicScore = 0;
-
-  for (const word of ["사진", "배경", "실사", "풍경", "카페", "라떼", "음료", "음식", "강아지", "고양이", "사람"]) {
-    if (text.includes(word)) photoScore += 2;
-  }
-  for (const word of ["스티커", "아이콘", "일러스트", "장식", "캐릭터", "쿠폰", "프레임", "리본", "심볼"]) {
-    if (text.includes(word)) graphicScore += 2;
-  }
-
+  if (command.objectFit === "cover") return "photo";
+  if (command.objectFit === "contain") return "graphic";
   const areaRatio =
     (command.bounds.width * command.bounds.height) /
-    Math.max(1, input.canvasWidth * input.canvasHeight);
-  if (areaRatio >= 0.18 || command.objectFit === "cover") photoScore += 1;
-  if (areaRatio <= 0.08 || command.objectFit === "contain") graphicScore += 1;
-
-  return graphicScore > photoScore ? "graphic" : "photo";
+    Math.max(1, canvasWidth * canvasHeight);
+  return areaRatio >= 0.25 ? "photo" : "graphic";
 }
 
 function selectNearbyText(

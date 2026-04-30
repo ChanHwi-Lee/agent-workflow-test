@@ -31,7 +31,7 @@ Freely allowed (no limits beyond good design):
 - Any layout technique: flex, grid, absolute, relative, margin, padding, calc, transform, rotate, nested wrappers.
 - Any sizing unit: px, %, em, rem, vw, vh. Float values ok.
 - All text tags: <h1>-<h6>, <p>, <span>, <div>, <strong>, <em>.
-- <img> with src="placeholder://<short-hint>" and explicit inline width and height (the placeholder is resolved later by asset retrieval; dimensions you specify are final).
+- <img> with src="placeholder://photo/<short-hint>" for realistic photos (scenes, people, food, products, backgrounds) or src="placeholder://graphic/<short-hint>" for decorative elements (stickers, icons, illustrations, labels, badges, frames, ribbons, characters). Always declare the correct family so the asset retriever searches the right catalog. Explicit inline width and height are required (the placeholder is resolved later; dimensions you specify are final). Examples: src="placeholder://photo/spring-cafe-background", src="placeholder://graphic/discount-sticker".
 - Inline <svg> with viewBox and SVG-native children (<rect>, <circle>, <ellipse>, <polygon>, <path>, <line>, <g>). Use <svg> for icons, shapes, decoration, and abstract visual elements. <svg> outerHTML is preserved as a single primitive.
 - Any fill: solid color, linear-gradient, radial-gradient, image url (for backgrounds of non-<img> elements). Multi-stop gradients ok.
 - Any border, border-radius, box-shadow (single or multiple layers), opacity.
