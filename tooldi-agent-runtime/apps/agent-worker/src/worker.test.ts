@@ -58,6 +58,9 @@ function createEnv(): AgentWorkerEnv {
     v6AssetTimeoutMs: 8000,
     v6AssetVisionRerankMode: "off",
     v6AssetVisionModel: "gemini-3.1-flash-lite-preview",
+    v6AssetGenerationMode: "off",
+    v6AssetGenerationModel: "gemini-2.5-flash-image",
+    v6AssetGenerationTimeoutMs: 30000,
     exitAfterBoot: false,
   };
 }

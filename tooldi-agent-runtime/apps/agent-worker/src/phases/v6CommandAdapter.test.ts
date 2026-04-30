@@ -387,6 +387,38 @@ test("adaptV6Commands — bitmap → layerType 'bitmap' (NOT downcast to image)"
   assert.equal(c.layerBlueprint.metadata.src, "placeholder://hero-product.png");
 });
 
+test("adaptV6Commands는 generated asset metadata를 bitmap layer에 직렬화한다", () => {
+  const generatedBitmap: V6ImageCommand = {
+    ...BITMAP_CMD,
+    src: "http://agent.test/api/agent-workflow/runs/r1/artifacts?key=runs%2Fr1%2Fgenerated-assets%2F001.png",
+    generatedAssetId: "generated:r1:001",
+    generatedAssetProvider: "gemini",
+    generatedAssetModel: "gemini-2.5-flash-image",
+    generatedAssetPrompt: "Create a clean product image.",
+    generatedAssetMethod: "gemini-native-generation",
+    assetSelectionDecision: "generate",
+    assetSelectionConfidence: "medium",
+    assetSelectionReason: "Qdrant candidates were unsuitable.",
+    placeholderUri: "placeholder://hero-product.png",
+    placeholderHint: "hero product",
+  };
+
+  const { commands } = adaptV6Commands([generatedBitmap], { runId: "gen" });
+  const metadata = commands[0]?.layerBlueprint.metadata as Record<
+    string,
+    unknown
+  >;
+  assert.equal(metadata.generatedAssetProvider, "gemini");
+  assert.equal(
+    metadata.generatedAssetModel,
+    "gemini-2.5-flash-image",
+  );
+  assert.equal(metadata.generatedAssetMethod, "gemini-native-generation");
+  assert.equal(metadata.assetSelectionDecision, "generate");
+  assert.equal(metadata.placeholderHint, "hero product");
+  assert.doesNotMatch(String(metadata.src), /^data:/);
+});
+
 test("adaptV6Commands — svg → layerType 'svg' with outerHTML metadata", () => {
   const { commands } = adaptV6Commands([SVG_CMD], { runId: "r9" });
   const c = commands[0];

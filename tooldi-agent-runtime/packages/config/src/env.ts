@@ -82,6 +82,9 @@ export interface AgentWorkerEnv extends SharedRuntimeEnv {
   v6AssetTimeoutMs: number;
   v6AssetVisionRerankMode: "off" | "enabled";
   v6AssetVisionModel: string;
+  v6AssetGenerationMode: "off" | "enabled";
+  v6AssetGenerationModel: string;
+  v6AssetGenerationTimeoutMs: number;
   exitAfterBoot: boolean;
 }
 
@@ -449,6 +452,22 @@ export function loadAgentWorkerEnv(
       source,
       "V6_ASSET_VISION_MODEL",
       "gemini-3.1-flash-lite-preview",
+    ),
+    v6AssetGenerationMode: readEnumValue(
+      source,
+      "V6_ASSET_GENERATION_MODE",
+      ["off", "enabled"] as const,
+      "off",
+    ),
+    v6AssetGenerationModel: readString(
+      source,
+      "V6_ASSET_GENERATION_MODEL",
+      "gemini-2.5-flash-image",
+    ),
+    v6AssetGenerationTimeoutMs: readNumber(
+      source,
+      "V6_ASSET_GENERATION_TIMEOUT_MS",
+      30000,
     ),
     exitAfterBoot: readBoolean(source, "WORKER_EXIT_AFTER_BOOT", false),
   };

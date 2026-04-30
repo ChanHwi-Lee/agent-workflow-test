@@ -1,4 +1,5 @@
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
+import type { ObjectStoreClient } from "@tooldi/agent-persistence";
 
 import type {
   V6Bounds,
@@ -15,8 +16,11 @@ export interface V6AssetResolverInput {
   readonly canvasWidth: number;
   readonly canvasHeight: number;
   readonly googleApiKey: string | null;
+  readonly objectStore?: ObjectStoreClient;
   readonly env: Pick<
     AgentWorkerEnv,
+    | "agentInternalBaseUrl"
+    | "objectStoreBucket"
     | "v6AssetRagMode"
     | "v6AssetEmbeddingEndpoint"
     | "v6AssetQdrantUrl"
@@ -28,6 +32,9 @@ export interface V6AssetResolverInput {
     | "v6AssetTimeoutMs"
     | "v6AssetVisionRerankMode"
     | "v6AssetVisionModel"
+    | "v6AssetGenerationMode"
+    | "v6AssetGenerationModel"
+    | "v6AssetGenerationTimeoutMs"
   >;
   readonly commands: ReadonlyArray<V6PrimitiveCommand>;
 }
@@ -61,15 +68,45 @@ interface AssetCandidate {
   readonly priceType: string | null;
 }
 
+type SelectionConfidence = "high" | "medium" | "low";
+type GenerationAspectRatio = "1:1" | "16:9" | "9:16" | "match_layout";
+type GenerationOutputFormat = "png" | "jpg";
+
 type AssetSelection =
   | {
+      readonly decision: "selected";
       readonly candidate: AssetCandidate;
       readonly method: string;
+      readonly confidence?: SelectionConfidence | undefined;
+      readonly reason?: string | undefined;
     }
   | {
-      readonly candidate: null;
+      readonly decision: "generate";
+      readonly generationPrompt: string;
+      readonly generationOptions: {
+        readonly aspectRatio: GenerationAspectRatio;
+        readonly outputFormat: GenerationOutputFormat;
+      };
+      readonly confidence?: SelectionConfidence | undefined;
+      readonly reason?: string | undefined;
+    }
+  | {
+      readonly decision: "unresolved";
       readonly rejectReason: string;
+      readonly confidence?: SelectionConfidence | undefined;
+      readonly reason?: string | undefined;
     };
+
+interface GeneratedAssetResult {
+  readonly srcUrl: string;
+  readonly naturalWidth: number;
+  readonly naturalHeight: number;
+  readonly generatedAssetId: string;
+  readonly generatedAssetProvider: "gemini";
+  readonly generatedAssetModel: string;
+  readonly generatedAssetPrompt: string;
+  readonly generatedAssetMethod: "gemini-native-generation";
+}
 
 interface QdrantPoint {
   readonly score?: number;
@@ -361,13 +398,49 @@ async function resolveOne(
     const points = await queryQdrant(input, context.family, vector);
     const candidates = buildCandidates(input, context.family, points);
     if (candidates.length === 0) {
+      if (canGenerateAsset(input)) {
+        const generated = await generateAndPersistAsset(
+          input,
+          context,
+          defaultGenerationSelection(context, "no_match"),
+        );
+        return generated
+          ? applyGeneratedAsset(context, generated, {
+              decision: "generate",
+              confidence: "low",
+              reason: "Qdrant 후보가 없어 Gemini 생성 fallback을 사용했다.",
+            })
+          : unresolved(context, "generation_failed");
+      }
       return unresolved(context, "no_match");
     }
     const selection = await selectCandidate(input, context, candidates);
-    if (!selection.candidate) {
+    if (selection.decision === "selected") {
+      return applyCandidate(context, selection.candidate, selection);
+    }
+    if (selection.decision === "generate") {
+      const generated = await generateAndPersistAsset(input, context, selection);
+      return generated
+        ? applyGeneratedAsset(context, generated, selection)
+        : unresolved(context, "generation_failed", selection);
+    }
+    if (!canGenerateAsset(input)) {
       return unresolved(context, selection.rejectReason);
     }
-    return applyCandidate(context, selection.candidate, selection.method);
+    const generated = await generateAndPersistAsset(
+      input,
+      context,
+      defaultGenerationSelection(context, selection.rejectReason),
+    );
+    return generated
+      ? applyGeneratedAsset(context, generated, {
+          decision: "generate",
+          confidence: selection.confidence,
+          reason:
+            selection.reason ??
+            "Qdrant 후보가 placeholder와 맞지 않아 Gemini 생성 fallback을 사용했다.",
+        })
+      : unresolved(context, "generation_failed", selection);
   } catch {
     return unresolved(context, "resolver_failed");
   }
@@ -483,19 +556,55 @@ async function selectCandidate(
   ) {
     const candidate = firstRelevantCandidate(context, candidates);
     return candidate
-      ? { candidate, method: "qdrant-keyword-relevance" }
-      : { candidate: null, rejectReason: "keyword_rejected" };
+      ? {
+          decision: "selected",
+          candidate,
+          method: "qdrant-keyword-relevance",
+          confidence: "medium",
+          reason: "deterministic keyword relevance matched the placeholder.",
+        }
+      : canGenerateAsset(input)
+      ? defaultGenerationSelection(context, "keyword_rejected")
+      : {
+          decision: "unresolved",
+          rejectReason: "keyword_rejected",
+          confidence: "medium",
+          reason: "candidate keywords did not match the placeholder.",
+        };
   }
-  const selectedId = await rerankWithVision(input, context, candidates);
-  if (!selectedId) return { candidate: null, rejectReason: "vision_rejected" };
+  const visionSelection = await rerankWithVision(input, context, candidates);
+  if (visionSelection.decision === "generate") return visionSelection;
+  if (visionSelection.decision === "unresolved") return visionSelection;
   const selected =
-    candidates.find((candidate) => candidate.candidateId === selectedId) ??
-    null;
-  if (!selected) return { candidate: null, rejectReason: "vision_rejected" };
-  if (!isCandidateRelevantToPlaceholder(context, selected)) {
-    return { candidate: null, rejectReason: "keyword_rejected" };
+    candidates.find(
+      (candidate) =>
+        candidate.candidateId === visionSelection.selectedCandidateId,
+    ) ?? null;
+  if (!selected) {
+    return {
+      decision: "unresolved",
+      rejectReason: "vision_rejected",
+      confidence: visionSelection.confidence,
+      reason: visionSelection.reason,
+    };
   }
-  return { candidate: selected, method: "qdrant-vision-rerank" };
+  if (!isCandidateRelevantToPlaceholder(context, selected)) {
+    return canGenerateAsset(input)
+      ? defaultGenerationSelection(context, "keyword_rejected")
+      : {
+          decision: "unresolved",
+          rejectReason: "keyword_rejected",
+          confidence: visionSelection.confidence,
+          reason: "vision-selected candidate failed deterministic relevance.",
+        };
+  }
+  return {
+    decision: "selected",
+    candidate: selected,
+    method: "qdrant-vision-rerank",
+    confidence: visionSelection.confidence,
+    reason: visionSelection.reason,
+  };
 }
 
 function firstRelevantCandidate(
@@ -537,12 +646,38 @@ async function rerankWithVision(
   input: V6AssetResolverInput,
   context: PlaceholderContext,
   candidates: readonly AssetCandidate[],
-): Promise<string | null> {
+): Promise<
+  | {
+      decision: "selected";
+      selectedCandidateId: string;
+      confidence?: SelectionConfidence | undefined;
+      reason?: string | undefined;
+    }
+  | {
+      decision: "generate";
+      generationPrompt: string;
+      generationOptions: {
+        aspectRatio: GenerationAspectRatio;
+        outputFormat: GenerationOutputFormat;
+      };
+      confidence?: SelectionConfidence | undefined;
+      reason?: string | undefined;
+    }
+  | {
+      decision: "unresolved";
+      rejectReason: string;
+      confidence?: SelectionConfidence | undefined;
+      reason?: string | undefined;
+    }
+> {
+  const generationEnabled = canGenerateAsset(input);
   const parts: Array<Record<string, unknown>> = [
     {
       text: JSON.stringify({
         instruction:
-          "You are a visual asset reranker only. Choose exactly one candidate ID from the provided candidates, or NONE. The canvas layout is locked. Do not suggest crop, resize, move, recolor, style changes, text changes, z-order changes, or new asset generation. Return JSON only.",
+          generationEnabled
+            ? "You are a visual asset selector. Choose one candidate when it is suitable. If all candidates are unsuitable, choose generate and provide an English Gemini image-generation prompt. If neither is safe, choose unresolved. The canvas layout is locked: do not suggest crop, resize, move, recolor, style changes, text changes, or z-order changes. Return JSON only."
+            : "You are a visual asset reranker only. Choose exactly one candidate ID from the provided candidates, or unresolved. The canvas layout is locked. Do not suggest crop, resize, move, recolor, style changes, text changes, z-order changes, or new asset generation. Return JSON only.",
         placeholder: {
           id: context.placeholderUri,
           hint: context.hint,
@@ -562,10 +697,18 @@ async function rerankWithVision(
           keywords: candidate.keywords,
         })),
         outputSchema: {
-          decision: "selected | unresolved",
+          decision: generationEnabled
+            ? "selected | generate | unresolved"
+            : "selected | unresolved",
           selectedCandidateId: "C01-C06 or null",
           confidence: "high | medium | low",
           reason: "short Korean reason",
+          generationPrompt:
+            "English prompt for native Gemini image generation, required when decision=generate",
+          generationOptions: {
+            aspectRatio: "1:1 | 16:9 | 9:16 | match_layout",
+            outputFormat: "png | jpg",
+          },
         },
       }),
     },
@@ -592,11 +735,48 @@ async function rerankWithVision(
     },
   }, input.env.v6AssetTimeoutMs);
   const text = extractGeminiText(response);
-  if (!text) return null;
+  if (!text) {
+    return { decision: "unresolved", rejectReason: "vision_rejected" };
+  }
   const parsed = safeParseJson(text);
+  const decision = readString(parsed, "decision");
+  const confidence = readConfidence(parsed);
+  const reason = readString(parsed, "reason") ?? undefined;
+  if (decision === "generate" && generationEnabled) {
+    const generationPrompt = readString(parsed, "generationPrompt");
+    return generationPrompt
+      ? {
+          decision: "generate",
+          generationPrompt,
+          generationOptions: readGenerationOptions(parsed),
+          confidence,
+          reason,
+        }
+      : defaultGenerationSelection(context, "vision_rejected");
+  }
+  if (decision === "unresolved") {
+    return {
+      decision: "unresolved",
+      rejectReason: "vision_rejected",
+      confidence,
+      reason,
+    };
+  }
   const selected = readString(parsed, "selectedCandidateId");
-  if (selected === "NONE") return null;
-  return selected;
+  if (!selected || selected === "NONE") {
+    return {
+      decision: "unresolved",
+      rejectReason: "vision_rejected",
+      confidence,
+      reason,
+    };
+  }
+  return {
+    decision: "selected",
+    selectedCandidateId: selected,
+    confidence,
+    reason,
+  };
 }
 
 async function fetchImagePart(
@@ -625,7 +805,7 @@ function inferMimeType(url: string): string {
 function applyCandidate(
   context: PlaceholderContext,
   candidate: AssetCandidate,
-  method: string,
+  selection: Extract<AssetSelection, { decision: "selected" }>,
 ): V6ImageCommand {
   return {
     ...context.command,
@@ -640,13 +820,48 @@ function applyCandidate(
       : {}),
     ...(candidate.originKey ? { resolvedAssetOriginKey: candidate.originKey } : {}),
     ...(candidate.thumbKey ? { resolvedAssetThumbKey: candidate.thumbKey } : {}),
-    resolvedAssetMethod: method,
+    resolvedAssetMethod: selection.method,
+    assetSelectionDecision: "selected",
+    ...(selection.confidence
+      ? { assetSelectionConfidence: selection.confidence }
+      : {}),
+    ...(selection.reason ? { assetSelectionReason: selection.reason } : {}),
     placeholderUri: context.placeholderUri,
     placeholderHint: context.hint,
   };
 }
 
-function unresolved(context: PlaceholderContext, reason: string): V6ImageCommand {
+function applyGeneratedAsset(
+  context: PlaceholderContext,
+  generated: GeneratedAssetResult,
+  selection: Pick<AssetSelection, "decision" | "confidence" | "reason">,
+): V6ImageCommand {
+  return {
+    ...context.command,
+    src: generated.srcUrl,
+    naturalWidth: generated.naturalWidth,
+    naturalHeight: generated.naturalHeight,
+    alt: context.command.alt || context.hint,
+    generatedAssetId: generated.generatedAssetId,
+    generatedAssetProvider: generated.generatedAssetProvider,
+    generatedAssetModel: generated.generatedAssetModel,
+    generatedAssetPrompt: generated.generatedAssetPrompt,
+    generatedAssetMethod: generated.generatedAssetMethod,
+    assetSelectionDecision: selection.decision,
+    ...(selection.confidence
+      ? { assetSelectionConfidence: selection.confidence }
+      : {}),
+    ...(selection.reason ? { assetSelectionReason: selection.reason } : {}),
+    placeholderUri: context.placeholderUri,
+    placeholderHint: context.hint,
+  };
+}
+
+function unresolved(
+  context: PlaceholderContext,
+  reason: string,
+  selection?: Pick<AssetSelection, "decision" | "confidence" | "reason">,
+): V6ImageCommand {
   return {
     ...context.command,
     src: TRANSPARENT_PIXEL,
@@ -654,9 +869,255 @@ function unresolved(context: PlaceholderContext, reason: string): V6ImageCommand
     naturalWidth: 1,
     naturalHeight: 1,
     unresolvedPlaceholder: true,
+    assetSelectionDecision: selection?.decision ?? "unresolved",
+    ...(selection?.confidence
+      ? { assetSelectionConfidence: selection.confidence }
+      : {}),
+    ...(selection?.reason ? { assetSelectionReason: selection.reason } : {}),
     placeholderUri: context.placeholderUri,
     placeholderHint: context.hint,
     unresolveReason: reason,
+  };
+}
+
+function canGenerateAsset(input: V6AssetResolverInput): boolean {
+  return (
+    input.env.v6AssetGenerationMode === "enabled" &&
+    input.googleApiKey !== null &&
+    input.objectStore !== undefined
+  );
+}
+
+function defaultGenerationSelection(
+  context: PlaceholderContext,
+  rejectReason: string,
+): Extract<AssetSelection, { decision: "generate" }> {
+  return {
+    decision: "generate",
+    generationPrompt: buildDefaultGenerationPrompt(context),
+    generationOptions: {
+      aspectRatio: aspectRatioForBounds(context.command.bounds),
+      outputFormat: "png",
+    },
+    confidence: "medium",
+    reason: `Qdrant 후보를 적용하지 못함: ${rejectReason}`,
+  };
+}
+
+function buildDefaultGenerationPrompt(context: PlaceholderContext): string {
+  const nearby = context.nearbyText.length
+    ? ` Nearby text: ${context.nearbyText.join(" / ")}.`
+    : "";
+  const formatHint =
+    context.family === "graphic"
+      ? "Create a clean transparent-background graphic asset, icon, sticker, or illustration."
+      : "Create a polished photo-like visual asset suitable for a design banner.";
+  return [
+    formatHint,
+    `Subject: ${context.hint}.`,
+    `Search context: ${context.searchText}.`,
+    nearby,
+    "Do not include readable text unless explicitly required by the subject.",
+    "The canvas layout is already locked, so create only the source image asset.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function aspectRatioForBounds(bounds: V6Bounds): GenerationAspectRatio {
+  const ratio = bounds.width / Math.max(1, bounds.height);
+  if (ratio >= 1.45) return "16:9";
+  if (ratio <= 0.7) return "9:16";
+  return "1:1";
+}
+
+async function generateAndPersistAsset(
+  input: V6AssetResolverInput,
+  context: PlaceholderContext,
+  selection: Extract<AssetSelection, { decision: "generate" }>,
+): Promise<GeneratedAssetResult | null> {
+  const objectStore = input.objectStore;
+  if (!canGenerateAsset(input) || !objectStore) return null;
+  try {
+    const generated = await generateNativeGeminiImage(input, selection);
+    const extension = extensionForMimeType(generated.mimeType);
+    const key =
+      `runs/${input.runId}/generated-assets/` +
+      `${String(context.index + 1).padStart(3, "0")}-${slugify(context.hint)}.${extension}`;
+    await objectStore.putObject({
+      key,
+      body: generated.bytes,
+      contentType: generated.mimeType,
+      metadata: {
+        artifactKind: "v6-generated-asset",
+        runId: input.runId,
+        provider: "gemini",
+        model: input.env.v6AssetGenerationModel,
+      },
+    });
+    const dimensions = readImageDimensions(generated.bytes, {
+      width: Math.max(1, Math.round(context.command.bounds.width)),
+      height: Math.max(1, Math.round(context.command.bounds.height)),
+    });
+    return {
+      srcUrl: buildRunArtifactUrl(input, key),
+      naturalWidth: dimensions.width,
+      naturalHeight: dimensions.height,
+      generatedAssetId: `generated:${input.runId}:${String(context.index + 1).padStart(3, "0")}`,
+      generatedAssetProvider: "gemini",
+      generatedAssetModel: input.env.v6AssetGenerationModel,
+      generatedAssetPrompt: selection.generationPrompt,
+      generatedAssetMethod: "gemini-native-generation",
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function generateNativeGeminiImage(
+  input: V6AssetResolverInput,
+  selection: Extract<AssetSelection, { decision: "generate" }>,
+): Promise<{ bytes: Uint8Array; mimeType: string }> {
+  const prompt =
+    `${selection.generationPrompt}\n` +
+    `Aspect ratio: ${selection.generationOptions.aspectRatio}. ` +
+    `Preferred output format: ${selection.generationOptions.outputFormat}.`;
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/` +
+    `${encodeURIComponent(input.env.v6AssetGenerationModel)}:generateContent` +
+    `?key=${encodeURIComponent(input.googleApiKey ?? "")}`;
+  const response = await postJson(
+    url,
+    {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    },
+    input.env.v6AssetGenerationTimeoutMs,
+  );
+  const image = extractGeminiInlineImage(response);
+  if (!image) {
+    throw new Error("Gemini generation returned no image");
+  }
+  return {
+    bytes: Buffer.from(image.base64, "base64"),
+    mimeType: image.mimeType,
+  };
+}
+
+function extractGeminiInlineImage(
+  response: Record<string, unknown>,
+): { base64: string; mimeType: string } | null {
+  const candidates = readArray(response, "candidates");
+  for (const candidate of candidates) {
+    if (!isObject(candidate)) continue;
+    const content = readObject(candidate, "content");
+    const parts = readArray(content, "parts");
+    for (const part of parts) {
+      if (!isObject(part)) continue;
+      const inlineData = isObject(part.inlineData)
+        ? part.inlineData
+        : isObject(part.inline_data)
+        ? part.inline_data
+        : {};
+      const data = readString(inlineData, "data");
+      const mimeType =
+        readString(inlineData, "mimeType") ??
+        readString(inlineData, "mime_type") ??
+        "image/png";
+      if (data) return { base64: data, mimeType };
+    }
+  }
+  return null;
+}
+
+function buildRunArtifactUrl(input: V6AssetResolverInput, key: string): string {
+  const root = trimRight(input.env.agentInternalBaseUrl, "/");
+  const query = new URLSearchParams({ key });
+  return `${root}/api/agent-workflow/runs/${encodeURIComponent(input.runId)}/artifacts?${query.toString()}`;
+}
+
+function extensionForMimeType(mimeType: string): string {
+  if (mimeType === "image/jpeg") return "jpg";
+  if (mimeType === "image/webp") return "webp";
+  return "png";
+}
+
+function slugify(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9가-힣]+/gi, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "asset"
+  );
+}
+
+function readImageDimensions(
+  bytes: Uint8Array,
+  fallback: { width: number; height: number },
+): { width: number; height: number } {
+  const buffer = Buffer.from(bytes);
+  if (
+    buffer.length >= 24 &&
+    buffer[0] === 0x89 &&
+    buffer.toString("ascii", 1, 4) === "PNG"
+  ) {
+    return {
+      width: buffer.readUInt32BE(16),
+      height: buffer.readUInt32BE(20),
+    };
+  }
+  if (buffer.length >= 4 && buffer[0] === 0xff && buffer[1] === 0xd8) {
+    let offset = 2;
+    while (offset + 9 < buffer.length) {
+      if (buffer[offset] !== 0xff) break;
+      const marker = buffer[offset + 1];
+      if (marker === undefined) break;
+      const length = buffer.readUInt16BE(offset + 2);
+      if (
+        marker >= 0xc0 &&
+        marker <= 0xc3 &&
+        length >= 7
+      ) {
+        return {
+          height: buffer.readUInt16BE(offset + 5),
+          width: buffer.readUInt16BE(offset + 7),
+        };
+      }
+      offset += 2 + length;
+    }
+  }
+  return fallback;
+}
+
+function readConfidence(
+  value: Record<string, unknown>,
+): SelectionConfidence | undefined {
+  const confidence = readString(value, "confidence");
+  if (
+    confidence === "high" ||
+    confidence === "medium" ||
+    confidence === "low"
+  ) {
+    return confidence;
+  }
+  return undefined;
+}
+
+function readGenerationOptions(
+  value: Record<string, unknown>,
+): Extract<AssetSelection, { decision: "generate" }>["generationOptions"] {
+  const options = readObject(value, "generationOptions");
+  const aspectRatio = readString(options, "aspectRatio");
+  const outputFormat = readString(options, "outputFormat");
+  return {
+    aspectRatio:
+      aspectRatio === "1:1" ||
+      aspectRatio === "16:9" ||
+      aspectRatio === "9:16" ||
+      aspectRatio === "match_layout"
+        ? aspectRatio
+        : "match_layout",
+    outputFormat: outputFormat === "jpg" ? "jpg" : "png",
   };
 }
 

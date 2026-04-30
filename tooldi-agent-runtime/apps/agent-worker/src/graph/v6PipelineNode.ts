@@ -405,6 +405,7 @@ export function registerV6PipelineNode(
       canvasWidth,
       canvasHeight,
       googleApiKey: dependencies.env.googleApiKey,
+      objectStore: dependencies.objectStore,
       env: dependencies.env,
       commands: v6Result.commands,
     });

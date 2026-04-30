@@ -215,6 +215,14 @@ export interface V6ImageCommand extends V6BaseCommand {
   readonly resolvedAssetOriginKey?: string;
   readonly resolvedAssetThumbKey?: string;
   readonly resolvedAssetMethod?: string;
+  readonly generatedAssetId?: string;
+  readonly generatedAssetProvider?: "gemini";
+  readonly generatedAssetModel?: string;
+  readonly generatedAssetPrompt?: string;
+  readonly generatedAssetMethod?: "gemini-native-generation";
+  readonly assetSelectionDecision?: "selected" | "generate" | "unresolved";
+  readonly assetSelectionConfidence?: "high" | "medium" | "low";
+  readonly assetSelectionReason?: string;
   readonly unresolvedPlaceholder?: boolean;
   readonly placeholderUri?: string;
   readonly placeholderHint?: string;

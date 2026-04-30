@@ -277,6 +277,30 @@ function metadataForImage(
   if (cmd.resolvedAssetMethod !== undefined) {
     metadata.resolvedAssetMethod = cmd.resolvedAssetMethod;
   }
+  if (cmd.generatedAssetId !== undefined) {
+    metadata.generatedAssetId = cmd.generatedAssetId;
+  }
+  if (cmd.generatedAssetProvider !== undefined) {
+    metadata.generatedAssetProvider = cmd.generatedAssetProvider;
+  }
+  if (cmd.generatedAssetModel !== undefined) {
+    metadata.generatedAssetModel = cmd.generatedAssetModel;
+  }
+  if (cmd.generatedAssetPrompt !== undefined) {
+    metadata.generatedAssetPrompt = cmd.generatedAssetPrompt;
+  }
+  if (cmd.generatedAssetMethod !== undefined) {
+    metadata.generatedAssetMethod = cmd.generatedAssetMethod;
+  }
+  if (cmd.assetSelectionDecision !== undefined) {
+    metadata.assetSelectionDecision = cmd.assetSelectionDecision;
+  }
+  if (cmd.assetSelectionConfidence !== undefined) {
+    metadata.assetSelectionConfidence = cmd.assetSelectionConfidence;
+  }
+  if (cmd.assetSelectionReason !== undefined) {
+    metadata.assetSelectionReason = cmd.assetSelectionReason;
+  }
   if (cmd.unresolvedPlaceholder !== undefined) {
     metadata.unresolvedPlaceholder = cmd.unresolvedPlaceholder;
   }
