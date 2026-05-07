@@ -1,5 +1,8 @@
 import type { StateGraph } from "@langchain/langgraph";
-import type { CreateLayerCommand, ExecutablePlan } from "@tooldi/agent-contracts";
+import type {
+  CreateLayerCommand,
+  ExecutablePlan,
+} from "@tooldi/agent-contracts";
 import { createRequestId } from "@tooldi/agent-domain";
 import type { Browser } from "playwright";
 
@@ -28,7 +31,7 @@ import {
   formatV6RenderQualityRetryFeedback,
   type V6RenderQualityReport,
 } from "../phases/v6RenderQualityReport.js";
-import type { V6Canvas } from "../phases/v6Types.js";
+import type { V6Canvas, V6ExtractionResult } from "../phases/v6Types.js";
 import { buildHeartbeatBase } from "./graphHelpers.js";
 import { shouldStopAfterCurrentAction } from "./nodeUtils.js";
 import { RunJobGraphState } from "./runJobGraphState.js";
@@ -124,9 +127,12 @@ interface PersistRenderQualityFailureArgs {
   readonly canvasWidth: number;
   readonly canvasHeight: number;
   readonly report: V6RenderQualityReport;
+  readonly extraction: V6ExtractionResult;
 }
 
-export function buildV6SyntheticPlan(args: V6SyntheticPlanArgs): ExecutablePlan {
+export function buildV6SyntheticPlan(
+  args: V6SyntheticPlanArgs,
+): ExecutablePlan {
   const commitGroup = createRequestId();
   const actionId = createRequestId();
 
@@ -182,11 +188,11 @@ export function registerV6PipelineNode(
   const { heartbeatTask, appendEventTask, persistArtifactTask } = tasks;
 
   const browserSupplier: V6BrowserSupplier =
-    overrides?.browserSupplier ?? (async () => {
+    overrides?.browserSupplier ??
+    (async () => {
       // Lazy import so tests that override the supplier don't pull Playwright.
-      const { launchEphemeralBrowser } = await import(
-        "../phases/v6BrowserRender.js"
-      );
+      const { launchEphemeralBrowser } =
+        await import("../phases/v6BrowserRender.js");
       return launchEphemeralBrowser();
     });
 
@@ -225,9 +231,8 @@ export function registerV6PipelineNode(
       phase: "planning",
       heartbeatAt: new Date().toISOString(),
     });
-    cooperativeStopRequested ||= shouldStopAfterCurrentAction(
-      planningHeartbeat,
-    );
+    cooperativeStopRequested ||=
+      shouldStopAfterCurrentAction(planningHeartbeat);
 
     const enterEvent = await appendEventTask(state.job.runId, {
       traceId: state.job.traceId,
@@ -243,7 +248,8 @@ export function registerV6PipelineNode(
     cooperativeStopRequested ||= enterEvent.cancelRequested;
 
     const userPrompt =
-      state.interview?.builtUserPrompt ?? state.hydrated.request.userInput.prompt;
+      state.interview?.builtUserPrompt ??
+      state.hydrated.request.userInput.prompt;
     const canvasWidth = state.hydrated.request.editorContext.canvasWidth;
     const canvasHeight = state.hydrated.request.editorContext.canvasHeight;
     const persistRenderQualityFailure = async (
@@ -269,6 +275,7 @@ export function registerV6PipelineNode(
           canvasWidth: args.canvasWidth,
           canvasHeight: args.canvasHeight,
           blockingIssues: args.report.blockingIssues,
+          extraction: args.extraction,
           reportRef,
         },
         {
@@ -302,7 +309,8 @@ export function registerV6PipelineNode(
     const browserHandle: { current: Browser | null } = { current: null };
     let v6Result: V6PipelineResult;
     try {
-      const boundDeps: V6PipelineDependencies = overrides?.deps?.renderAndExtract
+      const boundDeps: V6PipelineDependencies = overrides?.deps
+        ?.renderAndExtract
         ? deps
         : {
             ...deps,
@@ -316,7 +324,7 @@ export function registerV6PipelineNode(
 
       const trendContext =
         dependencies.env.trendResearchMode === "enabled"
-          ? state.v6TrendBrief?.contextForHtmlGen ?? null
+          ? (state.v6TrendBrief?.contextForHtmlGen ?? null)
           : null;
 
       const pipelineInput = {
@@ -346,6 +354,7 @@ export function registerV6PipelineNode(
           canvasWidth,
           canvasHeight,
           report: error.report,
+          extraction: error.extraction,
         });
         const retryEvent = await appendEventTask(state.job.runId, {
           traceId: state.job.traceId,
@@ -384,7 +393,50 @@ export function registerV6PipelineNode(
               canvasWidth,
               canvasHeight,
               report: retryError.report,
+              extraction: retryError.extraction,
             });
+            const secondRetryEvent = await appendEventTask(state.job.runId, {
+              traceId: state.job.traceId,
+              attempt: state.job.attemptSeq,
+              queueJobId: state.job.queueJobId,
+              event: {
+                type: "log",
+                level: "warn",
+                message:
+                  `[v6-render-quality] retrying generation after second blocking report ` +
+                  `blocking=${retryError.blockingIssues.length}`,
+              },
+            });
+            cooperativeStopRequested ||= secondRetryEvent.cancelRequested;
+
+            try {
+              v6Result = await runV6Pipeline(
+                {
+                  ...pipelineInput,
+                  renderQualityFeedback: formatV6RenderQualityRetryFeedback(
+                    retryError.report,
+                  ),
+                },
+                boundDeps,
+              );
+            } catch (thirdError) {
+              if (thirdError instanceof V6RenderQualityError) {
+                await persistRenderQualityFailure({
+                  runId: state.job.runId,
+                  traceId: state.job.traceId,
+                  queueJobId: state.job.queueJobId,
+                  attemptSeq: state.job.attemptSeq,
+                  generationAttempt: 3,
+                  model: thirdError.model,
+                  html: thirdError.html,
+                  canvasWidth,
+                  canvasHeight,
+                  report: thirdError.report,
+                  extraction: thirdError.extraction,
+                });
+              }
+              throw thirdError;
+            }
           }
           throw retryError;
         }
@@ -455,7 +507,7 @@ export function registerV6PipelineNode(
           userPrompt,
           trendContext:
             dependencies.env.trendResearchMode === "enabled"
-              ? state.v6TrendBrief?.contextForHtmlGen ?? null
+              ? (state.v6TrendBrief?.contextForHtmlGen ?? null)
               : null,
           latencyMs: v6Result.latency.htmlGenMs,
           usage: v6Result.usage,
@@ -481,7 +533,7 @@ export function registerV6PipelineNode(
           userPrompt,
           trendContext:
             dependencies.env.trendResearchMode === "enabled"
-              ? state.v6TrendBrief?.contextForHtmlGen ?? null
+              ? (state.v6TrendBrief?.contextForHtmlGen ?? null)
               : null,
         });
         unrestrictedDebugHtmlRef = await persistArtifactTask(
@@ -496,7 +548,9 @@ export function registerV6PipelineNode(
         );
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "unknown debug preview error";
+          error instanceof Error
+            ? error.message
+            : "unknown debug preview error";
         const warnEvent = await appendEventTask(state.job.runId, {
           traceId: state.job.traceId,
           attempt: state.job.attemptSeq,
@@ -523,9 +577,12 @@ export function registerV6PipelineNode(
       cooperativeStopRequested ||= debugHtmlEvent.cancelRequested;
     }
 
-    const { commands: createLayerCommands } = adaptV6Commands(resolvedV6Commands, {
-      runId: state.job.runId,
-    });
+    const { commands: createLayerCommands } = adaptV6Commands(
+      resolvedV6Commands,
+      {
+        runId: state.job.runId,
+      },
+    );
 
     const doneEvent = await appendEventTask(state.job.runId, {
       traceId: state.job.traceId,

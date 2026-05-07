@@ -82,6 +82,7 @@ const HIGH_TEXT_DENSITY_THRESHOLD = 0.16;
 const TEXT_OVERLAP_MIN_AREA_PX = 72;
 const TEXT_OVERLAP_MIN_SMALLER_RATIO = 0.08;
 const TEXT_OVERLAP_AXIS_TOLERANCE_PX = 2;
+const TEXT_IMAGE_OVERLAP_BLOCKING_TEXT_AREA_RATIO = 0.25;
 
 function retryFixHint(issue: V6RenderQualityIssue): string {
   switch (issue.code) {
@@ -99,9 +100,9 @@ function retryFixHint(issue: V6RenderQualityIssue): string {
     case "high_text_density":
       return "adjust bounds or text density without introducing semantic roles or layout slots";
     case "text_overlap":
-      return "separate the overlapping text boxes; reserve enough vertical or horizontal spacing so their bounds do not intersect";
+      return "regenerate with fewer visible text elements if needed; put each text element in a distinct non-intersecting band with at least 16px gap; remove decorative footer/caption text when bottom copy is already tight";
     case "text_image_overlap":
-      return "ensure the text bounds do not intersect the image bounds; the resolution is your choice";
+      return "for non-background images, leave at least 24px between text bounds and image bounds; move badges/labels outside the product or hero image instead of placing text on top of it";
   }
 }
 
@@ -248,10 +249,11 @@ export function buildV6RenderQualityReport(
 
   for (const overlap of findTextImageOverlaps(visible, extraction.canvas)) {
     textImageOverlapPairCount += 1;
+    const blocking = isBlockingTextImageOverlap(overlap);
     pushIssue(issues, {
       code: "text_image_overlap",
       severity: "warn",
-      blocking: true,
+      blocking,
       path: overlap.text.path,
       tag: overlap.text.tagName,
       message: "visible text overlaps a real image placeholder region",
@@ -264,7 +266,7 @@ export function buildV6RenderQualityReport(
         textAreaRatio: round(overlap.textAreaRatio),
       },
     });
-    blockingIssueCount += 1;
+    if (blocking) blockingIssueCount += 1;
   }
 
   const blockingIssues = issues.filter((issue) => issue.blocking);
@@ -377,6 +379,12 @@ function isMeaningfulTextImageOverlap(overlap: {
   );
 }
 
+function isBlockingTextImageOverlap(overlap: {
+  readonly textAreaRatio: number;
+}): boolean {
+  return overlap.textAreaRatio >= TEXT_IMAGE_OVERLAP_BLOCKING_TEXT_AREA_RATIO;
+}
+
 // Deliberately static primitive policy. Do not split primitive types into
 // semantic subtypes such as decorative-svg/logo-svg/hero-image/cta-text.
 // Render QA is allowed to inspect geometry, visibility, scroll metrics, and
@@ -455,9 +463,7 @@ function isContentlessDecorativeBleed(el: V6RenderedElement): boolean {
   return hasDecorativeGradient;
 }
 
-function findTextOverlaps(
-  elements: ReadonlyArray<V6RenderedElement>,
-): Array<{
+function findTextOverlaps(elements: ReadonlyArray<V6RenderedElement>): Array<{
   readonly a: V6RenderedElement;
   readonly b: V6RenderedElement;
   readonly width: number;

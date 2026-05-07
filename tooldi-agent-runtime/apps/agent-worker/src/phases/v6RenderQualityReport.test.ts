@@ -381,8 +381,7 @@ test("렌더 품질 리포트는 내용 없는 그라디언트 장식 bleed를 o
   assert.equal(
     report.issues.some(
       (issue) =>
-        issue.code === "off_canvas_element" ||
-        issue.code === "scroll_overflow",
+        issue.code === "off_canvas_element" || issue.code === "scroll_overflow",
     ),
     false,
   );
@@ -513,7 +512,7 @@ test("렌더 품질 리포트는 0 크기 이미지를 blocking issue로 표시�
   assert.equal(report.blockingIssues[0]?.code, "zero_area_element");
 });
 
-test("렌더 품질 리포트는 텍스트가 이미지 영역과 겹치면 hard gate 후보로 표시한다", () => {
+test("렌더 품질 리포트는 텍스트가 이미지 영역과 크게 겹치면 hard gate 후보로 표시한다", () => {
   const report = buildV6RenderQualityReport(
     extraction([
       element({ path: "0" }),
@@ -555,10 +554,58 @@ test("렌더 품질 리포트는 텍스트가 이미지 영역과 겹치면 hard
   assert.equal(report.hardGateCandidate, true);
   assert.equal(report.metrics.textImageOverlapPairCount, 1);
   assert.equal(
-    report.blockingIssues.some(
-      (issue) => issue.code === "text_image_overlap",
-    ),
+    report.blockingIssues.some((issue) => issue.code === "text_image_overlap"),
     true,
+  );
+});
+
+test("렌더 품질 리포트는 작은 배지성 text/image overlap을 관측하되 blocking하지 않는다", () => {
+  const report = buildV6RenderQualityReport(
+    extraction([
+      element({ path: "0" }),
+      element({
+        serial: 1,
+        path: "0.1",
+        tagName: "img",
+        bounds: { left: 240, top: 150, width: 600, height: 600 },
+        img: {
+          src: "placeholder://product",
+          naturalWidth: 1,
+          naturalHeight: 1,
+          alt: "",
+        },
+        layout: {
+          clientWidth: 600,
+          clientHeight: 600,
+          scrollWidth: 600,
+          scrollHeight: 600,
+        },
+      }),
+      element({
+        serial: 2,
+        path: "0.2",
+        tagName: "div",
+        bounds: { left: 780, top: 100, width: 180, height: 180 },
+        isTextLeaf: true,
+        text: "SEASON\nLIMITED",
+        layout: {
+          clientWidth: 180,
+          clientHeight: 180,
+          scrollWidth: 180,
+          scrollHeight: 180,
+        },
+      }),
+    ]),
+  );
+
+  assert.equal(report.metrics.textImageOverlapPairCount, 1);
+  assert.equal(
+    report.issues.some((issue) => issue.code === "text_image_overlap"),
+    true,
+  );
+  assert.equal(
+    report.blockingIssues.some((issue) => issue.code === "text_image_overlap"),
+    false,
   );
 });
 
@@ -680,7 +727,7 @@ test("렌더 품질 재시도 피드백은 geometry 정보만 요약한다", () 
   assert.match(feedback, /scroll_overflow/);
   assert.match(feedback, /path=0\.0/);
   assert.match(feedback, /increase text box width\/height/);
-  assert.match(feedback, /action blocks/);
+  assert.match(feedback, /geometry\/layout safety/);
   assert.match(feedback, /natural phrase boundaries/);
   assert.match(feedback, /Do not hide overflow/);
   assert.doesNotMatch(feedback, /이 텍스트 내용/);

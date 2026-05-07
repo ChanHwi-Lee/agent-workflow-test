@@ -9,6 +9,8 @@ import {
 import type { Logger } from "@tooldi/agent-observability";
 
 import {
+  INTERVIEW_RESUME_JOB_NAME,
+  normalizeQueueTransportSignal,
   RunQueueEnqueueTimeoutError,
   type RunQueueProducer,
   type EnqueuedRunJob,
@@ -95,7 +97,9 @@ class FakeRunQueueProducer implements RunQueueProducer {
     this.enqueued.push({
       payload,
       ...(options.delayMs !== undefined ? { delayMs: options.delayMs } : {}),
-      ...(options.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
+      ...(options.timeoutMs !== undefined
+        ? { timeoutMs: options.timeoutMs }
+        : {}),
     });
     return {
       jobId: payload.queueJobId,
@@ -131,14 +135,19 @@ class FakeRunQueueProducer implements RunQueueProducer {
 }
 
 class RecordingRunEventService {
-  readonly logs: Array<{ level: "info" | "warn" | "error"; message: string }> = [];
+  readonly logs: Array<{ level: "info" | "warn" | "error"; message: string }> =
+    [];
   readonly recoveries: Array<{
     state: string;
     retryMode: string;
     resumeMode: string | null;
     resumeFromSeq: number | null;
   }> = [];
-  readonly failures: Array<{ code: string; message: string; retryable?: boolean }> = [];
+  readonly failures: Array<{
+    code: string;
+    message: string;
+    retryable?: boolean;
+  }> = [];
   readonly cancellations: string[] = [];
   readonly completions: Array<{ finalStatus: string }> = [];
 
@@ -175,7 +184,11 @@ class RecordingRunEventService {
     this.recoveries.push(recovery);
   }
 
-  async appendCancelled(_runId: string, _traceId: string, at: string): Promise<void> {
+  async appendCancelled(
+    _runId: string,
+    _traceId: string,
+    at: string,
+  ): Promise<void> {
     this.cancellations.push(at);
   }
 
@@ -326,6 +339,23 @@ async function seedRun(
   };
 }
 
+test("normalizeQueueTransportSignal maps interview.resume job ids back to the canonical attempt queue id", () => {
+  const normalized = normalizeQueueTransportSignal({
+    jobId: "run-1__attempt_1:resume:1710000000000",
+    jobName: INTERVIEW_RESUME_JOB_NAME,
+    payload: {
+      queueJobId: "run-1__attempt_1",
+    },
+  });
+
+  assert.equal(normalized.queueJobId, "run-1__attempt_1");
+  assert.equal(
+    normalized.transportJobId,
+    "run-1__attempt_1:resume:1710000000000",
+  );
+  assert.equal(normalized.jobName, INTERVIEW_RESUME_JOB_NAME);
+});
+
 test("RunWatchdogService keeps active QueueEvents as internal telemetry only", async () => {
   const db = await createTestDb();
 
@@ -348,7 +378,11 @@ test("RunWatchdogService keeps active QueueEvents as internal telemetry only", a
       logger,
     );
 
-    const seeded = await seedRun(runRepository, runRequestRepository, runAttemptRepository);
+    const seeded = await seedRun(
+      runRepository,
+      runRequestRepository,
+      runAttemptRepository,
+    );
 
     await service.observeSignal({
       queueJobId: seeded.queueJobId,
@@ -361,9 +395,88 @@ test("RunWatchdogService keeps active QueueEvents as internal telemetry only", a
     assert.equal(runEventService.logs.length, 0);
     assert.equal(runEventService.failures.length, 0);
     assert.equal(
-      logger.records.some((record) => record.message.includes("canonical dequeue still waits")),
+      logger.records.some((record) =>
+        record.message.includes("canonical dequeue still waits"),
+      ),
       true,
     );
+  } finally {
+    await db.end();
+  }
+});
+
+test("RunWatchdogService closes failed interview.resume transport as terminal run failure", async () => {
+  const db = await createTestDb();
+
+  try {
+    const runRepository = new RunRepository(db);
+    const runRequestRepository = new RunRequestRepository(db);
+    const runAttemptRepository = new RunAttemptRepository(db);
+    const runRecoveryRepository = new RunRecoveryRepository(db);
+    const logger = new RecordingLogger();
+    const runEventService = new RecordingRunEventService();
+    const finalizeRecovery = new RecordingFinalizeRecovery();
+    const queue = new FakeRunQueueProducer();
+    const service = new RunWatchdogService(
+      runRepository,
+      runAttemptRepository,
+      runRecoveryRepository,
+      runEventService,
+      finalizeRecovery,
+      queue,
+      logger,
+      {
+        pickupTimeoutMs: 1000,
+        retryDelayMs: 1,
+        maxQueueAttempts: 2,
+        enqueueTimeoutMs: 10,
+        finalizeGraceMs: 20,
+      },
+    );
+
+    const seeded = await seedRun(
+      runRepository,
+      runRequestRepository,
+      runAttemptRepository,
+      {
+        status: "planning",
+        statusReasonCode: "awaiting_interview",
+        leaseRecognizedAt: new Date().toISOString(),
+      },
+    );
+
+    await service.observeSignal({
+      queueJobId: seeded.queueJobId,
+      transportJobId: `${seeded.queueJobId}:resume:1710000000000`,
+      jobName: INTERVIEW_RESUME_JOB_NAME,
+      state: "failed",
+      occurredAt: new Date().toISOString(),
+      failedReason: "v6 render quality gate failed: scroll_overflow:0.3.0",
+    });
+
+    const run = await runRepository.findById(seeded.runId);
+    const attempt = await runAttemptRepository.findByRunIdAndAttemptSeq(
+      seeded.runId,
+      seeded.attemptSeq,
+    );
+    assert.equal(run?.status, "failed");
+    assert.equal(
+      run?.statusReasonCode,
+      "interview_resume_failed_transport_signal",
+    );
+    assert.equal(attempt?.attemptState, "failed");
+    assert.equal(
+      attempt?.statusReasonCode,
+      "interview_resume_failed_transport_signal",
+    );
+    assert.equal(queue.enqueued.length, 0);
+    assert.equal(runEventService.recoveries[0]?.state, "not_retryable");
+    assert.equal(
+      runEventService.failures[0]?.message,
+      "Interview resume worker failed before canonical close: v6 render quality gate failed: scroll_overflow:0.3.0",
+    );
+
+    await service.close();
   } finally {
     await db.end();
   }
@@ -398,7 +511,11 @@ test("RunWatchdogService schedules delayed retry after pickup timeout", async ()
       },
     );
 
-    const seeded = await seedRun(runRepository, runRequestRepository, runAttemptRepository);
+    const seeded = await seedRun(
+      runRepository,
+      runRequestRepository,
+      runAttemptRepository,
+    );
     service.trackEnqueuedAttempt(seeded);
     await waitForCondition(async () => {
       const run = await runRepository.findById(seeded.runId);
@@ -416,7 +533,10 @@ test("RunWatchdogService schedules delayed retry after pickup timeout", async ()
     assert.equal(run?.status, "planning_queued");
     assert.equal(runEventService.recoveries[0]?.state, "auto_retrying");
     assert.equal(runEventService.recoveries[0]?.retryMode, "auto_same_run");
-    assert.equal(queue.enqueued[0]?.payload.repairContext?.source, "backend_retry_watchdog");
+    assert.equal(
+      queue.enqueued[0]?.payload.repairContext?.source,
+      "backend_retry_watchdog",
+    );
     assert.equal(
       queue.enqueued[0]?.payload.repairContext?.recovery.state,
       "auto_retrying",
@@ -424,7 +544,9 @@ test("RunWatchdogService schedules delayed retry after pickup timeout", async ()
     assert.equal(retryAttempt?.attemptState, "retry_waiting");
     assert.equal(retryAttempt?.retryOfAttemptSeq, 1);
     assert.equal(
-      runEventService.logs.some((log) => log.message.includes("scheduled retry attempt 2")),
+      runEventService.logs.some((log) =>
+        log.message.includes("scheduled retry attempt 2"),
+      ),
       true,
     );
 
@@ -463,10 +585,15 @@ test("RunWatchdogService retries stalled attempt before first visible ack", asyn
       },
     );
 
-    const seeded = await seedRun(runRepository, runRequestRepository, runAttemptRepository, {
-      status: "planning",
-      leaseRecognizedAt: new Date().toISOString(),
-    });
+    const seeded = await seedRun(
+      runRepository,
+      runRequestRepository,
+      runAttemptRepository,
+      {
+        status: "planning",
+        leaseRecognizedAt: new Date().toISOString(),
+      },
+    );
 
     await service.observeSignal({
       queueJobId: seeded.queueJobId,
@@ -479,7 +606,10 @@ test("RunWatchdogService retries stalled attempt before first visible ack", asyn
     assert.equal(run?.attemptSeq, 2);
     assert.equal(runEventService.recoveries[0]?.state, "auto_retrying");
     assert.equal(
-      attempts.some((attempt) => attempt.attemptSeq === 2 && attempt.attemptState === "retry_waiting"),
+      attempts.some(
+        (attempt) =>
+          attempt.attemptSeq === 2 && attempt.attemptState === "retry_waiting",
+      ),
       true,
     );
 
@@ -511,11 +641,16 @@ test("RunWatchdogService refuses blind retry after visible ack", async () => {
       logger,
     );
 
-    const seeded = await seedRun(runRepository, runRequestRepository, runAttemptRepository, {
-      status: "planning",
-      lastAckedSeq: 1,
-      leaseRecognizedAt: new Date().toISOString(),
-    });
+    const seeded = await seedRun(
+      runRepository,
+      runRequestRepository,
+      runAttemptRepository,
+      {
+        status: "planning",
+        lastAckedSeq: 1,
+        leaseRecognizedAt: new Date().toISOString(),
+      },
+    );
 
     await service.observeSignal({
       queueJobId: seeded.queueJobId,
@@ -527,7 +662,10 @@ test("RunWatchdogService refuses blind retry after visible ack", async () => {
     const run = await runRepository.findById(seeded.runId);
     const attempts = await runAttemptRepository.findByRunId(seeded.runId);
     assert.equal(run?.status, "failed");
-    assert.equal(run?.statusReasonCode, "resume_not_supported_after_visible_ack");
+    assert.equal(
+      run?.statusReasonCode,
+      "resume_not_supported_after_visible_ack",
+    );
     assert.equal(queue.enqueued.length, 0);
     assert.equal(runEventService.recoveries[0]?.state, "not_retryable");
     assert.equal(runEventService.recoveries[0]?.resumeFromSeq, 2);
@@ -535,7 +673,10 @@ test("RunWatchdogService refuses blind retry after visible ack", async () => {
       attempts.find((attempt) => attempt.attemptSeq === 1)?.statusReasonCode,
       "resume_not_supported_after_visible_ack",
     );
-    assert.equal(runEventService.failures[0]?.code, "resume_not_supported_after_visible_ack");
+    assert.equal(
+      runEventService.failures[0]?.code,
+      "resume_not_supported_after_visible_ack",
+    );
 
     await service.close();
   } finally {
@@ -565,14 +706,22 @@ test("RunWatchdogService closes queued cancel before worker pickup", async () =>
       logger,
     );
 
-    const seeded = await seedRun(runRepository, runRequestRepository, runAttemptRepository, {
-      status: "cancel_requested",
-    });
+    const seeded = await seedRun(
+      runRepository,
+      runRequestRepository,
+      runAttemptRepository,
+      {
+        status: "cancel_requested",
+      },
+    );
 
     await service.handleCancelRequested(seeded.runId, seeded.traceId);
 
     const run = await runRepository.findById(seeded.runId);
-    const attempt = await runAttemptRepository.findByRunIdAndAttemptSeq(seeded.runId, 1);
+    const attempt = await runAttemptRepository.findByRunIdAndAttemptSeq(
+      seeded.runId,
+      1,
+    );
     assert.equal(run?.status, "cancelled");
     assert.equal(run?.statusReasonCode, "cancelled_before_worker_pickup");
     assert.equal(attempt?.attemptState, "cancelled");
@@ -608,9 +757,14 @@ test("RunWatchdogService terminally closes queued cancel even when remove misses
       logger,
     );
 
-    const seeded = await seedRun(runRepository, runRequestRepository, runAttemptRepository, {
-      status: "cancel_requested",
-    });
+    const seeded = await seedRun(
+      runRepository,
+      runRequestRepository,
+      runAttemptRepository,
+      {
+        status: "cancel_requested",
+      },
+    );
 
     await service.observeSignal({
       queueJobId: seeded.queueJobId,
@@ -620,9 +774,15 @@ test("RunWatchdogService terminally closes queued cancel even when remove misses
     });
 
     const run = await runRepository.findById(seeded.runId);
-    const attempt = await runAttemptRepository.findByRunIdAndAttemptSeq(seeded.runId, 1);
+    const attempt = await runAttemptRepository.findByRunIdAndAttemptSeq(
+      seeded.runId,
+      1,
+    );
     assert.equal(run?.status, "cancelled");
-    assert.equal(run?.statusReasonCode, "cancelled_before_worker_proof_after_transport_failure");
+    assert.equal(
+      run?.statusReasonCode,
+      "cancelled_before_worker_proof_after_transport_failure",
+    );
     assert.equal(attempt?.attemptState, "cancelled");
     assert.equal(runEventService.cancellations.length, 1);
 
@@ -644,7 +804,9 @@ test("RunWatchdogService closes retry enqueue timeout as terminal failure", asyn
     const runEventService = new RecordingRunEventService();
     const finalizeRecovery = new RecordingFinalizeRecovery();
     const queue = new FakeRunQueueProducer();
-    queue.enqueueError = new RunQueueEnqueueTimeoutError("retry enqueue timed out");
+    queue.enqueueError = new RunQueueEnqueueTimeoutError(
+      "retry enqueue timed out",
+    );
     const service = new RunWatchdogService(
       runRepository,
       runAttemptRepository,
@@ -662,10 +824,15 @@ test("RunWatchdogService closes retry enqueue timeout as terminal failure", asyn
       },
     );
 
-    const seeded = await seedRun(runRepository, runRequestRepository, runAttemptRepository, {
-      status: "planning",
-      leaseRecognizedAt: new Date().toISOString(),
-    });
+    const seeded = await seedRun(
+      runRepository,
+      runRequestRepository,
+      runAttemptRepository,
+      {
+        status: "planning",
+        leaseRecognizedAt: new Date().toISOString(),
+      },
+    );
 
     await service.observeSignal({
       queueJobId: seeded.queueJobId,
@@ -714,11 +881,16 @@ test("RunWatchdogService synthesizes terminal recovery when finalize callback is
       },
     );
 
-    const seeded = await seedRun(runRepository, runRequestRepository, runAttemptRepository, {
-      status: "planning",
-      lastAckedSeq: 1,
-      leaseRecognizedAt: new Date().toISOString(),
-    });
+    const seeded = await seedRun(
+      runRepository,
+      runRequestRepository,
+      runAttemptRepository,
+      {
+        status: "planning",
+        lastAckedSeq: 1,
+        leaseRecognizedAt: new Date().toISOString(),
+      },
+    );
 
     await service.observeSignal({
       queueJobId: seeded.queueJobId,
@@ -731,7 +903,10 @@ test("RunWatchdogService synthesizes terminal recovery when finalize callback is
     assert.equal(finalizeRecovery.calls.length, 1);
     assert.equal(runEventService.recoveries[0]?.state, "finalize_only");
     assert.equal(runEventService.recoveries[0]?.resumeMode, "finalize_only");
-    assert.equal(finalizeRecovery.calls[0]?.result.finalStatus, "save_failed_after_apply");
+    assert.equal(
+      finalizeRecovery.calls[0]?.result.finalStatus,
+      "save_failed_after_apply",
+    );
 
     await service.close();
   } finally {
@@ -768,11 +943,16 @@ test("RunWatchdogService는 인터뷰 대기 run의 completed transport를 final
       },
     );
 
-    const seeded = await seedRun(runRepository, runRequestRepository, runAttemptRepository, {
-      status: "planning",
-      statusReasonCode: "awaiting_interview",
-      leaseRecognizedAt: new Date().toISOString(),
-    });
+    const seeded = await seedRun(
+      runRepository,
+      runRequestRepository,
+      runAttemptRepository,
+      {
+        status: "planning",
+        statusReasonCode: "awaiting_interview",
+        leaseRecognizedAt: new Date().toISOString(),
+      },
+    );
 
     await service.observeSignal({
       queueJobId: seeded.queueJobId,

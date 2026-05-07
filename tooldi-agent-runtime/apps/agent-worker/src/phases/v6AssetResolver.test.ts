@@ -189,11 +189,11 @@ test("resolveV6PlaceholderAssets는 generation mode에서 후보가 없으면 Ge
     assert.equal(resolved.naturalHeight, 480);
     assert.match(
       resolved.src,
-      /^http:\/\/agent\.test\/api\/agent-workflow\/runs\/run-generated-test\/artifacts\?key=/,
+      /^\/api\/agent-workflow\/runs\/run-generated-test\/artifacts\?key=/,
     );
     assert.doesNotMatch(resolved.src, /^data:/);
 
-    const key = new URL(resolved.src).searchParams.get("key");
+    const key = new URL(resolved.src, "http://toolditor.local").searchParams.get("key");
     assert.ok(key);
     const stored = await objectStore.getObject({
       bucket: BASE_ENV.objectStoreBucket,

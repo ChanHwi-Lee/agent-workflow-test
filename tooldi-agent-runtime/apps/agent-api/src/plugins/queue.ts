@@ -1,10 +1,5 @@
 import { Redis } from "ioredis";
-import {
-  Queue,
-  QueueEvents,
-  type Job,
-  type QueueEventsListener,
-} from "bullmq";
+import { Queue, QueueEvents, type Job, type QueueEventsListener } from "bullmq";
 import type { FastifyPluginAsync } from "fastify";
 
 import type {
@@ -30,14 +25,12 @@ export interface EnqueuedInterviewResumeJob {
   payload: InterviewResumeJobPayload;
 }
 
-export type QueueTransportState =
-  | "active"
-  | "completed"
-  | "failed"
-  | "stalled";
+export type QueueTransportState = "active" | "completed" | "failed" | "stalled";
 
 export interface QueueTransportSignal {
   queueJobId: string;
+  transportJobId?: string;
+  jobName?: string;
   state: QueueTransportState;
   occurredAt: string;
   failedReason?: string;
@@ -72,6 +65,44 @@ export class RunQueueEnqueueTimeoutError extends Error {
     super(message);
     this.name = "RunQueueEnqueueTimeoutError";
   }
+}
+
+export function normalizeQueueTransportSignal(input: {
+  jobId: string;
+  jobName?: string;
+  payload?: unknown;
+}): Pick<QueueTransportSignal, "queueJobId" | "transportJobId" | "jobName"> {
+  const payloadQueueJobId = readPayloadQueueJobId(input.payload);
+  const resumeQueueJobId = parseInterviewResumeTransportJobId(input.jobId);
+  const queueJobId =
+    input.jobName === INTERVIEW_RESUME_JOB_NAME
+      ? (payloadQueueJobId ?? resumeQueueJobId ?? input.jobId)
+      : input.jobId;
+
+  return {
+    queueJobId,
+    ...(input.jobId !== queueJobId ? { transportJobId: input.jobId } : {}),
+    ...(input.jobName ? { jobName: input.jobName } : {}),
+  };
+}
+
+function readPayloadQueueJobId(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+  const queueJobId = (payload as { queueJobId?: unknown }).queueJobId;
+  return typeof queueJobId === "string" && queueJobId.length > 0
+    ? queueJobId
+    : null;
+}
+
+function parseInterviewResumeTransportJobId(jobId: string): string | null {
+  const marker = ":resume:";
+  const markerIndex = jobId.indexOf(marker);
+  if (markerIndex <= 0) {
+    return null;
+  }
+  return jobId.slice(0, markerIndex);
 }
 
 class InMemoryRunQueueProducer implements RunQueueProducer {
@@ -298,30 +329,27 @@ class BullMqRunQueueProducer implements RunQueueProducer {
   private bindTransportSignals(): void {
     this.onQueueEvent("active", ({ jobId }) => {
       if (jobId) {
-        void this.publishTransportSignal({
-          queueJobId: jobId,
+        void this.publishTransportSignalForJob({
+          jobId,
           state: "active",
-          occurredAt: new Date().toISOString(),
         });
       }
     });
 
     this.onQueueEvent("completed", ({ jobId }) => {
       if (jobId) {
-        void this.publishTransportSignal({
-          queueJobId: jobId,
+        void this.publishTransportSignalForJob({
+          jobId,
           state: "completed",
-          occurredAt: new Date().toISOString(),
         });
       }
     });
 
     this.onQueueEvent("failed", ({ jobId, failedReason }) => {
       if (jobId) {
-        void this.publishTransportSignal({
-          queueJobId: jobId,
+        void this.publishTransportSignalForJob({
+          jobId,
           state: "failed",
-          occurredAt: new Date().toISOString(),
           ...(failedReason ? { failedReason } : {}),
         });
       }
@@ -329,18 +357,37 @@ class BullMqRunQueueProducer implements RunQueueProducer {
 
     this.onQueueEvent("stalled", ({ jobId }) => {
       if (jobId) {
-        void this.publishTransportSignal({
-          queueJobId: jobId,
+        void this.publishTransportSignalForJob({
+          jobId,
           state: "stalled",
-          occurredAt: new Date().toISOString(),
         });
       }
     });
 
     this.onQueueEvent("error", (error) => {
       this.logger.error("BullMQ QueueEvents error", {
-        message: error instanceof Error ? error.message : "Unknown QueueEvents error",
+        message:
+          error instanceof Error ? error.message : "Unknown QueueEvents error",
       });
+    });
+  }
+
+  private async publishTransportSignalForJob(input: {
+    jobId: string;
+    state: QueueTransportState;
+    failedReason?: string;
+  }): Promise<void> {
+    const job = await this.queue.getJob(input.jobId);
+    const normalized = normalizeQueueTransportSignal({
+      jobId: input.jobId,
+      ...(job?.name ? { jobName: job.name } : {}),
+      payload: job?.data,
+    });
+    await this.publishTransportSignal({
+      ...normalized,
+      state: input.state,
+      occurredAt: new Date().toISOString(),
+      ...(input.failedReason ? { failedReason: input.failedReason } : {}),
     });
   }
 
@@ -355,7 +402,9 @@ class BullMqRunQueueProducer implements RunQueueProducer {
     });
   }
 
-  private async publishTransportSignal(signal: QueueTransportSignal): Promise<void> {
+  private async publishTransportSignal(
+    signal: QueueTransportSignal,
+  ): Promise<void> {
     for (const observer of this.observers) {
       try {
         await observer(signal);
@@ -364,13 +413,17 @@ class BullMqRunQueueProducer implements RunQueueProducer {
           queueJobId: signal.queueJobId,
           state: signal.state,
           error:
-            error instanceof Error ? error.message : "Unknown queue observer error",
+            error instanceof Error
+              ? error.message
+              : "Unknown queue observer error",
         });
       }
     }
   }
 
-  private toEnqueuedRunJob(job: Job<RunQueueJobPayload>): EnqueuedRunJob | null {
+  private toEnqueuedRunJob(
+    job: Job<RunQueueJobPayload>,
+  ): EnqueuedRunJob | null {
     const jobId = this.asJobId(job);
     if (jobId.length === 0) {
       return null;

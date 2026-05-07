@@ -19,7 +19,6 @@ export interface V6AssetResolverInput {
   readonly objectStore?: ObjectStoreClient;
   readonly env: Pick<
     AgentWorkerEnv,
-    | "agentInternalBaseUrl"
     | "objectStoreBucket"
     | "v6AssetRagMode"
     | "v6AssetEmbeddingEndpoint"
@@ -960,7 +959,7 @@ async function generateAndPersistAsset(
       height: Math.max(1, Math.round(context.command.bounds.height)),
     });
     return {
-      srcUrl: buildRunArtifactUrl(input, key),
+      srcUrl: buildRunArtifactUrl(input.runId, key),
       naturalWidth: dimensions.width,
       naturalHeight: dimensions.height,
       generatedAssetId: `generated:${input.runId}:${String(context.index + 1).padStart(3, "0")}`,
@@ -1029,10 +1028,9 @@ function extractGeminiInlineImage(
   return null;
 }
 
-function buildRunArtifactUrl(input: V6AssetResolverInput, key: string): string {
-  const root = trimRight(input.env.agentInternalBaseUrl, "/");
+function buildRunArtifactUrl(runId: string, key: string): string {
   const query = new URLSearchParams({ key });
-  return `${root}/api/agent-workflow/runs/${encodeURIComponent(input.runId)}/artifacts?${query.toString()}`;
+  return `/api/agent-workflow/runs/${encodeURIComponent(runId)}/artifacts?${query.toString()}`;
 }
 
 function extensionForMimeType(mimeType: string): string {

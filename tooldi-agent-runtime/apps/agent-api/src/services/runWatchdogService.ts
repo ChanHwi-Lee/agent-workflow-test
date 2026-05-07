@@ -14,13 +14,20 @@ import {
   createQueueJobId,
 } from "../lib/ids.js";
 import {
+  INTERVIEW_RESUME_JOB_NAME,
   RunQueueEnqueueTimeoutError,
   type RunQueueProducer,
   type QueueTransportSignal,
 } from "../plugins/queue.js";
-import type { RunAttemptRecord, RunAttemptRepository } from "../repositories/runAttemptRepository.js";
+import type {
+  RunAttemptRecord,
+  RunAttemptRepository,
+} from "../repositories/runAttemptRepository.js";
 import type { RunRecoveryRepository } from "../repositories/runRecoveryRepository.js";
-import type { RunRecord, RunRepository } from "../repositories/runRepository.js";
+import type {
+  RunRecord,
+  RunRepository,
+} from "../repositories/runRepository.js";
 import { INTERVIEW_AWAITING_REASON_CODE } from "./interviewRunState.js";
 import type { RunEventService } from "./runEventService.js";
 import type { RunFinalizeService } from "./runFinalizeService.js";
@@ -50,7 +57,11 @@ export interface TrackEnqueuedAttemptCommand {
 
 type WatchdogRunEventSink = Pick<
   RunEventService,
-  "appendLog" | "appendFailed" | "appendCancelled" | "appendCompleted" | "appendRecovery"
+  | "appendLog"
+  | "appendFailed"
+  | "appendCancelled"
+  | "appendCompleted"
+  | "appendRecovery"
 >;
 
 type FinalizeRecoverySink = Pick<RunFinalizeService, "finalizeRun">;
@@ -73,21 +84,29 @@ export class RunWatchdogService {
   trackEnqueuedAttempt(command: TrackEnqueuedAttemptCommand): void {
     this.clearPickupTimer(command.queueJobId);
     const timer = setTimeout(() => {
-      void this.runBackground(`pickup timeout ${command.queueJobId}`, async () => {
-        await this.handlePickupTimeout(command);
-      });
+      void this.runBackground(
+        `pickup timeout ${command.queueJobId}`,
+        async () => {
+          await this.handlePickupTimeout(command);
+        },
+      );
     }, this.policy.pickupTimeoutMs);
     timer.unref?.();
     this.pickupTimers.set(command.queueJobId, timer);
   }
 
   async observeSignal(signal: QueueTransportSignal): Promise<void> {
-    const attempt = await this.runAttemptRepository.findByQueueJobId(signal.queueJobId);
+    const attempt = await this.runAttemptRepository.findByQueueJobId(
+      signal.queueJobId,
+    );
     if (!attempt) {
-      this.logger.debug("Ignoring queue transport signal without attempt match", {
-        queueJobId: signal.queueJobId,
-        state: signal.state,
-      });
+      this.logger.debug(
+        "Ignoring queue transport signal without attempt match",
+        {
+          queueJobId: signal.queueJobId,
+          state: signal.state,
+        },
+      );
       return;
     }
 
@@ -101,7 +120,10 @@ export class RunWatchdogService {
       return;
     }
 
-    if (run.queueJobId !== signal.queueJobId || run.attemptSeq !== attempt.attemptSeq) {
+    if (
+      run.queueJobId !== signal.queueJobId ||
+      run.attemptSeq !== attempt.attemptSeq
+    ) {
       this.logger.debug("Ignoring stale queue transport signal", {
         queueJobId: signal.queueJobId,
         runId: run.runId,
@@ -161,20 +183,26 @@ export class RunWatchdogService {
     const removed = await this.runQueue.tryRemoveQueuedJob(run.queueJobId);
     if (!removed) {
       if (options.forceCloseIfUnproven !== true) {
-        this.logger.info("Cancel requested but queued job was already picked up or missing", {
+        this.logger.info(
+          "Cancel requested but queued job was already picked up or missing",
+          {
+            runId,
+            traceId,
+            attemptSeq: attempt.attemptSeq,
+            queueJobId: attempt.queueJobId,
+          },
+        );
+        return;
+      }
+      this.logger.info(
+        "Cancel requested but queued job was already picked up or missing",
+        {
           runId,
           traceId,
           attemptSeq: attempt.attemptSeq,
           queueJobId: attempt.queueJobId,
-        });
-        return;
-      }
-      this.logger.info("Cancel requested but queued job was already picked up or missing", {
-        runId,
-        traceId,
-        attemptSeq: attempt.attemptSeq,
-        queueJobId: attempt.queueJobId,
-      });
+        },
+      );
     }
 
     await this.closeCancelledBeforeProof(
@@ -201,7 +229,11 @@ export class RunWatchdogService {
     this.clearPickupTimer(command.queueJobId);
 
     const run = await this.runRepository.findById(command.runId);
-    if (!run || run.traceId !== command.traceId || isTerminalRunStatus(run.status)) {
+    if (
+      !run ||
+      run.traceId !== command.traceId ||
+      isTerminalRunStatus(run.status)
+    ) {
       return;
     }
 
@@ -213,7 +245,10 @@ export class RunWatchdogService {
       return;
     }
 
-    if (run.attemptSeq !== command.attemptSeq || run.queueJobId !== command.queueJobId) {
+    if (
+      run.attemptSeq !== command.attemptSeq ||
+      run.queueJobId !== command.queueJobId
+    ) {
       return;
     }
 
@@ -247,7 +282,10 @@ export class RunWatchdogService {
       return;
     }
 
-    if (run.status === "cancel_requested" && attempt.leaseRecognizedAt === null) {
+    if (
+      run.status === "cancel_requested" &&
+      attempt.leaseRecognizedAt === null
+    ) {
       await this.handleCancelRequested(run.runId, run.traceId, {
         forceCloseIfUnproven: true,
         reasonCode: "cancelled_before_worker_proof_after_transport_failure",
@@ -258,14 +296,18 @@ export class RunWatchdogService {
     const reasonCode =
       signal.state === "stalled"
         ? "worker_stalled_transport_signal"
-        : "worker_failed_transport_signal";
+        : signal.jobName === INTERVIEW_RESUME_JOB_NAME
+          ? "interview_resume_failed_transport_signal"
+          : "worker_failed_transport_signal";
 
     await this.retryOrFail(run, attempt, {
       reasonCode,
       publicMessage:
         signal.state === "stalled"
           ? "Worker lease was lost before canonical close; backend is reconciling stalled transport"
-          : `Worker transport failed before canonical close: ${signal.failedReason ?? "unknown failure"}`,
+          : signal.jobName === INTERVIEW_RESUME_JOB_NAME
+            ? `Interview resume worker failed before canonical close: ${signal.failedReason ?? "unknown failure"}`
+            : `Worker transport failed before canonical close: ${signal.failedReason ?? "unknown failure"}`,
       ...(signal.failedReason ? { failureDetail: signal.failedReason } : {}),
     });
   }
@@ -328,10 +370,15 @@ export class RunWatchdogService {
     );
     await this.runRepository.updateStatus(run.runId, "failed", terminalReason);
     this.clearFinalizeTimer(attempt.queueJobId);
-    await this.runEventService.appendFailed(run.runId, run.traceId, {
-      code: terminalReason,
-      message: terminalMessage,
-    }, new Date().toISOString());
+    await this.runEventService.appendFailed(
+      run.runId,
+      run.traceId,
+      {
+        code: terminalReason,
+        message: terminalMessage,
+      },
+      new Date().toISOString(),
+    );
 
     this.logger.warn("Run watchdog closed run after transport reconciliation", {
       runId: run.runId,
@@ -366,7 +413,10 @@ export class RunWatchdogService {
     }
 
     const deadlineMs = Date.parse(run.deadlineAt);
-    return Number.isFinite(deadlineMs) && Date.now() + this.policy.retryDelayMs < deadlineMs;
+    return (
+      Number.isFinite(deadlineMs) &&
+      Date.now() + this.policy.retryDelayMs < deadlineMs
+    );
   }
 
   private async scheduleRetry(
@@ -396,7 +446,10 @@ export class RunWatchdogService {
       reasonCode,
     });
 
-    if (run.requestRef.trim().length === 0 || run.snapshotRef.trim().length === 0) {
+    if (
+      run.requestRef.trim().length === 0 ||
+      run.snapshotRef.trim().length === 0
+    ) {
       await this.runRepository.updateStatus(
         run.runId,
         "failed",
@@ -450,7 +503,11 @@ export class RunWatchdogService {
         error instanceof Error
           ? error.message
           : "Retry enqueue failed before worker handoff";
-      await this.runRepository.updateStatus(run.runId, "failed", reasonCodeForClose);
+      await this.runRepository.updateStatus(
+        run.runId,
+        "failed",
+        reasonCodeForClose,
+      );
       await this.runEventService.appendFailed(
         run.runId,
         run.traceId,
@@ -511,14 +568,17 @@ export class RunWatchdogService {
   private trackFinalizeGrace(run: RunRecord, attempt: RunAttemptRecord): void {
     this.clearFinalizeTimer(attempt.queueJobId);
     const timer = setTimeout(() => {
-      void this.runBackground(`finalize grace ${attempt.queueJobId}`, async () => {
-        await this.handleFinalizeGraceExpiry(
-          run.runId,
-          run.traceId,
-          attempt.attemptSeq,
-          attempt.queueJobId,
-        );
-      });
+      void this.runBackground(
+        `finalize grace ${attempt.queueJobId}`,
+        async () => {
+          await this.handleFinalizeGraceExpiry(
+            run.runId,
+            run.traceId,
+            attempt.attemptSeq,
+            attempt.queueJobId,
+          );
+        },
+      );
     }, this.policy.finalizeGraceMs);
     timer.unref?.();
     this.finalizeTimers.set(attempt.queueJobId, timer);
@@ -589,6 +649,10 @@ export class RunWatchdogService {
       traceId: run.traceId,
       attemptSeq,
       queueJobId: signal.queueJobId,
+      ...(signal.transportJobId
+        ? { transportJobId: signal.transportJobId }
+        : {}),
+      ...(signal.jobName ? { jobName: signal.jobName } : {}),
       state: signal.state,
       occurredAt: signal.occurredAt,
       lastAckedSeq: run.lastAckedSeq,
@@ -632,7 +696,11 @@ export class RunWatchdogService {
       reasonCode,
     );
     await this.runRepository.updateStatus(run.runId, "cancelled", reasonCode);
-    await this.runEventService.appendCancelled(run.runId, run.traceId, new Date().toISOString());
+    await this.runEventService.appendCancelled(
+      run.runId,
+      run.traceId,
+      new Date().toISOString(),
+    );
   }
 
   private isRetryableTransportReason(reasonCode: string): boolean {
@@ -734,7 +802,9 @@ export class RunWatchdogService {
     return record;
   }
 
-  private synthesizeMissingFinalizeResult(run: RunRecord): AgentRunResultSummary {
+  private synthesizeMissingFinalizeResult(
+    run: RunRecord,
+  ): AgentRunResultSummary {
     const issue = {
       code: "finalize_callback_missing_after_completed_signal",
       message:
@@ -770,13 +840,19 @@ export class RunWatchdogService {
     };
   }
 
-  private async runBackground(label: string, task: () => Promise<void>): Promise<void> {
+  private async runBackground(
+    label: string,
+    task: () => Promise<void>,
+  ): Promise<void> {
     try {
       await task();
     } catch (error) {
       this.logger.error("Run watchdog background task failed", {
         label,
-        error: error instanceof Error ? error.message : "Unknown watchdog background error",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown watchdog background error",
       });
     }
   }

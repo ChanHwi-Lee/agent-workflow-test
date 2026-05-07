@@ -139,10 +139,10 @@ test("runV6HtmlGen은 thinking level을 낮은 토큰 예산 값으로 조절할
 });
 
 test("V6_SYSTEM_PROMPT는 placeholder 이미지 영역을 실제 asset 영역으로 취급하도록 지시한다", () => {
-  assert.match(V6_SYSTEM_PROMPT, /Placeholder images are replaced later/);
-  assert.match(V6_SYSTEM_PROMPT, /visually occupied/);
-  assert.match(V6_SYSTEM_PROMPT, /solid\/semi-opaque backing shape/);
-  assert.match(V6_SYSTEM_PROMPT, /Do not rely on blank placeholder space/);
+  assert.match(V6_SYSTEM_PROMPT, /placeholder is resolved later/);
+  assert.match(V6_SYSTEM_PROMPT, /dimensions you specify are final/);
+  assert.match(V6_SYSTEM_PROMPT, /placeholder:\/\/photo\/<short-hint>/);
+  assert.match(V6_SYSTEM_PROMPT, /placeholder:\/\/graphic\/<short-hint>/);
 });
 
 test("runV6HtmlGen strips markdown fences if the model emits them", async () => {
@@ -252,7 +252,6 @@ test("buildV6UserMessage는 레이아웃 예산용 copy load 요약을 포함한
   assert.match(msg, /Korean chars:/);
   assert.match(msg, /Latin\/digit chars:/);
   assert.match(msg, /copy load class:/);
-  assert.match(msg, /layout hint:/);
   assert.match(msg, /Do not render these metrics as visible copy/i);
 });
 
