@@ -20,6 +20,7 @@ import { runV6ClaudeCodeHtmlGen } from "../phases/v6ClaudeCodeHtmlGen.js";
 import { validateV6Html } from "../phases/v6HtmlValidator.js";
 import { adaptV6Commands } from "../phases/v6CommandAdapter.js";
 import { resolveV6PlaceholderAssets } from "../phases/v6AssetResolver.js";
+import { createAgwAssetPublishClient } from "../clients/agentApiPublishClient.js";
 import { mapRenderedElements } from "../phases/v6PrimitiveMapper.js";
 import { runV6Pipeline } from "../phases/v6Pipeline.js";
 import type {
@@ -451,6 +452,11 @@ export function registerV6PipelineNode(
       }
     }
 
+    const publishClient = createAgwAssetPublishClient({
+      baseUrl: dependencies.env.agentInternalBaseUrl,
+      workerInternalToken: dependencies.env.agentWorkerInternalToken,
+    });
+
     const resolvedV6Commands = await resolveV6PlaceholderAssets({
       runId: state.job.runId,
       userPrompt,
@@ -458,6 +464,7 @@ export function registerV6PipelineNode(
       canvasHeight,
       googleApiKey: dependencies.env.googleApiKey,
       objectStore: dependencies.objectStore,
+      publishClient,
       env: dependencies.env,
       commands: v6Result.commands,
     });

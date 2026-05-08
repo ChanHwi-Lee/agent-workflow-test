@@ -49,6 +49,7 @@ export function createFakeRunRequest(
       requestedOutputCount: 1,
       allowInternalAiPrimitives: true,
     },
+    userSerial: "test-user-123",
     clientInfo: {
       pagePath: "/editor",
       viewportWidth: 1440,

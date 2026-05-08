@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createObjectStoreClient } from "@tooldi/agent-persistence";
 
 import { resolveV6PlaceholderAssets } from "./v6AssetResolver.js";
 import type { V6ImageCommand, V6PrimitiveCommand } from "./v6Types.js";
@@ -132,10 +131,6 @@ test("resolveV6PlaceholderAssets는 구체 제품 keyword가 맞으면 asset을 
 
 test("resolveV6PlaceholderAssets는 generation mode에서 후보가 없으면 Gemini 생성 결과를 저장 URL로 적용한다", async () => {
   const originalFetch = globalThis.fetch;
-  const objectStore = createObjectStoreClient({
-    mode: "memory",
-    bucket: BASE_ENV.objectStoreBucket,
-  });
   globalThis.fetch = async (input: string | URL | Request) => {
     const url = String(input);
     if (url === BASE_ENV.v6AssetEmbeddingEndpoint) {
@@ -165,6 +160,18 @@ test("resolveV6PlaceholderAssets는 generation mode에서 후보가 없으면 Ge
     return new Response("not found", { status: 404 });
   };
 
+  const publishedRequests: unknown[] = [];
+  const mockPublishClient = {
+    async publishAsset(req: unknown) {
+      publishedRequests.push(req);
+      return {
+        publicUrl: "https://cdn.tooldi.com/order_attach/AI/0/1/upload_file/agw-run-generated-test-0.png",
+        fileName: "agw-run-generated-test-0.png",
+        userFileSerial: "999",
+      };
+    },
+  };
+
   try {
     const commands = await resolveV6PlaceholderAssets({
       runId: "run-generated-test",
@@ -172,7 +179,7 @@ test("resolveV6PlaceholderAssets는 generation mode에서 후보가 없으면 Ge
       canvasWidth: 1200,
       canvasHeight: 628,
       googleApiKey: "test-google-api-key",
-      objectStore,
+      publishClient: mockPublishClient,
       env: {
         ...BASE_ENV,
         v6AssetGenerationMode: "enabled",
@@ -187,20 +194,11 @@ test("resolveV6PlaceholderAssets는 generation mode에서 후보가 없으면 Ge
     assert.equal(resolved.generatedAssetModel, "gemini-2.5-flash-image");
     assert.equal(resolved.naturalWidth, 640);
     assert.equal(resolved.naturalHeight, 480);
-    assert.match(
+    assert.equal(
       resolved.src,
-      /^\/api\/agent-workflow\/runs\/run-generated-test\/artifacts\?key=/,
+      "https://cdn.tooldi.com/order_attach/AI/0/1/upload_file/agw-run-generated-test-0.png",
     );
-    assert.doesNotMatch(resolved.src, /^data:/);
-
-    const key = new URL(resolved.src, "http://toolditor.local").searchParams.get("key");
-    assert.ok(key);
-    const stored = await objectStore.getObject({
-      bucket: BASE_ENV.objectStoreBucket,
-      key,
-    });
-    assert.equal(stored.contentType, "image/png");
-    assert.equal(stored.metadata.provider, "gemini");
+    assert.equal(publishedRequests.length, 1);
   } finally {
     globalThis.fetch = originalFetch;
   }

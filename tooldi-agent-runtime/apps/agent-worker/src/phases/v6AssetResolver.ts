@@ -1,6 +1,7 @@
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
 import type { ObjectStoreClient } from "@tooldi/agent-persistence";
 
+import type { AgwAssetPublishClient } from "../clients/agentApiPublishClient.js";
 import type {
   V6Bounds,
   V6ImageCommand,
@@ -10,6 +11,13 @@ import type {
 
 type AssetFamily = "photo" | "graphic";
 
+class AssetPublishError extends Error {
+  constructor(cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause));
+    this.name = "AssetPublishError";
+  }
+}
+
 export interface V6AssetResolverInput {
   readonly runId: string;
   readonly userPrompt: string;
@@ -17,6 +25,7 @@ export interface V6AssetResolverInput {
   readonly canvasHeight: number;
   readonly googleApiKey: string | null;
   readonly objectStore?: ObjectStoreClient;
+  readonly publishClient?: AgwAssetPublishClient;
   readonly env: Pick<
     AgentWorkerEnv,
     | "objectStoreBucket"
@@ -105,6 +114,7 @@ interface GeneratedAssetResult {
   readonly generatedAssetModel: string;
   readonly generatedAssetPrompt: string;
   readonly generatedAssetMethod: "gemini-native-generation";
+  readonly userFileSerial: string;
 }
 
 interface QdrantPoint {
@@ -440,7 +450,8 @@ async function resolveOne(
             "Qdrant 후보가 placeholder와 맞지 않아 Gemini 생성 fallback을 사용했다.",
         })
       : unresolved(context, "generation_failed", selection);
-  } catch {
+  } catch (err) {
+    if (err instanceof AssetPublishError) throw err;
     return unresolved(context, "resolver_failed");
   }
 }
@@ -882,8 +893,7 @@ function unresolved(
 function canGenerateAsset(input: V6AssetResolverInput): boolean {
   return (
     input.env.v6AssetGenerationMode === "enabled" &&
-    input.googleApiKey !== null &&
-    input.objectStore !== undefined
+    input.googleApiKey !== null
   );
 }
 
@@ -935,42 +945,47 @@ async function generateAndPersistAsset(
   context: PlaceholderContext,
   selection: Extract<AssetSelection, { decision: "generate" }>,
 ): Promise<GeneratedAssetResult | null> {
-  const objectStore = input.objectStore;
-  if (!canGenerateAsset(input) || !objectStore) return null;
+  if (!canGenerateAsset(input) || !input.publishClient) return null;
+
+  let generated: { bytes: Uint8Array; mimeType: string };
   try {
-    const generated = await generateNativeGeminiImage(input, selection);
-    const extension = extensionForMimeType(generated.mimeType);
-    const key =
-      `runs/${input.runId}/generated-assets/` +
-      `${String(context.index + 1).padStart(3, "0")}-${slugify(context.hint)}.${extension}`;
-    await objectStore.putObject({
-      key,
-      body: generated.bytes,
-      contentType: generated.mimeType,
-      metadata: {
-        artifactKind: "v6-generated-asset",
-        runId: input.runId,
-        provider: "gemini",
-        model: input.env.v6AssetGenerationModel,
-      },
-    });
-    const dimensions = readImageDimensions(generated.bytes, {
-      width: Math.max(1, Math.round(context.command.bounds.width)),
-      height: Math.max(1, Math.round(context.command.bounds.height)),
-    });
-    return {
-      srcUrl: buildRunArtifactUrl(input.runId, key),
-      naturalWidth: dimensions.width,
-      naturalHeight: dimensions.height,
-      generatedAssetId: `generated:${input.runId}:${String(context.index + 1).padStart(3, "0")}`,
-      generatedAssetProvider: "gemini",
-      generatedAssetModel: input.env.v6AssetGenerationModel,
-      generatedAssetPrompt: selection.generationPrompt,
-      generatedAssetMethod: "gemini-native-generation",
-    };
+    generated = await generateNativeGeminiImage(input, selection);
   } catch {
     return null;
   }
+
+  const extension = extensionForMimeType(generated.mimeType);
+  let result: Awaited<ReturnType<typeof input.publishClient.publishAsset>>;
+  try {
+    result = await input.publishClient.publishAsset({
+      runId: input.runId,
+      base64: Buffer.from(generated.bytes).toString("base64"),
+      mimeType: generated.mimeType,
+      fileExt: extension,
+      slotIndex: context.index,
+      prompt: selection.generationPrompt,
+      model: input.env.v6AssetGenerationModel,
+    });
+  } catch (err) {
+    throw new AssetPublishError(err);
+  }
+
+  const dimensions = readImageDimensions(generated.bytes, {
+    width: Math.max(1, Math.round(context.command.bounds.width)),
+    height: Math.max(1, Math.round(context.command.bounds.height)),
+  });
+
+  return {
+    srcUrl: result.publicUrl,
+    naturalWidth: dimensions.width,
+    naturalHeight: dimensions.height,
+    generatedAssetId: `generated:${input.runId}:${String(context.index + 1).padStart(3, "0")}`,
+    generatedAssetProvider: "gemini",
+    generatedAssetModel: input.env.v6AssetGenerationModel,
+    generatedAssetPrompt: selection.generationPrompt,
+    generatedAssetMethod: "gemini-native-generation",
+    userFileSerial: result.userFileSerial,
+  };
 }
 
 async function generateNativeGeminiImage(
@@ -1028,25 +1043,10 @@ function extractGeminiInlineImage(
   return null;
 }
 
-function buildRunArtifactUrl(runId: string, key: string): string {
-  const query = new URLSearchParams({ key });
-  return `/api/agent-workflow/runs/${encodeURIComponent(runId)}/artifacts?${query.toString()}`;
-}
-
 function extensionForMimeType(mimeType: string): string {
   if (mimeType === "image/jpeg") return "jpg";
   if (mimeType === "image/webp") return "webp";
   return "png";
-}
-
-function slugify(value: string): string {
-  return (
-    value
-      .toLowerCase()
-      .replace(/[^a-z0-9가-힣]+/gi, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 60) || "asset"
-  );
 }
 
 function readImageDimensions(

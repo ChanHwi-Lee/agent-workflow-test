@@ -170,6 +170,7 @@ function createRun(overrides: Partial<RunRecord> = {}): RunRecord {
     runId: RUN_ID,
     traceId: TRACE_ID,
     requestId: "request-1",
+    userSerial: "test-user-123",
     documentId: "document-1",
     pageId: "page-1",
     status: "planning",

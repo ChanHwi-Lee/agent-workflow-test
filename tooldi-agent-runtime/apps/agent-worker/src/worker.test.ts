@@ -27,6 +27,7 @@ function createEnv(): AgentWorkerEnv {
     leaseTtlMs: 30000,
     queueTransportMode: "disabled",
     agentInternalBaseUrl: "http://127.0.0.1:3000",
+    agentWorkerInternalToken: "test-worker-token",
     langGraphCheckpointerMode: "postgres",
     langGraphCheckpointerPostgresUrl: null,
     langGraphCheckpointerSchema: "agent_langgraph_test",
@@ -87,6 +88,7 @@ test("loadAgentWorkerEnv defaults Tooldi catalog source to placeholder mode", ()
     OBJECT_STORE_PREFIX: "agent-runtime-test",
     WORKER_QUEUE_TRANSPORT_MODE: "disabled",
     AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
+    AGENT_WORKER_INTERNAL_TOKEN: "test-worker-token",
   });
 
   assert.equal(env.tooldiCatalogSourceMode, "placeholder");
@@ -116,6 +118,7 @@ test("loadAgentWorkerEnv reads Claude Code v6 HTML generator env", () => {
     OBJECT_STORE_PREFIX: "agent-runtime-test",
     WORKER_QUEUE_TRANSPORT_MODE: "disabled",
     AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
+    AGENT_WORKER_INTERNAL_TOKEN: "test-worker-token",
     HTML_GEN_PROVIDER: "claude_code",
     CLAUDE_CODE_MODEL: "sonnet",
     CLAUDE_CODE_EFFORT: "low",
@@ -141,6 +144,7 @@ test("loadAgentWorkerEnv는 Gemini HTML 생성 thinking level 값을 읽는다",
     OBJECT_STORE_PREFIX: "agent-runtime-test",
     WORKER_QUEUE_TRANSPORT_MODE: "disabled",
     AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
+    AGENT_WORKER_INTERNAL_TOKEN: "test-worker-token",
     HTML_GEN_THINKING_LEVEL: "medium",
   });
 
@@ -160,6 +164,7 @@ test("loadAgentWorkerEnv reads optional trend research env", () => {
     OBJECT_STORE_PREFIX: "agent-runtime-test",
     WORKER_QUEUE_TRANSPORT_MODE: "disabled",
     AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
+    AGENT_WORKER_INTERNAL_TOKEN: "test-worker-token",
     TREND_RESEARCH_MODE: "enabled",
     TREND_RESEARCH_MODEL: "gemini-3-flash-preview",
     TREND_CACHE_TTL_SECONDS: "3600",

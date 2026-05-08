@@ -50,3 +50,13 @@ export LANGGRAPH_CHECKPOINTER_SCHEMA="${LANGGRAPH_CHECKPOINTER_SCHEMA:-agent_lan
 # 미설정 시 loadAgentWorkerEnv 의 production-grade default 가 그대로 적용됨
 # (max=10 / connectionTimeoutMillis=5000 / idleTimeoutMillis=30000).
 export POSTGRES_APPLICATION_NAME="${POSTGRES_APPLICATION_NAME:-agent-worker-toolditor-local}"
+
+# AGW generated asset publish — worker ↔ agent-api 내부 인증 토큰.
+# 로컬 dev 플레이스홀더. 운영은 .env.local 에서 실제 토큰으로 오버라이드.
+export AGENT_WORKER_INTERNAL_TOKEN="${AGENT_WORKER_INTERNAL_TOKEN:-local-dev-worker-token}"
+
+# AGW generated asset publish — agent-api → PHP API 호출 설정.
+# V6_ASSET_GENERATION_MODE=enabled 일 때만 실제로 사용됨.
+# .env.local 에서 실제 PHP 서버 주소와 토큰으로 오버라이드.
+export TOOLDI_PHP_API_BASE_URL="${TOOLDI_PHP_API_BASE_URL:-http://127.0.0.1:8080}"
+export TOOLDI_PHP_INTERNAL_TOKEN="${TOOLDI_PHP_INTERNAL_TOKEN:-local-dev-php-token}"

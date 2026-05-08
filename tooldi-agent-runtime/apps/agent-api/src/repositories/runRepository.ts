@@ -14,6 +14,7 @@ export interface RunRecord {
   runId: string;
   traceId: string;
   requestId: string;
+  userSerial: string;
   documentId: string;
   pageId: string;
   status: RunStatus;
@@ -188,6 +189,7 @@ export class RunRepository {
       runId: record.runId,
       traceId: record.traceId,
       requestId: record.requestId,
+      userSerial: record.userSerial,
       documentId: record.documentId,
       pageId: record.pageId,
       status: record.status,
@@ -216,6 +218,7 @@ export class RunRepository {
       runId: row.runId,
       traceId: row.traceId,
       requestId: row.requestId,
+      userSerial: row.userSerial,
       documentId: row.documentId,
       pageId: row.pageId,
       status: row.status as RunStatus,

@@ -38,6 +38,9 @@ export interface AgentApiEnv extends SharedRuntimeEnv {
   runWatchdogMaxQueueAttempts: number;
   runWatchdogEnqueueTimeoutMs: number;
   runWatchdogFinalizeGraceMs: number;
+  tooldiPhpApiBaseUrl: string;
+  tooldiPhpInternalToken: string;
+  agentWorkerInternalToken: string;
 }
 
 export const workerQueueTransportModes = ["bullmq", "disabled"] as const;
@@ -46,6 +49,7 @@ export type WorkerQueueTransportMode =
   (typeof workerQueueTransportModes)[number];
 
 export interface AgentWorkerEnv extends SharedRuntimeEnv {
+  agentWorkerInternalToken: string;
   workerConcurrency: number;
   heartbeatIntervalMs: number;
   leaseTtlMs: number;
@@ -276,6 +280,9 @@ export function loadAgentApiEnv(source: EnvSource = process.env): AgentApiEnv {
       "RUN_WATCHDOG_FINALIZE_GRACE_MS",
       1500,
     ),
+    tooldiPhpApiBaseUrl: readString(source, "TOOLDI_PHP_API_BASE_URL"),
+    tooldiPhpInternalToken: readString(source, "TOOLDI_PHP_INTERNAL_TOKEN"),
+    agentWorkerInternalToken: readString(source, "AGENT_WORKER_INTERNAL_TOKEN"),
   };
 }
 
@@ -470,5 +477,6 @@ export function loadAgentWorkerEnv(
       30000,
     ),
     exitAfterBoot: readBoolean(source, "WORKER_EXIT_AFTER_BOOT", false),
+    agentWorkerInternalToken: readString(source, "AGENT_WORKER_INTERNAL_TOKEN"),
   };
 }

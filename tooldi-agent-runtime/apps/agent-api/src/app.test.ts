@@ -42,6 +42,9 @@ function createEnv(): AgentApiEnv {
     runWatchdogMaxQueueAttempts: 2,
     runWatchdogEnqueueTimeoutMs: 2000,
     runWatchdogFinalizeGraceMs: 1500,
+    tooldiPhpApiBaseUrl: "http://localhost:8080",
+    tooldiPhpInternalToken: "test-php-token",
+    agentWorkerInternalToken: "test-worker-token",
   };
 }
 
@@ -107,6 +110,7 @@ function createStartRunRequest(
       requestedOutputCount: 1,
       allowInternalAiPrimitives: true,
     },
+    userSerial: "test-user-123",
     clientInfo: {
       pagePath: "/editor",
       viewportWidth: 1440,

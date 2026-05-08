@@ -53,6 +53,7 @@ export const runs = agentRuntimePgSchema.table(
     runId: text("run_id").primaryKey(),
     traceId: text("trace_id").notNull(),
     requestId: text("request_id").notNull(),
+    userSerial: text("user_serial").notNull(),
     documentId: text("document_id").notNull(),
     pageId: text("page_id").notNull(),
     status: text("status").notNull(),

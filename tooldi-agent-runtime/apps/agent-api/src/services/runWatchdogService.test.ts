@@ -297,6 +297,7 @@ async function seedRun(
     runId,
     traceId,
     requestId,
+    userSerial: "test-user-123",
     documentId: "document-1",
     pageId: "page-1",
     status: options.status ?? "planning_queued",

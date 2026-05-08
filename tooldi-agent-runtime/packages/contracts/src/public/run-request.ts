@@ -92,6 +92,7 @@ export const StartAgentWorkflowRunRequestSchema = Type.Object(
       },
       { additionalProperties: false },
     ),
+    userSerial: Type.String({ minLength: 1 }),
     clientInfo: Type.Object(
       {
         pagePath: Type.String({ minLength: 1 }),

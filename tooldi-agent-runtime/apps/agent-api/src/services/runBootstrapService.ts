@@ -130,6 +130,7 @@ export class RunBootstrapService {
       runId,
       traceId,
       requestId,
+      userSerial: request.userSerial,
       documentId: request.editorContext.documentId,
       pageId: request.editorContext.pageId,
       status: initialStatus,

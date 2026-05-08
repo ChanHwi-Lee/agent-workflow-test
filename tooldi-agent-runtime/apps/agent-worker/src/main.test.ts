@@ -34,6 +34,7 @@ test("worker main entrypoint boots and exits cleanly", async () => {
         WORKER_LEASE_TTL_MS: "30000",
         WORKER_QUEUE_TRANSPORT_MODE: "disabled",
         AGENT_INTERNAL_BASE_URL: "http://127.0.0.1:3000",
+        AGENT_WORKER_INTERNAL_TOKEN: "test-worker-token",
         LANGGRAPH_CHECKPOINTER_MODE: "postgres",
         TOOLDI_CATALOG_SOURCE_MODE: "placeholder",
         WORKER_EXIT_AFTER_BOOT: "true",

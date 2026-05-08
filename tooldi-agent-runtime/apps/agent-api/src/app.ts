@@ -30,6 +30,7 @@ import {
   RunWatchdogService,
   type RunWatchdogPolicy,
 } from "./services/runWatchdogService.js";
+import { agwAssetPublishPostRoute } from "./routes/internal/agw-ai-asset-publish.post.js";
 import { eventsPostRoute } from "./routes/internal/events.post.js";
 import { finalizePostRoute } from "./routes/internal/finalize.post.js";
 import { heartbeatsPostRoute } from "./routes/internal/heartbeats.post.js";
@@ -170,6 +171,7 @@ export async function buildApp(
   await app.register(mutationAcksPostRoute);
   await app.register(cancelPostRoute);
   await app.register(interviewAnswerPostRoute);
+  await app.register(agwAssetPublishPostRoute);
   await app.register(eventsPostRoute);
   await app.register(mutationAcksGetRoute);
   await app.register(finalizePostRoute);

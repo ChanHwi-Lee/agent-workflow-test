@@ -76,6 +76,7 @@ export function createProcessRunJobTestEnv(): AgentWorkerEnv {
     leaseTtlMs: 30000,
     queueTransportMode: "disabled",
     agentInternalBaseUrl: "http://127.0.0.1:3000",
+    agentWorkerInternalToken: "test-worker-token",
     langGraphCheckpointerMode: "postgres",
     langGraphCheckpointerPostgresUrl: null,
     langGraphCheckpointerSchema: "agent_langgraph_test",
