@@ -46,6 +46,22 @@ export class V6ConfigError extends Error {
   }
 }
 
+function stampQaIssuesOnCommands(result: V6PipelineResult): V6PipelineResult {
+  const blocking = result.renderQualityReport.blockingIssues;
+  if (blocking.length === 0) return result;
+  const codesByPath = new Map<string, string[]>();
+  for (const issue of blocking) {
+    const arr = codesByPath.get(issue.path) ?? [];
+    arr.push(issue.code);
+    codesByPath.set(issue.path, arr);
+  }
+  const commands = result.commands.map((c) => {
+    const codes = codesByPath.get(c.source.path);
+    return codes ? { ...c, qaIssueCodes: codes } : c;
+  });
+  return { ...result, commands };
+}
+
 /**
  * Lightweight Playwright browser supplier. Phase 4 keeps this to an on-demand
  * `launchEphemeralBrowser` factory; Phase 5 replaces it with a warm pool that
@@ -435,11 +451,45 @@ export function registerV6PipelineNode(
                   report: thirdError.report,
                   extraction: thirdError.extraction,
                 });
+                const mapping = boundDeps.mapElements(thirdError.extraction);
+                if (mapping.commands.length === 0) {
+                  throw thirdError;
+                }
+                v6Result = {
+                  runId: state.job.runId,
+                  html: thirdError.html,
+                  extraction: thirdError.extraction,
+                  renderQualityReport: thirdError.report,
+                  commands: mapping.commands,
+                  validationIssues: [],
+                  usage: null,
+                  latency: { htmlGenMs: 0, renderMs: 0, totalMs: 0 },
+                  model: thirdError.model,
+                };
+                const forceThroughEvent = await appendEventTask(
+                  state.job.runId,
+                  {
+                    traceId: state.job.traceId,
+                    attempt: state.job.attemptSeq,
+                    queueJobId: state.job.queueJobId,
+                    event: {
+                      type: "log",
+                      level: "warn",
+                      message:
+                        `[v6-render-quality] force-through after 3 attempts; ` +
+                        `applying last result with red QA markers ` +
+                        `blocking=${thirdError.blockingIssues.length}`,
+                    },
+                  },
+                );
+                cooperativeStopRequested ||= forceThroughEvent.cancelRequested;
+              } else {
+                throw thirdError;
               }
-              throw thirdError;
             }
+          } else {
+            throw retryError;
           }
-          throw retryError;
         }
       }
     } finally {
@@ -451,6 +501,8 @@ export function registerV6PipelineNode(
         }
       }
     }
+
+    v6Result = stampQaIssuesOnCommands(v6Result);
 
     const publishClient = createAgwAssetPublishClient({
       baseUrl: dependencies.env.agentInternalBaseUrl,

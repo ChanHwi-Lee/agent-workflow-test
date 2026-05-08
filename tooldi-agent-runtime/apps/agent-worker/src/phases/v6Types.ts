@@ -173,6 +173,7 @@ interface V6BaseCommand {
   readonly opacity: number;
   readonly transform?: string;
   readonly filter?: string | null;
+  readonly qaIssueCodes?: ReadonlyArray<string>;
 }
 
 export interface V6RectCommand extends V6BaseCommand {

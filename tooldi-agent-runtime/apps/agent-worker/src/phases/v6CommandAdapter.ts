@@ -117,16 +117,59 @@ function buildStyleTokens(cmd: V6PrimitiveCommand): Record<string, unknown> {
   if (cmd.filter) {
     base.filter = cmd.filter;
   }
+  let tokens: Record<string, unknown>;
   switch (cmd.primitive) {
     case "rect":
-      return { ...base, ...rectTokens(cmd) };
+      tokens = { ...base, ...rectTokens(cmd) };
+      break;
     case "text":
-      return { ...base, ...textTokens(cmd) };
+      tokens = { ...base, ...textTokens(cmd) };
+      break;
     case "image":
     case "bitmap":
-      return { ...base, ...imageTokens(cmd) };
+      tokens = { ...base, ...imageTokens(cmd) };
+      break;
     case "svg":
-      return base;
+      tokens = base;
+      break;
+  }
+  if (cmd.qaIssueCodes && cmd.qaIssueCodes.length > 0) {
+    applyQaMarkerOverrides(tokens, cmd);
+  }
+  return tokens;
+}
+
+const QA_MARKER_COLOR = "#FF0000";
+const QA_MARKER_STROKE_WIDTH = 2;
+
+function applyQaMarkerOverrides(
+  tokens: Record<string, unknown>,
+  cmd: V6PrimitiveCommand,
+): void {
+  switch (cmd.primitive) {
+    case "text":
+      tokens.fillColor = QA_MARKER_COLOR;
+      tokens.fillPaint = solidPaintTokens({
+        type: "solid",
+        color: QA_MARKER_COLOR,
+        alpha: 1,
+        cssColor: QA_MARKER_COLOR,
+      });
+      return;
+    case "rect":
+    case "image":
+    case "bitmap":
+      tokens.stroke = {
+        color: QA_MARKER_COLOR,
+        width: QA_MARKER_STROKE_WIDTH,
+      };
+      tokens.strokePaint = strokePaintTokens({
+        color: QA_MARKER_COLOR,
+        width: QA_MARKER_STROKE_WIDTH,
+      });
+      return;
+    case "svg":
+      return;
   }
 }
 
@@ -193,6 +236,9 @@ function buildMetadata(
     sourcePath: cmd.source.path,
     sourceTag: cmd.source.tag,
   };
+  if (cmd.qaIssueCodes && cmd.qaIssueCodes.length > 0) {
+    base.qaIssueCodes = cmd.qaIssueCodes.join(",");
+  }
   switch (cmd.primitive) {
     case "text":
       return metadataForText(base, cmd);
