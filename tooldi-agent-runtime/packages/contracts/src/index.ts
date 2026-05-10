@@ -14,3 +14,4 @@ export * from "./public/run-request.js";
 export * from "./worker/interview.js";
 export * from "./worker/run-job-envelope.js";
 export * from "./worker/worker-callbacks.js";
+export * from "./admin/index.js";
