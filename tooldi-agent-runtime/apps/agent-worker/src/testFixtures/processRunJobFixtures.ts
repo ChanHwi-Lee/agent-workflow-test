@@ -400,6 +400,10 @@ export class TrackingObjectStoreClient implements ObjectStoreClient {
   async deleteObject(ref: { bucket: string; key: string }) {
     return this.base.deleteObject(ref);
   }
+
+  async listObjects(request: { prefix: string }) {
+    return this.base.listObjects(request);
+  }
 }
 
 const LEGACY_BUILD_OR_REFINEMENT_ARTIFACT_FILENAMES = [

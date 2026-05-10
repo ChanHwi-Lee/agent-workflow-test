@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 
 import type { AgentApiEnv } from "@tooldi/agent-config";
 
+import { adminGuard } from "./lib/adminGuard.js";
 import { createHttpRequestId } from "./lib/ids.js";
 import { AgentApiError } from "./lib/errors.js";
 import { configPlugin } from "./plugins/config.js";
@@ -30,6 +31,8 @@ import {
   RunWatchdogService,
   type RunWatchdogPolicy,
 } from "./services/runWatchdogService.js";
+import { adminRunDetailRoute } from "./routes/internal/admin-run-detail.get.js";
+import { adminRunsListRoute } from "./routes/internal/admin-runs-list.get.js";
 import { agwAssetPublishPostRoute } from "./routes/internal/agw-ai-asset-publish.post.js";
 import { eventsPostRoute } from "./routes/internal/events.post.js";
 import { finalizePostRoute } from "./routes/internal/finalize.post.js";
@@ -164,6 +167,10 @@ export async function buildApp(
   app.addHook("onClose", async () => {
     await runWatchdogService.close();
   });
+
+  app.addHook("onRequest", adminGuard);
+  await app.register(adminRunsListRoute);
+  await app.register(adminRunDetailRoute);
 
   await app.register(runsPostRoute);
   await app.register(runArtifactsGetRoute);

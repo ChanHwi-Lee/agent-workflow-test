@@ -32,6 +32,59 @@ test("memory object store round-trips body and metadata", async () => {
   });
 });
 
+test("memory object store listObjects filters by prefix", async () => {
+  const objectStore = createObjectStoreClient({ bucket: "list-test" });
+
+  await objectStore.putObject({
+    key: "runs/r1/attempts/0/canonical-design-brief.json",
+    body: "{}",
+    contentType: "application/json",
+  });
+  await objectStore.putObject({
+    key: "runs/r1/attempts/0/v6-trend-brief.json",
+    body: "{}",
+    contentType: "application/json",
+  });
+  await objectStore.putObject({
+    key: "runs/r2/attempts/0/canonical-design-brief.json",
+    body: "{}",
+    contentType: "application/json",
+  });
+
+  const listed = await objectStore.listObjects({ prefix: "runs/r1/attempts/0/" });
+  const keys = listed.map((entry) => entry.key).sort();
+  assert.deepEqual(keys, [
+    "runs/r1/attempts/0/canonical-design-brief.json",
+    "runs/r1/attempts/0/v6-trend-brief.json",
+  ]);
+});
+
+test("filesystem object store listObjects ignores .meta.json sidecars", async (t) => {
+  const rootDir = await mkdtemp(join(tmpdir(), "tooldi-agent-runtime-object-store-list-"));
+  t.after(async () => {
+    await rm(rootDir, { recursive: true, force: true });
+  });
+
+  const objectStore = createObjectStoreClient({
+    bucket: "bucket-list",
+    mode: "filesystem",
+    rootDir,
+    prefix: "runtime-test",
+  });
+
+  await objectStore.putObject({
+    key: "runs/r9/attempts/0/canonical-design-brief.json",
+    body: "{}",
+    contentType: "application/json",
+  });
+
+  const listed = await objectStore.listObjects({ prefix: "runs/r9/attempts/0/" });
+  assert.deepEqual(
+    listed.map((entry) => entry.key),
+    ["runs/r9/attempts/0/canonical-design-brief.json"],
+  );
+});
+
 test("filesystem object store is readable across client instances", async (t) => {
   const rootDir = await mkdtemp(join(tmpdir(), "tooldi-agent-runtime-object-store-"));
   t.after(async () => {

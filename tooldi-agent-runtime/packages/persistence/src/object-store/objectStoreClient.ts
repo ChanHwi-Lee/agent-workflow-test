@@ -1,5 +1,12 @@
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import {
+  mkdir,
+  readFile,
+  readdir,
+  stat,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
+import { dirname, relative, resolve } from "node:path";
 
 export interface ObjectStoreRef {
   bucket: string;
@@ -26,10 +33,19 @@ export interface StoredObject {
   metadata: Record<string, string>;
 }
 
+export interface ListObjectsRequest {
+  prefix: string;
+}
+
+export interface ListedObject {
+  key: string;
+}
+
 export interface ObjectStoreClient {
   putObject(request: PutObjectRequest): Promise<PutObjectResult>;
   getObject(ref: ObjectStoreRef): Promise<StoredObject>;
   deleteObject(ref: ObjectStoreRef): Promise<void>;
+  listObjects(request: ListObjectsRequest): Promise<ListedObject[]>;
 }
 
 export interface CreateObjectStoreClientOptions {
@@ -81,6 +97,16 @@ class InMemoryObjectStoreClient implements ObjectStoreClient {
 
   async deleteObject(ref: ObjectStoreRef): Promise<void> {
     this.store.delete(ref.key);
+  }
+
+  async listObjects(request: ListObjectsRequest): Promise<ListedObject[]> {
+    const results: ListedObject[] = [];
+    for (const key of this.store.keys()) {
+      if (key.startsWith(request.prefix)) {
+        results.push({ key });
+      }
+    }
+    return results;
   }
 }
 
@@ -148,6 +174,44 @@ class FilesystemObjectStoreClient implements ObjectStoreClient {
       unlink(objectPath).catch(() => undefined),
       unlink(metadataPath).catch(() => undefined),
     ]);
+  }
+
+  async listObjects(request: ListObjectsRequest): Promise<ListedObject[]> {
+    const results: ListedObject[] = [];
+    await this.walkDirectory(this.baseDir, results);
+    return results.filter((object) => object.key.startsWith(request.prefix));
+  }
+
+  private async walkDirectory(
+    directoryPath: string,
+    accumulator: ListedObject[],
+  ): Promise<void> {
+    let entries: string[];
+    try {
+      entries = await readdir(directoryPath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return;
+      }
+      throw error;
+    }
+
+    for (const name of entries) {
+      const entryPath = resolve(directoryPath, name);
+      const stats = await stat(entryPath);
+      if (stats.isDirectory()) {
+        await this.walkDirectory(entryPath, accumulator);
+        continue;
+      }
+      if (!stats.isFile()) {
+        continue;
+      }
+      if (name.endsWith(".meta.json")) {
+        continue;
+      }
+      const key = relative(this.baseDir, entryPath).split("\\").join("/");
+      accumulator.push({ key });
+    }
   }
 
   private async readMetadata(metadataPath: string): Promise<{

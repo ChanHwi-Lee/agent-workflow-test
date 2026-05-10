@@ -23,5 +23,23 @@ export const AdminRunsListResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 
+export const AdminRunsListQuerySchema = Type.Object(
+  {
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+    status: Type.Optional(Type.String({ minLength: 1 })),
+    before: Type.Optional(IsoDateTimeSchema),
+  },
+  { additionalProperties: false },
+);
+
+export const AdminRunDetailParamsSchema = Type.Object(
+  {
+    runId: IdentifierSchema,
+  },
+  { additionalProperties: false },
+);
+
 export type AdminRunSummary = Static<typeof AdminRunSummarySchema>;
 export type AdminRunsListResponse = Static<typeof AdminRunsListResponseSchema>;
+export type AdminRunsListQuery = Static<typeof AdminRunsListQuerySchema>;
+export type AdminRunDetailParams = Static<typeof AdminRunDetailParamsSchema>;
