@@ -469,7 +469,7 @@ export function loadAgentWorkerEnv(
     v6AssetGenerationModel: readString(
       source,
       "V6_ASSET_GENERATION_MODEL",
-      "gemini-2.5-flash-image",
+      "gemini-3.1-flash-image-preview",
     ),
     v6AssetGenerationTimeoutMs: readNumber(
       source,

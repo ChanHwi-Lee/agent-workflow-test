@@ -6,7 +6,7 @@ import type {
 } from "@tooldi/agent-contracts";
 import { buildLangGraphThreadId } from "@tooldi/agent-graph";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
-import type { Logger } from "@tooldi/agent-observability";
+import { withRunJobTrace, type Logger } from "@tooldi/agent-observability";
 import type { ObjectStoreClient } from "@tooldi/agent-persistence";
 
 import type { BackendCallbackClient } from "../clients/backendCallbackClient.js";
@@ -87,26 +87,39 @@ export async function processRunJob(
   job: RunJobEnvelope,
   dependencies: ProcessRunJobDependencies,
 ): Promise<ProcessRunJobResult> {
-  const graph = buildRunJobGraph(dependencies);
-  const config = buildRunConfig(job);
-  const finalState = await graph.invoke({ job }, config);
+  return withRunJobTrace(
+    {
+      runId: job.runId,
+      traceId: job.traceId,
+      attemptSeq: job.attemptSeq,
+      queueJobId: job.queueJobId,
+    },
+    async () => {
+      const graph = buildRunJobGraph(dependencies);
+      const config = buildRunConfig(job);
+      const finalState = await graph.invoke({ job }, config);
 
-  if (finalState.result) {
-    return finalState.result;
-  }
+      if (finalState.result) {
+        return finalState.result;
+      }
 
-  const pendingInterview = await detectInterviewInterrupt(graph, config);
-  if (pendingInterview) {
-    throw new InterviewPendingError(pendingInterview);
-  }
+      const pendingInterview = await detectInterviewInterrupt(graph, config);
+      if (pendingInterview) {
+        throw new InterviewPendingError(pendingInterview);
+      }
 
-  throw new Error("LangGraph run completed without a ProcessRunJobResult");
+      throw new Error("LangGraph run completed without a ProcessRunJobResult");
+    },
+    { name: "tooldi.processRunJob" },
+  );
 }
 
 export interface ResumeRunArgs {
   runId: string;
+  traceId: string;
   attemptSeq: number;
   answers: unknown;
+  queueJobId?: string;
 }
 
 export class DuplicateResumeIgnoredError extends Error {
@@ -132,42 +145,54 @@ export async function resumeRunJob(
   args: ResumeRunArgs,
   dependencies: ProcessRunJobDependencies,
 ): Promise<ProcessRunJobResult> {
-  const graph = buildRunJobGraph(dependencies);
-  const config = {
-    configurable: {
-      thread_id: buildLangGraphThreadId(args.runId, args.attemptSeq),
+  return withRunJobTrace(
+    {
+      runId: args.runId,
+      traceId: args.traceId,
+      attemptSeq: args.attemptSeq,
+      ...(args.queueJobId !== undefined ? { queueJobId: args.queueJobId } : {}),
     },
-    recursionLimit: 128,
-  };
+    async () => {
+      const graph = buildRunJobGraph(dependencies);
+      const config = {
+        configurable: {
+          thread_id: buildLangGraphThreadId(args.runId, args.attemptSeq),
+        },
+        recursionLimit: 128,
+      };
 
-  const preState = await graph.getState(config);
-  const pendingInterrupts = preState.tasks.flatMap(
-    (task) => (task.interrupts as PendingInterruptPayload[] | undefined) ?? [],
-  );
-  if (pendingInterrupts.length === 0) {
-    const existingResult = (preState.values as { result?: ProcessRunJobResult } | null)
-      ?.result;
-    if (existingResult) {
-      return existingResult;
-    }
-    throw new DuplicateResumeIgnoredError(args.runId, args.attemptSeq);
-  }
+      const preState = await graph.getState(config);
+      const pendingInterrupts = preState.tasks.flatMap(
+        (task) =>
+          (task.interrupts as PendingInterruptPayload[] | undefined) ?? [],
+      );
+      if (pendingInterrupts.length === 0) {
+        const existingResult = (preState.values as { result?: ProcessRunJobResult } | null)
+          ?.result;
+        if (existingResult) {
+          return existingResult;
+        }
+        throw new DuplicateResumeIgnoredError(args.runId, args.attemptSeq);
+      }
 
-  const finalState = await graph.invoke(
-    new Command({ resume: { answers: args.answers } }),
-    config,
-  );
+      const finalState = await graph.invoke(
+        new Command({ resume: { answers: args.answers } }),
+        config,
+      );
 
-  if (finalState.result) {
-    return finalState.result;
-  }
+      if (finalState.result) {
+        return finalState.result;
+      }
 
-  const pendingInterview = await detectInterviewInterrupt(graph, config);
-  if (pendingInterview) {
-    throw new InterviewPendingError(pendingInterview);
-  }
+      const pendingInterview = await detectInterviewInterrupt(graph, config);
+      if (pendingInterview) {
+        throw new InterviewPendingError(pendingInterview);
+      }
 
-  throw new Error(
-    "LangGraph resume completed without a ProcessRunJobResult and without a follow-up interrupt",
+      throw new Error(
+        "LangGraph resume completed without a ProcessRunJobResult and without a follow-up interrupt",
+      );
+    },
+    { name: "tooldi.resumeRunJob", extraTags: ["resume"] },
   );
 }

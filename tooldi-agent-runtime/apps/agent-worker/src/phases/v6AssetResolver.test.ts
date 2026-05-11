@@ -129,6 +129,154 @@ test("resolveV6PlaceholderAssets는 구체 제품 keyword가 맞으면 asset을 
   assert.equal(resolved.src, "https://assets.test/picture/40/186140.jpg");
 });
 
+test("resolveV6PlaceholderAssets는 vision rerank가 generate를 선택하고 publish가 성공하면 캔버스 src에 publicUrl이 기록된다", async () => {
+  const originalFetch = globalThis.fetch;
+  let visionRerankCalls = 0;
+  let imageGenCalls = 0;
+  globalThis.fetch = async (input: string | URL | Request) => {
+    const url = String(input);
+    if (url === BASE_ENV.v6AssetEmbeddingEndpoint) {
+      return Response.json({ vectors: [[0.1, 0.2, 0.3]] });
+    }
+    if (url.includes("/collections/photos/points/query")) {
+      return Response.json({
+        result: {
+          points: [
+            {
+              score: 0.8,
+              payload: {
+                assetFamily: "photo",
+                sourceSerial: 100,
+                tooldiAssetId: "photo:100",
+                thumbKey: "picture/40/100_thumb.png",
+                originKey: "picture/40/100.jpg",
+                naturalWidth: 1200,
+                naturalHeight: 800,
+                keywords: ["여성", "광고모델"],
+              },
+            },
+            {
+              score: 0.78,
+              payload: {
+                assetFamily: "photo",
+                sourceSerial: 101,
+                tooldiAssetId: "photo:101",
+                thumbKey: "picture/40/101_thumb.png",
+                originKey: "picture/40/101.jpg",
+                naturalWidth: 1200,
+                naturalHeight: 800,
+                keywords: ["뷰티", "화장품"],
+              },
+            },
+          ],
+        },
+      });
+    }
+    if (url.includes("thumb")) {
+      // Stub thumb fetch for vision rerank inline-image attachment.
+      const buffer = Buffer.from(fakePngBase64(64, 64), "base64");
+      return new Response(buffer, {
+        status: 200,
+        headers: { "content-type": "image/png" },
+      });
+    }
+    if (url.includes("gemini-vision-test:generateContent")) {
+      visionRerankCalls += 1;
+      return Response.json({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    decision: "generate",
+                    confidence: "medium",
+                    reason: "후보가 placeholder 와 의미적으로 맞지 않음",
+                    generationPrompt:
+                      "Premium wireless over-ear headphones, studio lit, isolated on white background.",
+                    generationOptions: {
+                      aspectRatio: "1:1",
+                      outputFormat: "png",
+                    },
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+      });
+    }
+    if (url.includes(":generateContent")) {
+      imageGenCalls += 1;
+      return Response.json({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: "image/png",
+                    data: fakePngBase64(1024, 1024),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  const publishedRequests: unknown[] = [];
+  const mockPublishClient = {
+    async publishAsset(req: unknown) {
+      publishedRequests.push(req);
+      return {
+        publicUrl:
+          "https://cdn.tooldi.com/order_attach/AI/0/1/upload_file/vision-rerank-generate-001.png",
+        fileName: "vision-rerank-generate-001.png",
+        userFileSerial: "1234",
+      };
+    },
+  };
+
+  try {
+    const commands = await resolveV6PlaceholderAssets({
+      runId: "run-vision-generate",
+      userPrompt: "이미지 중심의 신제품 무선 헤드폰 광고 배너",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      googleApiKey: "test-google-api-key",
+      publishClient: mockPublishClient,
+      env: {
+        ...BASE_ENV,
+        v6AssetVisionRerankMode: "enabled",
+        v6AssetVisionModel: "gemini-vision-test",
+        v6AssetGenerationMode: "enabled",
+        v6AssetGenerationModel: "gemini-2.5-flash-image",
+      },
+      commands: [HEADPHONE_PLACEHOLDER as V6PrimitiveCommand],
+    });
+    const resolved = commands[0] as V6ImageCommand;
+    assert.equal(visionRerankCalls, 1);
+    assert.equal(imageGenCalls, 1);
+    assert.equal(publishedRequests.length, 1);
+    assert.equal(resolved.unresolvedPlaceholder, undefined);
+    assert.equal(resolved.generatedAssetProvider, "gemini");
+    assert.equal(
+      resolved.src,
+      "https://cdn.tooldi.com/order_attach/AI/0/1/upload_file/vision-rerank-generate-001.png",
+    );
+    assert.notEqual(
+      resolved.src,
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("resolveV6PlaceholderAssets는 generation mode에서 후보가 없으면 Gemini 생성 결과를 저장 URL로 적용한다", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input: string | URL | Request) => {

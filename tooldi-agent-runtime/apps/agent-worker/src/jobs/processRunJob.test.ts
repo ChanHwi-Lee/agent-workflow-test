@@ -14,7 +14,28 @@ import {
   createTestLangGraphCheckpointer,
   seedRunInputArtifacts,
 } from "../testFixtures/processRunJobFixtures.js";
-import { processRunJob } from "./processRunJob.js";
+import {
+  processRunJob,
+  type ResumeRunArgs,
+} from "./processRunJob.js";
+
+// Compile-time guard: ResumeRunArgs 는 traceId 를 별도로 반드시 받아야 한다.
+// runId 와 별개의 도메인 traceId 가 LangSmith 트레이스로 흘러가야 HITL 재개
+// (resume) 잡이 처음 잡과 같은 trace 에 묶인다. (FIX 1: regression guard)
+type _RequireTraceIdOnResumeArgs = ResumeRunArgs extends {
+  readonly traceId: string;
+}
+  ? true
+  : never;
+type _RequireQueueJobIdOnResumeArgs = ResumeRunArgs extends {
+  readonly queueJobId?: string | undefined;
+}
+  ? true
+  : never;
+const _resumeArgsTraceIdCheck: _RequireTraceIdOnResumeArgs = true;
+const _resumeArgsQueueJobIdCheck: _RequireQueueJobIdOnResumeArgs = true;
+void _resumeArgsTraceIdCheck;
+void _resumeArgsQueueJobIdCheck;
 
 // The full v6 happy path: object_native_v1 routes through createLayer envelope
 // (≥3 v6-mapped commands) and a saveTemplate envelope, in that order, with

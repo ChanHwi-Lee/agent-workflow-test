@@ -1,3 +1,4 @@
+import type { RunnableConfig } from "@langchain/core/runnables";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { z } from "zod";
 
@@ -93,6 +94,11 @@ export interface GenerateInterviewQuestionsArgs {
   prompt: string;
   canvas: { width: number; height: number };
   config: InterviewModelConfig;
+  /**
+   * LangGraph 노드의 RunnableConfig. forward 하면 model.invoke 가 부모 trace
+   * 의 콜백 매니저를 상속해 LangSmith 에서 한 trace 로 nesting 됨.
+   */
+  runnableConfig?: RunnableConfig;
 }
 
 export interface GenerateInterviewQuestionsResult {
@@ -107,13 +113,16 @@ export async function generateInterviewQuestions(
     QuestionsSchema,
   );
   const startedAt = Date.now();
-  const result = await model.invoke([
-    { role: "system", content: QUESTIONS_SYSTEM },
-    {
-      role: "user",
-      content: `프롬프트:\n${args.prompt}\n\n캔버스: ${args.canvas.width}px × ${args.canvas.height}px\n\n위 프롬프트를 더 좋은 시안으로 발전시키기 위해 최대 5 개의 질문을 JSON 으로 만들어라.`,
-    },
-  ]);
+  const result = await model.invoke(
+    [
+      { role: "system", content: QUESTIONS_SYSTEM },
+      {
+        role: "user",
+        content: `프롬프트:\n${args.prompt}\n\n캔버스: ${args.canvas.width}px × ${args.canvas.height}px\n\n위 프롬프트를 더 좋은 시안으로 발전시키기 위해 최대 5 개의 질문을 JSON 으로 만들어라.`,
+      },
+    ],
+    args.runnableConfig,
+  );
   const questions = result.questions.slice(0, 5).map((q) => ({
     id: q.id,
     title: q.title,
@@ -130,6 +139,7 @@ export interface GenerateAutoAnswersArgs {
   canvas: { width: number; height: number };
   questions: ReadonlyArray<InterviewQuestion>;
   config: InterviewModelConfig;
+  runnableConfig?: RunnableConfig;
 }
 
 export interface GenerateAutoAnswersResult {
@@ -144,13 +154,16 @@ export async function generateAutoAnswers(
     AnswersSchema,
   );
   const startedAt = Date.now();
-  const result = await model.invoke([
-    { role: "system", content: ANSWERS_SYSTEM },
-    {
-      role: "user",
-      content: `브리프:\n${args.prompt}\n\n캔버스: ${args.canvas.width}px × ${args.canvas.height}px\n\n질문 목록:\n${JSON.stringify(args.questions, null, 2)}\n\n모든 질문에 답하라.`,
-    },
-  ]);
+  const result = await model.invoke(
+    [
+      { role: "system", content: ANSWERS_SYSTEM },
+      {
+        role: "user",
+        content: `브리프:\n${args.prompt}\n\n캔버스: ${args.canvas.width}px × ${args.canvas.height}px\n\n질문 목록:\n${JSON.stringify(args.questions, null, 2)}\n\n모든 질문에 답하라.`,
+      },
+    ],
+    args.runnableConfig,
+  );
   const answers = result.answers.map((a) => ({
     id: a.id,
     ...(a.value !== undefined ? { value: a.value } : {}),
@@ -165,6 +178,7 @@ export interface GenerateDerivedBriefArgs {
   questions: ReadonlyArray<InterviewQuestion>;
   answers: ReadonlyArray<InterviewAnswer>;
   config: InterviewModelConfig;
+  runnableConfig?: RunnableConfig;
 }
 
 export interface GenerateDerivedBriefResult {
@@ -186,13 +200,16 @@ export async function generateDerivedBrief(
     return `${i + 1}. ${q.title}\n   → ${answerText}`;
   });
   const startedAt = Date.now();
-  const result = await model.invoke([
-    { role: "system", content: BRIEF_SYSTEM },
-    {
-      role: "user",
-      content: `원본 프롬프트:\n${args.prompt}\n\nQ&A:\n${qaLines.join("\n")}`,
-    },
-  ]);
+  const result = await model.invoke(
+    [
+      { role: "system", content: BRIEF_SYSTEM },
+      {
+        role: "user",
+        content: `원본 프롬프트:\n${args.prompt}\n\nQ&A:\n${qaLines.join("\n")}`,
+      },
+    ],
+    args.runnableConfig,
+  );
   return { derivedBrief: result.derived_brief, durationMs: Date.now() - startedAt };
 }
 

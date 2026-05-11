@@ -1,4 +1,5 @@
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
+import { traceLlmCall } from "@tooldi/agent-observability";
 
 import { runClaudeCodeText } from "./v6ClaudeCodeHtmlGen.js";
 import { stripMarkdownFences, type V6Usage } from "./v6HtmlGen.js";
@@ -119,68 +120,84 @@ async function runGeminiUnrestrictedDebugHtmlPreview(
   input: V6DebugHtmlPreviewInput,
 ): Promise<V6DebugHtmlPreviewArtifact> {
   const model = "gemini-3.1-flash-lite-preview";
-  const startedAt = Date.now();
   const url = `${GEMINI_REST_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: {
-        role: "system",
-        parts: [{ text: UNRESTRICTED_HTML_SYSTEM_PROMPT }],
-      },
-      contents: [{ role: "user", parts: [{ text: userText }] }],
-      generationConfig: {
-        temperature: 0.85,
-        topP: 0.95,
-        maxOutputTokens: 8192,
-      },
-    }),
-  });
-  const latencyMs = Date.now() - startedAt;
-  const rawResponse = await resp.text();
-  const parsed = JSON.parse(rawResponse) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-    usageMetadata?: {
-      promptTokenCount?: number;
-      candidatesTokenCount?: number;
-      totalTokenCount?: number;
-      thoughtsTokenCount?: number;
-      cachedContentTokenCount?: number;
-    };
-    error?: { status?: string; message?: string };
-  };
-  if (!resp.ok || parsed.error) {
-    throw new Error(
-      `Gemini debug html preview failed status=${resp.status}: ${parsed.error?.message ?? rawResponse.slice(0, 300)}`,
-    );
-  }
-  const rawHtml = (parsed.candidates?.[0]?.content?.parts ?? [])
-    .map((part) => part.text ?? "")
-    .join("")
-    .trim();
-  const usage = parsed.usageMetadata;
-  return {
-    kind: "unrestricted-html",
-    model,
-    html: stripMarkdownFences(rawHtml),
-    rawHtml,
-    canvasWidth: input.canvasWidth,
-    canvasHeight: input.canvasHeight,
-    userPrompt: input.userPrompt,
-    trendContext: input.trendContext,
-    latencyMs,
-    usage: usage
-      ? {
-          promptTokenCount: usage.promptTokenCount ?? null,
-          candidatesTokenCount: usage.candidatesTokenCount ?? null,
-          totalTokenCount: usage.totalTokenCount ?? null,
-          thoughtsTokenCount: usage.thoughtsTokenCount ?? null,
-          cachedContentTokenCount: usage.cachedContentTokenCount ?? null,
-        }
-      : null,
-    generatedAt: new Date().toISOString(),
-  };
+  return traceLlmCall(
+    {
+      name: "v6.debugHtmlPreview",
+      model,
+      provider: "google",
+      invocationParams: { temperature: 0.85, topP: 0.95, maxOutputTokens: 8192 },
+      tags: ["debug"],
+    },
+    async () => {
+      const startedAt = Date.now();
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: {
+            role: "system",
+            parts: [{ text: UNRESTRICTED_HTML_SYSTEM_PROMPT }],
+          },
+          contents: [{ role: "user", parts: [{ text: userText }] }],
+          generationConfig: {
+            temperature: 0.85,
+            topP: 0.95,
+            maxOutputTokens: 8192,
+          },
+        }),
+      });
+      const latencyMs = Date.now() - startedAt;
+      const rawResponse = await resp.text();
+      const parsed = JSON.parse(rawResponse) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+        usageMetadata?: {
+          promptTokenCount?: number;
+          candidatesTokenCount?: number;
+          totalTokenCount?: number;
+          thoughtsTokenCount?: number;
+          cachedContentTokenCount?: number;
+        };
+        error?: { status?: string; message?: string };
+      };
+      if (!resp.ok || parsed.error) {
+        throw new Error(
+          `Gemini debug html preview failed status=${resp.status}: ${parsed.error?.message ?? rawResponse.slice(0, 300)}`,
+        );
+      }
+      const rawHtml = (parsed.candidates?.[0]?.content?.parts ?? [])
+        .map((part) => part.text ?? "")
+        .join("")
+        .trim();
+      const usage = parsed.usageMetadata;
+      const artifact: V6DebugHtmlPreviewArtifact = {
+        kind: "unrestricted-html",
+        model,
+        html: stripMarkdownFences(rawHtml),
+        rawHtml,
+        canvasWidth: input.canvasWidth,
+        canvasHeight: input.canvasHeight,
+        userPrompt: input.userPrompt,
+        trendContext: input.trendContext,
+        latencyMs,
+        usage: usage
+          ? {
+              promptTokenCount: usage.promptTokenCount ?? null,
+              candidatesTokenCount: usage.candidatesTokenCount ?? null,
+              totalTokenCount: usage.totalTokenCount ?? null,
+              thoughtsTokenCount: usage.thoughtsTokenCount ?? null,
+              cachedContentTokenCount: usage.cachedContentTokenCount ?? null,
+            }
+          : null,
+        generatedAt: new Date().toISOString(),
+      };
+      return {
+        body: artifact,
+        outputText: rawHtml,
+        geminiUsage: usage ?? null,
+      };
+    },
+  );
 }
 
 function buildUnrestrictedUserPrompt(input: V6DebugHtmlPreviewInput): string {

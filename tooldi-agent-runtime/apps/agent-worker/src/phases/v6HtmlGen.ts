@@ -5,6 +5,8 @@
 //     (security-only) 에서만 수행.
 //   - 이 모듈은 REST 호출과 usage 메트릭 추출만 책임. 출력은 그대로 반환한다.
 
+import { traceLlmCall } from "@tooldi/agent-observability";
+
 import {
   V6_DEFAULT_MODEL,
   V6_SYSTEM_PROMPT,
@@ -95,72 +97,93 @@ export async function runV6HtmlGen(
     generationConfig,
   };
 
-  const startedAt = Date.now();
-  const resp = await fetchImpl(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const latencyMs = Date.now() - startedAt;
-  const rawText = await resp.text();
+  return traceLlmCall(
+    {
+      name: "v6.htmlGen",
+      model,
+      provider: "google",
+      invocationParams: {
+        temperature: generationConfig.temperature,
+        topP: generationConfig.topP,
+        maxOutputTokens: generationConfig.maxOutputTokens,
+        thinkingLevel: generationConfig.thinkingConfig.thinkingLevel,
+      },
+    },
+    async () => {
+      const startedAt = Date.now();
+      const resp = await fetchImpl(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const latencyMs = Date.now() - startedAt;
+      const rawText = await resp.text();
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(rawText);
-  } catch {
-    throw new V6HtmlGenerationError(
-      `non-json response status=${resp.status}: ${rawText.slice(0, 200)}`,
-      resp.status,
-      rawText,
-    );
-  }
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(rawText);
+      } catch {
+        throw new V6HtmlGenerationError(
+          `non-json response status=${resp.status}: ${rawText.slice(0, 200)}`,
+          resp.status,
+          rawText,
+        );
+      }
 
-  const body_ = parsed as {
-    candidates?: Array<{
-      content?: { parts?: Array<{ text?: string }> };
-      finishReason?: string;
-    }>;
-    usageMetadata?: {
-      promptTokenCount?: number;
-      candidatesTokenCount?: number;
-      totalTokenCount?: number;
-      thoughtsTokenCount?: number;
-      cachedContentTokenCount?: number;
-    };
-    error?: { status?: string; message?: string };
-  };
+      const body_ = parsed as {
+        candidates?: Array<{
+          content?: { parts?: Array<{ text?: string }> };
+          finishReason?: string;
+        }>;
+        usageMetadata?: {
+          promptTokenCount?: number;
+          candidatesTokenCount?: number;
+          totalTokenCount?: number;
+          thoughtsTokenCount?: number;
+          cachedContentTokenCount?: number;
+        };
+        error?: { status?: string; message?: string };
+      };
 
-  if (!resp.ok || body_.error) {
-    const message = `api-error status=${resp.status} ${body_.error?.status ?? ""} ${body_.error?.message ?? ""}`.slice(
-      0,
-      400,
-    );
-    throw new V6HtmlGenerationError(message, resp.status, parsed);
-  }
+      if (!resp.ok || body_.error) {
+        const message = `api-error status=${resp.status} ${body_.error?.status ?? ""} ${body_.error?.message ?? ""}`.slice(
+          0,
+          400,
+        );
+        throw new V6HtmlGenerationError(message, resp.status, parsed);
+      }
 
-  const candidate = body_.candidates?.[0];
-  const parts = candidate?.content?.parts ?? [];
-  const rawHtml = parts.map((p) => p.text ?? "").join("");
-  const html = stripMarkdownFences(rawHtml);
-  const usage = body_.usageMetadata ?? null;
+      const candidate = body_.candidates?.[0];
+      const parts = candidate?.content?.parts ?? [];
+      const rawHtml = parts.map((p) => p.text ?? "").join("");
+      const html = stripMarkdownFences(rawHtml);
+      const usage = body_.usageMetadata ?? null;
 
-  return {
-    model,
-    html,
-    rawHtml,
-    latencyMs,
-    finishReason: candidate?.finishReason ?? null,
-    usage: usage
-      ? {
-          promptTokenCount: usage.promptTokenCount ?? null,
-          candidatesTokenCount: usage.candidatesTokenCount ?? null,
-          totalTokenCount: usage.totalTokenCount ?? null,
-          thoughtsTokenCount: usage.thoughtsTokenCount ?? null,
-          cachedContentTokenCount: usage.cachedContentTokenCount ?? null,
-        }
-      : null,
-    finishedAt: new Date().toISOString(),
-  };
+      const result: V6HtmlGenResult = {
+        model,
+        html,
+        rawHtml,
+        latencyMs,
+        finishReason: candidate?.finishReason ?? null,
+        usage: usage
+          ? {
+              promptTokenCount: usage.promptTokenCount ?? null,
+              candidatesTokenCount: usage.candidatesTokenCount ?? null,
+              totalTokenCount: usage.totalTokenCount ?? null,
+              thoughtsTokenCount: usage.thoughtsTokenCount ?? null,
+              cachedContentTokenCount: usage.cachedContentTokenCount ?? null,
+            }
+          : null,
+        finishedAt: new Date().toISOString(),
+      };
+
+      return {
+        body: result,
+        outputText: rawHtml,
+        geminiUsage: usage,
+      };
+    },
+  );
 }
 
 /**

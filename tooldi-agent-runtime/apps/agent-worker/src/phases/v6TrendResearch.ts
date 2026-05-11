@@ -1,3 +1,5 @@
+import { traceLlmCall } from "@tooldi/agent-observability";
+
 import type { V6Usage } from "./v6HtmlGen.js";
 
 const GEMINI_REST_BASE = "https://generativelanguage.googleapis.com/v1beta";
@@ -119,6 +121,19 @@ export function createGeminiV6TrendResearcher(
 
   return {
     async research(input) {
+      return traceLlmCall(
+        {
+          name: "v6.trendResearch",
+          model: options.model,
+          provider: "google",
+          invocationParams: {
+            temperature: 0.3,
+            topP: 0.95,
+            maxOutputTokens: 2048,
+            grounding: "google_search",
+          },
+        },
+        async () => {
       const startedAt = Date.now();
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -208,7 +223,7 @@ export function createGeminiV6TrendResearcher(
             typeof citation.uri === "string" && citation.uri.length > 0,
           );
 
-        return {
+        const result: V6TrendBrief = {
           model: options.model,
           ...trend,
           searchQueries,
@@ -218,9 +233,16 @@ export function createGeminiV6TrendResearcher(
           usage: normalizeUsage(body.usageMetadata),
           generatedAt: new Date().toISOString(),
         };
+        return {
+          body: result,
+          outputText: text,
+          geminiUsage: body.usageMetadata ?? null,
+        };
       } finally {
         clearTimeout(timeout);
       }
+        },
+      );
     },
   };
 }

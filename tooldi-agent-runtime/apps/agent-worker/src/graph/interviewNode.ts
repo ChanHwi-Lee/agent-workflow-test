@@ -53,7 +53,7 @@ export function registerInterviewUserNode(
 ) {
   const { appendEventTask } = tasks;
 
-  return graph.addNode("interview_user", async (state) => {
+  return graph.addNode("interview_user", async (state, runnableConfig) => {
     if (!state.hydrated) {
       throw new Error("interview_user requires hydrated input");
     }
@@ -78,6 +78,7 @@ export function registerInterviewUserNode(
       prompt,
       canvas,
       config: llmConfig,
+      runnableConfig,
     });
     const questions: ReadonlyArray<InterviewQuestion> = questionsResult.questions;
 
@@ -129,6 +130,7 @@ export function registerInterviewUserNode(
         canvas,
         questions,
         config: llmConfig,
+        runnableConfig,
       });
       autoMs = autoResult.durationMs;
       autoUsage = null;
@@ -146,6 +148,7 @@ export function registerInterviewUserNode(
       questions,
       answers: matched,
       config: llmConfig,
+      runnableConfig,
     });
     const builtUserPrompt = buildInterviewUserPrompt({
       originalPrompt: prompt,

@@ -1,7 +1,10 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { RunJobEnvelope } from "@tooldi/agent-contracts";
+import type {
+  InterviewResumeJobPayload,
+  RunJobEnvelope,
+} from "@tooldi/agent-contracts";
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
 import {
   createWorkerGraphCheckpointer,
@@ -49,11 +52,7 @@ export interface BuildWorkerRuntimeOptions {
 export interface AgentWorkerRuntime extends ProcessRunJobDependencies {
   env: AgentWorkerEnv;
   processRunJob(job: RunJobEnvelope): Promise<ProcessRunJobResult>;
-  resumeRunJob(
-    runId: string,
-    attemptSeq: number,
-    answers: unknown,
-  ): Promise<ProcessRunJobResult>;
+  resumeRunJob(payload: InterviewResumeJobPayload): Promise<ProcessRunJobResult>;
   close(): Promise<void>;
 }
 
@@ -152,8 +151,17 @@ export async function buildWorkerRuntime(
     async processRunJob(job: RunJobEnvelope) {
       return processRunJob(job, runtime);
     },
-    async resumeRunJob(runId: string, attemptSeq: number, answers: unknown) {
-      return resumeRunJob({ runId, attemptSeq, answers }, runtime);
+    async resumeRunJob(payload: InterviewResumeJobPayload) {
+      return resumeRunJob(
+        {
+          runId: payload.runId,
+          traceId: payload.traceId,
+          attemptSeq: payload.attemptSeq,
+          answers: payload.answers,
+          queueJobId: payload.queueJobId,
+        },
+        runtime,
+      );
     },
     async close() {
       if (queueConsumer) {
@@ -178,7 +186,7 @@ export async function buildWorkerRuntime(
           await runtime.processRunJob(job);
         },
         resumeRunJob: async (payload) => {
-          await runtime.resumeRunJob(payload.runId, payload.attemptSeq, payload.answers);
+          await runtime.resumeRunJob(payload);
         },
       }));
   } catch (error) {

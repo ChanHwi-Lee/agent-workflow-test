@@ -1,5 +1,6 @@
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
 import type { ObjectStoreClient } from "@tooldi/agent-persistence";
+import { traceImageGenCall, traceLlmCall } from "@tooldi/agent-observability";
 
 import type { AgwAssetPublishClient } from "../clients/agentApiPublishClient.js";
 import type {
@@ -737,13 +738,53 @@ async function rerankWithVision(
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${input.env.v6AssetVisionModel}:generateContent?key=${encodeURIComponent(input.googleApiKey ?? "")}`;
-  const response = await postJson(url, {
-    contents: [{ role: "user", parts }],
-    generationConfig: {
-      temperature: 0,
-      response_mime_type: "application/json",
+  const response = await traceLlmCall(
+    {
+      name: "v6.asset.visionRerank",
+      model: input.env.v6AssetVisionModel,
+      provider: "google",
+      invocationParams: {
+        temperature: 0,
+        response_mime_type: "application/json",
+      },
+      tags: ["v6-asset", "vision"],
     },
-  }, input.env.v6AssetTimeoutMs);
+    async () => {
+      const resp = await postJson(
+        url,
+        {
+          contents: [{ role: "user", parts }],
+          generationConfig: {
+            temperature: 0,
+            response_mime_type: "application/json",
+          },
+        },
+        input.env.v6AssetTimeoutMs,
+      );
+      const usage = resp.usageMetadata;
+      const out = extractGeminiText(resp);
+      return {
+        body: resp,
+        ...(out ? { outputText: out } : {}),
+        geminiUsage: isObject(usage)
+          ? {
+              promptTokenCount:
+                typeof usage.promptTokenCount === "number"
+                  ? usage.promptTokenCount
+                  : null,
+              candidatesTokenCount:
+                typeof usage.candidatesTokenCount === "number"
+                  ? usage.candidatesTokenCount
+                  : null,
+              totalTokenCount:
+                typeof usage.totalTokenCount === "number"
+                  ? usage.totalTokenCount
+                  : null,
+            }
+          : null,
+      };
+    },
+  );
   const text = extractGeminiText(response);
   if (!text) {
     return { decision: "unresolved", rejectReason: "vision_rejected" };
@@ -988,33 +1029,134 @@ async function generateAndPersistAsset(
   };
 }
 
+// Gemini native image generation pricing — output-token-based, per
+// https://ai.google.dev/gemini-api/docs/pricing (verified 2026-05).
+//
+// 정확도 우선순위:
+//   1) 응답의 usageMetadata.candidatesTokenCount 가 있으면 그대로 사용.
+//   2) 없으면 실제 이미지 픽셀 크기에서 해상도 tier 추론 → 단가표.
+//
+// 토큰 단가는 모델별로 다르고 ($/1M output tokens), 출력 해상도(픽셀)별로
+// 토큰 수가 결정된다. fallback 단가표는 1K 기본 해상도 기준.
+const GEMINI_IMAGE_OUTPUT_PRICE_PER_1M_TOKENS: Record<string, number> = {
+  "gemini-3.1-flash-image-preview": 60,
+  "gemini-2.5-flash-image": 30,
+};
+// 해상도 → 출력 토큰 수 (Google 공식 변환표).
+//   0.5K (≤512²)  →  747 tokens
+//   1K  (≤1024²) → 1120 tokens
+//   2K  (≤2048²) → 1680 tokens
+//   4K  (>2048²) → 2520 tokens
+function resolveOutputTokensFromDimensions(width: number, height: number): number {
+  const longest = Math.max(width, height);
+  if (longest <= 512) return 747;
+  if (longest <= 1024) return 1120;
+  if (longest <= 2048) return 1680;
+  return 2520;
+}
+// Fallback per-image USD (1K 기본). 토큰 정보가 없을 때만 사용.
+const GEMINI_IMAGE_UNIT_COST_USD: Record<string, number> = {
+  "gemini-3.1-flash-image-preview": 0.067,
+  "gemini-2.5-flash-image": 0.039,
+  "gemini-2.0-flash-preview-image-generation": 0.039,
+  "imagen-3.0-generate-002": 0.04,
+  "imagen-3.0-fast-generate-001": 0.02,
+};
+
+function readGeminiOutputTokens(
+  response: Record<string, unknown>,
+): number | null {
+  const usage = isObject(response.usageMetadata)
+    ? response.usageMetadata
+    : isObject(response.usage_metadata)
+    ? response.usage_metadata
+    : null;
+  if (!usage) return null;
+  const candidates = usage.candidatesTokenCount ?? usage.candidates_token_count;
+  if (typeof candidates === "number" && candidates > 0) return candidates;
+  return null;
+}
+
 async function generateNativeGeminiImage(
   input: V6AssetResolverInput,
   selection: Extract<AssetSelection, { decision: "generate" }>,
 ): Promise<{ bytes: Uint8Array; mimeType: string }> {
+  const model = input.env.v6AssetGenerationModel;
   const prompt =
     `${selection.generationPrompt}\n` +
     `Aspect ratio: ${selection.generationOptions.aspectRatio}. ` +
     `Preferred output format: ${selection.generationOptions.outputFormat}.`;
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/` +
-    `${encodeURIComponent(input.env.v6AssetGenerationModel)}:generateContent` +
+    `${encodeURIComponent(model)}:generateContent` +
     `?key=${encodeURIComponent(input.googleApiKey ?? "")}`;
-  const response = await postJson(
-    url,
+  const unitCost = GEMINI_IMAGE_UNIT_COST_USD[model];
+  const tokenPrice = GEMINI_IMAGE_OUTPUT_PRICE_PER_1M_TOKENS[model];
+  return traceImageGenCall(
     {
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      name: "v6.asset.imageGen",
+      model,
+      provider: "google_genai",
+      prompt,
+      imageCount: 1,
+      ...(unitCost !== undefined ? { unitCostUsd: unitCost } : {}),
+      tags: ["v6-asset", "image-gen"],
+      extraMetadata: {
+        aspectRatio: selection.generationOptions.aspectRatio,
+        outputFormat: selection.generationOptions.outputFormat,
+      },
     },
-    input.env.v6AssetGenerationTimeoutMs,
+    async () => {
+      const response = await postJson(
+        url,
+        {
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        },
+        input.env.v6AssetGenerationTimeoutMs,
+      );
+      const image = extractGeminiInlineImage(response);
+      if (!image) {
+        throw new Error("Gemini generation returned no image");
+      }
+      const bytes = Buffer.from(image.base64, "base64");
+      const dims = readImageDimensions(bytes, { width: 1024, height: 1024 });
+      const reportedTokens = readGeminiOutputTokens(response);
+      const dimensionTokens = resolveOutputTokensFromDimensions(
+        dims.width,
+        dims.height,
+      );
+      const outputTokens = reportedTokens ?? dimensionTokens;
+      const tokenCost =
+        typeof tokenPrice === "number"
+          ? (outputTokens / 1_000_000) * tokenPrice
+          : undefined;
+      const fallbackCost =
+        typeof unitCost === "number" ? unitCost * 1 : undefined;
+      const totalCostUsd = tokenCost ?? fallbackCost;
+      const tokenSource: "usageMetadata" | "dimensions" | "fallback" =
+        reportedTokens !== null
+          ? "usageMetadata"
+          : tokenPrice !== undefined
+          ? "dimensions"
+          : "fallback";
+      return {
+        body: { bytes, mimeType: image.mimeType },
+        outputSummary: {
+          mimeType: image.mimeType,
+          bytes: bytes.length,
+          width: dims.width,
+          height: dims.height,
+          tokenSource,
+          ...(typeof reportedTokens === "number"
+            ? { reportedTokens }
+            : {}),
+          aspectRatio: selection.generationOptions.aspectRatio,
+        },
+        outputTokens,
+        ...(totalCostUsd !== undefined ? { totalCostUsd } : {}),
+      };
+    },
   );
-  const image = extractGeminiInlineImage(response);
-  if (!image) {
-    throw new Error("Gemini generation returned no image");
-  }
-  return {
-    bytes: Buffer.from(image.base64, "base64"),
-    mimeType: image.mimeType,
-  };
 }
 
 function extractGeminiInlineImage(
