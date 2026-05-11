@@ -90,8 +90,9 @@ async function resolveOne(
 ): Promise<V6ImageCommand> {
   const restore = installFetchMock(keywords);
   try {
-    const commands = await resolveV6PlaceholderAssets({
+    const result = await resolveV6PlaceholderAssets({
       runId: "run-asset-test",
+      attemptSeq: 0,
       userPrompt: "이미지 중심의 신제품 무선 헤드폰 광고 배너",
       canvasWidth: 1200,
       canvasHeight: 628,
@@ -99,7 +100,7 @@ async function resolveOne(
       env: BASE_ENV,
       commands: [HEADPHONE_PLACEHOLDER as V6PrimitiveCommand],
     });
-    return commands[0] as V6ImageCommand;
+    return result.commands[0] as V6ImageCommand;
   } finally {
     restore();
   }
@@ -242,8 +243,9 @@ test("resolveV6PlaceholderAssets는 vision rerank가 generate를 선택하고 pu
   };
 
   try {
-    const commands = await resolveV6PlaceholderAssets({
+    const result = await resolveV6PlaceholderAssets({
       runId: "run-vision-generate",
+      attemptSeq: 0,
       userPrompt: "이미지 중심의 신제품 무선 헤드폰 광고 배너",
       canvasWidth: 1200,
       canvasHeight: 628,
@@ -258,7 +260,7 @@ test("resolveV6PlaceholderAssets는 vision rerank가 generate를 선택하고 pu
       },
       commands: [HEADPHONE_PLACEHOLDER as V6PrimitiveCommand],
     });
-    const resolved = commands[0] as V6ImageCommand;
+    const resolved = result.commands[0] as V6ImageCommand;
     assert.equal(visionRerankCalls, 1);
     assert.equal(imageGenCalls, 1);
     assert.equal(publishedRequests.length, 1);
@@ -321,8 +323,9 @@ test("resolveV6PlaceholderAssets는 generation mode에서 후보가 없으면 Ge
   };
 
   try {
-    const commands = await resolveV6PlaceholderAssets({
+    const result = await resolveV6PlaceholderAssets({
       runId: "run-generated-test",
+      attemptSeq: 0,
       userPrompt: "이미지 중심의 신제품 무선 헤드폰 광고 배너",
       canvasWidth: 1200,
       canvasHeight: 628,
@@ -335,7 +338,7 @@ test("resolveV6PlaceholderAssets는 generation mode에서 후보가 없으면 Ge
       },
       commands: [HEADPHONE_PLACEHOLDER as V6PrimitiveCommand],
     });
-    const resolved = commands[0] as V6ImageCommand;
+    const resolved = result.commands[0] as V6ImageCommand;
     assert.equal(resolved.unresolvedPlaceholder, undefined);
     assert.equal(resolved.generatedAssetProvider, "gemini");
     assert.equal(resolved.generatedAssetMethod, "gemini-native-generation");
@@ -350,4 +353,159 @@ test("resolveV6PlaceholderAssets는 generation mode에서 후보가 없으면 Ge
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("resolveV6PlaceholderAssets는 placeholder 별 후보 + decision 을 resolutionLog 에 기록한다", async () => {
+  const restore = installFetchMock(["헤드폰", "무선", "제품"]);
+  try {
+    const result = await resolveV6PlaceholderAssets({
+      runId: "run-log-selected",
+      attemptSeq: 0,
+      userPrompt: "이미지 중심의 신제품 무선 헤드폰 광고 배너",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      googleApiKey: null,
+      env: BASE_ENV,
+      commands: [HEADPHONE_PLACEHOLDER as V6PrimitiveCommand],
+    });
+    assert.equal(result.resolutionLog.runId, "run-log-selected");
+    assert.equal(result.resolutionLog.attemptSeq, 0);
+    assert.equal(result.resolutionLog.version, 1);
+    assert.equal(result.resolutionLog.placeholders.length, 1);
+    const placeholder = result.resolutionLog.placeholders[0];
+    assert.ok(placeholder);
+    assert.equal(placeholder.sourceSerial, 1);
+    assert.equal(placeholder.placeholderHint, "premium wireless headphones");
+    assert.equal(placeholder.family, "photo");
+    assert.equal(placeholder.decision, "selected");
+    assert.equal(placeholder.candidates.length, 1);
+    assert.equal(placeholder.candidates[0]?.selected, true);
+    assert.equal(placeholder.selectedCandidateRank, 1);
+    assert.equal(placeholder.fallbackGeneratedAssetId, null);
+    assert.equal(result.generatedLog.items.length, 0);
+  } finally {
+    restore();
+  }
+});
+
+test("resolveV6PlaceholderAssets는 keyword reject 시 unresolved 결정과 후보를 resolutionLog 에 남긴다", async () => {
+  const restore = installFetchMock(["여성", "광고모델", "beauty"]);
+  try {
+    const result = await resolveV6PlaceholderAssets({
+      runId: "run-log-unresolved",
+      attemptSeq: 1,
+      userPrompt: "이미지 중심의 신제품 무선 헤드폰 광고 배너",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      googleApiKey: null,
+      env: BASE_ENV,
+      commands: [HEADPHONE_PLACEHOLDER as V6PrimitiveCommand],
+    });
+    assert.equal(result.resolutionLog.placeholders.length, 1);
+    const placeholder = result.resolutionLog.placeholders[0];
+    assert.ok(placeholder);
+    assert.equal(placeholder.decision, "unresolved");
+    assert.equal(placeholder.candidates.length, 1);
+    assert.equal(placeholder.candidates[0]?.selected, false);
+    assert.equal(placeholder.selectedCandidateRank, null);
+    assert.equal(result.generatedLog.items.length, 0);
+  } finally {
+    restore();
+  }
+});
+
+test("resolveV6PlaceholderAssets는 Gemini 발사 1건이면 generatedLog.items 에 prompt/latency/asset 정보를 기록한다", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input: string | URL | Request) => {
+    const url = String(input);
+    if (url === BASE_ENV.v6AssetEmbeddingEndpoint) {
+      return Response.json({ vectors: [[0.1, 0.2, 0.3]] });
+    }
+    if (url.includes("/collections/photos/points/query")) {
+      return Response.json({ result: { points: [] } });
+    }
+    if (url.includes(":generateContent")) {
+      return Response.json({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: "image/png",
+                    data: fakePngBase64(640, 480),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  const mockPublishClient = {
+    async publishAsset() {
+      return {
+        publicUrl:
+          "https://cdn.tooldi.com/order_attach/AI/0/1/upload_file/log-gen-test-0.png",
+        fileName: "log-gen-test-0.png",
+        userFileSerial: "9001",
+      };
+    },
+  };
+
+  try {
+    const result = await resolveV6PlaceholderAssets({
+      runId: "run-log-generated",
+      attemptSeq: 2,
+      userPrompt: "이미지 중심의 신제품 무선 헤드폰 광고 배너",
+      canvasWidth: 1200,
+      canvasHeight: 628,
+      googleApiKey: "test-google-api-key",
+      publishClient: mockPublishClient,
+      env: {
+        ...BASE_ENV,
+        v6AssetGenerationMode: "enabled",
+        v6AssetGenerationModel: "gemini-2.5-flash-image",
+      },
+      commands: [HEADPHONE_PLACEHOLDER as V6PrimitiveCommand],
+    });
+    assert.equal(result.generatedLog.runId, "run-log-generated");
+    assert.equal(result.generatedLog.attemptSeq, 2);
+    assert.equal(result.generatedLog.items.length, 1);
+    const item = result.generatedLog.items[0];
+    assert.ok(item);
+    assert.equal(item.placeholderHint, "premium wireless headphones");
+    assert.equal(item.model, "gemini-2.5-flash-image");
+    assert.equal(typeof item.prompt, "string");
+    assert.ok(item.prompt.length > 0);
+    assert.ok(item.latencyMs >= 0);
+    assert.equal(item.outputAssetKey, "9001");
+    assert.equal(
+      item.outputArtifactUrl,
+      "https://cdn.tooldi.com/order_attach/AI/0/1/upload_file/log-gen-test-0.png",
+    );
+    assert.ok(item.fileSizeBytes > 0);
+    assert.equal(result.resolutionLog.placeholders.length, 1);
+    assert.equal(result.resolutionLog.placeholders[0]?.decision, "generate");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("resolveV6PlaceholderAssets 는 rag mode=off 일 때 빈 resolutionLog/generatedLog 를 반환한다", async () => {
+  const result = await resolveV6PlaceholderAssets({
+    runId: "run-log-off",
+    attemptSeq: 0,
+    userPrompt: "이미지 중심의 신제품 무선 헤드폰 광고 배너",
+    canvasWidth: 1200,
+    canvasHeight: 628,
+    googleApiKey: null,
+    env: { ...BASE_ENV, v6AssetRagMode: "off" as const },
+    commands: [HEADPHONE_PLACEHOLDER as V6PrimitiveCommand],
+  });
+  assert.equal(result.resolutionLog.placeholders.length, 0);
+  assert.equal(result.generatedLog.items.length, 0);
 });

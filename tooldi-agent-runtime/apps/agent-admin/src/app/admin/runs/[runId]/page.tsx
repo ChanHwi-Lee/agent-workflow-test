@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation";
 
 import { RunDetailHeader } from "@/components/RunDetailHeader";
+import { SectionAssetResolution } from "@/components/sections/SectionAssetResolution";
+import { SectionFinalCommands } from "@/components/sections/SectionFinalCommands";
 import { SectionHtmlGeneration } from "@/components/sections/SectionHtmlGeneration";
 import { SectionPhaseTimeline } from "@/components/sections/SectionPhaseTimeline";
 import { SectionRawEvents } from "@/components/sections/SectionRawEvents";
 import { SectionUserInput } from "@/components/sections/SectionUserInput";
 import { adminApi } from "@/lib/adminApi";
+import { findArtifactKey } from "@/lib/findArtifactKey";
 
 export const dynamic = "force-dynamic";
 
@@ -28,14 +31,22 @@ export default async function RunDetailPage({
     }
     throw err;
   }
-  const htmlKey =
-    detail.artifactRefs.find(
-      (r) => r.kind === "debug-v6-html-preview" && r.exists,
-    )?.key ?? null;
-  const reportKey =
-    detail.artifactRefs.find(
-      (r) => r.kind === "v6-render-quality-report" && r.exists,
-    )?.key ?? null;
+
+  const htmlKey = findArtifactKey(detail.artifactRefs, "debug-v6-html-preview");
+  const reportKey = findArtifactKey(
+    detail.artifactRefs,
+    "v6-render-quality-report",
+  );
+  const resolutionKey = findArtifactKey(
+    detail.artifactRefs,
+    "v6-asset-resolution",
+  );
+  const generatedKey = findArtifactKey(
+    detail.artifactRefs,
+    "v6-asset-generated",
+  );
+  const planKey = findArtifactKey(detail.artifactRefs, "executable-plan");
+
   return (
     <div>
       <RunDetailHeader detail={detail} />
@@ -47,10 +58,13 @@ export default async function RunDetailPage({
           htmlKey={htmlKey}
           reportKey={reportKey}
         />
+        <SectionAssetResolution
+          runId={detail.run.runId}
+          resolutionKey={resolutionKey}
+          generatedKey={generatedKey}
+        />
+        <SectionFinalCommands runId={detail.run.runId} artifactKey={planKey} />
         <SectionRawEvents events={detail.recentEvents} />
-        <p className="text-xs text-zinc-400">
-          §G / §H 는 다음 task 에서 추가됩니다.
-        </p>
       </main>
     </div>
   );

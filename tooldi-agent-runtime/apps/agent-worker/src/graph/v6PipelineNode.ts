@@ -509,8 +509,13 @@ export function registerV6PipelineNode(
       workerInternalToken: dependencies.env.agentWorkerInternalToken,
     });
 
-    const resolvedV6Commands = await resolveV6PlaceholderAssets({
+    const {
+      commands: resolvedV6Commands,
+      resolutionLog,
+      generatedLog,
+    } = await resolveV6PlaceholderAssets({
       runId: state.job.runId,
+      attemptSeq: state.job.attemptSeq,
       userPrompt,
       canvasWidth,
       canvasHeight,
@@ -520,6 +525,62 @@ export function registerV6PipelineNode(
       env: dependencies.env,
       commands: v6Result.commands,
     });
+
+    // best-effort capture: admin observability only — must not block draft.
+    // Mirror the unrestricted-html preview pattern at v6PipelineNode.ts:582-624.
+    try {
+      await persistArtifactTask(
+        `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/v6-asset-resolution.json`,
+        resolutionLog,
+        {
+          artifactKind: "v6-asset-resolution",
+          runId: state.job.runId,
+          traceId: state.job.traceId,
+          attemptSeq: String(state.job.attemptSeq),
+        },
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown";
+      const warnEvent = await appendEventTask(state.job.runId, {
+        traceId: state.job.traceId,
+        attempt: state.job.attemptSeq,
+        queueJobId: state.job.queueJobId,
+        event: {
+          type: "log",
+          level: "warn",
+          message: `[admin-capture] v6-asset-resolution persist failed: ${message.slice(0, 220)}`,
+        },
+      });
+      cooperativeStopRequested ||= warnEvent.cancelRequested;
+    }
+
+    if (generatedLog.items.length > 0) {
+      try {
+        await persistArtifactTask(
+          `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/v6-asset-generated.json`,
+          generatedLog,
+          {
+            artifactKind: "v6-asset-generated",
+            runId: state.job.runId,
+            traceId: state.job.traceId,
+            attemptSeq: String(state.job.attemptSeq),
+          },
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "unknown";
+        const warnEvent = await appendEventTask(state.job.runId, {
+          traceId: state.job.traceId,
+          attempt: state.job.attemptSeq,
+          queueJobId: state.job.queueJobId,
+          event: {
+            type: "log",
+            level: "warn",
+            message: `[admin-capture] v6-asset-generated persist failed: ${message.slice(0, 220)}`,
+          },
+        });
+        cooperativeStopRequested ||= warnEvent.cancelRequested;
+      }
+    }
 
     const renderQualityReportRef = await persistArtifactTask(
       `runs/${state.job.runId}/attempts/${state.job.attemptSeq}/v6-render-quality-report.json`,

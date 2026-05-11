@@ -1,4 +1,11 @@
 import type { AgentWorkerEnv } from "@tooldi/agent-config";
+import type {
+  V6AssetCandidate as V6AssetCandidateLog,
+  V6AssetGenerationItem,
+  V6AssetGenerationLog,
+  V6AssetResolutionLog,
+  V6AssetResolutionPlaceholder,
+} from "@tooldi/agent-contracts";
 import type { ObjectStoreClient } from "@tooldi/agent-persistence";
 import { traceImageGenCall, traceLlmCall } from "@tooldi/agent-observability";
 
@@ -21,6 +28,7 @@ class AssetPublishError extends Error {
 
 export interface V6AssetResolverInput {
   readonly runId: string;
+  readonly attemptSeq: number;
   readonly userPrompt: string;
   readonly canvasWidth: number;
   readonly canvasHeight: number;
@@ -116,6 +124,20 @@ interface GeneratedAssetResult {
   readonly generatedAssetPrompt: string;
   readonly generatedAssetMethod: "gemini-native-generation";
   readonly userFileSerial: string;
+  readonly latencyMs: number;
+  readonly fileSizeBytes: number;
+}
+
+export interface V6AssetResolverResult {
+  readonly commands: ReadonlyArray<V6PrimitiveCommand>;
+  readonly resolutionLog: V6AssetResolutionLog;
+  readonly generatedLog: V6AssetGenerationLog;
+}
+
+interface ResolveOneResult {
+  readonly command: V6ImageCommand;
+  readonly placeholder: V6AssetResolutionPlaceholder;
+  readonly generation: V6AssetGenerationItem | null;
 }
 
 interface QdrantPoint {
@@ -232,25 +254,43 @@ const ROLE_SUFFIX: Record<"background" | "hero" | "thumbnail", string> = {
 
 export async function resolveV6PlaceholderAssets(
   input: V6AssetResolverInput,
-): Promise<ReadonlyArray<V6PrimitiveCommand>> {
+): Promise<V6AssetResolverResult> {
+  const resolutionLog: V6AssetResolutionLog = {
+    version: 1,
+    runId: input.runId,
+    attemptSeq: input.attemptSeq,
+    placeholders: [],
+  };
+  const generatedLog: V6AssetGenerationLog = {
+    version: 1,
+    runId: input.runId,
+    attemptSeq: input.attemptSeq,
+    items: [],
+  };
+
   if (input.env.v6AssetRagMode === "off") {
-    return input.commands;
+    return { commands: input.commands, resolutionLog, generatedLog };
   }
 
   const contexts = buildPlaceholderContexts(input);
   if (contexts.length === 0) {
-    return input.commands;
+    return { commands: input.commands, resolutionLog, generatedLog };
   }
 
   const next = [...input.commands];
   for (const context of contexts) {
-    const resolved =
-      input.env.v6AssetRagMode === "enabled"
-        ? await resolveOne(input, context)
-        : context.command;
-    next[context.index] = resolved;
+    if (input.env.v6AssetRagMode !== "enabled") {
+      next[context.index] = context.command;
+      continue;
+    }
+    const resolved = await resolveOne(input, context);
+    next[context.index] = resolved.command;
+    resolutionLog.placeholders.push(resolved.placeholder);
+    if (resolved.generation) {
+      generatedLog.items.push(resolved.generation);
+    }
   }
-  return next;
+  return { commands: next, resolutionLog, generatedLog };
 }
 
 function buildPlaceholderContexts(
@@ -402,7 +442,7 @@ function usefulNearbyText(items: readonly string[]): string[] {
 async function resolveOne(
   input: V6AssetResolverInput,
   context: PlaceholderContext,
-): Promise<V6ImageCommand> {
+): Promise<ResolveOneResult> {
   try {
     const vector = await embedText(input, context.searchText);
     const points = await queryQdrant(input, context.family, vector);
@@ -414,47 +454,196 @@ async function resolveOne(
           context,
           defaultGenerationSelection(context, "no_match"),
         );
-        return generated
-          ? applyGeneratedAsset(context, generated, {
+        if (generated) {
+          const selectionForLog = {
+            decision: "generate" as const,
+            confidence: "low" as SelectionConfidence,
+            reason: "Qdrant 후보가 없어 Gemini 생성 fallback을 사용했다.",
+          };
+          return {
+            command: applyGeneratedAsset(context, generated, selectionForLog),
+            placeholder: buildResolutionPlaceholderLog(context, [], {
               decision: "generate",
-              confidence: "low",
-              reason: "Qdrant 후보가 없어 Gemini 생성 fallback을 사용했다.",
-            })
-          : unresolved(context, "generation_failed");
+              decisionReason: selectionForLog.reason,
+              selectedCandidateRank: null,
+              fallbackGeneratedAssetId: generated.generatedAssetId,
+            }),
+            generation: buildGenerationItemLog(context, generated),
+          };
+        }
+        return {
+          command: unresolved(context, "generation_failed"),
+          placeholder: buildResolutionPlaceholderLog(context, [], {
+            decision: "unresolved",
+            decisionReason: "generation_failed",
+            selectedCandidateRank: null,
+            fallbackGeneratedAssetId: null,
+          }),
+          generation: null,
+        };
       }
-      return unresolved(context, "no_match");
+      return {
+        command: unresolved(context, "no_match"),
+        placeholder: buildResolutionPlaceholderLog(context, [], {
+          decision: "unresolved",
+          decisionReason: "no_match",
+          selectedCandidateRank: null,
+          fallbackGeneratedAssetId: null,
+        }),
+        generation: null,
+      };
     }
     const selection = await selectCandidate(input, context, candidates);
     if (selection.decision === "selected") {
-      return applyCandidate(context, selection.candidate, selection);
+      const selectedRank = selection.candidate.qdrantRank;
+      return {
+        command: applyCandidate(context, selection.candidate, selection),
+        placeholder: buildResolutionPlaceholderLog(
+          context,
+          candidates,
+          {
+            decision: "selected",
+            decisionReason: selection.reason ?? selection.method,
+            selectedCandidateRank: selectedRank,
+            fallbackGeneratedAssetId: null,
+          },
+          selectedRank,
+        ),
+        generation: null,
+      };
     }
     if (selection.decision === "generate") {
       const generated = await generateAndPersistAsset(input, context, selection);
-      return generated
-        ? applyGeneratedAsset(context, generated, selection)
-        : unresolved(context, "generation_failed", selection);
+      if (generated) {
+        return {
+          command: applyGeneratedAsset(context, generated, selection),
+          placeholder: buildResolutionPlaceholderLog(context, candidates, {
+            decision: "generate",
+            decisionReason:
+              selection.reason ?? "vision rerank chose Gemini generation",
+            selectedCandidateRank: null,
+            fallbackGeneratedAssetId: generated.generatedAssetId,
+          }),
+          generation: buildGenerationItemLog(context, generated),
+        };
+      }
+      return {
+        command: unresolved(context, "generation_failed", selection),
+        placeholder: buildResolutionPlaceholderLog(context, candidates, {
+          decision: "unresolved",
+          decisionReason: "generation_failed",
+          selectedCandidateRank: null,
+          fallbackGeneratedAssetId: null,
+        }),
+        generation: null,
+      };
     }
     if (!canGenerateAsset(input)) {
-      return unresolved(context, selection.rejectReason);
+      return {
+        command: unresolved(context, selection.rejectReason),
+        placeholder: buildResolutionPlaceholderLog(context, candidates, {
+          decision: "unresolved",
+          decisionReason: selection.rejectReason,
+          selectedCandidateRank: null,
+          fallbackGeneratedAssetId: null,
+        }),
+        generation: null,
+      };
     }
     const generated = await generateAndPersistAsset(
       input,
       context,
       defaultGenerationSelection(context, selection.rejectReason),
     );
-    return generated
-      ? applyGeneratedAsset(context, generated, {
+    if (generated) {
+      const fallbackReason =
+        selection.reason ??
+        "Qdrant 후보가 placeholder와 맞지 않아 Gemini 생성 fallback을 사용했다.";
+      return {
+        command: applyGeneratedAsset(context, generated, {
           decision: "generate",
           confidence: selection.confidence,
-          reason:
-            selection.reason ??
-            "Qdrant 후보가 placeholder와 맞지 않아 Gemini 생성 fallback을 사용했다.",
-        })
-      : unresolved(context, "generation_failed", selection);
+          reason: fallbackReason,
+        }),
+        placeholder: buildResolutionPlaceholderLog(context, candidates, {
+          decision: "generate",
+          decisionReason: fallbackReason,
+          selectedCandidateRank: null,
+          fallbackGeneratedAssetId: generated.generatedAssetId,
+        }),
+        generation: buildGenerationItemLog(context, generated),
+      };
+    }
+    return {
+      command: unresolved(context, "generation_failed", selection),
+      placeholder: buildResolutionPlaceholderLog(context, candidates, {
+        decision: "unresolved",
+        decisionReason: "generation_failed",
+        selectedCandidateRank: null,
+        fallbackGeneratedAssetId: null,
+      }),
+      generation: null,
+    };
   } catch (err) {
     if (err instanceof AssetPublishError) throw err;
-    return unresolved(context, "resolver_failed");
+    return {
+      command: unresolved(context, "resolver_failed"),
+      placeholder: buildResolutionPlaceholderLog(context, [], {
+        decision: "unresolved",
+        decisionReason: "resolver_failed",
+        selectedCandidateRank: null,
+        fallbackGeneratedAssetId: null,
+      }),
+      generation: null,
+    };
   }
+}
+
+function buildResolutionPlaceholderLog(
+  context: PlaceholderContext,
+  candidates: readonly AssetCandidate[],
+  decision: {
+    decision: V6AssetResolutionPlaceholder["decision"];
+    decisionReason: string;
+    selectedCandidateRank: number | null;
+    fallbackGeneratedAssetId: string | null;
+  },
+  selectedRank?: number,
+): V6AssetResolutionPlaceholder {
+  const candidateLogs: V6AssetCandidateLog[] = candidates.map((c) => ({
+    rank: c.qdrantRank,
+    qdrantScore: c.qdrantScore,
+    originKey: c.originKey ?? c.srcKey,
+    srcUrl: c.thumbUrl || c.srcUrl,
+    selected:
+      typeof selectedRank === "number" && selectedRank === c.qdrantRank,
+    rejectReason: null,
+  }));
+  return {
+    sourceSerial: context.command.source.serial,
+    placeholderHint: context.hint,
+    family: context.family,
+    candidates: candidateLogs,
+    decision: decision.decision,
+    decisionReason: decision.decisionReason,
+    selectedCandidateRank: decision.selectedCandidateRank,
+    fallbackGeneratedAssetId: decision.fallbackGeneratedAssetId,
+  };
+}
+
+function buildGenerationItemLog(
+  context: PlaceholderContext,
+  generated: GeneratedAssetResult,
+): V6AssetGenerationItem {
+  return {
+    placeholderHint: context.hint,
+    model: generated.generatedAssetModel,
+    prompt: generated.generatedAssetPrompt,
+    latencyMs: generated.latencyMs,
+    outputAssetKey: generated.userFileSerial || generated.generatedAssetId,
+    outputArtifactUrl: generated.srcUrl,
+    fileSizeBytes: generated.fileSizeBytes,
+  };
 }
 
 async function embedText(
@@ -989,11 +1178,13 @@ async function generateAndPersistAsset(
   if (!canGenerateAsset(input) || !input.publishClient) return null;
 
   let generated: { bytes: Uint8Array; mimeType: string };
+  const generationStartedAt = Date.now();
   try {
     generated = await generateNativeGeminiImage(input, selection);
   } catch {
     return null;
   }
+  const latencyMs = Date.now() - generationStartedAt;
 
   const extension = extensionForMimeType(generated.mimeType);
   let result: Awaited<ReturnType<typeof input.publishClient.publishAsset>>;
@@ -1026,6 +1217,8 @@ async function generateAndPersistAsset(
     generatedAssetPrompt: selection.generationPrompt,
     generatedAssetMethod: "gemini-native-generation",
     userFileSerial: result.userFileSerial,
+    latencyMs,
+    fileSizeBytes: generated.bytes.byteLength,
   };
 }
 
