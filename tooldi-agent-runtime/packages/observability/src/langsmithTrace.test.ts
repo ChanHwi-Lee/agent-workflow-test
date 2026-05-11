@@ -156,6 +156,55 @@ test("traceImageGenCall — 출력 trace 에 raw bytes / __body 가 새지 않�
   }
 });
 
+test("traceImageGenCall — inputTokens/outputTokens 가 모두 usage_metadata 에 기록된다", async () => {
+  const { captures, restore } = installFetchInterceptor();
+  try {
+    const fakeBody = {
+      bytes: Buffer.from([0xff]),
+      mimeType: "image/jpeg",
+    };
+    const returned = await traceImageGenCall(
+      {
+        name: "test.image_gen_with_input",
+        model: "gemini-3.1-flash-image-preview",
+        prompt: "a poster",
+        imageCount: 1,
+      },
+      async () => ({
+        body: fakeBody,
+        outputTokens: 1506,
+        inputTokens: 117,
+        // input cost ($0.25/1M × 117) + output cost ($60/1M × 1506)
+        totalCostUsd: (117 * 0.25 + 1506 * 60) / 1_000_000,
+        outputSummary: { foo: 1 },
+      }),
+    );
+    assert.equal(returned, fakeBody);
+    await flushAllPendingTraces();
+
+    // 가로챈 페이로드 중 usage_metadata 가 input_tokens/output_tokens/total_tokens
+    // 모두 비0 으로 들어가 있는 것이 적어도 하나 있어야 한다.
+    let sawCorrectUsage = false;
+    for (const cap of captures) {
+      if (!cap.bodyText) continue;
+      // input_tokens 117, output_tokens 1506, total 1623 인지 검증.
+      if (
+        /"input_tokens"\s*:\s*117/.test(cap.bodyText) &&
+        /"output_tokens"\s*:\s*1506/.test(cap.bodyText) &&
+        /"total_tokens"\s*:\s*1623/.test(cap.bodyText)
+      ) {
+        sawCorrectUsage = true;
+      }
+    }
+    assert.ok(
+      sawCorrectUsage,
+      "expected usage_metadata with input_tokens=117 / output_tokens=1506 / total_tokens=1623",
+    );
+  } finally {
+    restore();
+  }
+});
+
 test("traceLlmCall — 출력 trace 에 __body 가 새지 않는다", async () => {
   const { captures, restore } = installFetchInterceptor();
   try {

@@ -1222,18 +1222,25 @@ async function generateAndPersistAsset(
   };
 }
 
-// Gemini native image generation pricing — output-token-based, per
+// Gemini native image generation pricing — token-based, per
 // https://ai.google.dev/gemini-api/docs/pricing (verified 2026-05).
 //
 // 정확도 우선순위:
-//   1) 응답의 usageMetadata.candidatesTokenCount 가 있으면 그대로 사용.
+//   1) 응답의 usageMetadata.candidatesTokenCount / promptTokenCount 가 있으면 그대로 사용.
 //   2) 없으면 실제 이미지 픽셀 크기에서 해상도 tier 추론 → 단가표.
 //
-// 토큰 단가는 모델별로 다르고 ($/1M output tokens), 출력 해상도(픽셀)별로
+// 토큰 단가는 모델별로 다르고 ($/1M tokens), 출력 해상도(픽셀)별로
 // 토큰 수가 결정된다. fallback 단가표는 1K 기본 해상도 기준.
+//
+// 입력(text prompt) 도 별도 과금됨 ($0.25/1M for gemini-3.1-flash-image-preview).
+// AI Studio 로그에서 promptTokenCount 가 표기되는 것이 그 증거.
 const GEMINI_IMAGE_OUTPUT_PRICE_PER_1M_TOKENS: Record<string, number> = {
   "gemini-3.1-flash-image-preview": 60,
   "gemini-2.5-flash-image": 30,
+};
+const GEMINI_IMAGE_INPUT_PRICE_PER_1M_TOKENS: Record<string, number> = {
+  "gemini-3.1-flash-image-preview": 0.25,
+  "gemini-2.5-flash-image": 0.075,
 };
 // 해상도 → 출력 토큰 수 (Google 공식 변환표).
 //   0.5K (≤512²)  →  747 tokens
@@ -1270,6 +1277,20 @@ function readGeminiOutputTokens(
   return null;
 }
 
+function readGeminiPromptTokens(
+  response: Record<string, unknown>,
+): number | null {
+  const usage = isObject(response.usageMetadata)
+    ? response.usageMetadata
+    : isObject(response.usage_metadata)
+    ? response.usage_metadata
+    : null;
+  if (!usage) return null;
+  const prompt = usage.promptTokenCount ?? usage.prompt_token_count;
+  if (typeof prompt === "number" && prompt >= 0) return prompt;
+  return null;
+}
+
 async function generateNativeGeminiImage(
   input: V6AssetResolverInput,
   selection: Extract<AssetSelection, { decision: "generate" }>,
@@ -1285,6 +1306,7 @@ async function generateNativeGeminiImage(
     `?key=${encodeURIComponent(input.googleApiKey ?? "")}`;
   const unitCost = GEMINI_IMAGE_UNIT_COST_USD[model];
   const tokenPrice = GEMINI_IMAGE_OUTPUT_PRICE_PER_1M_TOKENS[model];
+  const inputTokenPrice = GEMINI_IMAGE_INPUT_PRICE_PER_1M_TOKENS[model];
   return traceImageGenCall(
     {
       name: "v6.asset.imageGen",
@@ -1314,18 +1336,26 @@ async function generateNativeGeminiImage(
       const bytes = Buffer.from(image.base64, "base64");
       const dims = readImageDimensions(bytes, { width: 1024, height: 1024 });
       const reportedTokens = readGeminiOutputTokens(response);
+      const reportedInputTokens = readGeminiPromptTokens(response);
       const dimensionTokens = resolveOutputTokensFromDimensions(
         dims.width,
         dims.height,
       );
       const outputTokens = reportedTokens ?? dimensionTokens;
-      const tokenCost =
+      const inputTokens = reportedInputTokens ?? 0;
+      const outputCost =
         typeof tokenPrice === "number"
           ? (outputTokens / 1_000_000) * tokenPrice
           : undefined;
+      const inputCost =
+        typeof inputTokenPrice === "number" && inputTokens > 0
+          ? (inputTokens / 1_000_000) * inputTokenPrice
+          : 0;
       const fallbackCost =
         typeof unitCost === "number" ? unitCost * 1 : undefined;
-      const totalCostUsd = tokenCost ?? fallbackCost;
+      // token 단가가 있으면 input + output 합산. 아니면 per-image flat fallback.
+      const totalCostUsd =
+        outputCost !== undefined ? outputCost + inputCost : fallbackCost;
       const tokenSource: "usageMetadata" | "dimensions" | "fallback" =
         reportedTokens !== null
           ? "usageMetadata"
@@ -1343,9 +1373,13 @@ async function generateNativeGeminiImage(
           ...(typeof reportedTokens === "number"
             ? { reportedTokens }
             : {}),
+          ...(typeof reportedInputTokens === "number"
+            ? { reportedInputTokens }
+            : {}),
           aspectRatio: selection.generationOptions.aspectRatio,
         },
         outputTokens,
+        inputTokens,
         ...(totalCostUsd !== undefined ? { totalCostUsd } : {}),
       };
     },

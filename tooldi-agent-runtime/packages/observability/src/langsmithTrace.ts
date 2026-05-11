@@ -328,13 +328,22 @@ export interface ImageGenResult<T> {
    * Override the per-call cost (USD) computed dynamically (e.g., from the
    * Gemini response's actual output token count or image dimensions).
    * Falls back to options.unitCostUsd × options.imageCount when omitted.
+   * Should include BOTH input-text token cost AND output-image token cost
+   * when the provider bills them separately (e.g. Gemini image models bill
+   * text input at $0.25/1M and image output at $60/1M for nano-banana 2).
    */
   readonly totalCostUsd?: number;
   /**
-   * Output tokens reported by the provider (Gemini billing input).
+   * Output tokens reported by the provider (Gemini billing output).
    * Recorded as usage_metadata.output_tokens for visibility.
    */
   readonly outputTokens?: number;
+  /**
+   * Input (prompt) tokens reported by the provider. Recorded as
+   * usage_metadata.input_tokens. Image generation models still bill text
+   * prompts separately, so we record them even though they're small.
+   */
+  readonly inputTokens?: number;
 }
 
 export async function traceImageGenCall<T>(
@@ -363,6 +372,8 @@ export async function traceImageGenCall<T>(
           : fallbackCost;
       const outputTokens =
         typeof result.outputTokens === "number" ? result.outputTokens : 0;
+      const inputTokens =
+        typeof result.inputTokens === "number" ? result.inputTokens : 0;
       return {
         summary: {
           model: input.model,
@@ -374,9 +385,9 @@ export async function traceImageGenCall<T>(
         ...(totalCost !== undefined
           ? {
               usage_metadata: {
-                input_tokens: 0,
+                input_tokens: inputTokens,
                 output_tokens: outputTokens,
-                total_tokens: outputTokens,
+                total_tokens: inputTokens + outputTokens,
                 total_cost: totalCost,
               },
             }
