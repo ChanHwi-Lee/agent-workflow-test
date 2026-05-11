@@ -7,9 +7,6 @@ import {
   type AdminRunDetailParams,
 } from "@tooldi/agent-contracts";
 
-import { AdminRunRepository } from "../../repositories/AdminRunRepository.js";
-import { AdminArtifactDiscoveryService } from "../../services/AdminArtifactDiscoveryService.js";
-
 interface AdminRunDetailRoute {
   Params: AdminRunDetailParams;
   Reply: AdminRunDetail;
@@ -25,13 +22,9 @@ export const adminRunDetailRoute: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
-      const repository = new AdminRunRepository({
-        pg: app.db,
-        objectStore: app.objectStore,
-        objectStoreBucket: app.config.objectStoreBucket,
-        artifactDiscovery: new AdminArtifactDiscoveryService(app.objectStore),
-      });
-      const detail = await repository.getDetail(request.params.runId);
+      const detail = await app.services.adminRunRepository.getDetail(
+        request.params.runId,
+      );
       if (!detail) {
         return reply.code(404).send({ error: "not_found" } as never);
       }

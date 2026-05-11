@@ -73,7 +73,7 @@ export class AdminRunRepository {
         createdAt: runs.createdAt,
         normalizedPrompt: runRequests.normalizedPrompt,
         attemptCount: sql<number>`COALESCE(
-          (SELECT MAX(${runAttempts.attemptSeq}) + 1
+          (SELECT COUNT(${runAttempts.attemptSeq})
            FROM ${runAttempts}
            WHERE ${runAttempts.runId} = ${runs.runId}),
           0

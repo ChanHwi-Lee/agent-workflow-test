@@ -11,6 +11,7 @@ import { dbPlugin } from "./plugins/db.js";
 import { loggerPlugin } from "./plugins/logger.js";
 import { queuePlugin } from "./plugins/queue.js";
 import { sseHubPlugin } from "./plugins/sseHub.js";
+import { AdminRunRepository } from "./repositories/AdminRunRepository.js";
 import { CompletionRepository } from "./repositories/completionRepository.js";
 import { CostSummaryRepository } from "./repositories/costSummaryRepository.js";
 import { DraftBundleRepository } from "./repositories/draftBundleRepository.js";
@@ -20,6 +21,7 @@ import { RunEventRepository } from "./repositories/runEventRepository.js";
 import { RunRecoveryRepository } from "./repositories/runRecoveryRepository.js";
 import { RunRepository } from "./repositories/runRepository.js";
 import { RunRequestRepository } from "./repositories/runRequestRepository.js";
+import { AdminArtifactDiscoveryService } from "./services/AdminArtifactDiscoveryService.js";
 import { RunAckService } from "./services/runAckService.js";
 import { RunBootstrapService } from "./services/runBootstrapService.js";
 import { RunCancelService } from "./services/runCancelService.js";
@@ -53,6 +55,8 @@ export interface AgentApiServices {
   runCancelService: RunCancelService;
   runRecoveryService: RunRecoveryService;
   runWatchdogService: RunWatchdogService;
+  adminArtifactDiscovery: AdminArtifactDiscoveryService;
+  adminRunRepository: AdminRunRepository;
 }
 
 export interface BuildAppOptions {
@@ -123,6 +127,14 @@ export async function buildApp(
     createRunWatchdogPolicy(app.config),
   );
 
+  const adminArtifactDiscovery = new AdminArtifactDiscoveryService(app.objectStore);
+  const adminRunRepository = new AdminRunRepository({
+    pg: app.db,
+    objectStore: app.objectStore,
+    objectStoreBucket: app.config.objectStoreBucket,
+    artifactDiscovery: adminArtifactDiscovery,
+  });
+
   const services: AgentApiServices = {
     runBootstrapService: new RunBootstrapService(
       runRequestRepository,
@@ -160,6 +172,8 @@ export async function buildApp(
       ),
     ),
     runWatchdogService,
+    adminArtifactDiscovery,
+    adminRunRepository,
   };
 
   app.decorate("services", services);

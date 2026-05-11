@@ -46,6 +46,30 @@ describe("GET /api/admin/runs", () => {
     }
   });
 
+  it("reports attempts as row-count (not max attemptSeq + 1) when attempt_seq has gaps", async () => {
+    // Regression: list endpoint historically used MAX(attempt_seq) + 1, which
+    // disagreed with detail endpoint's row-count when seqs skipped (e.g. [0, 2]).
+    // Both endpoints must agree on the row-count definition.
+    process.env.NODE_ENV = "development";
+    const ctx = await buildTestApp();
+    try {
+      await ctx.seedRun({
+        runId: "run-skip",
+        status: "completed",
+        attemptSeqs: [0, 2],
+      });
+
+      const res = await ctx.app.inject({ method: "GET", url: "/api/admin/runs" });
+      assert.equal(res.statusCode, 200);
+      const body = res.json() as AdminRunsListResponse;
+      assert.equal(body.runs.length, 1);
+      // 2 rows in run_attempts (seq 0 and 2). MAX+1 would say 3.
+      assert.equal(body.runs[0]!.attempts, 2);
+    } finally {
+      await ctx.close();
+    }
+  });
+
   it("applies status filter", async () => {
     process.env.NODE_ENV = "development";
     const ctx = await buildTestApp();
