@@ -2,24 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-// Subset of `V6RenderQualityReport` (apps/agent-worker/src/phases/v6RenderQualityReport.ts).
-// Worker contract uses severity "info" | "warn" (NOT "error"); the load-bearing
-// "red" signal is `blocking: true` (root_bounds_mismatch, off_canvas_*, scroll_overflow,
-// text_overlap, text_image_overlap 등 hard-gate 후보).
-interface RenderIssue {
-  code: string;
-  severity: "info" | "warn";
-  blocking: boolean;
-  path: string;
-  tag: string;
-  message: string;
-  metrics?: Record<string, number | string | boolean>;
-}
-
-interface RenderReport {
-  issues?: RenderIssue[];
-  blockingIssues?: RenderIssue[];
-}
+import type {
+  V6RenderQualityIssue,
+  V6RenderQualityReport,
+} from "@tooldi/agent-contracts";
 
 // Subset of `V6DebugHtmlPreviewArtifact` (apps/agent-worker/src/phases/v6DebugHtmlPreview.ts).
 interface DebugHtmlArtifact {
@@ -36,7 +22,7 @@ export function SectionHtmlGeneration({
   reportKey: string | null;
 }) {
   const [html, setHtml] = useState<string | null>(null);
-  const [report, setReport] = useState<RenderReport | null>(null);
+  const [report, setReport] = useState<V6RenderQualityReport | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +51,7 @@ export function SectionHtmlGeneration({
         `/api/proxy/admin/runs/${runId}/artifacts?key=${encodeURIComponent(reportKey)}`,
       )
         .then((r) => r.json())
-        .then((j: RenderReport) => {
+        .then((j: V6RenderQualityReport) => {
           if (!cancelled) setReport(j);
         })
         .catch(() => {
@@ -79,15 +65,15 @@ export function SectionHtmlGeneration({
 
   // "빨강" highlight = blocking issues (hard-gate candidates). Severity is at
   // most "warn" in current worker emit; rely on `blocking` flag for red rows.
-  const blockingIssues = useMemo<RenderIssue[]>(() => {
+  const blockingIssues = useMemo<V6RenderQualityIssue[]>(() => {
     if (!report) return [];
     if (Array.isArray(report.blockingIssues) && report.blockingIssues.length > 0) {
-      return report.blockingIssues as RenderIssue[];
+      return report.blockingIssues;
     }
     return (report.issues ?? []).filter((i) => i.blocking);
   }, [report]);
 
-  const nonBlockingIssues = useMemo<RenderIssue[]>(() => {
+  const nonBlockingIssues = useMemo<V6RenderQualityIssue[]>(() => {
     if (!report) return [];
     return (report.issues ?? []).filter((i) => !i.blocking);
   }, [report]);
