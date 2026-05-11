@@ -1702,3 +1702,62 @@ git commit -m "[feat] AGW result-dashboard — RAG capture worker + §G 후보/G
 2. **Inline** — 이 세션에서 task 별로
 
 V0 끝나고 실제 사용해본 뒤 V1 (annotation/SSE/필터/추가 섹션) 필요한 것만 V1 plan 에서 골라 진행.
+
+---
+
+## Execution Status (2026-05-11)
+
+V0 plan 실행 완료. 6 task → 10 commit + manual smoke ✓ (1 session, subagent-driven).
+
+| Task | Status | Commits | Key adjustments |
+|---|---|---|---|
+| 1. Scaffold + admin contracts | ✅ | `ef945d7` [feat] + `ec54b0a` [refactor] | `RunStatusSchema` 재사용, artifact-kinds 10종, contracts 컨벤션 정렬 (IdentifierSchema/IsoDateTimeSchema + additionalProperties:false) |
+| 2. admin endpoints + adminGuard + ArtifactDiscoveryService | ✅ | `afb62b5` [feat] + `72bbde3` [refactor] | `runs.userPrompt` → `runRequests.normalizedPrompt` join, canvasMeta from snapshot.json, `ObjectStoreClient.listObjects` 확장 (InMemory + Filesystem), `app.services` lift |
+| 3. List page (5s polling) | ✅ | `1c9df18` [feat] + `c4f0443` [refactor] | StatusBadge 13값 매핑, `import "server-only"` 가드 |
+| 4. Detail skeleton §A + §B + §I | ✅ | `e23390c` [feat] | `notFound()` 404 한정 (non-404 rethrow), `PhaseStatus = PhaseSummary["status"]` 재사용 |
+| 5. §F HTML iframe + render-quality | ✅ | `015d240` [feat] + `62fe9f0` [refactor] | render-quality 빨강 = `blocking` 플래그 (worker 실제 emit 은 `severity: "info"\|"warn"`, plan 가정 정정), `V6RenderQualityReportSchema` 를 contracts 로 이관 |
+| 6. RAG capture worker + §G + §H | ✅ | `dfcf667` [feat] | best-effort `persistArtifactTask` try/catch + `appendEventTask` warn (mirror unrestricted preview at `v6PipelineNode.ts:582-624`), `findArtifactKey` 헬퍼 5 call site 통합 |
+
+**Tests:** 204/204 pass (contracts 3, persistence 4, agent-api 46, agent-worker 151).
+
+**Manual smoke (2026-05-11):**
+- `bash scripts/local-stack.sh restart stack` 으로 backend rebuild + restart → agent-api **port 3100** (local-stack 환경변수 override; design doc 의 3100 이 실제로 옳고, plan 의 "3000" ground-truth 메모는 V1 plan 의 `packages/config/src/env.ts` default 만 참조한 오해였음 — 운영 환경에서는 3100)
+- `apps/agent-admin/.env.local` 에 `AGENT_API_INTERNAL_URL=http://localhost:3100` 설정
+- `pnpm --filter @tooldi/agent-admin dev` → port 3200
+- `http://localhost:3200/admin/runs` 정상 렌더, 시드 run `run-1` 노출, 상세 페이지 200 응답
+- §F/§G/§H 데이터 채워진 화면 검증은 실제 v6 run 발사 후 (별 follow-up)
+
+**Codex adversarial review 5 finding — V0 반영 상태:**
+
+| # | Severity | Finding | V0 상태 |
+|---|---|---|---|
+| 1 | high | Admin status enum drift | ✅ 반영 — `RunStatusValues`/`TerminalRunStatusValues` 재사용 |
+| 2 | high | Artifact key drift | ✅ 반영 — `AdminArtifactKindValues` 10종 + `AdminArtifactDiscoveryService` object-store list |
+| 3 | high | SSE `Last-Event-ID` replay 미사용 | ⏸ V1 — V0 는 SSE 자체 미실시 (page reload 로 갱신) |
+| 4 | medium | RAG capture 실패가 user run 실패로 전이 | ✅ 반영 — best-effort try/catch + warn event |
+| 5 | medium | Annotation silent overwrite | ⏸ V1 — V0 는 annotation 자체 미실시 |
+
+**V1 backlog (Minor 누적 — 운영하며 우선순위 결정):**
+
+Type 안전성 / 에러 UX:
+- typed `AdminApiError` (현재 `err.message.includes("admin api 404")` substring 매칭 — 1줄 fix)
+- 일관된 error UX indicator (Task 3/5/6 fetch 들 silent fallback — last updated 표시 또는 red dot)
+- page-level `error.tsx` (현재 Next default error UI)
+- `SectionFinalCommands` 의 `unknown` 타입 → `ExecutablePlan` 명시
+
+Repository / SQL:
+- `AttemptSummary.finishedAt` 실제 채우기 (현재 hardcoded null)
+- list endpoint 의 attempt COUNT 가 N+1 subquery → grouped join (50+ runs 시점)
+- `AdminRunRepository` (300 lines) 의 phase derivation / canvas meta 추출
+
+Patterns:
+- adminApi `baseUrl` vs proxy `upstream` 명칭 통일
+- fetch 패턴 통일 (polling vs one-shot 분기)
+- `findArtifactKey` 헬퍼 unit test
+- `<Link prefetch={false}>` on row link (50개 prefetch 비용)
+
+Infra:
+- `ObjectStoreClient.listObjects` S3 backend 구현 (현재 InMemory + Filesystem 만)
+- `v6PipelineNode` 의 RAG capture 실패-continues-draft 자동화 테스트 (mirror pattern 도 untested — 공통 backlog)
+
+V1 (annotation/SSE/필터/§C/§D/§E) 자체는 별 plan [`./2026-05-08-agw-admin-dashboard.md`](./2026-05-08-agw-admin-dashboard.md) 참조.
