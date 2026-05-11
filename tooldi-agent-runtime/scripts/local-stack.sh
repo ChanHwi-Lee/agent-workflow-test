@@ -8,14 +8,15 @@
 #   - embedding FastAPI service
 #   - agent-api + agent-worker runtime stack
 #   - Toolditor Next dev server
+#   - AGW admin dashboard (apps/agent-admin Next dev server)
 #
 # Usage from agent-workflow-test:
 #   bash scripts/local-stack.sh up
 #   bash scripts/local-stack.sh down
 #   KEEP_DEPS=1 bash scripts/local-stack.sh down
-#   bash scripts/local-stack.sh restart <embedding|stack|toolditor>
+#   bash scripts/local-stack.sh restart <embedding|stack|toolditor|agent-admin>
 #   bash scripts/local-stack.sh status
-#   bash scripts/local-stack.sh logs <embedding|stack|toolditor>
+#   bash scripts/local-stack.sh logs <embedding|stack|toolditor|agent-admin>
 #   CONFIRM=1 bash scripts/local-stack.sh reset-db
 set -euo pipefail
 
@@ -24,6 +25,7 @@ AGENT_WORKFLOW_DIR="$(cd "$RUNTIME_DIR/.." && pwd)"
 TOOLDI_ROOT="$(cd "$AGENT_WORKFLOW_DIR/../.." && pwd)"
 
 TOOLDITOR_DIR="${TOOLDITOR_DIR:-$TOOLDI_ROOT/toolditor}"
+AGENT_ADMIN_DIR="${AGENT_ADMIN_DIR:-$RUNTIME_DIR/apps/agent-admin}"
 EMBEDDING_DIR="${EMBEDDING_DIR:-$TOOLDI_ROOT/sandbox/embedding-test}"
 STATE_DIR="${LOCAL_STACK_STATE_DIR:-/tmp/tooldi-local-stack}"
 mkdir -p "$STATE_DIR"
@@ -51,6 +53,7 @@ STACK_REDIS_URL="redis://127.0.0.1:${REDIS_HOST_PORT}/${REDIS_DB}"
 STACK_POSTGRES_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${POSTGRES_HOST_PORT}/${POSTGRES_DB}"
 STACK_QDRANT_URL="http://127.0.0.1:${QDRANT_HTTP_PORT}"
 TOOLDITOR_BROWSER_URL="${LOCAL_STACK_TOOLDITOR_BROWSER_URL:-http://localhost:3010/editor}"
+AGENT_ADMIN_BROWSER_URL="${LOCAL_STACK_AGENT_ADMIN_BROWSER_URL:-http://localhost:3200/admin/runs}"
 
 color() { printf '\033[%sm%s\033[0m' "$1" "$2"; }
 info() { echo "$(color '1;34' '[stack]') $*"; }
@@ -170,6 +173,7 @@ ensure_dependencies() {
   require_docker
   require_dir TOOLDITOR "$TOOLDITOR_DIR"
   require_dir EMBEDDING "$EMBEDDING_DIR"
+  require_dir AGENT_ADMIN "$AGENT_ADMIN_DIR"
   ensure_postgres
   ensure_redis
   ensure_qdrant
@@ -273,14 +277,19 @@ cmd_up() {
       pnpm run local:toolditor:stack
   start_proc toolditor 3010 "$TOOLDITOR_DIR" \
     env AGENT_WORKFLOW_BASE_URL="http://127.0.0.1:3100" npm run local:agent
+  start_proc agent-admin 3200 "$AGENT_ADMIN_DIR" \
+    env AGENT_API_INTERNAL_URL="http://127.0.0.1:3100" pnpm dev
   wait_for_port_ready embedding 7070 "${LOCAL_STACK_EMBEDDING_READY_TIMEOUT:-180}"
   wait_for_port_ready stack 3100 "${LOCAL_STACK_STACK_READY_TIMEOUT:-180}"
   wait_for_port_ready toolditor 3010 "${LOCAL_STACK_TOOLDITOR_READY_TIMEOUT:-120}"
   wait_for_http_ready toolditor "$TOOLDITOR_BROWSER_URL" 200 "${LOCAL_STACK_TOOLDITOR_HTTP_READY_TIMEOUT:-180}"
+  wait_for_port_ready agent-admin 3200 "${LOCAL_STACK_AGENT_ADMIN_READY_TIMEOUT:-120}"
+  wait_for_http_ready agent-admin "$AGENT_ADMIN_BROWSER_URL" 200 "${LOCAL_STACK_AGENT_ADMIN_HTTP_READY_TIMEOUT:-180}"
   echo
   cmd_status
   echo
   info "브라우저 테스트 진입점: $TOOLDITOR_BROWSER_URL"
+  info "AGW admin 진입점: $AGENT_ADMIN_BROWSER_URL"
   info "검증 시 interviewTimeoutMs=30000 단축 권장 (5분 → 30초)."
 }
 
@@ -324,6 +333,7 @@ stop_proc() {
 }
 
 cmd_down() {
+  stop_proc agent-admin 3200 "$AGENT_ADMIN_DIR"
   stop_proc toolditor 3010 "$TOOLDITOR_DIR"
   stop_proc stack 3100 "$RUNTIME_DIR"
   stop_proc embedding 7070 "$EMBEDDING_DIR"
@@ -340,13 +350,14 @@ cmd_down() {
 
 cmd_status() {
   printf '%-12s %-10s %-15s %s\n' COMP PORT STATE PID
-  for row in "embedding 7070" "stack 3100" "toolditor 3010"; do
+  for row in "embedding 7070" "stack 3100" "toolditor 3010" "agent-admin 3200"; do
     set -- $row
     name="$1" port="$2"
     case "$name" in
       embedding) workdir="$EMBEDDING_DIR" ;;
       stack) workdir="$RUNTIME_DIR" ;;
       toolditor) workdir="$TOOLDITOR_DIR" ;;
+      agent-admin) workdir="$AGENT_ADMIN_DIR" ;;
       *) workdir="$AGENT_WORKFLOW_DIR" ;;
     esac
     pid_file="$STATE_DIR/${name}.pid"
@@ -426,7 +437,14 @@ cmd_restart() {
       wait_for_port_ready toolditor 3010 "${LOCAL_STACK_TOOLDITOR_READY_TIMEOUT:-120}"
       wait_for_http_ready toolditor "$TOOLDITOR_BROWSER_URL" 200 "${LOCAL_STACK_TOOLDITOR_HTTP_READY_TIMEOUT:-180}"
       ;;
-    '') err "restart: 컴포넌트 이름 필요 (embedding | stack | toolditor)"; exit 1 ;;
+    agent-admin)
+      ensure_dependencies
+      stop_proc agent-admin 3200 "$AGENT_ADMIN_DIR"
+      start_proc agent-admin 3200 "$AGENT_ADMIN_DIR" env AGENT_API_INTERNAL_URL="http://127.0.0.1:3100" pnpm dev
+      wait_for_port_ready agent-admin 3200 "${LOCAL_STACK_AGENT_ADMIN_READY_TIMEOUT:-120}"
+      wait_for_http_ready agent-admin "$AGENT_ADMIN_BROWSER_URL" 200 "${LOCAL_STACK_AGENT_ADMIN_HTTP_READY_TIMEOUT:-180}"
+      ;;
+    '') err "restart: 컴포넌트 이름 필요 (embedding | stack | toolditor | agent-admin)"; exit 1 ;;
     *) err "restart: 알 수 없는 컴포넌트 '$name'"; exit 1 ;;
   esac
 }
@@ -434,7 +452,7 @@ cmd_restart() {
 cmd_logs() {
   local name="${1:-}"
   if [[ -z "$name" ]]; then
-    err "logs: 컴포넌트 이름 필요 (embedding | stack | toolditor)"
+    err "logs: 컴포넌트 이름 필요 (embedding | stack | toolditor | agent-admin)"
     exit 1
   fi
   local log_file="$STATE_DIR/$name.log"
@@ -451,7 +469,7 @@ cmd_reset_db() {
     err "  CONFIRM=1 bash scripts/local-stack.sh reset-db"
     exit 1
   fi
-  for name in stack toolditor; do
+  for name in stack toolditor agent-admin; do
     local pid_file="$STATE_DIR/$name.pid"
     if [[ -f "$pid_file" ]] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then
       err "reset-db: $name 가 가동 중 (pid=$(cat "$pid_file")) — 먼저 'down' 으로 종료"
